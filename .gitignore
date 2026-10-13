@@ -1,0 +1,7 @@
+node_modules/
+secrets/
+.pelagic-tmp/
+out/
+dist/
+.env
+*.log
