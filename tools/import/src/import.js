@@ -18,6 +18,7 @@ import { DEFAULTS, TMP_DIR, CATALOGUE_NAME, CATALOGUE_VERSION } from './config.j
 import { scan, readMeta, slug, hashId, safeName } from './library.js';
 import { toOpus, extractCover } from './encode.js';
 import { DriveStore, LocalStore } from './stores.js';
+import { syncArtists } from './artists.js';
 
 const { values: args } = parseArgs({
   options: {
@@ -28,6 +29,8 @@ const { values: args } = parseArgs({
     limit: { type: 'string' },
     concurrency: { type: 'string', default: String(DEFAULTS.concurrency) },
     bitrate: { type: 'string', default: DEFAULTS.opusBitrate },
+    offline: { type: 'boolean', default: false },
+    'refresh-artists': { type: 'boolean', default: false },
   },
 });
 
@@ -65,7 +68,7 @@ async function main() {
     return args.force || !t || t.source.size !== f.size || t.source.mtime !== f.mtime;
   });
   console.log(`  ${files.length - todo.length} unchanged, ${todo.length} to process\n`);
-  if (!todo.length) return console.log('Library is up to date.');
+  if (!todo.length) console.log('Tracks are up to date.');
 
   await fs.mkdir(TMP_DIR, { recursive: true });
 
@@ -190,6 +193,14 @@ async function main() {
   });
   await Promise.all(workers);
   await save(true);
+
+  // Artist photos, backgrounds, MusicBrainz IDs
+  console.log('\nArtists…');
+  const artistChanges = await syncArtists(cat, store, musicDir, {
+    online: !args.offline,
+    refresh: args['refresh-artists'],
+  });
+  if (!artistChanges) console.log('  nothing to update');
   await fs.rm(TMP_DIR, { recursive: true, force: true });
 
   // Album track counts
