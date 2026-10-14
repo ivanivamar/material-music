@@ -46,6 +46,20 @@ Sign-out (avatar menu on Home) revokes the token and clears the cached catalogue
 
 Motion: `<html data-motion="full|reduced">` overrides the OS reduced-motion setting. Leave it unset to follow the system. Animated elements use the class `pg-anim`, and particles use `pg-snow`.
 
+## Player core (step 3d)
+
+| File | What |
+|---|---|
+| `src/player/htmlEngine.ts` | `createHtmlAudioEngine()`: the PC `PlayerEngine` (one `<audio>` + Media Session), attached in `App.tsx`. Per track, first that works: local FLAC → Drive stream → Drive whole-file download. Lazy: a restored track resolves on the first Play press |
+| `src/lib/localFolder.ts` | File System Access (Chrome/Edge). Link a folder from the avatar menu (“Play FLAC from a local folder…”): your music folder, the `Pelagic` folder in Google Drive for desktop, or its `library/` subfolder; the layout is detected from sample tracks. The handle lives in IndexedDB; after a reload Chrome asks once for read access on the first Play |
+| `src/lib/driveStream.ts` + `public/sw.js` | Service worker that proxies `/__pelagic/drive/<fileId>` to the Drive API with the OAuth header (asked from the page per request), range requests included, so Drive FLAC streams and seeks without a full download |
+| `src/state/player.ts` | + `source` (`local`/`drive`, shown as LOCAL/DRIVE next to the quality badge), `unload()`, `onPlayerNotice()` (auth / error / missing → toasts in `AppShell`), position saved at most once a second and on page hide |
+
+Media Session: title/artist/album/cover, play/pause/stop, previous/next, seek to/back/forward (media keys, Windows media overlay).
+Keyboard: Space plays/pauses (unless a control or text field has focus).
+Errors: an unreadable local file retries from Drive; a failed track is skipped (up to 3 in a row); an expired Google token shows one “Sign in” toast that resumes playback.
+Token caveat: a stream that is already running keeps going past the 1 h token, but seeking or the next Drive track needs a fresh sign-in. Linking the local folder avoids this for everything synced to the PC.
+
 ### General Sans (to do once)
 Download the free web kit from https://www.fontshare.com/fonts/general-sans and copy
 `GeneralSans-Variable.woff2` and `GeneralSans-VariableItalic.woff2` into `public/fonts/`.

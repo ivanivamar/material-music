@@ -6,6 +6,7 @@ import { useEffect, useRef, type ReactNode } from 'react'
 import { Atmosphere } from '../components/Atmosphere'
 import { useToast } from '../components/ui'
 import { libraryStore, onLibraryUpdated, useLibrary } from '../state/library'
+import { onPlayerNotice, playerStore } from '../state/player'
 import { sessionStore, useSession } from '../state/session'
 import { PlayerBar } from './PlayerBar'
 import { Sidebar } from './Sidebar'
@@ -58,6 +59,57 @@ export function AppShell({ route, children }: { route: RouteKey; children: React
     },
     [toast],
   )
+
+  // Player notices (3d): Drive needs a fresh token, a track failed, a track left the catalogue
+  useEffect(
+    () =>
+      onPlayerNotice((n) => {
+        const title = libraryStore.get().data?.tracks[n.trackId]?.title
+        if (n.kind === 'auth') {
+          // One "sign in" toast: reuse the session-expired one; signing in from it resumes playback.
+          const t = {
+            icon: 'alert' as const,
+            mutedIcon: true,
+            text: 'Sign in again to stream from Drive.',
+            meta: title ? title.toUpperCase() : 'GOOGLE SESSION EXPIRED',
+            action: {
+              label: 'Sign in',
+              onClick: () =>
+                void sessionStore.signIn().then(() => {
+                  if (sessionStore.get().status === 'signed-in') playerStore.toggle()
+                }),
+            },
+            duration: 0,
+          }
+          if (expiredToast.current !== null) toast.dismiss(expiredToast.current)
+          expiredToast.current = toast.show(t)
+        } else if (n.kind === 'missing') {
+          toast.show({ icon: 'alert', mutedIcon: true, text: 'That track is no longer in your library.', meta: 'QUEUE' })
+        } else {
+          toast.show({
+            icon: 'alert',
+            tone: 'danger',
+            text: title ? `Couldn’t play “${title}”. ${n.message}` : n.message,
+            meta: n.skipped ? 'SKIPPED' : 'STOPPED',
+          })
+        }
+      }),
+    [toast],
+  )
+
+  // Space toggles playback (unless typing or a control has focus)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.code !== 'Space' || e.repeat || e.ctrlKey || e.metaKey || e.altKey) return
+      const el = e.target as HTMLElement | null
+      if (el?.closest('input, textarea, select, button, a, [contenteditable="true"], [role="slider"], [role="menuitem"], [role="link"]')) return
+      if (playerStore.get().index < 0) return
+      e.preventDefault()
+      playerStore.toggle()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
 
   // Background sync failure (first-load failures have their own screen)
   const lastError = useRef<string | null>(null)

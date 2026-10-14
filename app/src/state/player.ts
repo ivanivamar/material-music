@@ -5,6 +5,8 @@
  * local FLAC via File System Access or Drive streaming, Media Session; native ExoPlayer on
  * Android) attaches with `playerStore.attach(engine)` and drives `position` / `playing`.
  * Until an engine is attached, transport calls only move the queue.
+ *
+ * PC engine: `player/htmlEngine.ts` (attached in App.tsx).
  */
 import { useSyncExternalStore } from 'react'
 import { onAccountReset } from './session'
@@ -31,7 +33,11 @@ export interface PlayerState {
   muted: boolean
   shuffle: boolean
   repeat: RepeatMode
+  /** where the current track's audio comes from (not persisted) */
+  source: PlaybackSource | null
 }
+
+export type PlaybackSource = 'local' | 'drive'
 
 export interface PlayerEngine {
   load(trackId: string, opts: { autoplay: boolean; position?: number }): void
@@ -39,7 +45,15 @@ export interface PlayerEngine {
   pause(): void
   seek(seconds: number): void
   setVolume(volume: number, muted: boolean): void
+  /** Drop the current track (queue cleared / sign-out). */
+  unload(): void
 }
+
+/** Things the engine needs the UI to say (toasts). */
+export type PlayerNotice =
+  | { kind: 'auth'; trackId: string } // Drive stream needs a fresh Google sign-in
+  | { kind: 'error'; trackId: string; message: string; skipped: boolean }
+  | { kind: 'missing'; trackId: string } // track no longer in the catalogue
 
 const KEY = 'pelagic.player.v1'
 type Persisted = Pick<PlayerState, 'queue' | 'index' | 'context' | 'position' | 'volume' | 'muted' | 'shuffle' | 'repeat'>
@@ -55,12 +69,13 @@ const DEFAULTS: PlayerState = {
   muted: false,
   shuffle: false,
   repeat: 'off',
+  source: null,
 }
 
 function load(): PlayerState {
   try {
     const raw = localStorage.getItem(KEY)
-    if (raw) return { ...DEFAULTS, ...(JSON.parse(raw) as Partial<Persisted>), playing: false, buffering: false }
+    if (raw) return { ...DEFAULTS, ...(JSON.parse(raw) as Partial<Persisted>), playing: false, buffering: false, source: null }
   } catch {
     /* ignore */
   }
@@ -70,21 +85,27 @@ function load(): PlayerState {
 let state = load()
 let engine: PlayerEngine | null = null
 const listeners = new Set<() => void>()
+const noticeListeners = new Set<(n: PlayerNotice) => void>()
 let persistTimer = 0
+
+function persist() {
+  window.clearTimeout(persistTimer)
+  persistTimer = 0
+  const { queue, index, context, position, volume, muted, shuffle, repeat } = state
+  try {
+    localStorage.setItem(KEY, JSON.stringify({ queue, index, context, position, volume, muted, shuffle, repeat } satisfies Persisted))
+  } catch {
+    /* ignore */
+  }
+}
 
 function set(patch: Partial<PlayerState>) {
   state = { ...state, ...patch }
   listeners.forEach((l) => l())
-  window.clearTimeout(persistTimer)
-  persistTimer = window.setTimeout(() => {
-    const { queue, index, context, position, volume, muted, shuffle, repeat } = state
-    try {
-      localStorage.setItem(KEY, JSON.stringify({ queue, index, context, position, volume, muted, shuffle, repeat } satisfies Persisted))
-    } catch {
-      /* ignore */
-    }
-  }, 400)
+  // throttle, not debounce: the engine reports position several times a second while playing
+  if (!persistTimer) persistTimer = window.setTimeout(persist, 1000)
 }
+window.addEventListener('pagehide', persist)
 
 const current = () => (state.index >= 0 ? (state.queue[state.index] ?? null) : null)
 
@@ -113,8 +134,11 @@ export const playerStore = {
       if (engine === e) engine = null
     }
   },
-  report(patch: Partial<Pick<PlayerState, 'playing' | 'buffering' | 'position'>>) {
+  report(patch: Partial<Pick<PlayerState, 'playing' | 'buffering' | 'position' | 'source'>>) {
     set(patch)
+  },
+  notify(n: PlayerNotice) {
+    noticeListeners.forEach((l) => l(n))
   },
   /** Engine calls this when a track finishes. */
   ended() {
@@ -178,12 +202,19 @@ export const playerStore = {
     set({ repeat: state.repeat === 'off' ? 'all' : state.repeat === 'all' ? 'one' : 'off' })
   },
   clear() {
-    engine?.pause()
+    engine?.unload()
     set({ ...DEFAULTS, volume: state.volume, muted: state.muted })
   },
 }
 
 onAccountReset(() => playerStore.clear())
+
+export function onPlayerNotice(l: (n: PlayerNotice) => void) {
+  noticeListeners.add(l)
+  return () => {
+    noticeListeners.delete(l)
+  }
+}
 
 export function usePlayer(): PlayerState {
   return useSyncExternalStore(playerStore.subscribe, playerStore.get, playerStore.get)

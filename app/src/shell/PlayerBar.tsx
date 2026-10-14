@@ -25,11 +25,12 @@ export function PlayerBar() {
 
   const onPlay = () => {
     if (!playerStore.hasEngine()) {
-      toast.show({ icon: 'clock', mutedIcon: true, text: 'Playback arrives with the player core (step 3d).', meta: 'QUEUE IS READY' })
+      toast.show({ icon: 'alert', mutedIcon: true, text: 'The audio engine isn’t running.', meta: 'RELOAD THE PAGE' })
       return
     }
     playerStore.toggle()
   }
+  const sourceLabel = p.source === 'local' ? 'Playing from your local folder' : p.source === 'drive' ? 'Streaming from Google Drive' : undefined
 
   return (
     <footer className={`pb ${empty ? 'is-empty' : ''}`} aria-label="Player">
@@ -78,9 +79,12 @@ export function PlayerBar() {
 
       <div className="pb-right">
         {track && (
-          <QualityBadge kind={qualityKind('flac', track.flac?.bitDepth, track.flac?.sampleRate)}>
-            {qualityLabel('flac', { bitDepth: track.flac?.bitDepth, sampleRate: track.flac?.sampleRate })}
-          </QualityBadge>
+          <span className="pb-quality" title={sourceLabel}>
+            {p.source && <span className="pb-source t-mono">{p.source === 'local' ? 'LOCAL' : 'DRIVE'}</span>}
+            <QualityBadge kind={qualityKind('flac', track.flac?.bitDepth, track.flac?.sampleRate)}>
+              {qualityLabel('flac', { bitDepth: track.flac?.bitDepth, sampleRate: track.flac?.sampleRate })}
+            </QualityBadge>
+          </span>
         )}
         <IconButton icon="lyrics" label="Lyrics" bare size="sm" disabled={empty} onClick={later('The lyrics view')} />
         <IconButton icon="queue" label="Queue" bare size="sm" disabled={empty} onClick={later('The queue panel')} />

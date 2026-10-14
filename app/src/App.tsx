@@ -2,18 +2,24 @@ import { useEffect, useState } from 'react'
 import { ToastProvider } from './components/ui'
 import { Components } from './dev/Components'
 import { Foundations } from './dev/Foundations'
+import { initDriveStream } from './lib/driveStream'
 import { Home } from './pages/Home'
 import { Placeholder } from './pages/Placeholder'
 import { LibraryError, LoadingLibrary, NoLibrary } from './screens/LibraryStatus'
+import { createHtmlAudioEngine } from './player/htmlEngine'
 import { SignIn } from './screens/SignIn'
 import { AppShell } from './shell/AppShell'
 import { useRoute, type RouteKey } from './shell/routes'
 import { libraryStore, useLibrary } from './state/library'
 import { useMotionAttribute } from './state/motion'
+import { playerStore } from './state/player'
 import { useSession } from './state/session'
 
 // The cached catalogue is local data: read it at boot, before (and regardless of) the session.
 void libraryStore.loadCache()
+// Player core (3d): HTML audio engine + the service worker that streams from Drive.
+void initDriveStream()
+playerStore.attach(createHtmlAudioEngine())
 
 function Page({ route }: { route: RouteKey }) {
   switch (route) {

@@ -47,3 +47,7 @@
   .pb { gap: 16px; }
   .pb-right .badge { display: none; }
 }
+
+/* where the audio comes from (3d): LOCAL / DRIVE next to the quality badge */
+.pb-quality { display: inline-flex; align-items: center; gap: 8px; flex: none; white-space: nowrap; }
+.pb-source { font-size: var(--fs-mono-xs); letter-spacing: .08em; color: var(--ink-tertiary); }
