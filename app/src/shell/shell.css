@@ -9,6 +9,7 @@
   overflow: hidden;
   background: var(--bg-1);
 }
+.shell-layer { display: contents; }
 .shell-main {
   grid-area: main;
   position: relative; z-index: 1;

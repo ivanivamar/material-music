@@ -5,7 +5,9 @@
 import { IconButton, PlayButton, QualityBadge, SeekBar, Slider, qualityKind, qualityLabel, useToast } from '../components/ui'
 import { useCover } from '../lib/covers'
 import { useLibrary, type Track } from '../state/library'
+import { nowPlayingStore, useNowPlayingUi } from '../state/nowPlaying'
 import { playerStore, usePlayer } from '../state/player'
+import { Icon } from '../design/icons'
 import { albumHref, artistHref } from './routes'
 import './playerbar.css'
 
@@ -13,14 +15,13 @@ export function PlayerBar() {
   const p = usePlayer()
   const { data } = useLibrary()
   const toast = useToast()
+  const ui = useNowPlayingUi()
   const id = p.index >= 0 ? p.queue[p.index] : null
   const track: Track | null = (id && data?.tracks[id]) || null
   const album = track ? data?.albums[track.albumId] : undefined
   const cover = useCover(album?.cover)
   const duration = track?.duration ?? 0
   const empty = !track
-
-  const later = (what: string) => () => toast.show({ icon: 'clock', mutedIcon: true, text: `${what} isn’t built yet.`, meta: 'COMING SOON' })
 
   const onPlay = () => {
     if (!playerStore.hasEngine()) {
@@ -32,7 +33,15 @@ export function PlayerBar() {
   const sourceLabel = p.source === 'local' ? 'Playing from your local folder' : p.source === 'drive' ? 'Streaming from Google Drive' : undefined
 
   return (
-    <footer className={`pb ${empty ? 'is-empty' : ''}`} aria-label="Player">
+    <footer
+      className={`pb ${empty ? 'is-empty' : ''}`}
+      aria-label="Player"
+      onClick={(e) => {
+        // a click on the bar itself (not on a control, link or slider) opens the full-screen player
+        if (empty || (e.target as HTMLElement).closest('button, a, input, [role="slider"]')) return
+        nowPlayingStore.open('np')
+      }}
+    >
       <div className="pb-now">
         {empty ? (
           <>
@@ -44,7 +53,12 @@ export function PlayerBar() {
           </>
         ) : (
           <>
-            {cover ? <img className="pb-cover" src={cover} alt="" /> : <span className="pb-cover pb-cover-empty" aria-hidden />}
+            <button type="button" className="pb-expand" onClick={() => nowPlayingStore.open('np')} aria-label="Open Now Playing" title="Now Playing">
+              {cover ? <img className="pb-cover" src={cover} alt="" /> : <span className="pb-cover pb-cover-empty" aria-hidden />}
+              <span className="pb-expand-ic" aria-hidden>
+                <Icon name="chevU" />
+              </span>
+            </button>
             <div className="pb-text">
               <a className="pb-title pb-link" href={albumHref(track.albumId)} title={album ? `${track.title} — ${album.title}` : track.title}>
                 {track.title}
@@ -88,8 +102,8 @@ export function PlayerBar() {
             </QualityBadge>
           </span>
         )}
-        <IconButton icon="lyrics" label="Lyrics" bare size="sm" disabled={empty} onClick={later('The lyrics view')} />
-        <IconButton icon="queue" label="Queue" bare size="sm" disabled={empty} onClick={later('The queue panel')} />
+        <IconButton icon="lyrics" label="Lyrics" bare size="sm" disabled={empty} className={`pb-panel ${ui.open && ui.view === 'lyrics' ? 'is-on' : ''}`} onClick={() => nowPlayingStore.toggleLyrics()} />
+        <IconButton icon="queue" label="Queue" bare size="sm" disabled={empty} pressed={ui.queue} className={`pb-panel ${ui.queue ? 'is-on' : ''}`} onClick={() => nowPlayingStore.toggleQueue()} />
         <span className="pb-volume">
           <IconButton icon={p.muted || p.volume === 0 ? 'mute' : 'volume'} label={p.muted ? 'Unmute' : 'Mute'} bare size="sm" onClick={() => playerStore.toggleMute()} />
           <Slider
@@ -104,6 +118,7 @@ export function PlayerBar() {
             className="pb-vol-slider"
           />
         </span>
+        <IconButton icon="chevU" label="Open Now Playing" bare size="sm" disabled={empty} className="pb-open" onClick={() => nowPlayingStore.open('np')} />
       </div>
       <span className="sr-only" aria-live="polite">
         {track ? `${p.playing ? 'Playing' : 'Paused'}: ${track.title} by ${track.artist}` : ''}

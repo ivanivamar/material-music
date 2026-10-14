@@ -6,6 +6,9 @@ import { useEffect, useLayoutEffect, useRef, type ReactNode } from 'react'
 import { Atmosphere } from '../components/Atmosphere'
 import { useToast } from '../components/ui'
 import { libraryStore, onLibraryUpdated, useLibrary } from '../state/library'
+import { NowPlaying } from '../nowplaying/NowPlaying'
+import { QueuePanel } from '../nowplaying/QueuePanel'
+import { nowPlayingStore, useNowPlayingUi } from '../state/nowPlaying'
 import { onPlayerNotice, playerStore } from '../state/player'
 import { searchStore } from '../state/search'
 import { sessionStore, useSession } from '../state/session'
@@ -19,6 +22,7 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
   const session = useSession()
   const lib = useLibrary()
   const mainRef = useRef<HTMLElement>(null)
+  const np = useNowPlayingUi()
 
   // Check Drive for a newer library.json whenever we (re)gain a valid session.
   useEffect(() => {
@@ -128,6 +132,32 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
+  // Esc closes the queue panel first, then the full-screen player
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' || e.defaultPrevented) return
+      const ui = nowPlayingStore.get()
+      if (!ui.queue && !ui.open) return
+      const el = e.target as HTMLElement | null
+      if (!ui.open && el?.closest('input, textarea, select, [contenteditable="true"]')) return
+      e.preventDefault()
+      if (ui.queue) nowPlayingStore.closeQueue()
+      else nowPlayingStore.close()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
+  // Any navigation (e.g. "/" to Search) takes the full-screen player and queue panel down with it
+  const npPath = useRef(route.path)
+  useEffect(() => {
+    if (npPath.current === route.path) return
+    npPath.current = route.path
+    const ui = nowPlayingStore.get()
+    if (ui.open) nowPlayingStore.close()
+    else if (ui.queue) nowPlayingStore.closeQueue()
+  }, [route.path])
+
   // Background sync failure (first-load failures have their own screen)
   const lastError = useRef<string | null>(null)
   useEffect(() => {
@@ -162,11 +192,16 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
   return (
     <div className="shell">
       <Atmosphere fixed seed={17} />
-      <Sidebar active={navKeyOf(route)} />
-      <main className="shell-main" ref={mainRef} id="main" tabIndex={-1}>
-        <div className="shell-page">{children}</div>
-      </main>
-      <PlayerBar />
+      {/* the full-screen player is modal: everything behind it is inert */}
+      <div className="shell-layer" inert={np.open}>
+        <Sidebar active={navKeyOf(route)} />
+        <main className="shell-main" ref={mainRef} id="main" tabIndex={-1}>
+          <div className="shell-page">{children}</div>
+        </main>
+        <PlayerBar />
+      </div>
+      <NowPlaying />
+      <QueuePanel />
     </div>
   )
 }

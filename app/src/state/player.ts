@@ -162,6 +162,7 @@ export const playerStore = {
       queue = [first, ...rest]
       index = 0
     }
+    lastCleared = null
     set({ queue, context })
     go(index, true)
   },
@@ -203,9 +204,85 @@ export const playerStore = {
   },
   clear() {
     engine?.unload()
+    lastCleared = null
     set({ ...DEFAULTS, volume: state.volume, muted: state.muted })
   },
+
+  /* ── Queue editing (step 6: queue panel) ──────────────
+   * The queue is one list; "Next up" is everything after `index`. Edits keep the current track
+   * (and its playback) untouched and only shift `index` when rows move around it. */
+
+  /** Play queue row `i` (click in the queue panel). */
+  jump(i: number) {
+    if (i < 0 || i >= state.queue.length) return
+    if (i === state.index) return playerStore.toggle()
+    go(i, true)
+  },
+  /** Move row `from` so it ends up at index `to` (drag to reorder). */
+  move(from: number, to: number) {
+    const n = state.queue.length
+    if (from === to || from < 0 || from >= n || to < 0 || to >= n) return
+    const queue = [...state.queue]
+    const [id] = queue.splice(from, 1)
+    queue.splice(to, 0, id)
+    let index = state.index
+    if (from === index) index = to
+    else if (from < index && to >= index) index--
+    else if (from > index && to <= index) index++
+    set({ queue, index })
+  },
+  /** Remove an upcoming / earlier row (the current track is not removable here). */
+  remove(i: number) {
+    if (i < 0 || i >= state.queue.length || i === state.index) return
+    const queue = state.queue.filter((_, k) => k !== i)
+    set({ queue, index: i < state.index ? state.index - 1 : state.index })
+  },
+  /** Drop everything after the current track. Returns what was removed (for "Restore queue"). */
+  clearUpcoming(): string[] {
+    if (state.index < 0) return []
+    const removed = state.queue.slice(state.index + 1)
+    if (!removed.length) return removed
+    lastCleared = removed
+    set({ queue: state.queue.slice(0, state.index + 1) })
+    return removed
+  },
+  /** What the last "Clear" removed, while it can still be put back. */
+  clearedUpcoming: () => lastCleared,
+  restoreUpcoming() {
+    if (!lastCleared?.length || state.index < 0) return
+    const ids = lastCleared
+    lastCleared = null
+    set({ queue: [...state.queue.slice(0, state.index + 1), ...ids, ...state.queue.slice(state.index + 1)] })
+  },
+  /** Insert tracks right after the current one (or start playing them if nothing is loaded). */
+  playNext(ids: string[]) {
+    if (!ids.length) return
+    if (state.index < 0) return playerStore.playQueue(ids, 0, { kind: 'queue', label: 'Queue' })
+    const queue = [...state.queue]
+    queue.splice(state.index + 1, 0, ...ids)
+    set({ queue })
+  },
+  /** Append tracks to the end of the queue. */
+  addToQueue(ids: string[]) {
+    if (!ids.length) return
+    if (state.index < 0) return playerStore.playQueue(ids, 0, { kind: 'queue', label: 'Queue' })
+    set({ queue: [...state.queue, ...ids] })
+  },
+  /** Shuffle the upcoming part once (the queue panel's shuffle button). */
+  shuffleUpcoming() {
+    if (state.index < 0) return
+    const head = state.queue.slice(0, state.index + 1)
+    const rest = state.queue.slice(state.index + 1)
+    for (let i = rest.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      ;[rest[i], rest[j]] = [rest[j], rest[i]]
+    }
+    set({ queue: [...head, ...rest] })
+  },
 }
+
+/** Upcoming rows removed by the last "Clear" (memory only; dropped when a new list starts). */
+let lastCleared: string[] | null = null
 
 onAccountReset(() => playerStore.clear())
 
