@@ -1,0 +1,22 @@
+/*
+ * Fonts
+ * - IBM Plex Mono 400/500 and Noto Sans JP 300/400/500: self-hosted via @fontsource (imported in main.tsx).
+ * - General Sans 300/400/500/600 (Fontshare, free licence): self-hosted from public/fonts as
+ *   "Pelagic Sans". Download the web kit from https://www.fontshare.com/fonts/general-sans and copy
+ *   GeneralSans-Variable.woff2 + GeneralSans-VariableItalic.woff2 into app/public/fonts/.
+ *   Until then the Fontshare CDN <link> in index.html supplies "General Sans" (online only).
+ */
+@font-face {
+  font-family: 'Pelagic Sans';
+  src: url('/fonts/GeneralSans-Variable.woff2') format('woff2');
+  font-weight: 200 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Pelagic Sans';
+  src: url('/fonts/GeneralSans-VariableItalic.woff2') format('woff2');
+  font-weight: 200 700;
+  font-style: italic;
+  font-display: swap;
+}

@@ -1,0 +1,71 @@
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body, #root { height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bg-1);
+  color: var(--ink-primary);
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+a { color: var(--ink-primary); text-decoration: underline; text-underline-offset: 3px; }
+a:hover { color: var(--line); }
+
+button { font: inherit; color: inherit; }
+
+:focus-visible { outline: 1.5px solid rgba(255, 255, 255, .7); outline-offset: 2px; }
+
+::selection { background: rgba(255, 255, 255, .22); color: #fff; }
+
+/* ── Type helpers ─────────────────────────────────────── */
+.t-hero    { font-size: var(--fs-hero); font-weight: 400; letter-spacing: var(--ls-hero); line-height: .95; }
+.t-page    { font-size: var(--fs-page); font-weight: 400; letter-spacing: var(--ls-page); line-height: 1.1; }
+.t-section { font-size: var(--fs-section); font-weight: 400; letter-spacing: -0.015em; line-height: 1.15; }
+.t-body    { font-size: var(--fs-body); }
+.t-secondary { font-size: var(--fs-secondary); color: var(--ink-secondary); }
+.t-mono {
+  font-family: var(--font-mono);
+  font-size: var(--fs-mono);
+  letter-spacing: var(--ls-mono);
+  text-transform: uppercase;
+  color: var(--ink-tertiary);
+}
+.t-jp { font-family: var(--font-jp); }
+.t-wordmark { letter-spacing: var(--ls-wordmark); padding-left: var(--ls-wordmark); text-transform: uppercase; font-weight: 400; }
+
+/* ── Keyframes shared across the app ──────────────────── */
+@keyframes pg-sway {
+  0%   { transform: translate3d(0, -40px, 0); opacity: 0; }
+  10%  { opacity: 1; }
+  50%  { transform: translate3d(22px, 110px, 0); }
+  90%  { opacity: 1; }
+  100% { transform: translate3d(-8px, 260px, 0); opacity: 0; }
+}
+@keyframes pg-pool {
+  0%   { transform: translate3d(-6%, -4%, 0) scale(1); }
+  100% { transform: translate3d(10%, 8%, 0) scale(1.3); }
+}
+@keyframes pg-shimmer { 0% { background-position: 150% 0; } 100% { background-position: -50% 0; } }
+@keyframes pg-navping { 0% { transform: scale(1); opacity: .4; } 100% { transform: scale(2.6); opacity: 0; } }
+@keyframes pg-navecho { 0% { transform: scale(1); opacity: .18; } 100% { transform: scale(2); opacity: 0; } }
+@keyframes pg-sonar  { 0% { transform: scale(1); opacity: .7; } 100% { transform: scale(8); opacity: 0; } }
+@keyframes pg-eq     { 0%, 100% { transform: scaleY(.3); } 50% { transform: scaleY(1); } }
+@keyframes pg-pop    { 0% { transform: scale(1); } 50% { transform: scale(1.28); } 100% { transform: scale(1); } }
+@keyframes pg-spin   { to { transform: rotate(360deg); } }
+
+/*
+ * Reduced motion: honours the OS setting unless the in-app Motion setting overrides it.
+ * <html data-motion="full|reduced"> is set by the app; absent = follow system.
+ */
+@media (prefers-reduced-motion: reduce) {
+  html:not([data-motion='full']) .pg-anim { animation: none !important; transition: none !important; }
+  html:not([data-motion='full']) .pg-snow { display: none !important; }
+}
+html[data-motion='reduced'] .pg-anim { animation: none !important; transition: none !important; }
+html[data-motion='reduced'] .pg-snow { display: none !important; }
