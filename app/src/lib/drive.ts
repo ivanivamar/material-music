@@ -6,7 +6,7 @@ import { CATALOGUE_NAME, DRIVE_ROOT } from '../config'
 import { sessionStore } from '../state/session'
 
 const API = 'https://www.googleapis.com/drive/v3'
-const FOLDER_MIME = 'application/vnd.google-apps.folder'
+export const FOLDER_MIME = 'application/vnd.google-apps.folder'
 
 export class AuthError extends Error {
   constructor() {
@@ -81,7 +81,7 @@ export interface DriveFile {
 const q = (s: string) => s.replace(/\\/g, '\\\\').replace(/'/g, "\\'")
 const FIELDS = 'id,name,size,modifiedTime,version'
 
-async function findChild(name: string, parentId: string, folder: boolean): Promise<DriveFile | null> {
+export async function findChild(name: string, parentId: string, folder: boolean): Promise<DriveFile | null> {
   const mime = folder ? `mimeType = '${FOLDER_MIME}'` : `mimeType != '${FOLDER_MIME}'`
   const params = new URLSearchParams({
     q: `name = '${q(name)}' and '${parentId}' in parents and ${mime} and trashed = false`,

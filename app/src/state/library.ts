@@ -237,6 +237,16 @@ export const libraryStore = {
     return inflight
   },
 
+  /**
+   * This device just wrote library.json itself (Upload page): take the written copy as current,
+   * with its new Drive version, so the next sync doesn't download it again. No "updated" toast.
+   */
+  adopt(data: Catalogue, fileId: string, version: string | null) {
+    const syncedAt = Date.now()
+    set({ status: 'ready', data, source: 'drive', fileVersion: version, syncedAt, error: null })
+    void idbSet('kv', CACHE_KEY, { fileId, version, email: sessionStore.get().account?.email ?? null, syncedAt, data } satisfies CacheRecord)
+  },
+
   /** Drop the catalogue and the cover cache (sign-out / account switch). */
   async reset() {
     generation++

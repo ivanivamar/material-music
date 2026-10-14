@@ -21,7 +21,8 @@ import { nativeUpdates, useNativeUpdates } from '../native/updates'
 import { Sidebar } from './Sidebar'
 import { albumHref, go, href, navKeyOf, type Route } from './routes'
 import { albumOffline, downloadsStore } from '../state/downloads'
-import { fmtBytes } from '../state/views'
+import { fmtBytes, plural } from '../state/views'
+import { onAlbumAdded, runSummary, useUpload } from '../state/upload'
 import './shell.css'
 import './phone.css'
 
@@ -69,6 +70,42 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
           text: `${album.title} is stored offline.`,
           meta: `${fmtBytes(off.bytesDone)} · ${s.prefs.quality === 'flac' ? 'FLAC' : 'OPUS 160'}`,
           action: { label: 'View', onClick: () => go(albumHref(albumId)) },
+        })
+      }),
+    [toast],
+  )
+
+  // Upload (step 10): progress toast while away from the Upload page, "added" toast per album.
+  const up = useUpload()
+  const upRun = runSummary(up)
+  const onUploadPage = route.kind === 'app' && route.key === 'upload'
+  const upToast = useRef<number | null>(null)
+  const upAlbum = upRun.active
+  useEffect(() => {
+    if (!up.running || onUploadPage || !upAlbum) {
+      if (upToast.current !== null) toast.dismiss(upToast.current)
+      upToast.current = null
+      return
+    }
+    const t = {
+      icon: 'upload' as const,
+      text: `Uploading ${upAlbum.title}`,
+      meta: `${Math.min(upRun.total, upRun.done + 1)} OF ${upRun.total}`,
+      progress: upRun.ratio,
+      action: { label: 'Show', onClick: () => go(href('upload')) },
+      duration: 0,
+    }
+    if (upToast.current === null) upToast.current = toast.show(t)
+    else toast.update(upToast.current, t)
+  }, [up.running, onUploadPage, upAlbum, upRun.done, upRun.total, upRun.ratio, toast])
+  useEffect(
+    () =>
+      onAlbumAdded((r) => {
+        toast.show({
+          icon: 'check',
+          text: `${r.title} is in your library.`,
+          meta: r.failed ? `${plural(r.added, 'TRACK')} · ${r.failed} FAILED` : `${plural(r.added, 'TRACK')} ADDED`,
+          action: { label: 'View', onClick: () => go(albumHref(r.albumId)) },
         })
       }),
     [toast],
@@ -258,7 +295,7 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
       <Atmosphere fixed seed={17} paused={np.open} />
       {/* the full-screen player is modal: everything behind it is inert */}
       <div className="shell-layer" inert={np.open}>
-        {!phone && <Sidebar active={navKeyOf(route)} />}
+        {!phone && <Sidebar active={navKeyOf(route)} badges={up.running && upRun.total ? { upload: `${upRun.done}/${upRun.total}` } : undefined} />}
         <main className="shell-main" ref={mainRef} id="main" tabIndex={-1}>
           <div className="shell-page">{children}</div>
         </main>

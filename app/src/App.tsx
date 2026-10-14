@@ -20,6 +20,7 @@ import { ArtistPage } from './pages/library/ArtistPage'
 import { Library } from './pages/library/Library'
 import { Search } from './pages/search/Search'
 import { Downloads } from './pages/downloads/Downloads'
+import { Upload } from './pages/upload/Upload'
 import { downloadsStore } from './state/downloads'
 import { libraryStore, useLibrary } from './state/library'
 import { useMotionAttribute } from './state/motion'
@@ -62,7 +63,7 @@ function Page({ route }: { route: Extract<Route, { kind: 'app' }> }) {
     case 'new':
       return <Placeholder title="New releases" meta="MUSICBRAINZ · DAILY" icon="newr" line="No sweep has run yet." body="The MusicBrainz feed for the artists you follow arrives in step 11." />
     case 'upload':
-      return <Placeholder title="Upload" meta="FLAC → DRIVE + OPUS" icon="upload" line="Use the importer for now." body="Run tools/import on your PC (npm run import). In-app upload arrives in step 10." />
+      return <Upload />
     case 'downloads':
       return <Downloads />
   }
