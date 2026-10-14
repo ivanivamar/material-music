@@ -1,0 +1,254 @@
+/*
+ * Phone layout (≤ 760px) — handoff 05 / 07 Android (412 × 915 reference).
+ * Every rule is scoped under `.shell.is-phone` (set by AppShell from useIsPhone) so it wins over the
+ * desktop page styles regardless of stylesheet order.
+ */
+
+/* ── Shell: one column, bottom tabs, floating mini-player ── */
+.shell.is-phone { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); grid-template-areas: 'main'; }
+.shell.is-phone .shell-page {
+  padding: 18px 20px calc(var(--android-tabs-h) + 32px + env(safe-area-inset-bottom));
+}
+.shell.is-phone.has-mini .shell-page {
+  padding-bottom: calc(var(--android-tabs-h) + var(--android-mini-h) + 40px + env(safe-area-inset-bottom));
+}
+
+.tabs {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+  height: calc(var(--android-tabs-h) + env(safe-area-inset-bottom));
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  padding: 6px 8px calc(22px + env(safe-area-inset-bottom));
+  background: var(--bg-1); border-top: 1px solid rgba(255, 255, 255, .06);
+}
+.tab {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  color: var(--ink-secondary); text-decoration: none; -webkit-tap-highlight-color: transparent;
+}
+.tab:hover { color: var(--ink-primary); }
+.tab.is-on { color: #fff; }
+.tab-ic { position: relative; display: inline-flex; font-size: var(--icon-tab); }
+.tab.is-on .tab-ic::before {
+  content: ''; position: absolute; left: 50%; top: -9px; width: 16px; height: 1px; margin-left: -8px;
+  background: #fff; box-shadow: 0 0 6px rgba(255, 255, 255, .8);
+}
+.tab-label { font-family: var(--font-mono); font-size: var(--fs-mono-xs); letter-spacing: .14em; }
+
+.mini {
+  position: fixed; left: 8px; right: 8px; z-index: 21;
+  bottom: calc(var(--android-tabs-h) + 8px + env(safe-area-inset-bottom));
+  height: var(--android-mini-h); border-radius: 14px; overflow: hidden;
+  display: flex; align-items: center; gap: 12px; padding: 0 8px;
+  background: #151517; border: 1.5px solid rgba(255, 255, 255, .09);
+  box-shadow: 0 18px 40px -14px rgba(0, 0, 0, .7);
+  cursor: pointer; outline: none; -webkit-tap-highlight-color: transparent;
+}
+.mini:focus-visible { border-color: rgba(255, 255, 255, .45); }
+.mini-cover { width: 46px; height: 46px; flex: none; border-radius: 8px; object-fit: cover; display: block; }
+.mini-cover-empty { background: var(--surface-2); }
+.mini-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.mini-title { font-size: 15px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mini-sub { font-size: 12px; color: var(--ink-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mini-btn, .mini-play {
+  width: 44px; height: 44px; flex: none; border: 0; padding: 0; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.mini-btn { background: none; border-radius: 12px; font-size: 21px; color: var(--ink-secondary); }
+.mini-play { position: relative; border-radius: 50%; background: var(--ink-primary); color: var(--bg-1); font-size: 18px; }
+.mini-progress { position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: rgba(255, 255, 255, .12); }
+.mini-progress > span { display: block; height: 1px; background: #fff; box-shadow: 0 0 6px rgba(255, 255, 255, .7); }
+
+/* toasts: above the mini-player and tabs */
+html[data-phone]:not([data-np]) .toasts.toasts-shell { left: 0; right: 0; bottom: calc(var(--android-tabs-h) + var(--android-mini-h) + 24px + env(safe-area-inset-bottom)); }
+html[data-phone][data-qp] .toasts.toasts-shell { right: 0; }
+
+/* ── Page header ── */
+.shell.is-phone .ph { align-items: flex-start; gap: 16px; margin-bottom: 26px; }
+.shell.is-phone .ph-title { font-size: 28px; letter-spacing: -0.015em; }
+.shell.is-phone .ph-meta { font-size: var(--fs-mono-sm); }
+.shell.is-phone .search-pill { display: none; }
+.shell.is-phone .avatar { width: 36px; height: 36px; font-size: 13px; }
+.shell.is-phone .ph:has(.lib-tabs) { flex-direction: column; align-items: stretch; gap: 20px; margin-bottom: 22px; }
+.shell.is-phone .ph:has(.lib-tabs) .ph-title { font-size: var(--fs-page-android); letter-spacing: var(--ls-page); }
+
+/* ── Home shelves: two columns ── */
+.shell.is-phone .shelves { gap: 30px; }
+.shell.is-phone .shelf-head { flex-wrap: wrap; row-gap: 6px; gap: 12px; }
+.shell.is-phone .shelf-label { font-size: var(--fs-mono-sm); }
+.shell.is-phone .shelf-sub { flex-basis: 100%; order: 3; font-size: var(--fs-mono-xs); }
+.shell.is-phone .shelf-row { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px 14px; }
+
+/* ── Library ── */
+.shell.is-phone .lib-bar { gap: 12px; margin-bottom: 20px; }
+.shell.is-phone .az { display: none; }
+.shell.is-phone .lib-grid,
+.shell.is-phone .lib-grid-sm { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px 14px; }
+
+/* Artists: list rows (48px avatar, name, mono counts) */
+.shell.is-phone .art-groups { gap: 18px; }
+.shell.is-phone .art-group { gap: 4px; }
+.shell.is-phone .art-grid { grid-template-columns: minmax(0, 1fr); gap: 0; }
+.shell.is-phone .art-tile {
+  display: grid; grid-template-columns: 48px minmax(0, 1fr); grid-template-rows: auto auto; column-gap: 14px; row-gap: 3px;
+  align-items: center; align-content: center; height: 66px; border-radius: 0; border-bottom: 1px solid rgba(255, 255, 255, .04);
+}
+.shell.is-phone .art-tile-img { grid-row: 1 / 3; width: 48px !important; height: 48px !important; margin: 0; }
+.shell.is-phone .art-tile-img img { filter: none; }
+.shell.is-phone .art-tile .avatar-art-mono { font-size: 13px; letter-spacing: .08em; }
+.shell.is-phone .art-tile-name { font-size: 16px; font-weight: 400; text-align: left; align-self: end; }
+.shell.is-phone .art-tile-meta { font-size: var(--fs-mono-sm); letter-spacing: .1em; text-align: left; align-self: start; }
+
+/* Songs: number · title / artist · time */
+.shell.is-phone .songs { --cols: 32px minmax(0, 1fr) 52px; }
+.shell.is-phone .songs-head > :nth-child(3),
+.shell.is-phone .songs-head > :nth-child(4),
+.shell.is-phone .songs-row .songs-album,
+.shell.is-phone .songs-row .trow-label { display: none; }
+.shell.is-phone .songs-head, .shell.is-phone .songs-row { gap: 10px; padding: 0 4px; }
+
+/* track rows: no hover play button on touch */
+.shell.is-phone .trow { padding-left: 4px; padding-right: 4px; }
+
+/* ── Album / Artist ── */
+.shell.is-phone .crumbs { margin: -6px 0 18px; }
+.shell.is-phone .scene-tint { left: 0; bottom: 0; }
+.shell.is-phone .hero { flex-direction: column; align-items: stretch; gap: 22px; margin-bottom: 24px; }
+.shell.is-phone .hero-cover { width: min(236px, 62vw); height: min(236px, 62vw); align-self: center; }
+.shell.is-phone .hero-text { gap: 10px; }
+.shell.is-phone .hero-title { font-size: min(var(--hs, 80px), 8.6vw); letter-spacing: -0.025em; line-height: 1; }
+.shell.is-phone .hero-line { gap: 10px 12px; }
+.shell.is-phone .hero-artist { font-size: 16px; }
+.shell.is-phone .hero-dash { display: none; }
+.shell.is-phone .hero-stats { font-size: var(--fs-mono-sm); }
+
+.shell.is-phone .hero.hero-artist { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 18px; margin-bottom: 28px; }
+.shell.is-phone .hero-avatar { width: 96px !important; height: 96px !important; }
+.shell.is-phone .hero-avatar .avatar-art-mono { font-size: 24px; }
+.shell.is-phone .hero.hero-artist .hero-text { flex: 1; min-width: 0; gap: 8px; }
+.shell.is-phone .hero.hero-artist .hero-meta { font-size: var(--fs-mono-xs); }
+.shell.is-phone .hero.hero-artist .hero-buttons { flex-basis: 100%; }
+.shell.is-phone .hero-buttons .btn { flex: 1; height: 48px; }
+.shell.is-phone .artist-banner { left: -20px; right: -20px; top: -18px; height: 320px; }
+
+.shell.is-phone .actions { gap: 10px; margin-bottom: 20px; }
+.shell.is-phone .actions .btn { flex: 1; min-width: 0; height: 48px; }
+.shell.is-phone .actions-spacer, .shell.is-phone .actions-info { display: none; }
+.shell.is-phone .tracklist { --cols: 28px minmax(0, 1fr) 52px; }
+.shell.is-phone .tl-head, .shell.is-phone .trow.trow-album { padding: 0 4px; gap: 10px; }
+.shell.is-phone .trow.trow-album { height: 56px; }
+.shell.is-phone .more-by { margin-top: 40px; }
+
+.shell.is-phone .artist-cols { gap: 36px; }
+.shell.is-phone .artist-disco { order: 0; }
+.shell.is-phone .trow.trow-artist { grid-template-columns: 24px minmax(0, 1fr) 52px; }
+.shell.is-phone .trow.trow-artist .trow-label { display: none; }
+.shell.is-phone .disco-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px 14px; }
+
+/* ── Search ── */
+.shell.is-phone .srch { gap: 22px; }
+.shell.is-phone .srch-field { height: 52px; border-radius: 14px; gap: 12px; padding: 0 16px; }
+.shell.is-phone .srch-ic { font-size: 20px; }
+.shell.is-phone .srch-input { font-size: 18px; }
+.shell.is-phone .srch-meta, .shell.is-phone .srch-hint { display: none; }
+.shell.is-phone .srch-chips { overflow-x: auto; scrollbar-width: none; margin-right: -20px; padding-right: 20px; }
+.shell.is-phone .srch-all { gap: 32px; }
+.shell.is-phone .srch-top { padding: 14px; gap: 14px; border-radius: 16px; }
+.shell.is-phone .srch-top-name { font-size: 22px; }
+.shell.is-phone .srch-top-name.is-long { font-size: 18px; }
+.shell.is-phone .srch-top-meta { font-size: var(--fs-mono-xs); }
+.shell.is-phone .srow { grid-template-columns: 42px minmax(0, 1fr) 48px; gap: 12px; padding: 0 2px; height: 58px; }
+.shell.is-phone .srow-cover { width: 42px; height: 42px; }
+.shell.is-phone .srch-recent-x { opacity: 1; }
+
+/* ── Full-screen player (handoff 05 Android Now Playing) ── */
+.shell.is-phone .np-head { height: 60px; padding: 0 14px; }
+.shell.is-phone .np-close { width: 44px; height: 44px; padding: 0; margin: 0; justify-content: center; font-size: 0; letter-spacing: 0; }
+.shell.is-phone .np-close svg { font-size: 22px; }
+.shell.is-phone .np-from-k { font-size: var(--fs-mono-xs); }
+.shell.is-phone .np-from-l { font-size: 13px; }
+.shell.is-phone .np-from { max-width: 60vw; }
+
+.shell.is-phone .np-main {
+  inset: 60px 0 0; padding: 4px 24px calc(28px + env(safe-area-inset-bottom));
+  display: flex; flex-direction: column; justify-content: flex-start; gap: clamp(16px, 3.4vh, 30px);
+  overflow-y: auto; overscroll-behavior: contain;
+}
+.shell.is-phone .np { --np-cover: min(364px, calc(100vw - 48px), calc(100vh - 470px)); }
+.shell.is-phone .np-cover-wrap { align-self: center; }
+.shell.is-phone .np-info { gap: clamp(16px, 3.4vh, 30px); max-width: none; flex: 1; }
+.shell.is-phone .np-text { gap: 8px; }
+.shell.is-phone .np-badges { order: 3; gap: 10px; font-size: var(--fs-mono-xs); }
+.shell.is-phone .np-title { font-size: clamp(26px, 8.3vw, 34px) !important; line-height: 1.05; letter-spacing: -0.02em; }
+.shell.is-phone .np-sub { font-size: 16px; }
+.shell.is-phone .np-artist { color: #bdbdbd; }
+.shell.is-phone .np-seek { gap: 10px; max-width: none; }
+.shell.is-phone .np-transport { justify-content: space-between; gap: 0; }
+.shell.is-phone .np-transport .ibtn { width: 48px; height: 48px; margin: 0; }
+.shell.is-phone .np-transport .ibtn.np-skip { width: 56px; height: 56px; }
+.shell.is-phone .np-play .playbtn { width: 72px !important; height: 72px !important; box-shadow: 0 0 44px -10px rgba(255, 255, 255, .5); }
+.shell.is-phone .np-actions { max-width: none; justify-content: space-between; }
+.shell.is-phone .np-actions .np-flex,
+.shell.is-phone .np-actions > .ibtn,
+.shell.is-phone .np-vol,
+.shell.is-phone .np-next { display: none; }
+.shell.is-phone .np-vbtn { height: 40px; padding: 0 14px; }
+
+/* lyrics view: top strip · lyrics · seek + transport */
+.shell.is-phone .np-ly { inset: 60px 0 0; display: flex; flex-direction: column; }
+.shell.is-phone .np-ly-col { flex: 1; min-height: 0; }
+.npp-strip { display: flex; align-items: center; gap: 12px; padding: 0 14px 0 24px; height: 56px; flex: none; }
+.npp-strip-cover { width: 40px; height: 40px; flex: none; border-radius: 8px; object-fit: cover; display: block; }
+.npp-strip-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.npp-strip-title { font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.npp-strip-sub { font-size: 12px; color: var(--ink-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.npp-strip .ibtn { width: 44px; height: 44px; font-size: 21px; color: var(--ink-secondary); }
+.npp-strip .ibtn[aria-pressed='true'] { color: #fff; }
+.npp-strip .ibtn[aria-pressed='true'] svg { filter: drop-shadow(0 0 4px rgba(255, 255, 255, .5)); }
+.npp-bottom { flex: none; display: flex; flex-direction: column; gap: 18px; padding: 8px 24px calc(28px + env(safe-area-inset-bottom)); }
+.npp-bottom { gap: 16px; }
+.npp-bottom .np-transport.is-compact { width: auto; justify-content: space-between; }
+.npp-bottom .np-transport.is-compact .ibtn { width: 48px; height: 48px; font-size: 22px; }
+.npp-bottom .np-transport.is-compact .ibtn.np-skip { width: 56px; height: 56px; font-size: 26px; }
+.npp-bottom .np-play .playbtn { width: 64px !important; height: 64px !important; }
+.shell.is-phone .ly-list { left: 28px; right: 28px; top: 40%; }
+.shell.is-phone .ly-line { font-size: 24px; padding: 9px 0; line-height: 1.25; }
+.shell.is-phone .ly-line.is-gap { font-size: 18px; }
+.shell.is-phone .ly-meta { display: none; }
+.shell.is-phone .ly-plain { padding: 12vh 28px 20vh; }
+.shell.is-phone .ly-plain p { font-size: 20px; }
+.shell.is-phone .ly-empty { inset: 0; }
+.shell.is-phone .ly-empty .empty { padding: 24px; gap: 20px; }
+
+/* ── Queue: bottom sheet (handoff 07 Android Queue) ── */
+.shell.is-phone .qp-scrim, .shell.is-phone .qp-scrim.is-over-np { top: 0; bottom: 0; z-index: 44; }
+.shell.is-phone .qp, .shell.is-phone .qp.is-over-np {
+  left: 0; right: 0; top: 50vh; bottom: 0; width: auto; z-index: 45;
+  padding: 12px 16px calc(16px + env(safe-area-inset-bottom)); gap: 16px;
+  border-left: 0; border-top: 1.5px solid rgba(255, 255, 255, .1); border-radius: 24px 24px 0 0;
+  transform: translateY(105%);
+}
+.shell.is-phone .qp.is-open { transform: none; }
+.shell.is-phone .qp { transition: transform var(--dur-panel) var(--ease), top .5s var(--ease), visibility 0s linear var(--dur-panel); }
+.shell.is-phone .qp.is-open { transition: transform .5s var(--ease), top .5s var(--ease), visibility 0s; }
+.shell.is-phone .qp.is-expanded { top: env(safe-area-inset-top, 0px); }
+/* following the finger: no easing */
+.shell.is-phone .qp.is-grabbing, .shell.is-phone .qp-scrim.is-grabbing { transition: none; }
+/* drag handle + header = grab area */
+.shell.is-phone .qp-grab-zone { display: flex; flex-direction: column; gap: 12px; margin: -12px -16px 0; padding: 12px 16px 0; touch-action: none; cursor: grab; user-select: none; }
+.qp-grab { align-self: center; display: flex; align-items: center; justify-content: center; width: 72px; height: 20px; margin: -6px 0 -8px; cursor: grab; }
+.qp-grab > span { width: 36px; height: 4px; border-radius: 4px; background: rgba(255, 255, 255, .25); transition: background .2s, width .3s var(--ease); }
+.qp.is-grabbing .qp-grab > span { background: rgba(255, 255, 255, .6); width: 44px; }
+.shell.is-phone .qp-title { font-size: 26px; }
+.shell.is-phone .qp-kicker { font-size: var(--fs-mono-xs); }
+.shell.is-phone .qp-tool { height: 44px; }
+.shell.is-phone .qp-tool-sq, .shell.is-phone .qp-tool-x { width: 44px; }
+.shell.is-phone .qp-now { height: 60px; padding: 0 10px; }
+.shell.is-phone .qp-row { cursor: pointer; padding: 0 2px 0 0; gap: 10px; }
+.shell.is-phone .qp-grip { display: none; }
+.shell.is-phone .qp-played-n { display: none; }
+.shell.is-phone .qp-act { width: 36px; height: 44px; }
+.shell.is-phone .qp-list { margin-right: -6px; padding-right: 6px; }
+
+/* toasts: full width, one line of text + action (the mono meta is dropped) */
+html[data-phone] .toast { width: calc(100% - 16px); }
+html[data-phone] .toast-text { flex: 1; }
+html[data-phone] .toast-meta { display: none; }

@@ -9,13 +9,17 @@ import { libraryStore, onLibraryUpdated, useLibrary } from '../state/library'
 import { NowPlaying } from '../nowplaying/NowPlaying'
 import { QueuePanel } from '../nowplaying/QueuePanel'
 import { nowPlayingStore, useNowPlayingUi } from '../state/nowPlaying'
-import { onPlayerNotice, playerStore } from '../state/player'
+import { onPlayerNotice, playerStore, usePlayer } from '../state/player'
 import { searchStore } from '../state/search'
 import { sessionStore, useSession } from '../state/session'
 import { PlayerBar } from './PlayerBar'
+import { MiniPlayer, TabBar } from './PhoneBars'
+import { useIsPhone } from '../state/viewport'
+
 import { Sidebar } from './Sidebar'
 import { go, href, navKeyOf, type Route } from './routes'
 import './shell.css'
+import './phone.css'
 
 export function AppShell({ route, children }: { route: Route; children: ReactNode }) {
   const toast = useToast()
@@ -23,6 +27,15 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
   const lib = useLibrary()
   const mainRef = useRef<HTMLElement>(null)
   const np = useNowPlayingUi()
+  const phone = useIsPhone()
+  const hasTrack = usePlayer().index >= 0
+
+  // phone layout flag for CSS that lives outside the shell (toasts)
+  useEffect(() => {
+    if (!phone) return
+    document.documentElement.setAttribute('data-phone', '')
+    return () => document.documentElement.removeAttribute('data-phone')
+  }, [phone])
 
   // Check Drive for a newer library.json whenever we (re)gain a valid session.
   useEffect(() => {
@@ -190,15 +203,22 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
   }, [route.path])
 
   return (
-    <div className="shell">
+    <div className={`shell ${phone ? 'is-phone' : ''} ${phone && hasTrack ? 'has-mini' : ''}`}>
       <Atmosphere fixed seed={17} />
       {/* the full-screen player is modal: everything behind it is inert */}
       <div className="shell-layer" inert={np.open}>
-        <Sidebar active={navKeyOf(route)} />
+        {!phone && <Sidebar active={navKeyOf(route)} />}
         <main className="shell-main" ref={mainRef} id="main" tabIndex={-1}>
           <div className="shell-page">{children}</div>
         </main>
-        <PlayerBar />
+        {phone ? (
+          <>
+            <MiniPlayer />
+            <TabBar active={navKeyOf(route)} />
+          </>
+        ) : (
+          <PlayerBar />
+        )}
       </div>
       <NowPlaying />
       <QueuePanel />

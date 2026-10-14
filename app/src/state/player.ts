@@ -32,6 +32,11 @@ export interface PlayerState {
   volume: number
   muted: boolean
   shuffle: boolean
+  /**
+   * Queue order from before shuffle was turned on, so turning it off can put it back
+   * (null while shuffle is off).
+   */
+  unshuffled: string[] | null
   repeat: RepeatMode
   /** where the current track's audio comes from (not persisted) */
   source: PlaybackSource | null
@@ -56,7 +61,7 @@ export type PlayerNotice =
   | { kind: 'missing'; trackId: string } // track no longer in the catalogue
 
 const KEY = 'pelagic.player.v1'
-type Persisted = Pick<PlayerState, 'queue' | 'index' | 'context' | 'position' | 'volume' | 'muted' | 'shuffle' | 'repeat'>
+type Persisted = Pick<PlayerState, 'queue' | 'index' | 'context' | 'position' | 'volume' | 'muted' | 'shuffle' | 'unshuffled' | 'repeat'>
 
 const DEFAULTS: PlayerState = {
   queue: [],
@@ -68,6 +73,7 @@ const DEFAULTS: PlayerState = {
   volume: 0.8,
   muted: false,
   shuffle: false,
+  unshuffled: null,
   repeat: 'off',
   source: null,
 }
@@ -91,9 +97,9 @@ let persistTimer = 0
 function persist() {
   window.clearTimeout(persistTimer)
   persistTimer = 0
-  const { queue, index, context, position, volume, muted, shuffle, repeat } = state
+  const { queue, index, context, position, volume, muted, shuffle, unshuffled, repeat } = state
   try {
-    localStorage.setItem(KEY, JSON.stringify({ queue, index, context, position, volume, muted, shuffle, repeat } satisfies Persisted))
+    localStorage.setItem(KEY, JSON.stringify({ queue, index, context, position, volume, muted, shuffle, unshuffled, repeat } satisfies Persisted))
   } catch {
     /* ignore */
   }
@@ -106,6 +112,46 @@ function set(patch: Partial<PlayerState>) {
   if (!persistTimer) persistTimer = window.setTimeout(persist, 1000)
 }
 window.addEventListener('pagehide', persist)
+
+function shuffled<T>(list: T[]): T[] {
+  const a = [...list]
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[a[i], a[j]] = [a[j], a[i]]
+  }
+  return a
+}
+
+/**
+ * Shuffle off: put the queue back in its pre-shuffle order, keeping only what's still queued
+ * (removals stick) and the current track playing. Tracks added while shuffled have no original
+ * place, so they go right after the current one.
+ */
+function unshuffledOrder(): Pick<PlayerState, 'queue' | 'index'> | null {
+  const orig = state.unshuffled
+  if (!orig || state.index < 0) return null
+  const cur = state.queue[state.index]
+  const left = new Map<string, number>()
+  state.queue.forEach((id, i) => i !== state.index && left.set(id, (left.get(id) ?? 0) + 1))
+  const out: string[] = []
+  let at = -1
+  for (const id of orig) {
+    if (at < 0 && id === cur) {
+      at = out.length
+      out.push(id)
+    } else if ((left.get(id) ?? 0) > 0) {
+      left.set(id, left.get(id)! - 1)
+      out.push(id)
+    }
+  }
+  if (at < 0) {
+    at = 0
+    out.unshift(cur)
+  }
+  const extras = [...left].flatMap(([id, n]) => Array<string>(n).fill(id))
+  out.splice(at + 1, 0, ...extras)
+  return { queue: out, index: at }
+}
 
 const current = () => (state.index >= 0 ? (state.queue[state.index] ?? null) : null)
 
@@ -148,22 +194,21 @@ export const playerStore = {
     set({ playing: false, position: 0 })
   },
 
-  playQueue(ids: string[], start = 0, context: PlayContext | null = null) {
+  /**
+   * Replace the queue and play from `start`. With shuffle on (or `opts.shuffle`, which turns it on)
+   * the starting track goes first and the rest of the list is shuffled after it.
+   */
+  playQueue(ids: string[], start = 0, context: PlayContext | null = null, opts: { shuffle?: boolean } = {}) {
     if (!ids.length) return
+    const shuffle = state.shuffle || !!opts.shuffle
     let queue = ids
     let index = start
-    if (state.shuffle) {
-      const first = ids[start]
-      const rest = ids.filter((_, i) => i !== start)
-      for (let i = rest.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1))
-        ;[rest[i], rest[j]] = [rest[j], rest[i]]
-      }
-      queue = [first, ...rest]
+    if (shuffle) {
+      queue = [ids[start], ...shuffled(ids.filter((_, i) => i !== start))]
       index = 0
     }
     lastCleared = null
-    set({ queue, context })
+    set({ queue, context, shuffle, unshuffled: shuffle ? ids : null })
     go(index, true)
   },
   toggle() {
@@ -196,8 +241,19 @@ export const playerStore = {
     set({ muted: !state.muted })
     engine?.setVolume(state.volume, state.muted)
   },
+  /**
+   * Shuffle on: the current track moves to the top of the queue and everything else (played and
+   * upcoming) is shuffled after it. Shuffle off: the original order comes back (see unshuffledOrder).
+   */
   toggleShuffle() {
-    set({ shuffle: !state.shuffle })
+    if (!state.shuffle) {
+      if (state.index < 0) return set({ shuffle: true, unshuffled: null })
+      const cur = state.queue[state.index]
+      const others = state.queue.filter((_, i) => i !== state.index)
+      set({ shuffle: true, unshuffled: state.queue, queue: [cur, ...shuffled(others)], index: 0 })
+    } else {
+      set({ shuffle: false, unshuffled: null, ...unshuffledOrder() })
+    }
   },
   cycleRepeat() {
     set({ repeat: state.repeat === 'off' ? 'all' : state.repeat === 'all' ? 'one' : 'off' })
@@ -267,17 +323,6 @@ export const playerStore = {
     if (!ids.length) return
     if (state.index < 0) return playerStore.playQueue(ids, 0, { kind: 'queue', label: 'Queue' })
     set({ queue: [...state.queue, ...ids] })
-  },
-  /** Shuffle the upcoming part once (the queue panel's shuffle button). */
-  shuffleUpcoming() {
-    if (state.index < 0) return
-    const head = state.queue.slice(0, state.index + 1)
-    const rest = state.queue.slice(state.index + 1)
-    for (let i = rest.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1))
-      ;[rest[i], rest[j]] = [rest[j], rest[i]]
-    }
-    set({ queue: [...head, ...rest] })
   },
 }
 

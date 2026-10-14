@@ -10,7 +10,7 @@
  */
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { Atmosphere } from '../components/Atmosphere'
-import { IconButton, QualityBadge, Slider, Waveform, formatTime, qualityKind, qualityLabel, seedFrom } from '../components/ui'
+import { IconButton, QualityBadge, SeekBar, Slider, Waveform, formatTime, qualityKind, qualityLabel, seedFrom } from '../components/ui'
 import { Icon } from '../design/icons'
 import { rgba, sceneBackground, useArtTint } from '../design/tint'
 import { useCover } from '../lib/covers'
@@ -18,6 +18,7 @@ import { useLibrary } from '../state/library'
 import { useMotion } from '../state/motion'
 import { nowPlayingStore, useNowPlayingUi } from '../state/nowPlaying'
 import { playerStore } from '../state/player'
+import { isTouch, useIsPhone } from '../state/viewport'
 import { albumHref, artistHref } from '../shell/routes'
 import { Lyrics } from './Lyrics'
 import { NpLink, Transport, ViewButtons, contextLine, useCurrent } from './parts'
@@ -59,7 +60,8 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
   // focus in on open, back to whatever opened it on close
   useEffect(() => {
     const prev = document.activeElement as HTMLElement | null
-    closeRef.current?.focus({ preventScroll: true })
+    // touch screens: no programmatic focus (it would draw a focus ring on the close button)
+    if (!isTouch()) closeRef.current?.focus({ preventScroll: true })
     return () => prev?.focus?.({ preventScroll: true })
   }, [])
 
@@ -75,6 +77,7 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
   }, [track, closing])
 
   const ly = ui.view === 'lyrics'
+  const phone = useIsPhone()
   // mount the lyrics column the first time it's shown, then keep it (so it can fade out)
   const [lyMounted, setLyMounted] = useState(ly)
   if (ly && !lyMounted) setLyMounted(true)
@@ -105,7 +108,7 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
   const trackNo = track?.track ? `TRACK ${pad2(track.track)}${album?.trackCount ? `/${pad2(album.trackCount)}` : ''}` : null
 
   return (
-    <div className={`np pg-anim ${closing ? 'is-closing' : ''} ${ly ? 'is-lyrics' : ''}`} style={scene} role="dialog" aria-modal="true" aria-label="Now playing">
+    <div className={`np pg-anim ${closing ? 'is-closing' : ''} ${ly ? 'is-lyrics' : ''} ${phone ? 'is-phone' : ''}`} style={scene} role="dialog" aria-modal="true" aria-label="Now playing">
       <Atmosphere seed={41} />
 
       <header className="np-head">
@@ -197,43 +200,62 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
 
           {/* ── Lyrics view ── */}
           <section className="np-ly pg-anim" aria-hidden={!ly} inert={!ly}>
-            <div className="np-ly-side">
-              {cover ? <img className="np-ly-cover" src={cover} alt="" /> : <span className="np-ly-cover np-cover-empty" aria-hidden />}
-              <div className="np-ly-text">
-                <div className="np-ly-title" title={track.title}>
-                  {track.title}
-                </div>
-                <div className="np-ly-sub">
-                  <NpLink href={artistHref(track.artistId)}>{track.artist}</NpLink>
-                  {album && (
-                    <>
-                      {' · '}
-                      <NpLink href={albumHref(album.id)}>{album.title}</NpLink>
-                    </>
-                  )}
+            {phone ? (
+              <div className="npp-strip">
+                {cover ? <img className="npp-strip-cover" src={cover} alt="" /> : <span className="npp-strip-cover np-cover-empty" aria-hidden />}
+                <div className="npp-strip-text">
+                  <div className="npp-strip-title">{track.title}</div>
+                  <div className="npp-strip-sub">{track.artist}</div>
                 </div>
               </div>
-              <div className="np-ly-seek">
-                <Slider
-                  label="Seek"
-                  value={frac}
-                  knob={7}
-                  height={13}
-                  onCommit={(v) => playerStore.seek(v * duration)}
-                  valueText={(v) => `${formatTime(v * duration)} of ${formatTime(duration)}`}
-                  step={duration > 0 ? 5 / duration : 0.02}
-                />
-                <div className="np-times t-mono">
-                  <span className="is-now">{formatTime(p.position)}</span>
-                  <span>{formatTime(duration)}</span>
+            ) : (
+              <div className="np-ly-side">
+                {cover ? <img className="np-ly-cover" src={cover} alt="" /> : <span className="np-ly-cover np-cover-empty" aria-hidden />}
+                <div className="np-ly-text">
+                  <div className="np-ly-title" title={track.title}>
+                    {track.title}
+                  </div>
+                  <div className="np-ly-sub">
+                    <NpLink href={artistHref(track.artistId)}>{track.artist}</NpLink>
+                    {album && (
+                      <>
+                        {' · '}
+                        <NpLink href={albumHref(album.id)}>{album.title}</NpLink>
+                      </>
+                    )}
+                  </div>
+                </div>
+                <div className="np-ly-seek">
+                  <Slider
+                    label="Seek"
+                    value={frac}
+                    knob={7}
+                    height={13}
+                    onCommit={(v) => playerStore.seek(v * duration)}
+                    valueText={(v) => `${formatTime(v * duration)} of ${formatTime(duration)}`}
+                    step={duration > 0 ? 5 / duration : 0.02}
+                  />
+                  <div className="np-times t-mono">
+                    <span className="is-now">{formatTime(p.position)}</span>
+                    <span>{formatTime(duration)}</span>
+                  </div>
+                </div>
+                <Transport compact />
+                <div className="np-actions">
+                  <ViewButtons size="sm" />
                 </div>
               </div>
-              <Transport compact />
-              <div className="np-actions">
-                <ViewButtons size="sm" />
-              </div>
-            </div>
+            )}
             <div className="np-ly-col">{lyMounted && <Lyrics track={track} position={p.position} playing={p.playing && ly} />}</div>
+            {phone && (
+              <div className="npp-bottom">
+                <SeekBar position={p.position} duration={duration} onSeek={(sec) => playerStore.seek(sec)} />
+                <Transport compact />
+                <div className="np-actions">
+                  <ViewButtons size="sm" />
+                </div>
+              </div>
+            )}
           </section>
         </>
       )}

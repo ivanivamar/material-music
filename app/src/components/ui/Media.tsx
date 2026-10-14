@@ -2,6 +2,7 @@
 import type { MouseEvent, ReactNode } from 'react'
 import { Icon } from '../../design/icons'
 import { DownloadIcon, Eq, type DownloadState } from './Status'
+import { isTouch } from '../../state/viewport'
 
 /* ── Track row ──────────────────────────────────────── */
 
@@ -27,6 +28,9 @@ export function TrackRow({ n, title, subtitle, duration, label, playing, downloa
     <div
       className={['trow', playing && 'is-playing', className].filter(Boolean).join(' ')}
       onDoubleClick={onPlay}
+      onClick={(e) => {
+        if (isTouch() && !(e.target as HTMLElement).closest('a, button')) onPlay?.()
+      }}
       onContextMenu={(e) => {
         if (onMore) {
           e.preventDefault()

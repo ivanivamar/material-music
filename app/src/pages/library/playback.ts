@@ -13,9 +13,8 @@ export function artistTrackIds(c: Catalogue, artistId: string): string[] {
 /** Play a list from `start`; `shuffle` turns shuffle on and starts on a random track. */
 export function playList(ids: string[], context: PlayContext, opts: { start?: number; shuffle?: boolean } = {}) {
   if (!ids.length) return
-  if (opts.shuffle && !playerStore.get().shuffle) playerStore.toggleShuffle()
   const start = opts.shuffle ? Math.floor(Math.random() * ids.length) : (opts.start ?? 0)
-  playerStore.playQueue(ids, start, context)
+  playerStore.playQueue(ids, start, context, { shuffle: opts.shuffle })
 }
 
 /** Is the player currently playing from this context (album / artist / library songs)? */

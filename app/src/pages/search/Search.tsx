@@ -18,6 +18,7 @@ import { playerStore } from '../../state/player'
 import { highlight, search, searchStore, suggest, useSearch, type SearchFilter, type SearchResults, type TopHit } from '../../state/search'
 import { albumHref, artistHref, go } from '../../shell/routes'
 import { albumInfos, artistInfos, fmtN, fmtTotal, plural, RELEASE_LABEL } from '../../state/views'
+import { isTouch } from '../../state/viewport'
 import { ArtistAvatar, LibAlbumCard, SectionHead } from '../library/common'
 import { useWindow } from '../library/useWindow'
 import { albumTrackIds, artistTrackIds, playList, useContextState, useNowPlaying, usePlayingAlbumId } from '../library/playback'
@@ -433,6 +434,9 @@ function SongRow({ c, t, tokens, onPlay, style }: { c: Catalogue; t: Track; toke
       tabIndex={0}
       data-nav
       onDoubleClick={onPlay}
+      onClick={(e) => {
+        if (isTouch() && !(e.target as HTMLElement).closest('a, button')) onPlay()
+      }}
       onKeyDown={(e) => {
         if (e.key === 'Enter' && e.target === e.currentTarget) onPlay()
       }}

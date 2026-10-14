@@ -2,6 +2,7 @@
  * Library (handoff 06 Desktop Library): header with counts, Artists / Albums / Songs chips,
  * sort row, then the tab's view. The tab lives in the URL (#/library/albums) and is remembered.
  */
+import { isTouch } from '../../state/viewport'
 import { useEffect, useMemo, useRef } from 'react'
 import { Button, Chip, EmptyState, Eq } from '../../components/ui'
 import { Icon } from '../../design/icons'
@@ -265,7 +266,15 @@ function SongsView({ c }: { c: Catalogue }) {
 function SongRow({ c, t, n, top, playing, current, onPlay }: { c: Catalogue; t: Track; n: number; top: number; playing: boolean; current: boolean; onPlay: () => void }) {
   const album = c.albums[t.albumId]
   return (
-    <div className={`trow songs-row ${current ? 'is-playing' : ''}`} style={{ transform: `translateY(${top}px)` }} onDoubleClick={onPlay} role="row">
+    <div
+      className={`trow songs-row ${current ? 'is-playing' : ''}`}
+      style={{ transform: `translateY(${top}px)` }}
+      onDoubleClick={onPlay}
+      onClick={(e) => {
+        if (isTouch() && !(e.target as HTMLElement).closest('a, button')) onPlay()
+      }}
+      role="row"
+    >
       <div className="trow-num">
         {playing ? <Eq /> : <span className="trow-n">{fmtN(n)}</span>}
         <button type="button" className="trow-play" onClick={onPlay} aria-label={`Play ${t.title}`}>

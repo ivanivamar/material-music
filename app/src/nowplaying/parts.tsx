@@ -57,38 +57,34 @@ export function onPlayPause() {
   playerStore.toggle()
 }
 
-/** Shuffle · prev · play · next · repeat (handoff: 40px gaps, 76px play). `compact` = lyrics view (no modes, 54px). */
+/** Shuffle · prev · play · next · repeat (handoff: 40px gaps, 76px play). `compact` = lyrics view (54px play, tighter gaps; shuffle and repeat stay). */
 export function Transport({ compact }: { compact?: boolean }) {
   const p = usePlayer()
   const state = p.buffering ? 'buffering' : p.playing ? 'playing' : 'paused'
   const repeatLabel = p.repeat === 'off' ? 'Repeat' : p.repeat === 'all' ? 'Repeat all' : 'Repeat one'
   return (
     <div className={`np-transport ${compact ? 'is-compact' : ''}`}>
-      {!compact && (
-        <IconButton
-          icon="shuffle"
-          label={p.shuffle ? 'Shuffle on' : 'Shuffle'}
-          bare
-          pressed={p.shuffle}
-          className={`np-mode ${p.shuffle ? 'is-on' : ''}`}
-          onClick={() => playerStore.toggleShuffle()}
-        />
-      )}
+      <IconButton
+        icon="shuffle"
+        label={p.shuffle ? 'Shuffle on' : 'Shuffle'}
+        bare
+        pressed={p.shuffle}
+        className={`np-mode ${p.shuffle ? 'is-on' : ''}`}
+        onClick={() => playerStore.toggleShuffle()}
+      />
       <IconButton icon="prev" label="Previous" bare className="np-skip" onClick={() => playerStore.prev()} />
       <span className="np-play">
         <PlayButton size={compact ? 54 : 76} state={state} onClick={onPlayPause} />
       </span>
       <IconButton icon="next" label="Next" bare className="np-skip" onClick={() => playerStore.next()} />
-      {!compact && (
-        <span className="np-repeat-wrap">
-          <IconButton icon="repeat" label={repeatLabel} bare pressed={p.repeat !== 'off'} className={`np-mode ${p.repeat !== 'off' ? 'is-on' : ''}`} onClick={() => playerStore.cycleRepeat()} />
-          {p.repeat === 'one' && (
-            <span className="np-repeat-one" aria-hidden>
-              1
-            </span>
-          )}
-        </span>
-      )}
+      <span className="np-repeat-wrap">
+        <IconButton icon="repeat" label={repeatLabel} bare pressed={p.repeat !== 'off'} className={`np-mode ${p.repeat !== 'off' ? 'is-on' : ''}`} onClick={() => playerStore.cycleRepeat()} />
+        {p.repeat === 'one' && (
+          <span className="np-repeat-one" aria-hidden>
+            1
+          </span>
+        )}
+      </span>
     </div>
   )
 }

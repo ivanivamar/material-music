@@ -113,3 +113,18 @@ html[data-qp] .toasts.toasts-shell { right: var(--panel-w); }
 .qp-row.is-played { cursor: pointer; opacity: .55; }
 .qp-row.is-played:hover, .qp-row.is-played:focus-visible { opacity: 1; }
 .qp-played-n { font-size: var(--fs-mono-sm); letter-spacing: .04em; color: var(--ink-tertiary); }
+
+/* played rows are draggable too: the number turns into the grip on hover */
+.qp-grip-ic { display: none; }
+.qp-row.is-played:hover .qp-played-n { display: none; }
+.qp-row.is-played:hover .qp-grip-ic { display: inline-flex; }
+.qp-row.is-played { cursor: grab; }
+.qp.is-dragging .qp-row.is-played { opacity: .8; }
+.qp-now { position: relative; }
+
+/* shuffle on: lit like the player's mode buttons */
+.qp-tool.is-on, .qp-tool.is-on:hover:not(:disabled) {
+  color: #fff; background: rgba(255, 255, 255, .14); border-color: rgba(255, 255, 255, .3);
+  box-shadow: 0 0 14px -2px rgba(255, 255, 255, .28);
+}
+.qp-tool.is-on svg { filter: drop-shadow(0 0 4px rgba(255, 255, 255, .5)); }

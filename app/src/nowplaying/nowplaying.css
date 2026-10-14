@@ -76,7 +76,8 @@ a.np-from-l:hover { text-decoration: underline; text-decoration-color: rgba(255,
   background: #fff; color: var(--bg-1); box-shadow: 0 0 0 2px rgba(11, 11, 12, .9);
   font-family: var(--font-mono); font-size: 8px; font-weight: 500; line-height: 1; pointer-events: none;
 }
-.np-transport.is-compact { gap: 26px; }
+.np-transport.is-compact { gap: 0; justify-content: space-between; width: 272px; }
+.np-transport.is-compact .ibtn { margin: 0; width: 40px; height: 40px; font-size: 20px; }
 .np-transport.is-compact .ibtn.np-skip { font-size: 22px; }
 
 /* Lyrics / Queue buttons + volume */
