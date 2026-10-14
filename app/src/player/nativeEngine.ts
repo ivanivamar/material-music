@@ -31,8 +31,9 @@ function toItem(id: string): NativeQueueItem {
   const file = track?.mobile?.id ? track.mobile : track?.flac
   return {
     id,
-    // a track gone from the catalogue gets a URL that fails, so the native player skips it
-    uri: media(file?.id || 'missing'),
+    // a track gone from the catalogue gets a URL that fails, so the native player skips it.
+    // #size: Drive sends no Content-Length; the native side needs the size to seek (KnownLengthDataSource)
+    uri: media(file?.id || 'missing') + (file?.size ? `#size=${file.size}` : ''),
     title: track?.title ?? 'Unknown track',
     artist: track?.artist ?? '',
     album: album?.title ?? '',

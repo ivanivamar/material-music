@@ -75,7 +75,9 @@ public class PelagicPlaybackService extends MediaSessionService {
         });
 
         player = new ExoPlayer.Builder(this)
-            .setMediaSourceFactory(new DefaultMediaSourceFactory(drive))
+            // KnownLengthDataSource: Drive sends no Content-Length; without the file size the Opus /
+            // FLAC extractors can't seek and every seek would restart the track
+            .setMediaSourceFactory(new DefaultMediaSourceFactory(new KnownLengthDataSource.Factory(drive)))
             .setAudioAttributes(new AudioAttributes.Builder()
                 .setUsage(C.USAGE_MEDIA)
                 .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
