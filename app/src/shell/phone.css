@@ -224,6 +224,18 @@ html[data-phone][data-qp] .toasts.toasts-shell { right: 0; }
 .shell.is-phone .ly-list { left: 28px; right: 28px; top: 40%; }
 .shell.is-phone .ly-line { font-size: 24px; padding: 9px 0; line-height: 1.25; }
 .shell.is-phone .ly-line.is-gap { font-size: 18px; }
+/* Android WebView flickered on every line change. Three things repainted / re-laid out the moving
+   list at once; on the phone none of them happen:
+   · the mask-image fade on the viewport: the transformed list under a mask is re-rasterised into the
+     mask surface while it glides, and the WebView showed a blank frame now and then. The per-line
+     distance fade (Lyrics.tsx lineOpacity) already dims the edges, so the viewport just clips.
+   · font-weight 300 → 400 on the sung line: wider glyphs can re-wrap the line, the list's height
+     changes and the glide target is re-measured mid-transition. Same weight for every line.
+   · the 28px text-shadow glow animated over 1.1 s (a blur repaint per frame): a small static glow,
+     only opacity and colour fade. */
+.shell.is-phone .ly-viewport { -webkit-mask-image: none; mask-image: none; }
+.shell.is-phone .ly-line { font-weight: 400; transition: opacity 1.1s var(--ease), color 1.1s var(--ease); }
+.shell.is-phone .ly-line.is-on { text-shadow: 0 0 12px rgba(255, 255, 255, .35); }
 .shell.is-phone .ly-meta { display: none; }
 .shell.is-phone .ly-plain { padding: 12vh 28px 20vh; }
 .shell.is-phone .ly-plain p { font-size: 20px; }
