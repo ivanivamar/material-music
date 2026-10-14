@@ -141,8 +141,7 @@ public class PelagicPlayerPlugin extends Plugin {
     /** { email, token, expiresAt } — the signed-in account and its current Drive token. */
     @PluginMethod
     public void setAuth(PluginCall call) {
-        Long expiresAt = call.getLong("expiresAt", 0L);
-        DriveAuth.setFromJs(getContext(), call.getString("email"), call.getString("token"), expiresAt != null ? expiresAt : 0L);
+        DriveAuth.setFromJs(getContext(), call.getString("email"), call.getString("token"), num(call, "expiresAt", 0));
         call.resolve();
     }
 
@@ -173,8 +172,8 @@ public class PelagicPlayerPlugin extends Plugin {
             call.reject("Bad queue", e);
             return;
         }
-        int index = call.getInt("index", 0);
-        long positionMs = call.getLong("positionMs", 0L);
+        int index = (int) num(call, "index", 0);
+        long positionMs = num(call, "positionMs", 0);
         boolean play = Boolean.TRUE.equals(call.getBoolean("play", false));
         boolean keepCurrent = Boolean.TRUE.equals(call.getBoolean("keepCurrent", false));
         String repeat = call.getString("repeat", "off");
@@ -227,7 +226,7 @@ public class PelagicPlayerPlugin extends Plugin {
     /** { positionMs } */
     @PluginMethod
     public void seek(PluginCall call) {
-        long positionMs = call.getLong("positionMs", 0L);
+        long positionMs = num(call, "positionMs", 0);
         withController(call, c -> c.seekTo(positionMs));
     }
 
@@ -241,8 +240,7 @@ public class PelagicPlayerPlugin extends Plugin {
     /** { volume: 0..1 } */
     @PluginMethod
     public void setVolume(PluginCall call) {
-        Double v = call.getDouble("volume", 1.0);
-        float volume = v != null ? (float) Math.max(0, Math.min(1, v)) : 1f;
+        float volume = (float) Math.max(0, Math.min(1, call.getData().optDouble("volume", 1.0)));
         withController(call, c -> c.setVolume(volume));
     }
 
@@ -272,6 +270,15 @@ public class PelagicPlayerPlugin extends Plugin {
                 connect();
             }
         });
+    }
+
+    /**
+     * A number argument. Not call.getLong(): Capacitor's getLong only accepts values that arrive as
+     * Java Longs, and anything below 2^31 (e.g. a seek to 95 000 ms) arrives as an Integer, so it
+     * silently returned the default — every seek went to 0:00.
+     */
+    private static long num(PluginCall call, String name, long fallback) {
+        return call.getData().optLong(name, fallback);
     }
 
     private static MediaItem toItem(JSONObject o) throws Exception {
