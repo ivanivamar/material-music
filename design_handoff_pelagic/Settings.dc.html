@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://api.fontshare.com/v2/css?f[]=general-sans@300,400,500,600&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#030303;-webkit-font-smoothing:antialiased}
+a{color:#EDEDED;text-decoration:underline;text-underline-offset:3px}a:hover{color:#FFFFFF}
+@keyframes pg-sway{0%{transform:translate3d(0,-40px,0);opacity:0}10%{opacity:1}50%{transform:translate3d(22px,110px,0)}90%{opacity:1}100%{transform:translate3d(-8px,260px,0);opacity:0}}
+@media (prefers-reduced-motion: reduce){.pg-anim{animation:none !important}.pg-snow{display:none !important}}
+</style>
+<script src="./pelagic-kit.js"></script>
+</helmet>
+<div style="font-family:'General Sans',sans-serif; color:#EDEDED; padding:72px; display:flex; flex-direction:column; gap:96px; background:#030303; min-width:1600px;">
+
+<div style="display:flex; flex-direction:column; gap:14px; max-width:900px;">
+  <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.16em; color:#55555A;">PELAGIC · SETTINGS</div>
+  <div style="font-size:44px; font-weight:400; letter-spacing:-0.02em;">Settings</div>
+  <div style="font-size:16px; line-height:1.55; color:#8A8A8E; text-wrap:pretty;">Everything saves the moment it changes. Desktop and Android share one settings store, so changing a control on one frame updates the other. The Atmosphere controls change the background you’re looking at.</div>
+</div>
+
+<!-- 01 DESKTOP -->
+<div style="display:flex; flex-direction:column; gap:20px;">
+  <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:#55555A;">01 / Desktop · clickable</div>
+  <div data-screen-label="Desktop Settings" style="width:1440px; height:900px; border-radius:16px; overflow:hidden; position:relative; background:#0B0B0C; border:1.5px solid rgba(255,255,255,0.07);">
+    {{ water }}
+    <div style="position:absolute; left:0; top:0; bottom:84px; width:232px; padding:30px 14px; box-sizing:border-box; display:flex; flex-direction:column; gap:36px; background:rgba(11,11,12,0.7); border-right:1px solid rgba(255,255,255,0.06);">
+      <div style="padding:0 14px; display:flex; align-items:center; gap:12px;"><div style="position:relative; width:22px; height:22px;"><div style="position:absolute; inset:0; border-radius:50%; border:1.5px solid rgba(255,255,255,0.9); box-sizing:border-box; clip-path:inset(0 0 50% 0);"></div><div style="position:absolute; inset:0; border-radius:50%; border:1.5px solid rgba(255,255,255,0.22); box-sizing:border-box; clip-path:inset(50% 0 0 0);"></div><div style="position:absolute; left:-5px; right:-5px; top:10.5px; height:1px; background:#FFFFFF;"></div></div><div style="font-size:14px; font-weight:500; letter-spacing:0.42em;">PELAGIC</div></div>
+      <div style="display:flex; flex-direction:column; gap:4px;"><sc-for list="{{ nav }}" as="n" hint-placeholder-count="6"><div style="display:flex; align-items:center; gap:12px; height:44px; padding:4px 12px 4px 4px; box-sizing:border-box; border-radius:12px; color:#8A8A8E; font-size:14px; font-weight:500;"><span style="width:36px; height:36px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:20px;">{{ n.icon }}</span>{{ n.label }}</div></sc-for></div>
+      <div style="flex:1;"></div>
+      <div style="display:flex; align-items:center; gap:12px; height:44px; padding:4px 12px 4px 4px; box-sizing:border-box; border-radius:12px; background:#EDEDED; color:#0B0B0C; font-size:14px; font-weight:500;"><span style="width:36px; height:36px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:20px; background:#0B0B0C; color:#FFFFFF;">{{ ic.gear }}</span>Settings</div>
+    </div>
+
+    <div ref="{{ scRef }}" onScroll="{{ onScroll }}" style="position:absolute; left:232px; right:0; top:0; bottom:84px; overflow-y:auto; scrollbar-width:none;">
+      <div style="padding:40px 56px 120px; display:grid; grid-template-columns:200px minmax(0,720px); gap:72px;">
+        <div style="position:sticky; top:40px; align-self:start; display:flex; flex-direction:column; gap:28px;">
+          <div style="display:flex; flex-direction:column; gap:10px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.16em; color:#55555A;">SAVED AUTOMATICALLY</div><div style="font-size:40px; font-weight:400; letter-spacing:-0.02em;">Settings</div></div>
+          <div style="display:flex; flex-direction:column; gap:2px;"><sc-for list="{{ subnav }}" as="s" hint-placeholder-count="8"><div onClick="{{ s.go }}" style="display:flex; align-items:center; gap:12px; height:36px; font-size:14px; color:{{ s.fg }}; cursor:pointer; transition:color .4s;" style-hover="color:#EDEDED;"><span style="width:5px; height:5px; border-radius:50%; background:#FFFFFF; box-shadow:0 0 8px 2px rgba(255,255,255,0.55); opacity:{{ s.dot }}; transition:opacity .4s;"></span>{{ s.label }}</div></sc-for></div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:56px;">
+          <sc-for list="{{ secD }}" as="s" hint-placeholder-count="4">
+            <div ref="{{ s.ref }}" style="display:flex; flex-direction:column;">
+              <div style="display:flex; align-items:baseline; justify-content:space-between; padding-bottom:14px; border-bottom:1px solid rgba(255,255,255,0.1);"><div style="font-size:22px; letter-spacing:-0.01em;">{{ s.label }}</div><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.16em; color:#55555A;">{{ s.note }}</div></div>
+              <sc-for list="{{ s.rows }}" as="r" hint-placeholder-count="3">
+                <div style="display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:12px 24px; min-height:68px; padding:14px 0; box-sizing:border-box; border-bottom:1px solid rgba(255,255,255,0.06);">
+                  <div style="display:flex; align-items:center; gap:14px; min-width:0;">
+                    <sc-if value="{{ r.hasTile }}"><div style="width:42px; height:42px; flex:none; border-radius:{{ r.tileR }}; background:#1A1A1D; display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Mono',monospace; font-size:11px; font-size:{{ r.tileFs }};">{{ r.tile }}</div></sc-if>
+                    <div style="display:flex; flex-direction:column; gap:5px; min-width:0;"><div style="font-size:15px; color:{{ r.lc }};">{{ r.label }}</div><sc-if value="{{ r.hasHint }}"><div style="display:flex; align-items:center; gap:8px; font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.12em; color:#55555A;"><sc-if value="{{ r.hasDot }}"><span style="width:6px; height:6px; border-radius:50%; background:{{ r.dotC }}; box-shadow:{{ r.dotG }};"></span></sc-if>{{ r.hint }}</div></sc-if></div>
+                  </div>
+                  <div style="display:flex; align-items:center; gap:12px; justify-self:end;">
+                    <sc-if value="{{ r.isToggle }}"><div onClick="{{ r.fn }}" style="width:40px; height:22px; border-radius:999px; border:1.5px solid {{ r.tBd }}; position:relative; box-sizing:border-box; cursor:pointer; transition:border-color .3s;"><div style="position:absolute; left:{{ r.tX }}px; top:2.5px; width:14px; height:14px; border-radius:50%; background:{{ r.tKnob }}; box-shadow:{{ r.tGlow }}; transition:left .3s cubic-bezier(.16,1,.3,1), background .3s;"></div></div></sc-if>
+                    <sc-if value="{{ r.isSeg }}"><div style="display:flex; border:1.5px solid rgba(255,255,255,0.12); border-radius:999px; padding:3px;"><sc-for list="{{ r.opts }}" as="o" hint-placeholder-count="3"><div onClick="{{ o.fn }}" style="height:28px; padding:0 14px; border-radius:999px; display:flex; align-items:center; font-size:13px; font-weight:{{ o.fw }}; background:{{ o.bg }}; box-shadow:{{ o.sh }}; color:{{ o.fg }}; cursor:pointer; transition:background .3s, color .3s, box-shadow .3s; white-space:nowrap;">{{ o.l }}</div></sc-for></div></sc-if>
+                    <sc-if value="{{ r.isSlider }}"><div style="display:flex; align-items:center; gap:14px;"><div onPointerDown="{{ r.pd }}" onPointerMove="{{ r.pm }}" onPointerUp="{{ r.pu }}" style="position:relative; width:200px; height:24px; cursor:pointer; touch-action:none;"><div style="position:absolute; left:0; right:0; top:11.5px; height:1px; background:rgba(255,255,255,0.18);"></div><div style="position:absolute; left:0; top:11.5px; height:1px; width:{{ r.pct }}%; background:#FFFFFF;"></div><div style="position:absolute; left:{{ r.pct }}%; top:6px; width:12px; height:12px; margin-left:-6px; border-radius:50%; background:#FFFFFF; box-shadow:0 0 10px 2px rgba(255,255,255,0.5);"></div></div><div style="width:44px; text-align:right; font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.1em;">{{ r.val }}</div></div></sc-if>
+                    <sc-if value="{{ r.isValue }}"><div onClick="{{ r.fn }}" style="display:flex; align-items:center; gap:8px; font-size:14px; color:#8A8A8E; cursor:pointer;" style-hover="color:#EDEDED;">{{ r.value }}<span style="font-size:16px;">{{ ic.chevR }}</span></div></sc-if>
+                    <sc-if value="{{ r.isAction }}"><div onClick="{{ r.fn }}" style="height:38px; padding:0 16px; border-radius:12px; display:flex; align-items:center; gap:8px; font-size:14px; font-weight:500; border:1.5px solid {{ r.aBd }}; color:{{ r.aFg }}; box-sizing:border-box; cursor:pointer; opacity:{{ r.aOp }};" style-hover="background:#1A1A1D;">{{ r.action }}</div></sc-if>
+                  </div>
+                  <sc-if value="{{ r.isStorage }}"><div style="grid-column:1 / -1; display:flex; flex-direction:column; gap:10px; padding-top:4px;"><div style="height:6px; border-radius:999px; background:#121214; overflow:hidden; display:flex;"><div style="width:{{ r.sPel }}%; background:#FFFFFF; box-shadow:0 0 8px rgba(255,255,255,0.7); transition:width .9s cubic-bezier(.16,1,.3,1);"></div><div style="width:41%; background:#3A3A3E;"></div></div><div style="display:flex; gap:24px; font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.14em; color:#8A8A8E;"><span>{{ r.sLine }}</span><span>OTHER 13.1 GB</span><span>FREE 18.3 GB OF 32 GB</span></div></div></sc-if>
+                  <sc-if value="{{ r.isProg }}"><div style="grid-column:1 / -1; position:relative; height:1px; background:rgba(255,255,255,0.1);"><div style="position:absolute; left:0; top:0; height:1px; width:{{ r.prog }}%; background:#FFFFFF; box-shadow:0 0 6px rgba(255,255,255,0.7);"></div></div></sc-if>
+                  <sc-if value="{{ r.confirm }}"><div style="grid-column:1 / -1; display:flex; align-items:center; gap:14px; padding:14px 16px; border-radius:12px; border:1.5px solid rgba(230,150,140,0.35); background:rgba(230,150,140,0.04);"><span style="font-size:20px; color:rgb(230,150,140);">{{ ic.alert }}</span><span style="flex:1; font-size:14px;">{{ r.confText }}</span><div onClick="{{ cancel }}" style="height:36px; padding:0 14px; border-radius:12px; display:flex; align-items:center; font-size:14px; color:#BDBDBD; cursor:pointer;">Cancel</div><div onClick="{{ r.confFn }}" style="height:36px; padding:0 14px; border-radius:12px; display:flex; align-items:center; font-size:14px; font-weight:500; background:rgb(230,150,140); color:#0B0B0C; cursor:pointer;">{{ r.confBtn }}</div></div></sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+
+    <div style="position:absolute; left:0; right:0; bottom:0; height:84px; display:grid; grid-template-columns:minmax(0,1fr) 560px minmax(0,1fr); align-items:center; padding:0 20px; gap:24px; background:#0B0B0C; border-top:1px solid rgba(255,255,255,0.08);">
+      <div style="display:flex; align-items:center; gap:14px;"><img src="./art/spiritbox-tsunami-sea.jpg" alt="" style="width:52px; height:52px; border-radius:8px; object-fit:cover;"><div style="display:flex; flex-direction:column; gap:3px;"><div style="font-size:15px; font-weight:500;">Black Rainbow</div><div style="font-size:13px; color:#8A8A8E;">Spiritbox</div></div></div>
+      <div style="display:flex; flex-direction:column; gap:8px; align-items:center;"><div style="display:flex; align-items:center; gap:24px; font-size:19px; color:#8A8A8E;"><span>{{ ic.shuffle }}</span><span style="color:#EDEDED;">{{ ic.prev }}</span><div style="width:38px; height:38px; border-radius:50%; background:#EDEDED; color:#0B0B0C; display:flex; align-items:center; justify-content:center; font-size:17px;">{{ ic.pauseF }}</div><span style="color:#EDEDED;">{{ ic.next }}</span><span>{{ ic.repeat }}</span></div><div style="display:flex; align-items:center; gap:12px; width:100%;"><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:#8A8A8E;">01:36</div><div style="position:relative; flex:1; height:9px;"><div style="position:absolute; left:0; right:0; top:4px; height:1px; background:rgba(255,255,255,0.18);"></div><div style="position:absolute; left:0; width:38%; top:4px; height:1px; background:#FFFFFF;"></div></div><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:#8A8A8E;">03:43</div></div></div>
+      <div style="display:flex; align-items:center; justify-content:flex-end; gap:18px; font-size:18px; color:#8A8A8E;"><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.12em; padding:4px 7px; border-radius:6px; border:1.5px solid {{ qBd }}; background:{{ qBg }}; color:{{ qFg }};">{{ qLabel }}</div><span>{{ ic.lyrics }}</span><span>{{ ic.queue }}</span><span>{{ ic.volume }}</span></div>
+    </div>
+    <div style="position:absolute; left:232px; right:0; bottom:108px; display:flex; justify-content:center; pointer-events:none;"><div style="display:flex; align-items:center; gap:14px; padding:12px 16px; border-radius:14px; background:#1A1A1D; border:1.5px solid rgba(255,255,255,0.1); font-size:14px; box-shadow:0 18px 40px -14px rgba(0,0,0,0.7); opacity:{{ tOp }}; transform:translateY({{ tY }}px); transition:{{ tTr }};"><span style="font-size:21px;">{{ ic.check }}</span>{{ tText }}</div></div>
+  </div>
+</div>
+
+<!-- 02 ANDROID -->
+<div style="display:flex; flex-direction:column; gap:20px;">
+  <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:#55555A;">02 / Android · clickable · shares state with desktop</div>
+  <div data-screen-label="Android Settings" style="width:412px; height:915px; border-radius:32px; overflow:hidden; position:relative; background:#0B0B0C; border:1.5px solid rgba(255,255,255,0.09);">
+    {{ water }}
+    <div style="position:absolute; left:0; right:0; top:0; height:36px; display:flex; align-items:center; justify-content:space-between; padding:0 24px; font-family:'IBM Plex Mono',monospace; font-size:12px; z-index:2;"><span>21:47</span><span style="display:flex; gap:6px; align-items:center;"><span style="width:14px; height:9px; border:1.5px solid #EDEDED; border-radius:3px;"></span><span style="width:5px; height:5px; border-radius:50%; background:#EDEDED;"></span></span></div>
+    <div style="position:absolute; left:0; right:0; top:36px; height:64px; display:flex; align-items:center; gap:8px; padding:0 12px; background:rgba(11,11,12,0.85); border-bottom:1px solid rgba(255,255,255,0.06); z-index:2;"><div style="width:44px; height:44px; display:flex; align-items:center; justify-content:center; font-size:22px;">{{ ic.chevL }}</div><div style="font-size:20px;">Settings</div><div style="flex:1;"></div><div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.14em; color:#55555A; padding-right:12px;">SAVED</div></div>
+    <div style="position:absolute; left:0; right:0; top:100px; bottom:0; overflow-y:auto; scrollbar-width:none;">
+      <div style="padding:8px 20px 48px; display:flex; flex-direction:column; gap:36px;">
+        <sc-for list="{{ secA }}" as="s" hint-placeholder-count="4">
+          <div style="display:flex; flex-direction:column;">
+            <div style="padding:16px 0 8px; font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.16em; color:#8A8A8E;">{{ s.labelU }}</div>
+            <sc-for list="{{ s.rows }}" as="r" hint-placeholder-count="3">
+              <div style="display:flex; flex-direction:column; gap:12px; padding:14px 0; border-bottom:1px solid rgba(255,255,255,0.06);">
+                <div style="display:flex; align-items:center; gap:14px; min-height:40px;">
+                  <sc-if value="{{ r.hasTile }}"><div style="width:40px; height:40px; flex:none; border-radius:{{ r.tileR }}; background:#1A1A1D; display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Mono',monospace; font-size:{{ r.tileFs }};">{{ r.tile }}</div></sc-if>
+                  <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:4px;"><div style="font-size:15px; color:{{ r.lc }};">{{ r.label }}</div><sc-if value="{{ r.hasHint }}"><div style="display:flex; align-items:center; gap:7px; font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.12em; color:#55555A;"><sc-if value="{{ r.hasDot }}"><span style="width:5px; height:5px; border-radius:50%; background:{{ r.dotC }}; box-shadow:{{ r.dotG }};"></span></sc-if>{{ r.hint }}</div></sc-if></div>
+                  <sc-if value="{{ r.isToggle }}"><div onClick="{{ r.fn }}" style="width:44px; height:24px; flex:none; border-radius:999px; border:1.5px solid {{ r.tBd }}; position:relative; box-sizing:border-box;"><div style="position:absolute; left:{{ r.tXA }}px; top:3px; width:15px; height:15px; border-radius:50%; background:{{ r.tKnob }}; box-shadow:{{ r.tGlow }}; transition:left .3s cubic-bezier(.16,1,.3,1), background .3s;"></div></div></sc-if>
+                  <sc-if value="{{ r.isValue }}"><div onClick="{{ r.fn }}" style="display:flex; align-items:center; gap:6px; font-size:13px; color:#8A8A8E;">{{ r.value }}<span style="font-size:16px;">{{ ic.chevR }}</span></div></sc-if>
+                  <sc-if value="{{ r.isAction }}"><div onClick="{{ r.fn }}" style="height:40px; padding:0 14px; flex:none; border-radius:12px; display:flex; align-items:center; font-size:14px; font-weight:500; border:1.5px solid {{ r.aBd }}; color:{{ r.aFg }}; box-sizing:border-box; opacity:{{ r.aOp }};">{{ r.action }}</div></sc-if>
+                </div>
+                <sc-if value="{{ r.isSeg }}"><div style="display:flex; border:1.5px solid rgba(255,255,255,0.12); border-radius:999px; padding:3px;"><sc-for list="{{ r.opts }}" as="o" hint-placeholder-count="3"><div onClick="{{ o.fn }}" style="flex:1; height:36px; border-radius:999px; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:{{ o.fw }}; background:{{ o.bg }}; box-shadow:{{ o.sh }}; color:{{ o.fg }}; transition:background .3s, color .3s, box-shadow .3s; white-space:nowrap;">{{ o.l }}</div></sc-for></div></sc-if>
+                <sc-if value="{{ r.isSlider }}"><div style="display:flex; align-items:center; gap:14px;"><div onPointerDown="{{ r.pd }}" onPointerMove="{{ r.pm }}" onPointerUp="{{ r.pu }}" style="position:relative; flex:1; height:32px; touch-action:none;"><div style="position:absolute; left:0; right:0; top:15.5px; height:1px; background:rgba(255,255,255,0.18);"></div><div style="position:absolute; left:0; top:15.5px; height:1px; width:{{ r.pct }}%; background:#FFFFFF;"></div><div style="position:absolute; left:{{ r.pct }}%; top:9px; width:14px; height:14px; margin-left:-7px; border-radius:50%; background:#FFFFFF; box-shadow:0 0 10px 2px rgba(255,255,255,0.5);"></div></div><div style="width:40px; text-align:right; font-family:'IBM Plex Mono',monospace; font-size:11px;">{{ r.val }}</div></div></sc-if>
+                <sc-if value="{{ r.isStorage }}"><div style="display:flex; flex-direction:column; gap:8px;"><div style="height:6px; border-radius:999px; background:#121214; overflow:hidden; display:flex;"><div style="width:{{ r.sPel }}%; background:#FFFFFF; box-shadow:0 0 8px rgba(255,255,255,0.7); transition:width .9s cubic-bezier(.16,1,.3,1);"></div><div style="width:41%; background:#3A3A3E;"></div></div><div style="display:flex; justify-content:space-between; font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.12em; color:#8A8A8E;"><span>{{ r.sLine }}</span><span>18.3 GB FREE</span></div></div></sc-if>
+                <sc-if value="{{ r.isProg }}"><div style="position:relative; height:1px; background:rgba(255,255,255,0.1);"><div style="position:absolute; left:0; top:0; height:1px; width:{{ r.prog }}%; background:#FFFFFF; box-shadow:0 0 6px rgba(255,255,255,0.7);"></div></div></sc-if>
+                <sc-if value="{{ r.confirm }}"><div style="display:flex; flex-direction:column; gap:12px; padding:14px; border-radius:12px; border:1.5px solid rgba(230,150,140,0.35); background:rgba(230,150,140,0.04);"><div style="display:flex; gap:10px; font-size:14px; line-height:1.4;"><span style="font-size:19px; color:rgb(230,150,140);">{{ ic.alert }}</span>{{ r.confText }}</div><div style="display:flex; justify-content:flex-end; gap:8px;"><div onClick="{{ cancel }}" style="height:40px; padding:0 14px; border-radius:12px; display:flex; align-items:center; font-size:14px; color:#BDBDBD;">Cancel</div><div onClick="{{ r.confFn }}" style="height:40px; padding:0 14px; border-radius:12px; display:flex; align-items:center; font-size:14px; font-weight:500; background:rgb(230,150,140); color:#0B0B0C;">{{ r.confBtn }}</div></div></div></sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const h = React.createElement;
+let K = null;
+const kit = () => K || (window.PelagicKit ? (K = window.PelagicKit(h)) : null);
+const DEF = { signedIn: true, fallback: true, sq: 'op160', gapless: true, norm: 'album', xfade: 0, dq: 'op160', wifi: true, cleared: false, sweep: '06:00', nrNotify: true, hideRe: true, romaji: true, english: false, motion: 'system', particles: '15', texture: true, lockCtl: true };
+const SQ = { op160: ['Opus 160', '~1.2 MB / MIN', '230,196,141', 'OPUS 160'], op320: ['Opus 320', '~2.4 MB / MIN', '230,196,141', 'OPUS 320'], flac: ['Original', '~6–30 MB / MIN · AS STORED', '143,199,230', 'FLAC 16/44.1'] };
+const PN = { off: 0, few: 6, '15': 15, more: 32 };
+
+class Component extends DCLogic {
+  state = { s: { ...DEF }, conf: null, scan: -1, lastScan: '14 OCT 21:40', active: 'account', reduced: false, toast: '', tOn: false };
+  scRef = React.createRef();
+  secEls = {};
+  componentDidMount() {
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) this.setState({ reduced: true });
+    const poll = () => { if (kit()) this.forceUpdate(); else this.pt = setTimeout(poll, 60); };
+    poll();
+  }
+  componentWillUnmount() { clearTimeout(this.pt); clearInterval(this.si); clearTimeout(this.tt); }
+  set(k, v) { this.setState(x => ({ s: { ...x.s, [k]: v } })); }
+  motion() { const m = this.state.s.motion; return m === 'full' ? true : m === 'reduced' ? false : !this.state.reduced; }
+  toast(t) { clearTimeout(this.tt); this.setState({ toast: t, tOn: true }); this.tt = setTimeout(() => this.setState({ tOn: false }), 3200); }
+  rescan() {
+    if (this.state.scan >= 0) return;
+    this.setState({ scan: 0 }); const t0 = Date.now();
+    clearInterval(this.si);
+    this.si = setInterval(() => { const p = Math.min(1, (Date.now() - t0) / 4000); if (p >= 1) { clearInterval(this.si); this.setState({ scan: -1, lastScan: 'JUST NOW' }); this.toast('Rescan finished. 640 albums, nothing changed.'); } else this.setState({ scan: p }); }, 80);
+  }
+  waterEl() {
+    const k = kit(); if (!k) return null;
+    const S = this.state.s, motion = this.motion(), n = motion ? PN[S.particles] : 0, tex = S.texture;
+    let s = 31; const rnd = () => (s = (s * 9301 + 49297) % 233280) / 233280;
+    const kids = [];
+    if (tex) {
+      kids.push(h('div', { key: 'st', style: { position: 'absolute', inset: 0, backgroundImage: k.STONE, backgroundSize: '900px 900px', opacity: 0.09 } }));
+      kids.push(h('div', { key: 'ct', style: { position: 'absolute', inset: 0, backgroundImage: motion ? k.CONTOUR_LIVE : k.CONTOUR_SMOOTH, backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat', opacity: 0.075 } }));
+      kids.push(h('div', { key: 'gr', style: { position: 'absolute', inset: 0, backgroundImage: k.GRAIN, backgroundSize: '220px 220px', opacity: 0.07, mixBlendMode: 'screen' } }));
+    }
+    const fl = [];
+    for (let i = 0; i < n; i++) {
+      const bokeh = rnd() < 0.25, sz = bokeh ? 4 + rnd() * 5 : 1.4 + rnd() * 2.2, d = 16 + rnd() * 22;
+      fl.push(h('div', { key: i, className: 'pg-anim', style: { position: 'absolute', left: (rnd() * 100) + '%', top: (rnd() * 85) + '%', animation: `pg-sway ${d}s cubic-bezier(.45,0,.55,1) ${-rnd() * d}s infinite` } },
+        h('div', { style: { width: sz, height: sz, borderRadius: '50%', background: '#FFFFFF', opacity: bokeh ? 0.08 + rnd() * 0.12 : 0.25 + rnd() * 0.4, filter: bokeh ? 'blur(1.5px)' : 'none', boxShadow: bokeh ? 'none' : '0 0 4px rgba(255,255,255,0.5)' } })));
+    }
+    if (n) kids.push(h('div', { key: 'sn', className: 'pg-snow', style: { position: 'absolute', inset: 0 } }, fl));
+    return h('div', { style: { position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' } }, kids);
+  }
+  sections(dev) {
+    const S = this.state.s, st = this.state, IC = kit() ? kit().IC : {};
+    const base = { hasTile: false, tile: '', tileR: '10px', tileFs: '11px', lc: '#EDEDED', hasHint: false, hint: '', hasDot: false, dotC: '#FFFFFF', dotG: 'none', isToggle: false, isSeg: false, isSlider: false, isValue: false, isAction: false, isStorage: false, isProg: false, confirm: false, aBd: 'rgba(255,255,255,0.18)', aFg: '#EDEDED', aOp: 1 };
+    const R = o => { const r = { ...base, ...o }; r.hasHint = !!r.hint; return r; };
+    const tog = (k, label, hint) => { const on = !!S[k]; return R({ label, hint, isToggle: true, fn: () => this.set(k, !S[k]), tBd: on ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.18)', tX: on ? 20.5 : 2.5, tXA: on ? 23 : 3, tKnob: on ? '#FFFFFF' : '#55555A', tGlow: on ? '0 0 8px rgba(255,255,255,0.6)' : 'none' }); };
+    const seg = (k, label, hint, opts) => R({ label, hint, isSeg: true, opts: opts.map(([v, l]) => { const on = S[k] === v; return { l, fn: () => this.set(k, v), bg: on ? 'rgba(255,255,255,0.16)' : 'transparent', sh: on ? 'inset 0 0 0 1px rgba(255,255,255,0.28), 0 0 14px -4px rgba(255,255,255,0.35)' : 'none', fg: on ? '#FFFFFF' : '#8A8A8E', fw: on ? 500 : 400 }; }) });
+    const conf = (id, text, btn, fn) => st.conf === id ? { confirm: true, confText: text, confBtn: btn, confFn: () => { this.setState({ conf: null }); fn(); } } : {};
+    const sliderFns = (k, max) => {
+      const calc = e => { const r = e.currentTarget.getBoundingClientRect(); this.set(k, Math.round(Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * max)); };
+      return { pd: e => { this.dragK = k; try { e.currentTarget.setPointerCapture(e.pointerId); } catch (_) {} calc(e); }, pm: e => { if (this.dragK === k) calc(e); }, pu: () => { this.dragK = null; } };
+    };
+    const scanning = st.scan >= 0, desk = dev === 'd';
+    const pel = S.cleared ? 0 : 2;
+    const secs = [
+      { id: 'account', label: 'Account', note: 'GOOGLE', rows: [
+        S.signedIn ? R({ hasTile: true, tile: 'MO', tileR: '50%', label: 'm.okafor@gmail.com', hint: 'GOOGLE · SIGNED IN SINCE 14 OCT 2026', hasDot: true, dotC: '#FFFFFF', dotG: '0 0 6px rgba(255,255,255,0.7)', isAction: true, action: 'Sign out', aBd: 'rgba(230,150,140,0.4)', aFg: 'rgb(230,150,140)', fn: () => this.setState({ conf: 'signout' }), ...conf('signout', 'Sign out? Downloads stay on this device until you sign in again.', 'Sign out', () => { this.set('signedIn', false); this.toast('Signed out. Downloads still play.'); }) })
+                   : R({ hasTile: true, tile: '—', tileR: '50%', label: 'Not signed in', lc: '#8A8A8E', hint: 'DOWNLOADED MUSIC STILL PLAYS', isAction: true, action: 'Sign in with Google', fn: () => this.set('signedIn', true) }),
+      ] },
+      { id: 'library', label: 'Library', note: desk ? 'LOCAL FOLDER' : 'GOOGLE DRIVE', rows: (desk ? [
+        R({ hasTile: true, tile: IC.library, tileFs: '20px', label: 'G:\\My Drive\\Pelagic', hint: 'CONNECTED · 640 ALBUMS · 312 GB FLAC', hasDot: true, dotG: '0 0 6px rgba(255,255,255,0.7)', isAction: true, action: 'Change folder', fn: () => this.toast('Opens the folder picker.') }),
+        tog('fallback', 'Stream from Drive when the folder is missing', 'KEEPS PLAYING IF THE DISK IS UNPLUGGED'),
+      ] : [R({ hasTile: true, tile: IC.cloud, tileFs: '20px', label: 'Google Drive', hint: 'MY DRIVE / PELAGIC · 8,031 TRACKS', hasDot: true, dotG: '0 0 6px rgba(255,255,255,0.7)' })]).concat([
+        R({ label: 'Rescan library', hint: scanning ? `SCANNING · ${Math.round(st.scan * 640)} / 640 ALBUMS` : `LAST SCAN ${st.lastScan}`, isAction: true, action: scanning ? 'Scanning…' : 'Rescan', aOp: scanning ? 0.5 : 1, fn: () => this.rescan(), isProg: scanning, prog: st.scan * 100 }),
+      ]) },
+      { id: 'playback', label: 'Playback', note: 'APPLIES IMMEDIATELY', rows: [
+        seg('sq', 'Streaming quality', SQ[S.sq][1], [['op160', 'Opus 160'], ['op320', 'Opus 320'], ['flac', 'Original']]),
+        tog('gapless', 'Gapless playback', 'NO SILENCE BETWEEN TRACKS ON LIVE AND CONCEPT ALBUMS'),
+        seg('norm', 'Volume normalisation', 'REPLAYGAIN FROM YOUR TAGS', [['off', 'Off'], ['track', 'Track'], ['album', 'Album']]),
+        R({ label: 'Crossfade', hint: 'IGNORED WHEN GAPLESS ALBUMS PLAY IN ORDER', isSlider: true, pct: S.xfade / 12 * 100, val: S.xfade ? S.xfade + ' S' : 'OFF', ...sliderFns('xfade', 12) }),
+      ].concat(desk ? [R({ label: 'Output device', isValue: true, value: 'System default', fn: () => this.toast('Opens the output picker.') })] : [tog('lockCtl', 'Lock-screen controls', 'NEEDS NOTIFICATIONS')]) },
+      { id: 'downloads', label: 'Downloads', note: S.cleared ? 'NOTHING STORED' : '630 MB STORED', rows: [
+        seg('dq', 'Download quality', S.dq === 'flac' ? 'WHOLE LIBRARY ≈ 312 GB' : 'WHOLE LIBRARY ≈ 38 GB', [['op160', 'Opus 160'], ['flac', 'Original FLAC']]),
+        tog('wifi', 'Download on Wi-Fi only', ''),
+        R({ label: 'Storage', isStorage: true, sPel: pel, sLine: S.cleared ? 'PELAGIC 0 MB' : 'PELAGIC 630 MB', isAction: true, action: 'Clear downloads', aBd: 'rgba(230,150,140,0.4)', aFg: 'rgb(230,150,140)', aOp: S.cleared ? 0.35 : 1, fn: () => { if (!S.cleared) this.setState({ conf: 'clear' }); },
+          ...conf('clear', 'Remove 630 MB of downloads from this device? Your library stays on Drive.', 'Remove', () => { this.set('cleared', true); this.toast('Downloads cleared. 630 MB freed.'); }) }),
+      ] },
+      { id: 'new', label: 'New Releases', note: 'MUSICBRAINZ', rows: [
+        seg('sweep', 'Daily sonar sweep', 'NEXT · 15 OCT ' + S.sweep, [['06:00', '06:00'], ['12:00', '12:00'], ['22:00', '22:00']]),
+        tog('nrNotify', 'Notify me about new releases', 'ONE SUMMARY PER SWEEP, NEVER PER RELEASE'),
+        tog('hideRe', 'Hide reissues and deluxe editions', ''),
+        R({ label: 'Followed artists', isValue: true, value: '212 · none muted', fn: () => this.toast('Opens Followed artists.') }),
+      ] },
+      { id: 'lyrics', label: 'Lyrics', note: 'DEFAULTS', rows: [
+        tog('romaji', 'Show romaji under Japanese lyrics', ''),
+        tog('english', 'Show English translation', 'WHEN THE LYRIC FILE INCLUDES ONE'),
+      ] },
+      { id: 'atmos', label: 'Atmosphere', note: 'THIS PAGE CHANGES LIVE', rows: [
+        seg('motion', 'Motion', S.motion === 'system' ? (st.reduced ? 'SYSTEM ASKS FOR REDUCED MOTION' : 'SYSTEM ALLOWS MOTION') : '', [['system', 'Follow system'], ['full', 'Full'], ['reduced', 'Reduced']]),
+        seg('particles', 'Drifting particles', 'MARINE SNOW · FADES OUT WITH REDUCED MOTION', [['off', 'Off'], ['few', 'Few'], ['15', 'Default'], ['more', 'More']]),
+        tog('texture', 'Stone, grain and contour texture', ''),
+      ] },
+      { id: 'about', label: 'About', note: '', rows: [
+        R({ label: 'Version', isValue: true, value: '1.0.0 · 2026.10', fn: null }),
+      ].concat(desk ? [R({ label: 'Keyboard shortcuts', isValue: true, value: '?', fn: () => this.toast('Opens the shortcuts overlay.') })] : []).concat([
+        R({ label: 'Catalogue data', hint: 'MUSICBRAINZ · COVER ART ARCHIVE', isValue: true, value: 'Credits', fn: () => this.toast('Opens credits.') }),
+        R({ label: 'Open-source licences', isValue: true, value: '', fn: () => this.toast('Opens licences.') }),
+      ]) },
+    ];
+    return secs.map(s => ({ ...s, labelU: s.label.toUpperCase(), ref: el => { if (desk && el) this.secEls[s.id] = el; } }));
+  }
+  renderVals() {
+    const st = this.state, S = st.s, IC = kit() ? kit().IC : {}, m = this.motion();
+    const secD = this.sections('d');
+    const q = SQ[S.sq];
+    return {
+      ic: IC, water: this.waterEl(), secD, secA: this.sections('a'), scRef: this.scRef,
+      cancel: () => this.setState({ conf: null }),
+      nav: [['home', 'Home'], ['library', 'Library'], ['search', 'Search'], ['newr', 'New releases'], ['upload', 'Upload'], ['download', 'Downloads']].map(([i, l]) => ({ icon: IC[i], label: l })),
+      subnav: secD.map(s => { const on = st.active === s.id; return { label: s.label, fg: on ? '#FFFFFF' : '#8A8A8E', dot: on ? 1 : 0,
+        go: () => { const el = this.secEls[s.id], sc = this.scRef.current; if (el && sc) sc.scrollTo({ top: el.offsetTop - 40, behavior: m ? 'smooth' : 'auto' }); this.setState({ active: s.id }); } }; }),
+      onScroll: e => { const top = e.currentTarget.scrollTop; let cur = 'account'; secD.forEach(s => { const el = this.secEls[s.id]; if (el && el.offsetTop - 120 <= top) cur = s.id; }); if (e.currentTarget.scrollTop + e.currentTarget.clientHeight >= e.currentTarget.scrollHeight - 4) cur = 'about'; if (cur !== this.state.active) this.setState({ active: cur }); },
+      qLabel: q[3], qFg: `rgb(${q[2]})`, qBd: `rgba(${q[2]},0.5)`, qBg: `rgba(${q[2]},0.08)`,
+      tText: st.toast, tOp: st.tOn ? 1 : 0, tY: st.tOn ? 0 : 20, tTr: m ? (st.tOn ? 'opacity .6s cubic-bezier(.16,1,.3,1), transform .6s cubic-bezier(.16,1,.3,1)' : 'opacity .35s ease, transform .35s ease') : 'none',
+    };
+  }
+}
+</script>
+</body>
+</html>

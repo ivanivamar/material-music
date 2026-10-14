@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://api.fontshare.com/v2/css?f[]=general-sans@300,400,500,600&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#030303;-webkit-font-smoothing:antialiased}
+a{color:#EDEDED;text-decoration:underline;text-underline-offset:3px}a:hover{color:#FFFFFF}
+input::placeholder{color:#55555A}
+@keyframes pg-sway{0%{transform:translate3d(0,-40px,0);opacity:0}10%{opacity:1}50%{transform:translate3d(22px,110px,0)}90%{opacity:1}100%{transform:translate3d(-8px,260px,0);opacity:0}}
+@media (prefers-reduced-motion: reduce){.pg-anim{animation:none !important}.pg-snow{display:none !important}}
+</style>
+<script src="./pelagic-kit.js"></script>
+</helmet>
+<div style="font-family:'General Sans',sans-serif; color:#EDEDED; padding:72px; display:flex; flex-direction:column; gap:96px; background:#030303; min-width:1600px;">
+
+<div style="display:flex; flex-direction:column; gap:14px; max-width:900px;">
+  <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.16em; color:#55555A;">PELAGIC · TRACK AND ALBUM ACTIONS</div>
+  <div style="font-size:44px; font-weight:400; letter-spacing:-0.02em;">Actions</div>
+  <div style="font-size:16px; line-height:1.55; color:#8A8A8E; text-wrap:pretty;">On desktop, right-click a track or press ⋯; the album ⋯ opens the album menu. On Android, long-press a row or tap ⋯ for a bottom sheet. Add to playlist, new playlist and track info all work in the demo.</div>
+</div>
+
+<!-- 01 DESKTOP -->
+<div style="display:flex; flex-direction:column; gap:20px;">
+  <div style="display:flex; align-items:baseline; gap:24px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:#55555A;">01 / Desktop · clickable</div><div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.12em; color:#8A8A8E;">RIGHT-CLICK A TRACK · HOVER “ADD TO PLAYLIST” · ALBUM ⋯ NEXT TO DOWNLOAD</div></div>
+  <div ref="{{ frameRef }}" data-screen-label="Desktop Actions" style="width:1440px; height:900px; border-radius:16px; overflow:hidden; position:relative; background:{{ scene }}; border:1.5px solid rgba(255,255,255,0.07);">
+    {{ water }}
+    <div style="position:absolute; left:0; top:0; bottom:84px; width:232px; padding:30px 14px; box-sizing:border-box; display:flex; flex-direction:column; gap:36px; background:rgba(11,11,12,0.7); border-right:1px solid rgba(255,255,255,0.06);">
+      <div style="padding:0 14px; display:flex; align-items:center; gap:12px;"><div style="position:relative; width:22px; height:22px;"><div style="position:absolute; inset:0; border-radius:50%; border:1.5px solid rgba(255,255,255,0.9); box-sizing:border-box; clip-path:inset(0 0 50% 0);"></div><div style="position:absolute; inset:0; border-radius:50%; border:1.5px solid rgba(255,255,255,0.22); box-sizing:border-box; clip-path:inset(50% 0 0 0);"></div><div style="position:absolute; left:-5px; right:-5px; top:10.5px; height:1px; background:#FFFFFF;"></div></div><div style="font-size:14px; font-weight:500; letter-spacing:0.42em;">PELAGIC</div></div>
+      <div style="display:flex; flex-direction:column; gap:4px;"><sc-for list="{{ nav }}" as="n" hint-placeholder-count="6"><div style="display:flex; align-items:center; gap:12px; height:44px; padding:4px 12px 4px 4px; box-sizing:border-box; border-radius:12px; background:{{ n.bg }}; color:{{ n.fg }}; font-size:14px; font-weight:500;"><span style="width:36px; height:36px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:20px; background:{{ n.icBg }}; color:{{ n.icFg }};">{{ n.icon }}</span>{{ n.label }}</div></sc-for></div>
+      <div style="display:flex; flex-direction:column; gap:6px;"><div style="padding:0 12px 8px; font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.16em; color:#55555A;">PLAYLISTS</div><sc-for list="{{ plSide }}" as="p" hint-placeholder-count="5"><div style="display:flex; align-items:center; gap:12px; height:44px; padding:0 12px;"><img src="{{ p.img }}" alt="" style="width:30px; height:30px; border-radius:6px; object-fit:cover; flex:none; filter:grayscale(1) brightness(0.8);"><div style="display:flex; flex-direction:column; gap:2px; min-width:0;"><div style="font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ p.n }}</div><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:#55555A;">{{ p.c }}</div></div></div></sc-for></div>
+    </div>
+
+    <div style="position:absolute; left:232px; right:0; top:0; bottom:84px; padding:40px 56px 0; box-sizing:border-box; overflow:hidden; display:flex; flex-direction:column; gap:32px;">
+      <div style="display:flex; align-items:flex-end; gap:40px;">
+        <img src="./art/spiritbox-tsunami-sea.jpg" alt="" style="width:200px; height:200px; border-radius:12px; object-fit:cover; box-shadow:0 30px 70px -30px rgba(0,0,0,0.9);">
+        <div style="flex:1; display:flex; flex-direction:column; gap:14px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.16em; color:#8A8A8E;">ALBUM · 2025 · 11 TRACKS · 41:28</div><div style="font-size:72px; letter-spacing:-0.035em; line-height:0.95;">Tsunami Sea</div><div style="font-size:17px; color:#BDBDBD;">Spiritbox</div></div>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <div style="height:46px; padding:0 24px; border-radius:12px; display:flex; align-items:center; gap:10px; background:#EDEDED; color:#0B0B0C; font-weight:500; font-size:15px;"><span style="font-size:21px;">{{ ic.playF }}</span>Play</div>
+          <div style="height:46px; padding:0 20px; border-radius:12px; display:flex; align-items:center; gap:10px; border:1.5px solid rgba(255,255,255,0.18); box-sizing:border-box; font-weight:500; font-size:15px;"><span style="font-size:21px;">{{ ic.shuffle }}</span>Shuffle</div>
+          <div style="width:46px; height:46px; border-radius:12px; display:flex; align-items:center; justify-content:center; border:1.5px solid rgba(255,255,255,0.18); box-sizing:border-box; font-size:21px;">{{ albumDlIcon }}</div>
+          <div onClick="{{ openAlbumMenu }}" style="width:46px; height:46px; border-radius:12px; display:flex; align-items:center; justify-content:center; border:1.5px solid {{ amBd }}; background:{{ amBg }}; box-sizing:border-box; font-size:21px; cursor:pointer;" style-hover="background:#1A1A1D;">{{ ic.more }}</div>
+        </div>
+      </div>
+      <div style="display:flex; flex-direction:column;">
+        <div style="display:grid; grid-template-columns:32px minmax(0,1fr) 40px 64px 24px 40px; gap:16px; align-items:center; height:34px; padding:0 12px; border-bottom:1px solid rgba(255,255,255,0.08); font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.16em; color:#55555A;"><span style="text-align:center;">#</span><span>TITLE</span><span></span><span style="text-align:right;">TIME</span><span></span><span></span></div>
+        <sc-for list="{{ rows }}" as="r" hint-placeholder-count="9">
+          <div onContextMenu="{{ r.ctx }}" style="display:grid; grid-template-columns:32px minmax(0,1fr) 40px 64px 24px 40px; gap:16px; align-items:center; height:50px; padding:0 12px; border-radius:10px; background:{{ r.bg }}; box-shadow:{{ r.ring }}; cursor:default; transition:background .2s;" style-hover="background:rgba(255,255,255,0.04);">
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#55555A; text-align:center;">{{ r.n }}</div>
+            <div style="display:flex; align-items:center; gap:10px; min-width:0;"><div style="font-size:14px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ r.t }}</div><sc-if value="{{ r.queued }}"><div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.14em; padding:3px 6px; border-radius:6px; border:1.5px solid rgba(255,255,255,0.18); color:#BDBDBD;">{{ r.qLabel }}</div></sc-if></div>
+            <div onClick="{{ r.like }}" title="{{ r.likeT }}" style="display:flex; justify-content:center; font-size:17px; color:{{ r.likeFg }}; cursor:pointer; transform:scale({{ r.likeSc }}); transition:color .3s, transform .35s cubic-bezier(.34,1.56,.64,1);" style-hover="color:#FFFFFF;">{{ r.likeIc }}</div>
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#8A8A8E; text-align:right;">{{ r.d }}</div>
+            <div style="font-size:15px; color:{{ r.dlFg }}; display:flex; justify-content:center;">{{ r.dlIc }}</div>
+            <div onClick="{{ r.moreClick }}" style="width:32px; height:32px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:18px; color:#8A8A8E; cursor:pointer;" style-hover="background:rgba(255,255,255,0.08); color:#EDEDED;">{{ ic.more }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="position:absolute; left:0; right:0; bottom:0; height:84px; display:grid; grid-template-columns:minmax(0,1fr) 560px minmax(0,1fr); align-items:center; padding:0 20px; gap:24px; background:#0B0B0C; border-top:1px solid rgba(255,255,255,0.08);">
+      <div style="display:flex; align-items:center; gap:14px;"><img src="./art/spiritbox-tsunami-sea.jpg" alt="" style="width:52px; height:52px; border-radius:8px; object-fit:cover;"><div style="display:flex; flex-direction:column; gap:3px;"><div style="font-size:15px; font-weight:500;">Fata Morgana</div><div style="font-size:13px; color:#8A8A8E;">Spiritbox</div></div></div>
+      <div style="display:flex; flex-direction:column; gap:8px; align-items:center;"><div style="display:flex; align-items:center; gap:24px; font-size:19px; color:#8A8A8E;"><span>{{ ic.shuffle }}</span><span style="color:#EDEDED;">{{ ic.prev }}</span><div style="width:38px; height:38px; border-radius:50%; background:#EDEDED; color:#0B0B0C; display:flex; align-items:center; justify-content:center; font-size:17px;">{{ ic.pauseF }}</div><span style="color:#EDEDED;">{{ ic.next }}</span><span>{{ ic.repeat }}</span></div><div style="display:flex; align-items:center; gap:12px; width:100%;"><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:#8A8A8E;">01:12</div><div style="position:relative; flex:1; height:9px;"><div style="position:absolute; left:0; right:0; top:4px; height:1px; background:rgba(255,255,255,0.18);"></div><div style="position:absolute; left:0; width:31%; top:4px; height:1px; background:#FFFFFF;"></div></div><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:#8A8A8E;">03:50</div></div></div>
+      <div style="display:flex; align-items:center; justify-content:flex-end; gap:18px; font-size:18px; color:#8A8A8E;"><span>{{ ic.lyrics }}</span><div style="position:relative; display:flex;">{{ ic.queue }}<sc-if value="{{ qBadge }}"><span style="position:absolute; right:-10px; top:-8px; min-width:16px; height:16px; padding:0 4px; box-sizing:border-box; border-radius:999px; background:#EDEDED; color:#0B0B0C; font-family:'IBM Plex Mono',monospace; font-size:9px; display:flex; align-items:center; justify-content:center;">{{ qCount }}</span></sc-if></div><span>{{ ic.volume }}</span></div>
+    </div>
+
+    <div onClick="{{ closeMenu }}" onContextMenu="{{ closeMenuCtx }}" style="position:absolute; inset:0; pointer-events:{{ mPe }}; z-index:5;"></div>
+    <div style="position:absolute; left:{{ mX }}px; top:{{ mY }}px; width:268px; z-index:6; opacity:{{ mOp }}; transform:scale({{ mS }}); transform-origin:{{ mOrigin }}; transition:{{ mTr }}; pointer-events:{{ mPe }};">
+      <div style="border-radius:14px; background:#161618; border:1.5px solid rgba(255,255,255,0.1); padding:6px; box-shadow:0 28px 60px -18px rgba(0,0,0,0.85); display:flex; flex-direction:column;">
+        <div style="display:flex; align-items:center; gap:10px; padding:8px 10px 10px;"><img src="./art/spiritbox-tsunami-sea.jpg" alt="" style="width:32px; height:32px; border-radius:6px; object-fit:cover;"><div style="display:flex; flex-direction:column; gap:2px; min-width:0;"><div style="font-size:13px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ mTitle }}</div><div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.12em; color:#55555A;">{{ mSub }}</div></div></div>
+        <sc-for list="{{ mItems }}" as="it" hint-placeholder-count="8">
+          <sc-if value="{{ it.div }}"><div style="height:1px; margin:5px 8px; background:rgba(255,255,255,0.07);"></div></sc-if>
+          <sc-if value="{{ it.item }}"><div onClick="{{ it.fn }}" onMouseEnter="{{ it.enter }}" style="position:relative; display:flex; align-items:center; gap:12px; height:36px; padding:0 10px; border-radius:9px; background:{{ it.bg }}; color:{{ it.fg }}; font-size:14px; cursor:pointer;" style-hover="background:rgba(255,255,255,0.08);"><span style="font-size:18px; color:{{ it.icFg }}; display:flex;">{{ it.icon }}</span><span style="flex:1;">{{ it.label }}</span><span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.1em; color:#55555A;">{{ it.hint }}</span><sc-if value="{{ it.sub }}"><span style="font-size:15px; color:#8A8A8E;">{{ ic.chevR }}</span></sc-if></div></sc-if>
+        </sc-for>
+      </div>
+      <div style="position:absolute; left:{{ sX }}px; top:{{ sY }}px; width:256px; opacity:{{ sOp }}; transform:translateX({{ sTx }}px); transition:{{ sTr }}; pointer-events:{{ sPe }};">
+        <div style="border-radius:14px; background:#161618; border:1.5px solid rgba(255,255,255,0.1); padding:6px; box-shadow:0 28px 60px -18px rgba(0,0,0,0.85); display:flex; flex-direction:column;">
+          <div style="display:flex; align-items:center; gap:8px; height:36px; padding:0 10px; margin-bottom:4px; border-radius:9px; border:1.5px solid rgba(255,255,255,0.1);"><span style="font-size:16px; color:#55555A;">{{ ic.search }}</span><input value="{{ plQuery }}" onInput="{{ onPlQuery }}" placeholder="Find a playlist" style="flex:1; min-width:0; background:transparent; border:none; outline:none; color:#EDEDED; font-family:'General Sans',sans-serif; font-size:13px;"></div>
+          <sc-for list="{{ plItems }}" as="p" hint-placeholder-count="5"><div onClick="{{ p.fn }}" style="display:flex; align-items:center; gap:10px; height:40px; padding:0 8px; border-radius:9px; cursor:pointer;" style-hover="background:rgba(255,255,255,0.08);"><img src="{{ p.img }}" alt="" style="width:26px; height:26px; border-radius:6px; object-fit:cover; filter:grayscale(1) brightness(0.85);"><div style="flex:1; min-width:0; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:{{ p.fg }};">{{ p.n }}</div><sc-if value="{{ p.has }}"><span style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.12em; color:#8A8A8E; display:flex; align-items:center; gap:4px;"><span style="font-size:14px; color:#EDEDED;">{{ ic.check }}</span>IN</span></sc-if></div></sc-for>
+          <div style="height:1px; margin:5px 8px; background:rgba(255,255,255,0.07);"></div>
+          <div onClick="{{ openNewPl }}" style="display:flex; align-items:center; gap:10px; height:40px; padding:0 8px; border-radius:9px; cursor:pointer;" style-hover="background:rgba(255,255,255,0.08);"><span style="width:26px; height:26px; border-radius:6px; border:1.5px dashed rgba(255,255,255,0.25); box-sizing:border-box; display:flex; align-items:center; justify-content:center; font-size:15px;">{{ ic.plus }}</span><span style="font-size:14px;">New playlist…</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div onClick="{{ closeDialog }}" style="position:absolute; inset:0; background:rgba(5,5,5,0.6); opacity:{{ dlgOp }}; pointer-events:{{ dlgPe }}; transition:opacity .35s; z-index:8;"></div>
+    <div style="position:absolute; left:50%; top:50%; width:460px; margin-left:-230px; z-index:9; opacity:{{ dlgOp }}; transform:translateY(-50%) translateY({{ dlgY }}px); transition:{{ dlgTr }}; pointer-events:{{ dlgPe }};">
+      <sc-if value="{{ dNew }}">
+        <div style="border-radius:20px; background:#141416; border:1.5px solid rgba(255,255,255,0.1); padding:28px; display:flex; flex-direction:column; gap:22px; box-shadow:0 40px 90px -30px rgba(0,0,0,0.9);">
+          <div style="display:flex; align-items:center; justify-content:space-between;"><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.16em; color:#55555A;">NEW PLAYLIST</div><div onClick="{{ closeDialog }}" style="width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:18px; color:#8A8A8E; cursor:pointer;">{{ ic.x }}</div></div>
+          <div style="display:flex; gap:18px; align-items:center;"><div style="width:96px; height:96px; flex:none; border-radius:12px; overflow:hidden; display:grid; grid-template-columns:1fr 1fr; gap:2px; background:#0B0B0C;"><img src="./art/spiritbox-tsunami-sea.jpg" alt="" style="width:100%; height:100%; object-fit:cover;"><div style="background:#121214;"></div><div style="background:#121214;"></div><div style="background:#121214;"></div></div><div style="flex:1; display:flex; flex-direction:column; gap:8px;"><input value="{{ newName }}" onInput="{{ onNewName }}" onKeyDown="{{ onNewKey }}" placeholder="Name it" style="height:48px; padding:0 14px; border-radius:12px; border:1.5px solid rgba(255,255,255,0.22); background:#0E0E10; color:#EDEDED; outline:none; font-family:'General Sans',sans-serif; font-size:18px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.12em; color:#55555A;">{{ newHint }}</div></div></div>
+          <div style="display:flex; justify-content:flex-end; gap:10px;"><div onClick="{{ closeDialog }}" style="height:44px; padding:0 18px; border-radius:12px; display:flex; align-items:center; font-size:15px; color:#BDBDBD; cursor:pointer;">Cancel</div><div onClick="{{ createPl }}" style="height:44px; padding:0 22px; border-radius:12px; display:flex; align-items:center; background:#EDEDED; color:#0B0B0C; font-size:15px; font-weight:500; opacity:{{ createOp }}; cursor:pointer;">Create</div></div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ dInfo }}">
+        <div style="border-radius:20px; background:#141416; border:1.5px solid rgba(255,255,255,0.1); padding:28px; display:flex; flex-direction:column; gap:20px; box-shadow:0 40px 90px -30px rgba(0,0,0,0.9);">
+          <div style="display:flex; align-items:center; justify-content:space-between;"><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.16em; color:#55555A;">{{ infoKind }}</div><div onClick="{{ closeDialog }}" style="width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:18px; color:#8A8A8E; cursor:pointer;">{{ ic.x }}</div></div>
+          <div style="display:flex; gap:16px; align-items:center;"><img src="./art/spiritbox-tsunami-sea.jpg" alt="" style="width:64px; height:64px; border-radius:8px; object-fit:cover;"><div style="display:flex; flex-direction:column; gap:4px;"><div style="font-size:22px;">{{ infoTitle }}</div><div style="font-size:14px; color:#8A8A8E;">Spiritbox · Tsunami Sea</div></div></div>
+          <div style="display:flex; flex-direction:column;"><sc-for list="{{ infoRows }}" as="f" hint-placeholder-count="6"><div style="display:grid; grid-template-columns:120px minmax(0,1fr); gap:12px; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.06);"><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.14em; color:#55555A;">{{ f.k }}</div><div style="font-family:{{ f.ff }}; font-size:13px; line-height:1.45; word-break:break-all;">{{ f.v }}</div></div></sc-for></div>
+        </div>
+      </sc-if>
+    </div>
+
+    <div style="position:absolute; left:232px; right:0; bottom:108px; display:flex; justify-content:center; pointer-events:none; z-index:7;"><div style="display:flex; align-items:center; gap:14px; padding:12px 16px; border-radius:14px; background:#1A1A1D; border:1.5px solid rgba(255,255,255,0.1); font-size:14px; box-shadow:0 18px 40px -14px rgba(0,0,0,0.7); opacity:{{ tD.op }}; transform:translateY({{ tD.y }}px); transition:{{ tD.tr }}; pointer-events:{{ tD.pe }};"><span style="font-size:21px;">{{ tD.icon }}</span>{{ tD.text }}<sc-if value="{{ tD.hasAct }}"><span onClick="{{ tD.act }}" style="font-weight:500; text-decoration:underline; text-underline-offset:3px; cursor:pointer;">{{ tD.actL }}</span></sc-if></div></div>
+  </div>
+</div>
+
+<!-- 02 ANDROID -->
+<div style="display:flex; flex-direction:column; gap:20px;">
+  <div style="display:flex; align-items:baseline; gap:24px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:#55555A;">02 / Android · clickable</div><div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.12em; color:#8A8A8E;">LONG-PRESS A ROW (HOLD) OR TAP ⋯ · ALBUM ⋯ IN THE HEADER</div></div>
+  <div data-screen-label="Android Actions" style="width:412px; height:915px; border-radius:32px; overflow:hidden; position:relative; background:{{ sceneA }}; border:1.5px solid rgba(255,255,255,0.09);">
+    {{ water }}
+    <div style="position:absolute; left:0; right:0; top:0; height:36px; display:flex; align-items:center; justify-content:space-between; padding:0 24px; font-family:'IBM Plex Mono',monospace; font-size:12px; z-index:2;"><span>21:47</span><span style="display:flex; gap:6px; align-items:center;"><span style="width:14px; height:9px; border:1.5px solid #EDEDED; border-radius:3px;"></span><span style="width:5px; height:5px; border-radius:50%; background:#EDEDED;"></span></span></div>
+    <div style="position:absolute; left:0; right:0; top:36px; bottom:96px; overflow:hidden; display:flex; flex-direction:column;">
+      <div style="height:56px; display:flex; align-items:center; justify-content:space-between; padding:0 12px;"><div style="width:44px; height:44px; display:flex; align-items:center; justify-content:center; font-size:22px;">{{ ic.chevL }}</div><div onClick="{{ openAlbumSheet }}" style="width:44px; height:44px; display:flex; align-items:center; justify-content:center; font-size:22px; cursor:pointer;">{{ ic.more }}</div></div>
+      <div style="padding:0 20px 18px; display:flex; gap:16px; align-items:flex-end;"><img src="./art/spiritbox-tsunami-sea.jpg" alt="" style="width:128px; height:128px; border-radius:10px; object-fit:cover;"><div style="display:flex; flex-direction:column; gap:6px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.14em; color:#8A8A8E;">ALBUM · 2025</div><div style="font-size:28px; letter-spacing:-0.02em;">Tsunami Sea</div><div style="font-size:14px; color:#BDBDBD;">Spiritbox</div></div></div>
+      <div style="display:flex; flex-direction:column; padding:0 8px;">
+        <sc-for list="{{ rowsA }}" as="r" hint-placeholder-count="9">
+          <div onPointerDown="{{ r.pd }}" onPointerUp="{{ r.pu }}" onPointerLeave="{{ r.pc }}" onContextMenu="{{ prevent }}" style="display:flex; align-items:center; gap:14px; height:58px; padding:0 4px 0 12px; border-radius:12px; background:{{ r.bgA }}; transform:scale({{ r.press }}); transition:background .3s, transform .45s cubic-bezier(.16,1,.3,1); user-select:none; -webkit-user-select:none; touch-action:pan-y;">
+            <div style="width:22px; font-family:'IBM Plex Mono',monospace; font-size:11px; color:#55555A;">{{ r.n }}</div>
+            <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:3px;"><div style="display:flex; align-items:center; gap:8px;"><div style="font-size:16px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ r.t }}</div><sc-if value="{{ r.queued }}"><div style="font-family:'IBM Plex Mono',monospace; font-size:8px; letter-spacing:0.14em; padding:2px 5px; border-radius:5px; border:1.5px solid rgba(255,255,255,0.18); color:#BDBDBD;">{{ r.qLabel }}</div></sc-if></div><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:#8A8A8E;">{{ r.d }}</div></div>
+            <div onPointerDown="{{ stop }}" onClick="{{ r.like }}" style="width:32px; height:44px; display:flex; align-items:center; justify-content:center; font-size:17px; color:{{ r.likeFg }}; transform:scale({{ r.likeSc }}); transition:color .3s, transform .35s cubic-bezier(.34,1.56,.64,1);">{{ r.likeIc }}</div>
+            <div style="font-size:15px; color:{{ r.dlFg }};">{{ r.dlIc }}</div>
+            <div onPointerDown="{{ stop }}" onClick="{{ r.moreA }}" style="width:44px; height:44px; display:flex; align-items:center; justify-content:center; font-size:20px; color:#8A8A8E; cursor:pointer;">{{ ic.more }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    <div style="position:absolute; left:8px; right:8px; bottom:24px; height:62px; border-radius:14px; overflow:hidden; display:flex; align-items:center; gap:12px; padding:0 8px; background:#151517; border:1.5px solid rgba(255,255,255,0.09);"><img src="./art/spiritbox-tsunami-sea.jpg" alt="" style="width:46px; height:46px; border-radius:8px; object-fit:cover;"><div style="flex:1; display:flex; flex-direction:column; gap:2px;"><div style="font-size:15px; font-weight:500;">Fata Morgana</div><div style="font-size:12px; color:#8A8A8E;">Spiritbox</div></div><div style="position:relative; width:44px; height:44px; display:flex; align-items:center; justify-content:center; font-size:20px; color:#8A8A8E;">{{ ic.queue }}<sc-if value="{{ qBadge }}"><span style="position:absolute; right:2px; top:4px; min-width:16px; height:16px; padding:0 4px; box-sizing:border-box; border-radius:999px; background:#EDEDED; color:#0B0B0C; font-family:'IBM Plex Mono',monospace; font-size:9px; display:flex; align-items:center; justify-content:center;">{{ qCount }}</span></sc-if></div><div style="width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:18px; background:#EDEDED; color:#0B0B0C;">{{ ic.pauseF }}</div></div>
+
+    <div style="position:absolute; left:8px; right:8px; bottom:96px; display:flex; pointer-events:none; z-index:4;"><div style="flex:1; display:flex; align-items:center; gap:12px; padding:14px 16px; border-radius:14px; background:#1A1A1D; border:1.5px solid rgba(255,255,255,0.1); font-size:14px; box-shadow:0 18px 40px -14px rgba(0,0,0,0.7); opacity:{{ tA.op }}; transform:translateY({{ tA.y }}px); transition:{{ tA.tr }}; pointer-events:{{ tA.pe }};"><span style="font-size:21px;">{{ tA.icon }}</span><span style="flex:1;">{{ tA.text }}</span><sc-if value="{{ tA.hasAct }}"><span onClick="{{ tA.act }}" style="font-weight:500; text-decoration:underline; text-underline-offset:3px;">{{ tA.actL }}</span></sc-if></div></div>
+
+    <div onClick="{{ closeSheet }}" style="position:absolute; inset:0; background:rgba(5,5,5,0.6); opacity:{{ shOp }}; pointer-events:{{ shPe }}; transition:opacity .4s; z-index:8;"></div>
+    <div style="position:absolute; left:0; right:0; bottom:0; z-index:9; border-radius:24px 24px 0 0; background:#141416; border-top:1.5px solid rgba(255,255,255,0.1); transform:translateY({{ shY }}%); transition:transform {{ dur }}; padding-bottom:24px;">
+      <div onClick="{{ closeSheet }}" style="height:26px; display:flex; align-items:center; justify-content:center;"><div style="width:40px; height:4px; border-radius:999px; background:rgba(255,255,255,0.22);"></div></div>
+      <sc-if value="{{ shMain }}">
+        <div style="display:flex; align-items:center; gap:14px; padding:4px 20px 14px; border-bottom:1px solid rgba(255,255,255,0.07);"><img src="./art/spiritbox-tsunami-sea.jpg" alt="" style="width:52px; height:52px; border-radius:8px; object-fit:cover;"><div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:4px;"><div style="font-size:17px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ mTitle }}</div><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.12em; color:#8A8A8E;">{{ mSub }}</div></div><div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.12em; padding:4px 6px; border-radius:6px; border:1.5px solid rgba(143,199,230,0.5); background:rgba(143,199,230,0.08); color:rgb(143,199,230);">FLAC 16/44.1</div></div>
+        <div style="display:flex; flex-direction:column; padding:6px 8px 0;"><sc-for list="{{ mItemsA }}" as="it" hint-placeholder-count="8"><sc-if value="{{ it.div }}"><div style="height:1px; margin:6px 12px; background:rgba(255,255,255,0.07);"></div></sc-if><sc-if value="{{ it.item }}"><div onClick="{{ it.fn }}" style="display:flex; align-items:center; gap:16px; height:52px; padding:0 12px; border-radius:12px; color:{{ it.fg }}; font-size:15px;" style-active="background:rgba(255,255,255,0.08);"><span style="font-size:21px; color:{{ it.icFg }}; display:flex;">{{ it.icon }}</span><span style="flex:1;">{{ it.label }}</span><sc-if value="{{ it.sub }}"><span style="font-size:17px; color:#8A8A8E;">{{ ic.chevR }}</span></sc-if></div></sc-if></sc-for></div>
+      </sc-if>
+      <sc-if value="{{ shPl }}">
+        <div style="display:flex; align-items:center; gap:8px; padding:0 12px 10px;"><div onClick="{{ backSheet }}" style="width:44px; height:44px; display:flex; align-items:center; justify-content:center; font-size:22px; cursor:pointer;">{{ ic.chevL }}</div><div style="font-size:18px;">Add to playlist</div></div>
+        <div style="display:flex; flex-direction:column; padding:0 8px;">
+          <div style="display:flex; flex-direction:column; gap:8px; padding:6px 12px 12px;"><div style="display:flex; gap:8px;"><input value="{{ newName }}" onInput="{{ onNewName }}" placeholder="New playlist name" style="flex:1; min-width:0; height:48px; padding:0 14px; border-radius:12px; border:1.5px solid rgba(255,255,255,0.18); background:#0E0E10; color:#EDEDED; outline:none; font-family:'General Sans',sans-serif; font-size:15px;"><div onClick="{{ createPl }}" style="height:48px; padding:0 16px; border-radius:12px; display:flex; align-items:center; background:#EDEDED; color:#0B0B0C; font-size:14px; font-weight:500; opacity:{{ createOp }};">Create</div></div></div>
+          <sc-for list="{{ plItems }}" as="p" hint-placeholder-count="5"><div onClick="{{ p.fn }}" style="display:flex; align-items:center; gap:14px; height:58px; padding:0 12px; border-radius:12px;" style-active="background:rgba(255,255,255,0.08);"><img src="{{ p.img }}" alt="" style="width:40px; height:40px; border-radius:8px; object-fit:cover; filter:grayscale(1) brightness(0.85);"><div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:3px;"><div style="font-size:15px; color:{{ p.fg }};">{{ p.n }}</div><div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.12em; color:#55555A;">{{ p.c }}</div></div><sc-if value="{{ p.has }}"><span style="font-size:19px;">{{ ic.check }}</span></sc-if></div></sc-for>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+</div>
+
+<!-- 03 REFERENCE -->
+<div style="display:flex; flex-direction:column; gap:20px;">
+  <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:#55555A;">03 / Menu reference · every variant</div>
+  <div data-screen-label="Actions reference" style="width:1440px; border-radius:20px; position:relative; background:#070708; border:1.5px solid rgba(255,255,255,0.07); padding:40px; box-sizing:border-box; display:flex; gap:28px; align-items:flex-start;">
+    <sc-for list="{{ refs }}" as="m" hint-placeholder-count="4">
+      <div style="flex:1; display:flex; flex-direction:column; gap:14px; min-width:0;">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.16em; color:#8A8A8E;">{{ m.k }}</div>
+        <div style="border-radius:14px; background:#161618; border:1.5px solid rgba(255,255,255,0.1); padding:6px; display:flex; flex-direction:column;">
+          <sc-for list="{{ m.items }}" as="it" hint-placeholder-count="8"><sc-if value="{{ it.div }}"><div style="height:1px; margin:5px 8px; background:rgba(255,255,255,0.07);"></div></sc-if><sc-if value="{{ it.item }}"><div style="display:flex; align-items:center; gap:12px; height:36px; padding:0 10px; border-radius:9px; color:{{ it.fg }}; font-size:14px;"><span style="font-size:18px; color:{{ it.icFg }}; display:flex;">{{ it.icon }}</span><span style="flex:1;">{{ it.label }}</span><span style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:#55555A;">{{ it.hint }}</span><sc-if value="{{ it.sub }}"><span style="font-size:15px; color:#8A8A8E;">{{ ic.chevR }}</span></sc-if></div></sc-if></sc-for>
+        </div>
+        <div style="font-size:13px; line-height:1.5; color:#8A8A8E;">{{ m.note }}</div>
+      </div>
+    </sc-for>
+  </div>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;motion&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Atmosphere&quot;}}">
+const h = React.createElement;
+let K = null;
+const kit = () => K || (window.PelagicKit ? (K = window.PelagicKit(h)) : null);
+const ART = n => './art/' + n + '.jpg';
+const TR = [['Fata Morgana', '03:50'], ['Black Rainbow', '03:43'], ['Perfect Soul', '03:27'], ['Keep Sweet', '03:58'], ['Soft Spine', '03:46'], ['Tsunami Sea', '04:11'], ['A Haven with Two Faces', '03:34'], ['No Loss, No Love', '03:39'], ['Crystal Roses', '03:16']];
+const PL0 = [{ n: 'Heavy water', k: 'periphery-v', c: 42, has: { 1: 1, 4: 1 } }, { n: 'Late train, Tokyo', k: 'ado-zanmu', c: 28, has: {} }, { n: 'Breakdowns only', k: 'spiritbox-rotoscope', c: 63, has: { 1: 1 } }, { n: 'Low volume', k: 'eve-under-blue', c: 19, has: {} }, { n: 'Gym, unfortunately', k: 'bvb-vindicate', c: 51, has: {} }];
+const ease = 'cubic-bezier(.16,1,.3,1)';
+
+class Component extends DCLogic {
+  state = { menu: null, sub: false, sheet: null, dlg: null, info: null, pls: PL0.map(p => ({ ...p, has: { ...p.has } })), q: '', newName: '', liked: { 1: 1 }, dl: { 0: 1, 1: 1, 2: 1, 3: 1, 4: 1, 5: 1 }, albumDl: false, queue: [], toast: null, tOn: false, press: null, reduced: false };
+  frameRef = React.createRef();
+  componentDidMount() {
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) this.setState({ reduced: true });
+    const poll = () => { if (kit()) this.forceUpdate(); else this.pt = setTimeout(poll, 60); };
+    poll();
+  }
+  componentWillUnmount() { clearTimeout(this.pt); clearTimeout(this.tt); clearTimeout(this.lp); }
+  motion() { return (this.props.motion ?? true) && !this.state.reduced; }
+  toast(o) { clearTimeout(this.tt); this.setState({ toast: o, tOn: true }); this.tt = setTimeout(() => this.setState({ tOn: false }), 4200); }
+  pos(e) { const f = this.frameRef.current; if (!f) return [400, 300]; const r = f.getBoundingClientRect(), s = 1440 / r.width; return [(e.clientX - r.left) * s, (e.clientY - r.top) * s]; }
+  openMenu(kind, idx, x, y, where) {
+    if (where === 'a') { this.setState({ sheet: { kind, idx, view: 'main' }, q: '' }); return; }
+    const W = 268, H = kind === 'album' ? 420 : 470;
+    const flipX = x + W + 270 > 1430, flipY = y + H > 890;
+    this.setState({ menu: { kind, idx, x: Math.max(8, flipX ? x - W : x), y: Math.max(8, flipY ? y - H : y), ox: flipX ? 'right' : 'left', oy: flipY ? 'bottom' : 'top', subLeft: flipX }, sub: false, q: '' });
+  }
+  close() { this.setState({ menu: null, sub: false }); }
+  target() { const m = this.state.menu || this.state.sheet; return m ? m : { kind: 'track', idx: 1 }; }
+  addTo(pi, where) {
+    const tg = this.target(), p = this.state.pls[pi], idxs = tg.kind === 'album' ? TR.map((_, i) => i) : [tg.idx];
+    const already = tg.kind === 'track' && p.has[tg.idx];
+    const pls = this.state.pls.map((x, i) => { if (i !== pi) return x; const has = { ...x.has }; idxs.forEach(j => { if (already) delete has[j]; else has[j] = 1; }); return { ...x, has, c: x.c + (already ? -1 : idxs.length) }; });
+    const prev = this.state.pls;
+    this.setState({ pls, menu: null, sub: false, sheet: null });
+    const what = tg.kind === 'album' ? 'Tsunami Sea' : TR[tg.idx][0];
+    this.toast({ where, icon: already ? 'x' : 'check', text: already ? `Removed ${what} from ${p.n}.` : `Added ${what} to ${p.n}.`, actL: 'Undo', act: () => this.setState({ pls: prev, tOn: false }) });
+  }
+  createPl(where) {
+    const n = this.state.newName.trim(); if (!n) return;
+    const tg = this.target(), idxs = tg.kind === 'album' ? TR.map((_, i) => i) : [tg.idx];
+    const has = {}; idxs.forEach(j => has[j] = 1);
+    this.setState(s => ({ pls: [{ n, k: 'spiritbox-tsunami-sea', c: idxs.length, has }].concat(s.pls), dlg: null, sheet: null, menu: null, newName: '' }));
+    this.toast({ where, icon: 'playlist', text: `Created ${n} with ${idxs.length === 1 ? '1 track' : idxs.length + ' tracks'}.` });
+  }
+  items(where, override) {
+    const st = override ? { ...this.state, sub: false } : this.state, tg = override || this.target(), IC = kit() ? kit().IC : {}, i = tg.idx, album = tg.kind === 'album', desk = where === 'd';
+    const done = (o) => { this.setState({ menu: null, sub: false, sheet: null }); if (o) this.toast({ where, ...o }); };
+    const it = (icon, label, fn, o) => ({ item: true, div: false, icon: IC[icon], label, fn, hint: desk && o && o.hint ? o.hint : '', sub: !!(o && o.sub), fg: o && o.danger ? 'rgb(230,150,140)' : '#EDEDED', icFg: o && o.danger ? 'rgb(230,150,140)' : '#8A8A8E', bg: o && o.on ? 'rgba(255,255,255,0.08)' : 'transparent', enter: o && o.sub ? () => this.setState({ sub: true }) : () => { if (this.state.sub) this.setState({ sub: false }); } });
+    const div = { item: false, div: true };
+    const q = (label) => () => { this.setState(s => ({ queue: s.queue.concat([{ i, album, label }]) })); done({ icon: 'queue', text: label === 'NEXT' ? `${album ? 'Tsunami Sea' : TR[i][0]} plays next.` : `Added ${album ? '11 tracks' : TR[i][0]} to the queue.` }); };
+    const subFn = desk ? () => this.setState({ sub: true }) : () => this.setState(s => ({ sheet: { ...s.sheet, view: 'pl' } }));
+    if (album) {
+      const dl = st.albumDl;
+      return [
+        it('playF', 'Play', () => done({ icon: 'playF', text: 'Playing Tsunami Sea.' })), it('shuffle', 'Shuffle', () => done({ icon: 'shuffle', text: 'Shuffling Tsunami Sea.' })),
+        div, it('next', 'Play next', q('NEXT'), { hint: '⇧ N' }), it('queue', 'Add to queue', q('QUEUED'), { hint: 'Q' }), it('playlist', 'Add to playlist', subFn, { sub: true, on: desk && st.sub }),
+        div, it(dl ? 'x' : 'download', dl ? 'Remove download' : 'Download album', () => { this.setState({ albumDl: !dl }); done({ icon: dl ? 'x' : 'download', text: dl ? 'Removed Tsunami Sea from this device.' : 'Downloading Tsunami Sea · 312 MB.' }); }, { danger: dl }),
+        it('library', 'Go to artist', () => done({ icon: 'library', text: 'Opens Spiritbox.' })), it('alert', 'Album info', () => this.setState({ menu: null, sheet: null, dlg: 'info', info: 'album' })),
+      ];
+    }
+    const liked = !!st.liked[i], dl = !!st.dl[i];
+    return [
+      it('next', 'Play next', q('NEXT'), { hint: '⇧ N' }), it('queue', 'Add to queue', q('QUEUED'), { hint: 'Q' }), it('playlist', 'Add to playlist', subFn, { sub: true, on: desk && st.sub }),
+      div, it(liked ? 'heartF' : 'heart', liked ? 'Remove from liked' : 'Like', () => { this.setState(s => ({ liked: { ...s.liked, [i]: !s.liked[i] } })); done(); }, { hint: 'L' }),
+      it(dl ? 'x' : 'download', dl ? 'Remove download' : 'Download', () => { this.setState(s => ({ dl: { ...s.dl, [i]: !s.dl[i] } })); done({ icon: dl ? 'x' : 'download', text: dl ? `Removed ${TR[i][0]} from this device.` : `Downloading ${TR[i][0]}.` }); }, { danger: dl }),
+      div, it('library', 'Go to album', () => done({ icon: 'library', text: 'You’re already on Tsunami Sea.' })), it('library', 'Go to artist', () => done({ icon: 'library', text: 'Opens Spiritbox.' })),
+      it('lyrics', 'Show lyrics', () => done({ icon: 'lyrics', text: 'Opens lyrics for ' + TR[i][0] + '.' })), it('alert', 'Track info', () => this.setState({ menu: null, sheet: null, dlg: 'info', info: 'track' }), { hint: '⌘ I' }),
+    ];
+  }
+  waterEl() {
+    const k = kit(); if (!k) return null;
+    const motion = this.motion(), n = motion ? 12 : 0;
+    let s = 41; const rnd = () => (s = (s * 9301 + 49297) % 233280) / 233280;
+    const kids = [h('div', { key: 'st', style: { position: 'absolute', inset: 0, backgroundImage: k.STONE, backgroundSize: '900px 900px', opacity: 0.09 } }), h('div', { key: 'gr', style: { position: 'absolute', inset: 0, backgroundImage: k.GRAIN, backgroundSize: '220px 220px', opacity: 0.07, mixBlendMode: 'screen' } })];
+    const fl = [];
+    for (let i = 0; i < n; i++) { const sz = 1.4 + rnd() * 2.2, d = 16 + rnd() * 22; fl.push(h('div', { key: i, className: 'pg-anim', style: { position: 'absolute', left: (rnd() * 100) + '%', top: (rnd() * 85) + '%', animation: `pg-sway ${d}s cubic-bezier(.45,0,.55,1) ${-rnd() * d}s infinite` } }, h('div', { style: { width: sz, height: sz, borderRadius: '50%', background: '#FFFFFF', opacity: 0.25 + rnd() * 0.4 } }))); }
+    if (n) kids.push(h('div', { key: 'sn', className: 'pg-snow', style: { position: 'absolute', inset: 0 } }, fl));
+    return h('div', { style: { position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' } }, kids);
+  }
+  renderVals() {
+    const st = this.state, IC = kit() ? kit().IC : {}, m = this.motion(), mn = st.menu, sh = st.sheet, tg = this.target();
+    const qBy = {}; st.queue.forEach(x => { if (!x.album) qBy[x.i] = x.label; });
+    const rowBase = (r, i) => ({ n: String(i + 1).padStart(2, '0'), t: r[0], d: r[1], likeIc: st.liked[i] ? IC.heartF : IC.heart, likeFg: st.liked[i] ? '#FFFFFF' : '#55555A', likeT: st.liked[i] ? 'Remove from Liked Songs' : 'Add to Liked Songs', likeSc: st.likePop === i ? 1.28 : 1, like: e => { e && e.stopPropagation(); this.setState(s => ({ liked: { ...s.liked, [i]: !s.liked[i] }, likePop: i })); clearTimeout(this.lpT); this.lpT = setTimeout(() => this.setState({ likePop: null }), 260); }, dlIc: st.dl[i] ? IC.check : IC.cloud, dlFg: st.dl[i] ? '#EDEDED' : '#55555A', queued: !!qBy[i], qLabel: qBy[i] || '' });
+    const rows = TR.map((r, i) => { const on = mn && mn.kind === 'track' && mn.idx === i; return { ...rowBase(r, i), bg: on ? 'rgba(255,255,255,0.06)' : 'transparent', ring: on ? 'inset 0 0 0 1.5px rgba(255,255,255,0.16)' : 'none',
+      ctx: e => { e.preventDefault(); const [x, y] = this.pos(e); this.openMenu('track', i, x, y, 'd'); },
+      moreClick: e => { e.stopPropagation(); const [x, y] = this.pos(e); this.openMenu('track', i, x - 250, y + 14, 'd'); } }; });
+    const rowsA = TR.map((r, i) => { const on = (sh && sh.kind === 'track' && sh.idx === i) || st.press === i; return { ...rowBase(r, i), bgA: on ? 'rgba(255,255,255,0.07)' : 'transparent', press: st.press === i ? 0.97 : 1,
+      pd: () => { clearTimeout(this.lp); this.setState({ press: i }); this.lp = setTimeout(() => { this.setState({ press: null }); this.openMenu('track', i, 0, 0, 'a'); }, 480); },
+      pu: () => { clearTimeout(this.lp); if (this.state.press === i) this.setState({ press: null }); }, pc: () => { clearTimeout(this.lp); if (this.state.press === i) this.setState({ press: null }); },
+      moreA: () => this.openMenu('track', i, 0, 0, 'a') }; });
+    const its = this.items('d'), itsA = this.items('a');
+    let subTop = 50; for (const x of its) { if (x.div) subTop += 11; else if (x.label === 'Add to playlist') break; else subTop += 36; }
+    const where = sh ? 'a' : 'd';
+    const plItems = st.pls.filter(p => p.n.toLowerCase().includes(st.q.toLowerCase())).map(p => { const pi = st.pls.indexOf(p); const has = tg.kind === 'track' ? !!p.has[tg.idx] : TR.every((_, j) => p.has[j]);
+      return { n: p.n, img: ART(p.k), c: p.c + ' TRACKS', has, fg: '#EDEDED', fn: () => this.addTo(pi, where) }; });
+    const t = st.toast, on = st.tOn && !!t;
+    const tv = w => { const show = on && t.where === w; return { op: show ? 1 : 0, y: show ? 0 : 20, pe: show ? 'auto' : 'none', tr: !m ? 'none' : show ? `opacity .6s ${ease}, transform .6s ${ease}` : 'opacity .35s ease, transform .35s ease', icon: t ? IC[t.icon] : null, text: t ? t.text : '', hasAct: !!(t && t.actL), actL: t ? t.actL : '', act: t && t.act ? t.act : null }; };
+    const ti = tg.kind === 'track' ? tg.idx : 1;
+    const infoRows = st.info === 'album'
+      ? [['FORMAT', 'FLAC 16-bit / 44.1 kHz'], ['TRACKS', '11 · 41:28'], ['SIZE', '312 MB on disk'], ['REPLAYGAIN', 'Album −8.4 dB'], ['ADDED', '14 Mar 2025 · upload'], ['FOLDER', 'G:\\My Drive\\Pelagic\\Spiritbox\\Tsunami Sea']]
+      : [['FORMAT', 'FLAC 16-bit / 44.1 kHz'], ['BITRATE', '912 kbps average'], ['SIZE', '25.4 MB'], ['REPLAYGAIN', 'Track −8.1 dB · Album −8.4 dB'], ['PLAYS', '64 · last played yesterday'], ['FILE', `G:\\My Drive\\Pelagic\\Spiritbox\\Tsunami Sea\\${String(ti + 1).padStart(2, '0')} ${TR[ti][0]}.flac`]];
+    const mOpen = !!mn, dOpen = !!st.dlg, sOpen = !!sh;
+    const nm = st.newName.trim();
+    const ref = (kind, k, note, inPl) => {
+      let list = this.items('d', { kind, idx: 1 });
+      if (inPl) list = list.concat([{ item: false, div: true }, { item: true, div: false, icon: IC.x, label: 'Remove from Heavy water', hint: '⌫', sub: false, fg: 'rgb(230,150,140)', icFg: 'rgb(230,150,140)' }]);
+      return { k, note, items: list };
+    };
+    return {
+      ic: IC, water: this.waterEl(), frameRef: this.frameRef, stop: e => e.stopPropagation(), prevent: e => e.preventDefault(),
+      scene: 'radial-gradient(50% 60% at 26% 30%, rgba(40,40,42,0.9), transparent 72%), #0B0B0C', sceneA: 'radial-gradient(90% 42% at 50% 18%, rgba(40,40,42,0.9), transparent 72%), #0B0B0C',
+      dur: m ? `0.55s ${ease}` : '0s',
+      nav: [['home', 'Home'], ['library', 'Library'], ['search', 'Search'], ['newr', 'New releases'], ['upload', 'Upload'], ['download', 'Downloads']].map(([i, l]) => { const on = l === 'Library'; return { icon: IC[i], label: l, bg: on ? '#EDEDED' : 'transparent', fg: on ? '#0B0B0C' : '#8A8A8E', icBg: on ? '#0B0B0C' : 'transparent', icFg: on ? '#FFFFFF' : '#8A8A8E' }; }),
+      plSide: [{ n: 'Liked Songs', img: 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60"><rect width="60" height="60" fill="#EDEDED"/><path d="M30 44s-12-7.4-12-16.5A6.7 6.7 0 0 1 30 23.5a6.7 6.7 0 0 1 12 4C42 36.6 30 44 30 44z" fill="#0B0B0C"/></svg>'), c: Object.values(st.liked).filter(Boolean).length + ' TRACKS' }].concat(st.pls.slice(0, 5).map(p => ({ n: p.n, img: ART(p.k), c: p.c + ' TRACKS' }))),
+      rows, rowsA, albumDlIcon: st.albumDl ? IC.check : IC.download,
+      openAlbumMenu: e => { e.stopPropagation(); const [x, y] = this.pos(e); this.openMenu('album', 0, x - 250, y + 20, 'd'); },
+      amBd: mn && mn.kind === 'album' ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.18)', amBg: mn && mn.kind === 'album' ? '#1A1A1D' : 'transparent',
+      closeMenu: () => this.close(), closeMenuCtx: e => { e.preventDefault(); this.close(); },
+      mX: mn ? mn.x : 0, mY: mn ? mn.y : 0, mOp: mOpen ? 1 : 0, mS: mOpen ? 1 : 0.96, mPe: mOpen ? 'auto' : 'none', mOrigin: mn ? `${mn.ox} ${mn.oy}` : 'left top',
+      mTr: m ? (mOpen ? `opacity .18s ease, transform .28s ${ease}` : 'opacity .14s ease, transform .14s ease') : 'none',
+      mTitle: tg.kind === 'album' ? 'Tsunami Sea' : TR[tg.idx][0], mSub: tg.kind === 'album' ? 'ALBUM · SPIRITBOX · 11 TRACKS' : 'TRACK · SPIRITBOX · ' + TR[tg.idx][1],
+      mItems: its, mItemsA: itsA,
+      sX: mn && mn.subLeft ? -262 : 274, sY: subTop - 52, sOp: mOpen && st.sub ? 1 : 0, sTx: st.sub ? 0 : (mn && mn.subLeft ? 8 : -8), sPe: mOpen && st.sub ? 'auto' : 'none', sTr: m ? `opacity .2s ease, transform .3s ${ease}` : 'none',
+      plQuery: st.q, onPlQuery: e => this.setState({ q: e.target.value }), plItems,
+      openNewPl: () => this.setState({ dlg: 'new', sub: false, menu: null, newName: '' }),
+      dlgOp: dOpen ? 1 : 0, dlgPe: dOpen ? 'auto' : 'none', dlgY: dOpen ? 0 : 16, dlgTr: m ? `opacity .35s ease, transform .5s ${ease}` : 'none',
+      dNew: st.dlg === 'new', dInfo: st.dlg === 'info', closeDialog: () => this.setState({ dlg: null }),
+      newName: st.newName, onNewName: e => this.setState({ newName: e.target.value }), onNewKey: e => { if (e.key === 'Enter') this.createPl('d'); if (e.key === 'Escape') this.setState({ dlg: null }); },
+      newHint: tg.kind === 'album' ? 'STARTS WITH 11 TRACKS FROM TSUNAMI SEA' : 'STARTS WITH ' + TR[tg.idx][0].toUpperCase(), createOp: nm ? 1 : 0.35, createPl: () => this.createPl(sh ? 'a' : 'd'),
+      infoKind: st.info === 'album' ? 'ALBUM INFO' : 'TRACK INFO', infoTitle: st.info === 'album' ? 'Tsunami Sea' : TR[ti][0],
+      infoRows: infoRows.map(([k, v]) => ({ k, v, ff: k === 'FILE' || k === 'FOLDER' ? "'IBM Plex Mono',monospace" : "'General Sans',sans-serif" })),
+      tD: tv('d'), tA: tv('a'), qBadge: st.queue.length > 0, qCount: String(st.queue.length),
+      shOp: sOpen ? 1 : 0, shPe: sOpen ? 'auto' : 'none', shY: sOpen ? 0 : 105, shMain: !!sh && sh.view === 'main', shPl: !!sh && sh.view === 'pl',
+      closeSheet: () => this.setState({ sheet: null }), backSheet: () => this.setState(s => ({ sheet: { ...s.sheet, view: 'main' } })),
+      openAlbumSheet: () => this.openMenu('album', 0, 0, 0, 'a'),
+      refs: [ref('track', 'TRACK · ALBUM OR LIBRARY', 'Queue actions first, then personal (like, download), then navigation and info. Download flips to a red Remove once stored.'),
+        ref('track', 'TRACK · INSIDE A PLAYLIST', 'Same menu plus Remove from playlist at the bottom, kept apart from Remove download.', true),
+        ref('album', 'ALBUM', 'Play and Shuffle lead because the album ⋯ sits next to them in the header and in grid cards.')],
+    };
+  }
+}
+</script>
+</body>
+</html>
