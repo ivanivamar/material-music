@@ -208,6 +208,11 @@ export const sessionStore = {
     return stored.token
   },
 
+  /** Token + expiry for the native player (null when signed out / expired). */
+  tokenInfo(): { token: string; expiresAt: number } | null {
+    return stored?.token && isLive(stored) ? { token: stored.token, expiresAt: stored.expiresAt } : null
+  },
+
   /** A usable token, renewing it first on Android if needed (web: same as token()). */
   async ensureToken(): Promise<string | null> {
     const t = sessionStore.token()

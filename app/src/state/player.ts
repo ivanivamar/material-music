@@ -6,7 +6,7 @@
  * Android) attaches with `playerStore.attach(engine)` and drives `position` / `playing`.
  * Until an engine is attached, transport calls only move the queue.
  *
- * PC engine: `player/htmlEngine.ts` (attached in App.tsx).
+ * PC engine: `player/htmlEngine.ts`; Android: `player/nativeEngine.ts` (attached in App.tsx).
  */
 import { useSyncExternalStore } from 'react'
 import { onAccountReset } from './session'
@@ -185,6 +185,14 @@ export const playerStore = {
   },
   notify(n: PlayerNotice) {
     noticeListeners.forEach((l) => l(n))
+  },
+  /**
+   * Native engine (Android): the player moved to another queue row on its own — auto-advance,
+   * repeat, lock-screen / headset next & previous. Only the store follows; nothing is sent back.
+   */
+  engineMoved(index: number) {
+    if (index === state.index || index < 0 || index >= state.queue.length) return
+    set({ index, position: 0 })
   },
   /** Engine calls this when a track finishes. */
   ended() {

@@ -9,6 +9,8 @@ import { Home } from './pages/Home'
 import { Placeholder } from './pages/Placeholder'
 import { LibraryError, LoadingLibrary, NoLibrary } from './screens/LibraryStatus'
 import { createHtmlAudioEngine } from './player/htmlEngine'
+import { createNativeEngine } from './player/nativeEngine'
+import { isNative } from './native/bridge'
 import { SignIn } from './screens/SignIn'
 import { AppShell } from './shell/AppShell'
 import { useRoute, type Route } from './shell/routes'
@@ -35,7 +37,8 @@ void initDriveStream()
 initPwa()
 // Android app: check GitHub Releases for a newer APK.
 initNativeUpdates()
-playerStore.attach(createHtmlAudioEngine())
+// Android: ExoPlayer in a background service (phase C) instead of HTML audio.
+playerStore.attach(isNative ? createNativeEngine() : createHtmlAudioEngine())
 
 function Page({ route }: { route: Extract<Route, { kind: 'app' }> }) {
   switch (route.key) {
