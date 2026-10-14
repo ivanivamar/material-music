@@ -18,6 +18,10 @@
 .pb-title-empty { color: var(--ink-secondary); font-weight: 400; }
 .pb-sub { font-size: 13px; color: var(--ink-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pb-sub.t-mono { font-size: var(--fs-mono-xs); color: var(--ink-tertiary); }
+.pb-link { color: inherit; text-decoration: none; }
+.pb-title.pb-link { color: var(--ink-primary); }
+.pb-sub.pb-link { color: var(--ink-secondary); }
+.pb-link:hover { text-decoration: underline; text-underline-offset: 3px; text-decoration-color: rgba(255, 255, 255, .35); }
 .pb-like { margin-left: 8px; flex: none; }
 
 /* transport */
@@ -26,12 +30,26 @@
 .pb-transport .ibtn { width: 28px; height: 28px; font-size: 19px; }
 .pb-skip { color: var(--ink-primary); }
 .pb .ibtn.pb-skip:disabled { color: var(--ink-ghost); }
-.pb-mode.is-on { color: #fff; }
-.pb-mode.is-on svg { filter: drop-shadow(0 0 5px rgba(255, 255, 255, .55)); }
+/* shuffle / repeat: off = bare icon; on = lit chip (fill + hairline ring + soft glow) */
+.pb .pb-transport .ibtn.pb-mode { width: 32px; height: 32px; margin: 0 -2px; }
+.pb .ibtn.pb-mode:hover:not(:disabled) { background: rgba(255, 255, 255, .06); color: var(--ink-primary); }
+.pb .ibtn.pb-mode.is-on,
+.pb .ibtn.pb-mode.is-on:hover:not(:disabled) {
+  color: #fff;
+  background: rgba(255, 255, 255, .14);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .22), 0 0 14px -2px rgba(255, 255, 255, .28);
+}
+.pb .ibtn.pb-mode.is-on:hover:not(:disabled) { background: rgba(255, 255, 255, .2); }
+.pb .ibtn.pb-mode { transition: color .25s var(--ease), background .25s var(--ease), box-shadow .25s var(--ease); }
+.pb-mode.is-on svg { filter: drop-shadow(0 0 4px rgba(255, 255, 255, .5)); }
 .pb-repeat-wrap { position: relative; display: inline-flex; }
+/* repeat one: solid white badge on the chip's corner */
 .pb-repeat-one {
-  position: absolute; right: -3px; top: -3px;
-  font-family: var(--font-mono); font-size: 8px; line-height: 1; color: #fff; pointer-events: none;
+  position: absolute; right: -4px; top: -4px;
+  min-width: 13px; height: 13px; padding: 0 3px; border-radius: var(--r-pill);
+  display: inline-flex; align-items: center; justify-content: center;
+  background: #fff; color: var(--bg-1); box-shadow: 0 0 0 2px var(--bg-1);
+  font-family: var(--font-mono); font-size: 8px; font-weight: 500; line-height: 1; pointer-events: none;
 }
 .pb.is-empty .playbtn { background: var(--surface-2); color: var(--ink-ghost); cursor: default; box-shadow: none; }
 

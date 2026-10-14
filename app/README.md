@@ -41,7 +41,7 @@ npm run build
 | `src/screens/` | Sign-in, Session expired, first sync ("Charting your library"), No library on Drive, library error |
 | `src/pages/` | Home (greeting + Recently added from the real catalogue), placeholders for later steps |
 
-Routes: `#/home` (default), `#/library`, `#/search`, `#/new`, `#/upload`, `#/downloads`, `#/liked`.
+Routes: `#/home` (default), `#/library[/artists|albums|songs]`, `#/album/<id>`, `#/artist/<id>`, `#/search`, `#/new`, `#/upload`, `#/downloads`, `#/liked`.
 Sign-out (avatar menu on Home) revokes the token and clears the cached catalogue and covers.
 
 Motion: `<html data-motion="full|reduced">` overrides the OS reduced-motion setting. Leave it unset to follow the system. Animated elements use the class `pg-anim`, and particles use `pg-snow`.
@@ -59,6 +59,22 @@ Media Session: title/artist/album/cover, play/pause/stop, previous/next, seek to
 Keyboard: Space plays/pauses (unless a control or text field has focus).
 Errors: an unreadable local file retries from Drive; a failed track is skipped (up to 3 in a row); an expired Google token shows one “Sign in” toast that resumes playback.
 Token caveat: a stream that is already running keeps going past the 1 h token, but seeking or the next Drive track needs a fresh sign-in. Linking the local folder avoids this for everything synced to the PC.
+
+## Library (step 4)
+
+| File | What |
+|---|---|
+| `src/pages/library/Library.tsx` | `#/library/artists · albums · songs` (chips; last tab remembered). Albums: grid with lazy covers, sort by added / title / artist / year. Artists: A–Z groups with a letter index, photo or mono monogram, sort by name / recently added / most albums. Songs: the whole catalogue in a virtualised table (sticky header, click a column to sort, double-click or ▶ to play the list from there) |
+| `src/pages/library/AlbumPage.tsx` | `#/album/<id>`: cover-tinted wash (dominant hue clamped in OKLCH), hero title, artist link, tracks · length · quality badge, Play/Pause · Shuffle · like all, tracklist with disc headers, “More by” shelf |
+| `src/pages/library/ArtistPage.tsx` | `#/artist/<id>`: photo/monogram circle, banner (artist_background, else the photo blurred), Play · Shuffle, songs (first 10, show all), discography grouped as Albums / EPs / Singles / Live |
+| `src/pages/library/common.tsx`, `playback.ts` | Lazy album card, artist avatar, breadcrumb, section head, sort menu; play album / artist / list, “is this context playing” |
+| `src/state/views.ts` | Memoised derived views: album info (length, size, discs, best FLAC format, release type), artist info, sorting, monograms, formatting |
+| `src/state/libraryPrefs.ts` | Last tab and sort orders (localStorage `pelagic.library.v1`) |
+| `src/design/tint.ts` | Album-art tint: OKLCH maths, dominant colour from the cover, `sceneBackground()` |
+| `src/lib/covers.ts` | + `useLazyCover()` / `useNearViewport()`: covers download only when within ~600px of the viewport |
+
+Release type is inferred (the catalogue has none yet): a title hint (“EP”, “Live”, “Single”) wins, else 1–3 tracks under 30 min = single, 4–6 under 30 min = EP, otherwise album.
+Navigation: Home cards and the player bar's title / artist link to the album and artist pages; Back returns to the previous page at the same scroll position.
 
 ### General Sans (to do once)
 Download the free web kit from https://www.fontshare.com/fonts/general-sans and copy

@@ -2,7 +2,7 @@
  * Desktop app shell: 232px sidebar · scrolling main area · 84px player bar,
  * over the Atmosphere layers. Keeps the library in sync and surfaces session / sync events as toasts.
  */
-import { useEffect, useRef, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useRef, type ReactNode } from 'react'
 import { Atmosphere } from '../components/Atmosphere'
 import { useToast } from '../components/ui'
 import { libraryStore, onLibraryUpdated, useLibrary } from '../state/library'
@@ -10,10 +10,10 @@ import { onPlayerNotice, playerStore } from '../state/player'
 import { sessionStore, useSession } from '../state/session'
 import { PlayerBar } from './PlayerBar'
 import { Sidebar } from './Sidebar'
-import type { RouteKey } from './routes'
+import { navKeyOf, type Route } from './routes'
 import './shell.css'
 
-export function AppShell({ route, children }: { route: RouteKey; children: ReactNode }) {
+export function AppShell({ route, children }: { route: Route; children: ReactNode }) {
   const toast = useToast()
   const session = useSession()
   const lib = useLibrary()
@@ -120,15 +120,32 @@ export function AppShell({ route, children }: { route: RouteKey; children: React
     lastError.current = lib.error
   }, [lib.error, lib.data, toast])
 
-  // New page starts at the top
+  // New page starts at the top; going back to a page restores where it was scrolled to.
+  // Positions are recorded while scrolling: by the time the route changes the new page has
+  // already replaced the old one (and clamped scrollTop).
+  const scrolls = useRef(new Map<string, number>())
+  const pathRef = useRef(route.path)
   useEffect(() => {
-    mainRef.current?.scrollTo({ top: 0 })
-  }, [route])
+    const main = mainRef.current
+    if (!main) return
+    const onScroll = () => scrolls.current.set(pathRef.current, main.scrollTop)
+    main.addEventListener('scroll', onScroll, { passive: true })
+    return () => main.removeEventListener('scroll', onScroll)
+  }, [])
+  useLayoutEffect(() => {
+    const main = mainRef.current
+    if (!main || pathRef.current === route.path) return
+    pathRef.current = route.path
+    const y = scrolls.current.get(route.path) ?? 0
+    main.scrollTo({ top: y })
+    // grids may still be laying out (lazy covers keep their size, but be safe)
+    if (y) requestAnimationFrame(() => main.scrollTo({ top: y }))
+  }, [route.path])
 
   return (
     <div className="shell">
       <Atmosphere fixed seed={17} />
-      <Sidebar active={route} />
+      <Sidebar active={navKeyOf(route)} />
       <main className="shell-main" ref={mainRef} id="main" tabIndex={-1}>
         <div className="shell-page">{children}</div>
       </main>

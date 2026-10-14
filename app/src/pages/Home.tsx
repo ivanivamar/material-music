@@ -3,13 +3,13 @@
  * the real catalogue. The full Home (recently played, most played, rediscover) is step 7.
  */
 import { useEffect, useState } from 'react'
-import { AlbumCard, useToast } from '../components/ui'
+import { AlbumCard } from '../components/ui'
 import { Icon } from '../design/icons'
 import { useCover } from '../lib/covers'
 import { albumsByAdded, libraryStats, tracksByAlbum, useLibrary, type Album } from '../state/library'
 import { playerStore, usePlayer } from '../state/player'
 import { useSession } from '../state/session'
-import { href } from '../shell/routes'
+import { albumHref, go, href, libraryHref } from '../shell/routes'
 import { AccountMenu } from './AccountMenu'
 import { PageHeader } from './PageHeader'
 
@@ -30,14 +30,13 @@ const fmtN = (n: number) => n.toLocaleString('en-US')
 function AlbumTile({ album, playing }: { album: Album; playing: boolean }) {
   const cover = useCover(album.cover)
   const { data } = useLibrary()
-  const toast = useToast()
   return (
     <AlbumCard
       title={album.title}
       subtitle={album.year ? `${album.artist} · ${album.year}` : album.artist}
       cover={cover ?? undefined}
       playing={playing}
-      onOpen={() => toast.show({ icon: 'clock', mutedIcon: true, text: 'Album pages arrive with the Library (step 4).' })}
+      onOpen={() => go(albumHref(album.id))}
       onPlay={() => {
         const ids = data ? (tracksByAlbum(data).get(album.id) ?? []).map((t) => t.id) : []
         playerStore.playQueue(ids, 0, { kind: 'album', id: album.id, label: album.title })
@@ -81,9 +80,9 @@ export function Home() {
           <div className="shelf-head">
             <span className="shelf-label">RECENTLY ADDED</span>
             <span className="shelf-line" />
-            <span className="shelf-sub">
+            <a className="shelf-sub shelf-link" href={libraryHref('albums')}>
               {fmtN(stats.albums)} ALBUMS · {fmtN(stats.tracks)} TRACKS · {fmtN(stats.artists)} ARTISTS
-            </span>
+            </a>
           </div>
           <div className="shelf-row">
             {recent.map((a) => (

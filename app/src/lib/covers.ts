@@ -75,3 +75,46 @@ onAccountReset(() => {
   urls.forEach((u) => URL.revokeObjectURL(u))
   urls.clear()
 })
+
+/* ── Lazy covers (Library grids: hundreds of covers, fetch only what's near the viewport) ── */
+
+const seen = new WeakMap<Element, () => void>()
+let observer: IntersectionObserver | null = null
+function observe(el: Element, onSeen: () => void) {
+  observer ??= new IntersectionObserver(
+    (entries) => {
+      for (const e of entries) {
+        if (!e.isIntersecting) continue
+        seen.get(e.target)?.()
+        seen.delete(e.target)
+        observer?.unobserve(e.target)
+      }
+    },
+    { rootMargin: '600px 0px' },
+  )
+  seen.set(el, onSeen)
+  observer.observe(el)
+  return () => {
+    seen.delete(el)
+    observer?.unobserve(el)
+  }
+}
+
+/** Becomes true once the element has come within ~600px of the viewport (and stays true). */
+export function useNearViewport<T extends Element>(): [(el: T | null) => void, boolean] {
+  const [el, setEl] = useState<T | null>(null)
+  const [near, setNear] = useState(() => typeof IntersectionObserver === 'undefined')
+  useEffect(() => {
+    if (!el || near) return
+    return observe(el, () => setNear(true))
+  }, [el, near])
+  return [setEl, near]
+}
+
+/** useCover() that waits until its element is near the viewport (already-cached covers show at once). */
+export function useLazyCover<T extends Element>(fileId: string | null | undefined, v?: number): [(el: T | null) => void, string | null] {
+  const [ref, near] = useNearViewport<T>()
+  const cached = fileId ? peekCover(fileId, v) : null
+  const url = useCover(near || cached ? fileId : null, v)
+  return [ref, url ?? cached]
+}

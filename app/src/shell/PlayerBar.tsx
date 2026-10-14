@@ -7,6 +7,7 @@ import { useCover } from '../lib/covers'
 import { useLibrary, type Track } from '../state/library'
 import { likesStore, useLikes } from '../state/likes'
 import { playerStore, usePlayer } from '../state/player'
+import { albumHref, artistHref } from './routes'
 import './playerbar.css'
 
 export function PlayerBar() {
@@ -47,8 +48,12 @@ export function PlayerBar() {
           <>
             {cover ? <img className="pb-cover" src={cover} alt="" /> : <span className="pb-cover pb-cover-empty" aria-hidden />}
             <div className="pb-text">
-              <div className="pb-title" title={track.title}>{track.title}</div>
-              <div className="pb-sub" title={track.artist}>{track.artist}</div>
+              <a className="pb-title pb-link" href={albumHref(track.albumId)} title={album ? `${track.title} — ${album.title}` : track.title}>
+                {track.title}
+              </a>
+              <a className="pb-sub pb-link" href={artistHref(track.artistId)} title={track.artist}>
+                {track.artist}
+              </a>
             </div>
             <LikeButton liked={!!likes[track.id]} onToggle={(v) => likesStore.set(track.id, v)} size={16} className="pb-like" />
           </>

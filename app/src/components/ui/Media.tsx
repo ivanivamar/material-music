@@ -20,12 +20,15 @@ interface TrackRowProps {
   download?: DownloadState
   onPlay?: () => void
   onMore?: (e: MouseEvent) => void
+  /** extra class, e.g. a column variant (`trow-album`) */
+  className?: string
 }
 
-export function TrackRow({ n, title, subtitle, duration, label, playing, liked, onLike, download = { kind: 'none' }, onPlay, onMore }: TrackRowProps) {
+/** `download` omitted → empty status cell (PC: nothing is stored offline). */
+export function TrackRow({ n, title, subtitle, duration, label, playing, liked, onLike, download, onPlay, onMore, className }: TrackRowProps) {
   return (
     <div
-      className={`trow ${playing ? 'is-playing' : ''}`}
+      className={['trow', playing && 'is-playing', className].filter(Boolean).join(' ')}
       onDoubleClick={onPlay}
       onContextMenu={(e) => {
         if (onMore) {
@@ -52,9 +55,7 @@ export function TrackRow({ n, title, subtitle, duration, label, playing, liked, 
           </button>
         )}
       </div>
-      <div className="trow-dl">
-        <DownloadIcon state={download} />
-      </div>
+      <div className="trow-dl">{download && <DownloadIcon state={download} />}</div>
       <div className="trow-dur">{duration}</div>
       <div className="trow-label">{label}</div>
     </div>
@@ -74,11 +75,14 @@ interface AlbumCardProps {
   offline?: boolean
   onOpen?: () => void
   onPlay?: () => void
+  /** ref on the card (lazy cover loading) */
+  cardRef?: (el: HTMLDivElement | null) => void
 }
 
-export function AlbumCard({ title, subtitle, cover, playing, unavailable, offline, onOpen, onPlay }: AlbumCardProps) {
+export function AlbumCard({ title, subtitle, cover, playing, unavailable, offline, onOpen, onPlay, cardRef }: AlbumCardProps) {
   return (
     <div
+      ref={cardRef}
       className={`acard ${playing ? 'is-playing' : ''} ${unavailable ? 'is-unavailable' : ''}`}
       role="link"
       tabIndex={0}

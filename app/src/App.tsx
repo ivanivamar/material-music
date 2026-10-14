@@ -9,7 +9,10 @@ import { LibraryError, LoadingLibrary, NoLibrary } from './screens/LibraryStatus
 import { createHtmlAudioEngine } from './player/htmlEngine'
 import { SignIn } from './screens/SignIn'
 import { AppShell } from './shell/AppShell'
-import { useRoute, type RouteKey } from './shell/routes'
+import { useRoute, type Route } from './shell/routes'
+import { AlbumPage } from './pages/library/AlbumPage'
+import { ArtistPage } from './pages/library/ArtistPage'
+import { Library } from './pages/library/Library'
 import { libraryStore, useLibrary } from './state/library'
 import { useMotionAttribute } from './state/motion'
 import { playerStore } from './state/player'
@@ -21,12 +24,16 @@ void libraryStore.loadCache()
 void initDriveStream()
 playerStore.attach(createHtmlAudioEngine())
 
-function Page({ route }: { route: RouteKey }) {
-  switch (route) {
+function Page({ route }: { route: Extract<Route, { kind: 'app' }> }) {
+  switch (route.key) {
     case 'home':
       return <Home />
     case 'library':
-      return <Placeholder title="Library" meta="ARTISTS · ALBUMS · SONGS" icon="library" line="The shelves go up next." body="Artists, albums and songs from your catalogue arrive in step 4." />
+      return <Library tab={route.tab} />
+    case 'album':
+      return <AlbumPage key={route.id} id={route.id} />
+    case 'artist':
+      return <ArtistPage key={route.id} id={route.id} />
     case 'search':
       return <Placeholder title="Search" meta="CLIENT-SIDE · WHOLE CATALOGUE" icon="search" line="Nothing to search yet." body="Search over the catalogue arrives in step 5." />
     case 'new':
@@ -60,7 +67,7 @@ export default function App() {
   if (route.kind === 'dev') screen = route.key === 'dev/foundations' ? <Foundations /> : <Components />
   else if (session.status === 'signed-out') screen = <SignIn />
   else if (!lib.cacheChecked) screen = <div className="scr" />
-  else if (lib.data && !charting) screen = <AppShell route={route.key}><Page route={route.key} /></AppShell>
+  else if (lib.data && !charting) screen = <AppShell route={route}><Page route={route} /></AppShell>
   else if (session.status === 'expired') screen = <SignIn expired />
   else if (lib.status === 'missing') screen = <NoLibrary />
   else if (lib.status === 'error') screen = <LibraryError />

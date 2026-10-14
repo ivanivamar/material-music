@@ -77,6 +77,8 @@
 .shelf-label { font-family: var(--font-mono); font-size: var(--fs-mono); letter-spacing: .16em; color: var(--ink-primary); }
 .shelf-line { flex: 1; height: 1px; background: rgba(255, 255, 255, .08); }
 .shelf-sub { font-family: var(--font-mono); font-size: var(--fs-mono-sm); letter-spacing: .14em; color: var(--ink-secondary); }
+.shelf-link { text-decoration: none; }
+.shelf-link:hover { color: var(--ink-primary); }
 .shelf-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 28px 24px; }
 .shelf-row .acard-img { border-radius: var(--r-cover); }
 
