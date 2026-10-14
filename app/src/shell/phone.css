@@ -151,6 +151,11 @@ html[data-phone][data-qp] .toasts.toasts-shell { right: 0; }
 .shell.is-phone .srch-meta, .shell.is-phone .srch-hint { display: none; }
 .shell.is-phone .srch-chips { overflow-x: auto; scrollbar-width: none; margin-right: -20px; padding-right: 20px; }
 .shell.is-phone .srch-all { gap: 32px; }
+/* All view: the desktop "one row, extras clipped" trick left only 2 albums / 1 artist reachable on a
+   phone. Here the rows wrap normally and show 4 of each; "Show all N" opens the rest. */
+.shell.is-phone .srch-row { grid-auto-rows: auto; overflow: visible; padding: 0; margin: 0; }
+.shell.is-phone .lib-grid.srch-row { row-gap: 22px !important; }
+.shell.is-phone .srch-row > :nth-child(n + 5) { display: none; }
 .shell.is-phone .srch-top { padding: 14px; gap: 14px; border-radius: 16px; }
 .shell.is-phone .srch-top-name { font-size: 22px; }
 .shell.is-phone .srch-top-name.is-long { font-size: 18px; }
@@ -162,6 +167,11 @@ html[data-phone][data-qp] .toasts.toasts-shell { right: 0; }
 /* ── Full-screen player (handoff 05 Android Now Playing) ── */
 /* Android app (edge-to-edge): keep the player's content below the status bar */
 .shell.is-phone .np { top: env(safe-area-inset-top, 0px); }
+/* swipe down to close (nowplaying/swipe.ts) */
+.shell.is-phone .np.is-touchmoved:not(.is-closing) { animation: none; }
+.shell.is-phone .np.is-swiping { transition: none; }
+.shell.is-phone .np.is-springing { transition: transform .3s var(--ease); }
+.shell.is-phone .np.is-swiped { animation: none !important; transition: transform .26s cubic-bezier(.4, 0, 1, 1); pointer-events: none; }
 .shell.is-phone .np-head { height: 60px; padding: 0 14px; }
 .shell.is-phone .np-close { width: 44px; height: 44px; padding: 0; margin: 0; justify-content: center; font-size: 0; letter-spacing: 0; }
 .shell.is-phone .np-close svg { font-size: 22px; }
@@ -229,6 +239,9 @@ html[data-phone][data-qp] .toasts.toasts-shell { right: 0; }
   transform: translateY(105%);
 }
 .shell.is-phone .qp.is-open { transform: none; }
+/* Android WebView: without their own layers the sheet / scrim could be painted under the player's
+   scrolling content (np-main) while they animate — the "flicker" below the cover */
+.shell.is-phone .qp, .shell.is-phone .qp-scrim { will-change: transform, opacity; backface-visibility: hidden; }
 .shell.is-phone .qp { transition: transform var(--dur-panel) var(--ease), top .5s var(--ease), visibility 0s linear var(--dur-panel); }
 .shell.is-phone .qp.is-open { transition: transform .5s var(--ease), top .5s var(--ease), visibility 0s; }
 .shell.is-phone .qp.is-expanded { top: env(safe-area-inset-top, 0px); }

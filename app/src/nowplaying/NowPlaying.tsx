@@ -21,6 +21,7 @@ import { playerStore } from '../state/player'
 import { isTouch, useIsPhone } from '../state/viewport'
 import { albumHref, artistHref } from '../shell/routes'
 import { Lyrics } from './Lyrics'
+import { useSwipeDown } from './swipe'
 import { NpLink, Transport, ViewButtons, contextLine, useCurrent } from './parts'
 import './nowplaying.css'
 
@@ -31,6 +32,7 @@ const titleSize = (t: string) => {
 }
 
 const pad2 = (n: number) => String(n).padStart(2, '0')
+const closeNp = () => nowPlayingStore.close()
 
 export function NowPlaying() {
   const ui = useNowPlayingUi()
@@ -78,6 +80,9 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
 
   const ly = ui.view === 'lyrics'
   const phone = useIsPhone()
+  // phone: swipe down anywhere (outside sliders / lyrics) to close, like the queue sheet
+  const rootRef = useRef<HTMLDivElement>(null)
+  useSwipeDown(rootRef, phone && !closing, closeNp)
   // mount the lyrics column the first time it's shown, then keep it (so it can fade out)
   const [lyMounted, setLyMounted] = useState(ly)
   if (ly && !lyMounted) setLyMounted(true)
@@ -108,7 +113,7 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
   const trackNo = track?.track ? `TRACK ${pad2(track.track)}${album?.trackCount ? `/${pad2(album.trackCount)}` : ''}` : null
 
   return (
-    <div className={`np pg-anim ${closing ? 'is-closing' : ''} ${ly ? 'is-lyrics' : ''} ${phone ? 'is-phone' : ''}`} style={scene} role="dialog" aria-modal="true" aria-label="Now playing">
+    <div ref={rootRef} className={`np pg-anim ${closing ? 'is-closing' : ''} ${ly ? 'is-lyrics' : ''} ${phone ? 'is-phone' : ''}`} style={scene} role="dialog" aria-modal="true" aria-label="Now playing">
       <Atmosphere seed={41} />
 
       <header className="np-head">
