@@ -7,12 +7,17 @@
  *
  * Positioned absolute/inset 0: place inside a `position: relative` container
  * (or use `fixed` for a full-viewport background).
+ *
+ * Phone layout ("lite", also the Android app): contours cross-fade between two static drawings on
+ * the GPU instead of the SMIL morph, at most 6 snowflakes without blur, grain without blending.
+ * `paused` freezes everything (the shell's layer while the full-screen player covers it).
  */
 import { memo, useMemo } from 'react'
-import { CONTOUR_LIVE, CONTOUR_SMOOTH, GRAIN, STONE } from '../design/textures'
+import { CONTOUR_LIVE, CONTOUR_SMOOTH, CONTOUR_SMOOTH_B, GRAIN, STONE } from '../design/textures'
 import { particleCounts, type ParticleSetting } from '../design/tokens'
 import { useSettings } from '../state/settings'
 import { useMotion } from '../state/motion'
+import { useIsPhone } from '../state/viewport'
 import './atmosphere.css'
 
 interface AtmosphereProps {
@@ -25,6 +30,8 @@ interface AtmosphereProps {
   /** seed so different screens don't share the exact same flake layout */
   seed?: number
   fixed?: boolean
+  /** freeze all animation (e.g. while covered by another full-screen layer) */
+  paused?: boolean
   className?: string
 }
 
@@ -62,20 +69,30 @@ export const Atmosphere = memo(function Atmosphere({
   pools = true,
   seed = 17,
   fixed = false,
+  paused = false,
   className,
 }: AtmosphereProps) {
   const settings = useSettings()
   const motion = useMotion()
+  const lite = useIsPhone()
   const showTexture = texture ?? settings.texture
-  const count = motion ? particleCounts[particles ?? settings.particles] : 0
+  const wanted = motion ? particleCounts[particles ?? settings.particles] : 0
+  const count = lite ? Math.min(wanted, particleCounts.few) : wanted
   const flakes = useMemo(() => makeFlakes(count, seed), [count, seed])
 
   return (
-    <div className={`atm ${fixed ? 'atm-fixed' : ''} ${className ?? ''}`} aria-hidden>
+    <div className={`atm ${fixed ? 'atm-fixed' : ''} ${lite ? 'atm-lite' : ''} ${paused ? 'atm-paused' : ''} ${className ?? ''}`} aria-hidden>
       {showTexture && (
         <>
           <div className="atm-stone" style={{ backgroundImage: STONE }} />
-          <div className="atm-contour" style={{ backgroundImage: motion ? CONTOUR_LIVE : CONTOUR_SMOOTH }} />
+          {lite ? (
+            <>
+              <div className={`atm-contour ${motion ? 'atm-contour-a pg-anim' : ''}`} style={{ backgroundImage: CONTOUR_SMOOTH }} />
+              {motion && <div className="atm-contour atm-contour-b pg-anim pg-snow" style={{ backgroundImage: CONTOUR_SMOOTH_B }} />}
+            </>
+          ) : (
+            <div className="atm-contour" style={{ backgroundImage: motion && !paused ? CONTOUR_LIVE : CONTOUR_SMOOTH }} />
+          )}
           <div className="atm-grain" style={{ backgroundImage: GRAIN }} />
         </>
       )}

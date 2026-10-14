@@ -234,7 +234,8 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
 
   return (
     <div className={`shell ${phone ? 'is-phone' : ''} ${phone && hasTrack ? 'has-mini' : ''}`}>
-      <Atmosphere fixed seed={17} />
+      {/* frozen while the full-screen player (with its own atmosphere) covers the shell */}
+      <Atmosphere fixed seed={17} paused={np.open} />
       {/* the full-screen player is modal: everything behind it is inert */}
       <div className="shell-layer" inert={np.open}>
         {!phone && <Sidebar active={navKeyOf(route)} />}

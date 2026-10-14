@@ -27,3 +27,14 @@
 }
 .atm-dot { border-radius: 50%; background: #fff; box-shadow: 0 0 4px rgba(255, 255, 255, .5); }
 .atm-bokeh { box-shadow: none; filter: blur(1.5px); }
+
+/* Phone layout / Android app: cheap version (see Atmosphere.tsx) */
+.atm-contour-a { will-change: opacity; animation: pg-breathe-out 13s ease-in-out infinite alternate; }
+.atm-contour-b { opacity: 0; will-change: opacity; animation: pg-breathe-in 13s ease-in-out infinite alternate; }
+@keyframes pg-breathe-in { from { opacity: 0; } to { opacity: var(--atm-contour-opacity); } }
+@keyframes pg-breathe-out { from { opacity: var(--atm-contour-opacity); } to { opacity: 0; } }
+.atm-lite .atm-grain { mix-blend-mode: normal; }
+.atm-lite .atm-bokeh { filter: none; }
+
+/* covered by the full-screen player: stop everything */
+.atm-paused, .atm-paused * { animation-play-state: paused !important; }

@@ -5,6 +5,8 @@
  *   GRAIN  — film grain, 220px tile, opacity .07, mix-blend-mode: screen
  *   CONTOUR_SMOOTH / CONTOUR_LIVE — topographic rings, opacity .075, size cover.
  *     LIVE breathes in place (26s path morph, SMIL); SMOOTH is the static/reduced-motion version.
+ *   CONTOUR_SMOOTH_B — the other end of LIVE's morph, static. The phone layout cross-fades SMOOTH ⇄ SMOOTH_B
+ *     on the GPU instead of re-drawing the SMIL morph every frame (which costs most of a phone CPU core).
  */
 export const svgUri = (s: string) => `url("data:image/svg+xml,${encodeURIComponent(s)}")`
 
@@ -35,7 +37,7 @@ function crPath(pts: Pt[], closed: boolean): string {
   return d + (closed ? 'Z' : '')
 }
 
-function contourSvg(W: number, H: number, animated: boolean): string {
+function contourSvg(W: number, H: number, animated: boolean, endState = false): string {
   const out: string[] = []
   const ring = (cx: number, cy: number, r: number, k: number, ph: number, sc: number) => {
     const pts: Pt[] = []
@@ -54,7 +56,7 @@ function contourSvg(W: number, H: number, animated: boolean): string {
   const peak = (cx: number, cy: number, rings: number, r0: number, step: number, ph: number) => {
     for (let k = 0; k < rings; k++) {
       const r = r0 + k * step
-      const A = ring(cx, cy, r, k, ph, 1)
+      const A = endState ? ring(cx, cy, r, k, ph + 0.55 + k * 0.03, 1.025) : ring(cx, cy, r, k, ph, 1)
       if (!animated) {
         out.push(`<path d="${A}"/>`)
         continue
@@ -76,3 +78,4 @@ function contourSvg(W: number, H: number, animated: boolean): string {
 
 export const CONTOUR_SMOOTH = contourSvg(1600, 1000, false)
 export const CONTOUR_LIVE = contourSvg(1600, 1000, true)
+export const CONTOUR_SMOOTH_B = contourSvg(1600, 1000, false, true)
