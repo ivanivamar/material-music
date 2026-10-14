@@ -20,10 +20,12 @@ npm run build
 | `src/design/textures.ts` | `STONE`, `GRAIN`, `CONTOUR_SMOOTH`, `CONTOUR_LIVE` texture data URIs |
 | `src/components/Logo.tsx` | Aperture mark, wordmark, lockup |
 | `src/components/Atmosphere.tsx` | Background layers: stone, breathing contours, grain, light pools, marine snow. Follows the Motion / particles / texture settings |
-| `src/components/ui/` | Core components: `Button`, `IconButton`, `LikeButton`, `PlayButton`, `Toggle`, `Segmented`, `Chip`, `Slider`, `SeekBar`, `Waveform`, `QualityBadge`, `ReleaseBadge`, `Eq`, `DownloadStatus`/`DownloadIcon`, `Skeleton`, `Rule`, `Sonar`, `OfflineBanner`, `EmptyState`, `TrackRow`, `AlbumCard`, toasts (`ToastProvider` + `useToast()`) |
+| `src/components/ui/` | Core components: `Button`, `IconButton`, `PlayButton`, `Toggle`, `Segmented`, `Chip`, `Slider`, `SeekBar`, `Waveform`, `QualityBadge`, `ReleaseBadge`, `Eq`, `DownloadStatus`/`DownloadIcon`, `Skeleton`, `Rule`, `Sonar`, `OfflineBanner`, `EmptyState`, `TrackRow`, `AlbumCard`, toasts (`ToastProvider` + `useToast()`) |
 | `src/state/settings.ts` | Settings store (`useSettings`, `settingsStore.set`), saved instantly to localStorage (Drive sync later) |
 | `src/state/motion.ts` | `useMotion()`: the effective motion setting (in-app setting, else the system's reduced-motion preference) |
 | `src/dev/` | Reference pages: `#/dev/components` and `#/dev/foundations` (work without signing in) |
+
+No Liked songs list and no heart buttons (dropped Oct 2026).
 
 ## App shell (step 3c)
 
@@ -36,12 +38,11 @@ npm run build
 | `src/lib/covers.ts` | `useCover(driveFileId)`: fetches covers with the token, caches blobs in IndexedDB, serves object URLs |
 | `src/lib/idb.ts` | Tiny IndexedDB key-value (`kv`, `covers`) |
 | `src/state/player.ts` | Queue / transport / volume store the player bar binds to. Step 3d attaches the audio engine with `playerStore.attach()` |
-| `src/state/likes.ts` | Liked songs, local for now (Drive `liked.json` in step 8) |
 | `src/shell/` | `AppShell` (grid: sidebar · main · player bar), `Sidebar` (circle-clip active animation + rings), `PlayerBar`, hash `routes` |
 | `src/screens/` | Sign-in, Session expired, first sync ("Charting your library"), No library on Drive, library error |
 | `src/pages/` | Home (greeting + Recently added from the real catalogue), placeholders for later steps |
 
-Routes: `#/home` (default), `#/library[/artists|albums|songs]`, `#/album/<id>`, `#/artist/<id>`, `#/search`, `#/new`, `#/upload`, `#/downloads`, `#/liked`.
+Routes: `#/home` (default), `#/library[/artists|albums|songs]`, `#/album/<id>`, `#/artist/<id>`, `#/search`, `#/new`, `#/upload`, `#/downloads`.
 Sign-out (avatar menu on Home) revokes the token and clears the cached catalogue and covers.
 
 Motion: `<html data-motion="full|reduced">` overrides the OS reduced-motion setting. Leave it unset to follow the system. Animated elements use the class `pg-anim`, and particles use `pg-snow`.
@@ -64,8 +65,8 @@ Token caveat: a stream that is already running keeps going past the 1 h token, b
 
 | File | What |
 |---|---|
-| `src/pages/library/Library.tsx` | `#/library/artists · albums · songs` (chips; last tab remembered). Albums: grid with lazy covers, sort by added / title / artist / year. Artists: A–Z groups with a letter index, photo or mono monogram, sort by name / recently added / most albums. Songs: the whole catalogue in a virtualised table (sticky header, click a column to sort, double-click or ▶ to play the list from there) |
-| `src/pages/library/AlbumPage.tsx` | `#/album/<id>`: cover-tinted wash (dominant hue clamped in OKLCH), hero title, artist link, tracks · length · quality badge, Play/Pause · Shuffle · like all, tracklist with disc headers, “More by” shelf |
+| `src/pages/library/Library.tsx` | `#/library/artists · albums · songs` (chips; last tab remembered). Albums: grid with lazy covers, sort by added / title / artist / year. Artists: A–Z groups with a letter index, photo or mono monogram, sort by name / recently added / most albums. Songs: Play / Shuffle (whole list, current sort), then the whole catalogue in a virtualised table (sticky header, click a column to sort, double-click or ▶ to play the list from there) |
+| `src/pages/library/AlbumPage.tsx` | `#/album/<id>`: cover-tinted wash (dominant hue clamped in OKLCH), hero title, artist link, tracks · length · quality badge, Play/Pause · Shuffle, tracklist with disc headers, “More by” shelf |
 | `src/pages/library/ArtistPage.tsx` | `#/artist/<id>`: photo/monogram circle, banner (artist_background, else the photo blurred), Play · Shuffle, songs (first 10, show all), discography grouped as Albums / EPs / Singles / Live |
 | `src/pages/library/common.tsx`, `playback.ts` | Lazy album card, artist avatar, breadcrumb, section head, sort menu; play album / artist / list, “is this context playing” |
 | `src/state/views.ts` | Memoised derived views: album info (length, size, discs, best FLAC format, release type), artist info, sorting, monograms, formatting |
@@ -75,6 +76,16 @@ Token caveat: a stream that is already running keeps going past the 1 h token, b
 
 Release type is inferred (the catalogue has none yet): a title hint (“EP”, “Live”, “Single”) wins, else 1–3 tracks under 30 min = single, 4–6 under 30 min = EP, otherwise album.
 Navigation: Home cards and the player bar's title / artist link to the album and artist pages; Back returns to the previous page at the same scroll position.
+
+## Search (step 5)
+
+| File | What |
+|---|---|
+| `src/state/search.ts` | Client-side search over the cached catalogue (no Drive calls). Text folded once per catalogue (case, accents, full-width, apostrophes: “beyonce deja” finds “Beyoncé · Déjà Vu”); every query word must match the title, artist or album; title word-starts rank highest; artist initials (“bfmv”). Top result = best artist / album / song. No match → “Did you mean” (closest name by edit distance). `highlight()` for glowing matches. `searchStore`: query + filter (kept for the tab in sessionStorage), recent searches (localStorage `pelagic.search.v1`, cleared on sign-out) |
+| `src/pages/search/Search.tsx` | `#/search`: 60px field with live `N RESULTS · MS`, All / Artists / Albums / Songs chips. All = Top result card + 4 songs, then one row each of albums and artists (“Show all N” switches the chip). Songs chip = virtualised list with Play all. Empty field → recent searches. Playing from search uses the `search` PlayContext |
+| `src/pages/library/useWindow.ts` | Fixed-row windowing shared by Library Songs and Search songs |
+
+Keys: `/` or Ctrl/⌘+K from anywhere focuses Search · Enter opens the top result · Esc clears · ↓/↑ move through results · Enter on a song plays it.
 
 ### General Sans (to do once)
 Download the free web kit from https://www.fontshare.com/fonts/general-sans and copy

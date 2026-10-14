@@ -7,7 +7,6 @@
 import { useState, type CSSProperties } from 'react'
 import { Button, EmptyState, TrackRow, formatTime } from '../../components/ui'
 import { useCover } from '../../lib/covers'
-import { likesStore, useLikes } from '../../state/likes'
 import { useLibrary } from '../../state/library'
 import { playerStore } from '../../state/player'
 import { libraryHref } from '../../shell/routes'
@@ -22,7 +21,6 @@ const heroSize = (t: string) => (t.length <= 16 ? 84 : t.length <= 26 ? 64 : t.l
 
 export function ArtistPage({ id }: { id: string }) {
   const { data } = useLibrary()
-  const likes = useLikes()
   const now = useNowPlaying()
   const ctx = useContextState('artist', id)
   const playingAlbum = usePlayingAlbumId(data)
@@ -105,8 +103,6 @@ export function ArtistPage({ id }: { id: string }) {
                   duration={t.duration ? formatTime(t.duration) : '—'}
                   label={album?.year ?? ''}
                   playing={now.id === t.id}
-                  liked={!!likes[t.id]}
-                  onLike={(v) => likesStore.set(t.id, v)}
                   onPlay={() => playAt(t.id)}
                 />
               )

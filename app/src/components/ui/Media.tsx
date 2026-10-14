@@ -1,7 +1,6 @@
 /** Track row and album card — the two most repeated library elements. */
 import type { MouseEvent, ReactNode } from 'react'
 import { Icon } from '../../design/icons'
-import { LikeButton } from './Button'
 import { DownloadIcon, Eq, type DownloadState } from './Status'
 
 /* ── Track row ──────────────────────────────────────── */
@@ -15,8 +14,6 @@ interface TrackRowProps {
   /** right-most mono column: quality, added date, plays… */
   label?: ReactNode
   playing?: boolean
-  liked: boolean
-  onLike: (next: boolean) => void
   download?: DownloadState
   onPlay?: () => void
   onMore?: (e: MouseEvent) => void
@@ -25,7 +22,7 @@ interface TrackRowProps {
 }
 
 /** `download` omitted → empty status cell (PC: nothing is stored offline). */
-export function TrackRow({ n, title, subtitle, duration, label, playing, liked, onLike, download, onPlay, onMore, className }: TrackRowProps) {
+export function TrackRow({ n, title, subtitle, duration, label, playing, download, onPlay, onMore, className }: TrackRowProps) {
   return (
     <div
       className={['trow', playing && 'is-playing', className].filter(Boolean).join(' ')}
@@ -48,7 +45,6 @@ export function TrackRow({ n, title, subtitle, duration, label, playing, liked, 
           <div className="trow-title">{title}</div>
           {subtitle && <div className="trow-sub">{subtitle}</div>}
         </div>
-        <LikeButton liked={liked} onToggle={onLike} />
         {onMore && (
           <button type="button" className="ibtn ibtn-sm ibtn-bare trow-more" aria-label="More" onClick={onMore}>
             <Icon name="more" />
@@ -66,7 +62,7 @@ export function TrackRow({ n, title, subtitle, duration, label, playing, liked, 
 
 interface AlbumCardProps {
   title: string
-  subtitle: string
+  subtitle: ReactNode
   cover?: string
   playing?: boolean
   /** offline mode: not downloaded → greyscale 40% + cloud badge */

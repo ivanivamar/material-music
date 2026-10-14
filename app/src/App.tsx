@@ -13,11 +13,18 @@ import { useRoute, type Route } from './shell/routes'
 import { AlbumPage } from './pages/library/AlbumPage'
 import { ArtistPage } from './pages/library/ArtistPage'
 import { Library } from './pages/library/Library'
+import { Search } from './pages/search/Search'
 import { libraryStore, useLibrary } from './state/library'
 import { useMotionAttribute } from './state/motion'
 import { playerStore } from './state/player'
 import { useSession } from './state/session'
 
+// Liked songs were dropped (Oct 2026): clear the old local store once.
+try {
+  localStorage.removeItem('pelagic.likes.v1')
+} catch {
+  /* storage unavailable */
+}
 // The cached catalogue is local data: read it at boot, before (and regardless of) the session.
 void libraryStore.loadCache()
 // Player core (3d): HTML audio engine + the service worker that streams from Drive.
@@ -35,15 +42,13 @@ function Page({ route }: { route: Extract<Route, { kind: 'app' }> }) {
     case 'artist':
       return <ArtistPage key={route.id} id={route.id} />
     case 'search':
-      return <Placeholder title="Search" meta="CLIENT-SIDE · WHOLE CATALOGUE" icon="search" line="Nothing to search yet." body="Search over the catalogue arrives in step 5." />
+      return <Search />
     case 'new':
       return <Placeholder title="New releases" meta="MUSICBRAINZ · DAILY" icon="newr" line="No sweep has run yet." body="The MusicBrainz feed for the artists you follow arrives in step 11." />
     case 'upload':
       return <Placeholder title="Upload" meta="FLAC → DRIVE + OPUS" icon="upload" line="Use the importer for now." body="Run tools/import on your PC (npm run import). In-app upload arrives in step 10." />
     case 'downloads':
       return <Placeholder title="Downloads" meta="OFFLINE · ANDROID" icon="download" line="Nothing stored offline." body="Offline downloads come with the Android build in step 6." />
-    case 'liked':
-      return <Placeholder title="Liked songs" meta="AUTO PLAYLIST" icon="heart" line="Hearts are saved on this device." body="The Liked songs page and its Drive sync (liked.json) arrive with playlists in step 8." />
   }
 }
 

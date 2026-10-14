@@ -5,7 +5,7 @@
 import { useSyncExternalStore } from 'react'
 import type { IconName } from '../design/icons'
 
-export type RouteKey = 'home' | 'library' | 'search' | 'new' | 'upload' | 'downloads' | 'liked' | 'album' | 'artist'
+export type RouteKey = 'home' | 'library' | 'search' | 'new' | 'upload' | 'downloads' | 'album' | 'artist'
 export type DevRoute = 'dev/components' | 'dev/foundations'
 export type LibraryTab = 'albums' | 'artists' | 'songs'
 export const LIBRARY_TABS: LibraryTab[] = ['artists', 'albums', 'songs']
@@ -27,7 +27,7 @@ export const NAV: NavItem[] = [
 ]
 
 type SimpleKey = Exclude<RouteKey, 'library' | 'album' | 'artist'>
-const KEYS = new Set<string>(['home', 'search', 'new', 'upload', 'downloads', 'liked'])
+const KEYS = new Set<string>(['home', 'search', 'new', 'upload', 'downloads'])
 const DEV = new Set<string>(['dev/components', 'dev/foundations'])
 
 export type Route =

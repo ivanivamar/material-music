@@ -58,15 +58,7 @@ export function Sidebar({ active, badges }: { active: RouteKey; badges?: Partial
             <Icon name="plus" />
           </button>
         </div>
-        <a className={`sb-pl ${active === 'liked' ? 'is-active' : ''}`} href={href('liked')} aria-current={active === 'liked' ? 'page' : undefined}>
-          <span className="sb-pl-liked" aria-hidden>
-            <Icon name="heartF" />
-          </span>
-          <span className="sb-pl-text">
-            <span className="sb-pl-name">Liked songs</span>
-            <span className="sb-pl-meta">AUTO</span>
-          </span>
-        </a>
+        <div className="sb-pl-none">No playlists yet</div>
       </section>
     </aside>
   )

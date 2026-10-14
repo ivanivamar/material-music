@@ -7,10 +7,11 @@ import { Atmosphere } from '../components/Atmosphere'
 import { useToast } from '../components/ui'
 import { libraryStore, onLibraryUpdated, useLibrary } from '../state/library'
 import { onPlayerNotice, playerStore } from '../state/player'
+import { searchStore } from '../state/search'
 import { sessionStore, useSession } from '../state/session'
 import { PlayerBar } from './PlayerBar'
 import { Sidebar } from './Sidebar'
-import { navKeyOf, type Route } from './routes'
+import { go, href, navKeyOf, type Route } from './routes'
 import './shell.css'
 
 export function AppShell({ route, children }: { route: Route; children: ReactNode }) {
@@ -106,6 +107,22 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
       if (playerStore.get().index < 0) return
       e.preventDefault()
       playerStore.toggle()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
+  // "/" or Ctrl/⌘+K: jump to Search and focus the field (from anywhere, unless typing)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const slash = e.key === '/' && !e.ctrlKey && !e.metaKey && !e.altKey
+      const k = (e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === 'k'
+      if (!slash && !k) return
+      const el = e.target as HTMLElement | null
+      if (slash && el?.closest('input, textarea, select, [contenteditable="true"]')) return
+      e.preventDefault()
+      if (window.location.hash !== href('search')) go(href('search'))
+      searchStore.requestFocus()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)

@@ -58,7 +58,7 @@
 .art-tile .avatar-art-mono { font-size: clamp(22px, 2.6vw, 36px); }
 
 /* ── Songs (virtualised table) ──────────────────────── */
-.songs { --cols: 48px minmax(0, 1.3fr) minmax(0, 1fr) 28px 108px 64px; }
+.songs { --cols: 48px minmax(0, 1.3fr) minmax(0, 1fr) 108px 64px; }
 .songs-head {
   display: grid; grid-template-columns: var(--cols); align-items: center; gap: 14px;
   height: 34px; padding: 0 12px; border-bottom: 1px solid rgba(255, 255, 255, .1);
@@ -153,8 +153,8 @@ a.ln:hover { color: var(--ink-primary); text-decoration: underline; text-underli
 .actions { display: flex; align-items: center; gap: 12px; margin-bottom: 36px; }
 .actions .actions-play { padding: 0 26px; min-width: 124px; }
 .actions .btn-secondary { padding: 0 22px; }
-.actions-like { width: 46px; height: 46px; }
 .actions-spacer { flex: 1; }
+.lib-actions { margin-bottom: 28px; }
 .actions-info { display: flex; flex-direction: column; gap: 3px; align-items: flex-end; text-align: right; }
 .actions-info-main { font-size: 14px; }
 .actions-info-meta { font-family: var(--font-mono); font-size: var(--fs-mono-sm); letter-spacing: .12em; color: var(--ink-secondary); }

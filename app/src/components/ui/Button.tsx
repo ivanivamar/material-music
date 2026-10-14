@@ -1,4 +1,4 @@
-import { useState, type ButtonHTMLAttributes, type ReactNode } from 'react'
+import { type ButtonHTMLAttributes, type ReactNode } from 'react'
 import { Icon, type IconName } from '../../design/icons'
 
 type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost'
@@ -44,36 +44,6 @@ export function IconButton({ icon, label, size = 'md', shape = 'round', bare, pr
   return (
     <button type={type} className={cls} aria-label={label} title={label} aria-pressed={pressed} {...rest}>
       <Icon name={icon} />
-    </button>
-  )
-}
-
-interface LikeButtonProps {
-  liked: boolean
-  onToggle: (next: boolean) => void
-  size?: number
-  className?: string
-}
-
-/** Heart: outline #55555A → solid white, pops to 1.28× on like. */
-export function LikeButton({ liked, onToggle, size, className }: LikeButtonProps) {
-  const [pop, setPop] = useState(0)
-  return (
-    <button
-      type="button"
-      className={['like', liked && 'is-liked', pop > 0 && 'is-pop', className].filter(Boolean).join(' ')}
-      aria-pressed={liked}
-      aria-label={liked ? 'Remove from Liked songs' : 'Add to Liked songs'}
-      title={liked ? 'Remove from Liked songs' : 'Add to Liked songs'}
-      style={size ? { fontSize: size } : undefined}
-      onClick={(e) => {
-        e.stopPropagation()
-        if (!liked) setPop((n) => n + 1)
-        onToggle(!liked)
-      }}
-    >
-      {/* key re-mounts the svg so the pop animation replays */}
-      <Icon key={pop} name={liked ? 'heartF' : 'heart'} />
     </button>
   )
 }

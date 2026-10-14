@@ -14,7 +14,7 @@ import { onAccountReset } from './session'
 export type RepeatMode = 'off' | 'all' | 'one'
 
 export interface PlayContext {
-  kind: 'album' | 'artist' | 'playlist' | 'liked' | 'library' | 'search' | 'queue'
+  kind: 'album' | 'artist' | 'playlist' | 'library' | 'search' | 'queue'
   id?: string
   /** "Playing from" label, e.g. the album title */
   label: string

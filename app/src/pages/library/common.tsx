@@ -10,7 +10,7 @@ import { albumTrackIds, playList } from './playback'
 
 /* ── Album card with a lazy cover ─────────────────── */
 
-export function LibAlbumCard({ c, album, subtitle, playingAlbumId }: { c: Catalogue; album: Album; subtitle: string; playingAlbumId?: string | null }) {
+export function LibAlbumCard({ c, album, subtitle, playingAlbumId, onOpen }: { c: Catalogue; album: Album; subtitle: ReactNode; playingAlbumId?: string | null; onOpen?: () => void }) {
   const [ref, cover] = useLazyCover<HTMLDivElement>(album.cover)
   return (
     <AlbumCard
@@ -19,8 +19,14 @@ export function LibAlbumCard({ c, album, subtitle, playingAlbumId }: { c: Catalo
       subtitle={subtitle}
       cover={cover ?? undefined}
       playing={playingAlbumId === album.id}
-      onOpen={() => go(albumHref(album.id))}
-      onPlay={() => playList(albumTrackIds(c, album.id), { kind: 'album', id: album.id, label: album.title })}
+      onOpen={() => {
+        onOpen?.()
+        go(albumHref(album.id))
+      }}
+      onPlay={() => {
+        onOpen?.()
+        playList(albumTrackIds(c, album.id), { kind: 'album', id: album.id, label: album.title })
+      }}
     />
   )
 }

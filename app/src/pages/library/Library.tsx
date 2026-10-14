@@ -2,12 +2,11 @@
  * Library (handoff 06 Desktop Library): header with counts, Artists / Albums / Songs chips,
  * sort row, then the tab's view. The tab lives in the URL (#/library/albums) and is remembered.
  */
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { Chip, EmptyState, Eq, LikeButton } from '../../components/ui'
+import { useEffect, useMemo, useRef } from 'react'
+import { Button, Chip, EmptyState, Eq } from '../../components/ui'
 import { Icon } from '../../design/icons'
 import { libraryStats, useLibrary, type Catalogue, type Track } from '../../state/library'
 import { libraryPrefs, useLibraryPrefs, type ArtistSort } from '../../state/libraryPrefs'
-import { likesStore, useLikes } from '../../state/likes'
 import { albumHref, artistHref, go, libraryHref, type LibraryTab } from '../../shell/routes'
 import {
   ALBUM_SORTS,
@@ -27,7 +26,9 @@ import {
 } from '../../state/views'
 import { PageHeader } from '../PageHeader'
 import { ArtistAvatar, LibAlbumCard, SortMenu } from './common'
-import { playList, useNowPlaying, usePlayingAlbumId } from './playback'
+import { playList, useContextState, useNowPlaying, usePlayingAlbumId } from './playback'
+import { playerStore } from '../../state/player'
+import { ROW_H, useWindow } from './useWindow'
 import './library.css'
 
 const TAB_LABEL: Record<LibraryTab, string> = { artists: 'Artists', albums: 'Albums', songs: 'Songs' }
@@ -179,7 +180,6 @@ function ArtistsView({ c }: { c: Catalogue }) {
 
 /* ── Songs (virtualised: the whole catalogue can be thousands of rows) ── */
 
-const ROW_H = 52
 const SONG_SORTS: { value: SongSort; label: string }[] = [
   { value: 'added', label: 'Recently added' },
   { value: 'title', label: 'Title' },
@@ -188,37 +188,6 @@ const SONG_SORTS: { value: SongSort; label: string }[] = [
   { value: 'duration', label: 'Duration' },
 ]
 
-/** Rows [from, to) of a fixed-height list inside the shell's scrolling <main>. */
-function useWindow(listRef: React.RefObject<HTMLElement | null>, count: number, overscan = 12) {
-  const [range, setRange] = useState<[number, number]>([0, Math.min(count, 40)])
-  const [stuck, setStuck] = useState(false)
-  useLayoutEffect(() => {
-    const main = document.getElementById('main')
-    const list = listRef.current
-    if (!main || !list) return
-    let raf = 0
-    const update = () => {
-      raf = 0
-      const top = list.getBoundingClientRect().top - main.getBoundingClientRect().top
-      const from = Math.max(0, Math.floor(-top / ROW_H) - overscan)
-      const to = Math.min(count, Math.ceil((main.clientHeight - top) / ROW_H) + overscan)
-      setRange((r) => (r[0] === from && r[1] === to ? r : [from, Math.max(from, to)]))
-      setStuck(top < 35) // the 34px header is pinned once the rows reach it
-    }
-    const onScroll = () => {
-      if (!raf) raf = requestAnimationFrame(update)
-    }
-    update()
-    main.addEventListener('scroll', onScroll, { passive: true })
-    window.addEventListener('resize', onScroll)
-    return () => {
-      cancelAnimationFrame(raf)
-      main.removeEventListener('scroll', onScroll)
-      window.removeEventListener('resize', onScroll)
-    }
-  }, [listRef, count, overscan])
-  return { range, stuck }
-}
 
 function SongsView({ c }: { c: Catalogue }) {
   const { songSort, songDesc } = useLibraryPrefs()
@@ -228,17 +197,17 @@ function SongsView({ c }: { c: Catalogue }) {
     range: [from, to],
     stuck,
   } = useWindow(listRef, tracks.length)
-  const likes = useLikes()
   const now = useNowPlaying()
+  const ctx = useContextState('library', 'songs')
   const seconds = useMemo(() => tracks.reduce((s, t) => s + (t.duration ?? 0), 0), [tracks])
 
   const sortBy = (s: SongSort) => libraryPrefs.set(s === songSort ? { songDesc: !songDesc } : { songSort: s, songDesc: false })
-  const play = (i: number) =>
-    playList(
-      tracks.map((t) => t.id),
-      { kind: 'library', id: 'songs', label: 'Library · Songs' },
-      { start: i },
-    )
+  const context = { kind: 'library' as const, id: 'songs', label: 'Library · Songs' }
+  const ids = () => tracks.map((t) => t.id)
+  const play = (i: number) => playList(ids(), context, { start: i })
+  // Play: from the top of the list in its current sort (Pause / Resume while it's the playing context)
+  const onPlay = () => (ctx.active ? playerStore.toggle() : play(0))
+  const onShuffle = () => playList(ids(), context, { shuffle: true })
   const head = (s: SongSort, label: string, cls = '') => (
     <button type="button" className={`songs-h ${cls} ${songSort === s ? 'is-on' : ''}`} onClick={() => sortBy(s)}>
       {label}
@@ -248,6 +217,14 @@ function SongsView({ c }: { c: Catalogue }) {
 
   return (
     <>
+      <div className="actions lib-actions">
+        <Button icon={ctx.playing ? 'pauseF' : 'playF'} onClick={onPlay} disabled={!tracks.length} className="actions-play">
+          {ctx.playing ? 'Pause' : ctx.active ? 'Resume' : 'Play'}
+        </Button>
+        <Button variant="secondary" icon="shuffle" onClick={onShuffle} disabled={!tracks.length}>
+          Shuffle
+        </Button>
+      </div>
       <div className="lib-bar">
         <SortMenu value={songSort} options={SONG_SORTS} onChange={(v) => libraryPrefs.set({ songSort: v, songDesc: false })} />
         <span className="lib-bar-line" />
@@ -260,7 +237,6 @@ function SongsView({ c }: { c: Catalogue }) {
           <span className="songs-h songs-h-n">#</span>
           {head('title', 'TITLE')}
           {head('album', 'ALBUM')}
-          <span />
           {head('added', 'ADDED', 'songs-h-r')}
           {head('duration', 'TIME', 'songs-h-r')}
         </div>
@@ -276,7 +252,6 @@ function SongsView({ c }: { c: Catalogue }) {
                 top={i * ROW_H}
                 playing={now.playing && now.id === t.id}
                 current={now.id === t.id}
-                liked={!!likes[t.id]}
                 onPlay={() => play(i)}
               />
             )
@@ -287,7 +262,7 @@ function SongsView({ c }: { c: Catalogue }) {
   )
 }
 
-function SongRow({ c, t, n, top, playing, current, liked, onPlay }: { c: Catalogue; t: Track; n: number; top: number; playing: boolean; current: boolean; liked: boolean; onPlay: () => void }) {
+function SongRow({ c, t, n, top, playing, current, onPlay }: { c: Catalogue; t: Track; n: number; top: number; playing: boolean; current: boolean; onPlay: () => void }) {
   const album = c.albums[t.albumId]
   return (
     <div className={`trow songs-row ${current ? 'is-playing' : ''}`} style={{ transform: `translateY(${top}px)` }} onDoubleClick={onPlay} role="row">
@@ -312,7 +287,6 @@ function SongRow({ c, t, n, top, playing, current, liked, onPlay }: { c: Catalog
           </a>
         )}
       </div>
-      <LikeButton liked={liked} onToggle={(v) => likesStore.set(t.id, v)} />
       <div className="trow-label">{fmtAdded(t.addedAt)}</div>
       <div className="trow-dur">{t.duration ? fmtTotal(t.duration) : '—'}</div>
     </div>

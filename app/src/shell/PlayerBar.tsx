@@ -2,10 +2,9 @@
  * Desktop player bar, 84px (handoff 04 Desktop):
  * grid  [now playing | 560px transport + seek | quality · lyrics · queue · volume]
  */
-import { IconButton, LikeButton, PlayButton, QualityBadge, SeekBar, Slider, qualityKind, qualityLabel, useToast } from '../components/ui'
+import { IconButton, PlayButton, QualityBadge, SeekBar, Slider, qualityKind, qualityLabel, useToast } from '../components/ui'
 import { useCover } from '../lib/covers'
 import { useLibrary, type Track } from '../state/library'
-import { likesStore, useLikes } from '../state/likes'
 import { playerStore, usePlayer } from '../state/player'
 import { albumHref, artistHref } from './routes'
 import './playerbar.css'
@@ -13,7 +12,6 @@ import './playerbar.css'
 export function PlayerBar() {
   const p = usePlayer()
   const { data } = useLibrary()
-  const likes = useLikes()
   const toast = useToast()
   const id = p.index >= 0 ? p.queue[p.index] : null
   const track: Track | null = (id && data?.tracks[id]) || null
@@ -55,7 +53,6 @@ export function PlayerBar() {
                 {track.artist}
               </a>
             </div>
-            <LikeButton liked={!!likes[track.id]} onToggle={(v) => likesStore.set(track.id, v)} size={16} className="pb-like" />
           </>
         )}
       </div>

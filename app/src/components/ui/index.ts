@@ -1,6 +1,6 @@
 import './ui.css'
 
-export { Button, IconButton, LikeButton, PlayButton, type PlayState } from './Button'
+export { Button, IconButton, PlayButton, type PlayState } from './Button'
 export { Toggle, Segmented, Chip, Slider, SeekBar, formatTime, type SegOption } from './Controls'
 export { Waveform, seedFrom } from './Waveform'
 export {

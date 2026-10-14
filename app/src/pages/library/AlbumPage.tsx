@@ -1,14 +1,13 @@
 /**
  * Album (handoff 04 Desktop Album): tinted wash from the cover, 264px cover, hero title,
- * artist · track count · length · quality badge, Play / Shuffle / like-all, tracklist
+ * artist · track count · length · quality badge, Play / Shuffle, tracklist
  * (disc headers when there's more than one), then more by the same artist.
  */
 import type { CSSProperties } from 'react'
-import { Button, EmptyState, LikeButton, QualityBadge, TrackRow, qualityKind, qualityLabel } from '../../components/ui'
+import { Button, EmptyState, QualityBadge, TrackRow, qualityKind, qualityLabel } from '../../components/ui'
 import { rgba, sceneBackground, useArtTint } from '../../design/tint'
 import { useCover } from '../../lib/covers'
 import { playerStore } from '../../state/player'
-import { likesStore, useLikes } from '../../state/likes'
 import { useLibrary, type Track } from '../../state/library'
 import { artistHref, libraryHref } from '../../shell/routes'
 import { RELEASE_LABEL, albumInfos, artistInfos, fmtAdded, fmtBytes, fmtTotal, plural } from '../../state/views'
@@ -30,7 +29,6 @@ const heroSize = (t: string) => (t.length <= 18 ? 80 : t.length <= 30 ? 64 : t.l
 
 export function AlbumPage({ id }: { id: string }) {
   const { data } = useLibrary()
-  const likes = useLikes()
   const info = data ? albumInfos(data).get(id) : undefined
   const album = info?.album
   const cover = useCover(album?.cover)
@@ -59,7 +57,6 @@ export function AlbumPage({ id }: { id: string }) {
     discs.at(-1)!.tracks.push(t)
   }
   const context = { kind: 'album' as const, id: album.id, label: album.title }
-  const allLiked = ids.length > 0 && ids.every((t) => likes[t])
   const others = (artistInfos(data).get(album.artistId)?.albums ?? []).filter((a) => a.id !== album.id)
   const kind = RELEASE_LABEL[info.kind].one
   const variousArtists = info.tracks.some((t) => t.artist !== album.artist)
@@ -121,7 +118,6 @@ export function AlbumPage({ id }: { id: string }) {
         <Button variant="secondary" icon="shuffle" onClick={() => playList(ids, context, { shuffle: true })} disabled={!ids.length}>
           Shuffle
         </Button>
-        <LikeButton liked={allLiked} onToggle={(v) => ids.forEach((t) => likesStore.set(t, v))} size={21} className="actions-like" />
         <span className="actions-spacer" />
         <div className="actions-info">
           <div className="actions-info-main">{released(album.date, album.year)}</div>
@@ -151,8 +147,6 @@ export function AlbumPage({ id }: { id: string }) {
                   subtitle={variousArtists || t.artist !== album.artist ? t.artist : undefined}
                   duration={t.duration ? formatTime(t.duration) : '—'}
                   playing={now.id === t.id}
-                  liked={!!likes[t.id]}
-                  onLike={(v) => likesStore.set(t.id, v)}
                   onPlay={() => playAt(i)}
                 />
               )

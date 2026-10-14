@@ -132,8 +132,8 @@ export function OfflineBanner({ meta }: { meta?: ReactNode }) {
 
 interface EmptyStateProps {
   icon: Parameters<typeof Icon>[0]['name']
-  title: string
-  body?: string
+  title: ReactNode
+  body?: ReactNode
   actions?: ReactNode
 }
 

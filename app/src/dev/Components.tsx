@@ -6,7 +6,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { Atmosphere } from '../components/Atmosphere'
 import {
-  AlbumCard, Button, Chip, DownloadStatus, EmptyState, IconButton, LikeButton, OfflineBanner, PlayButton,
+  AlbumCard, Button, Chip, DownloadStatus, EmptyState, IconButton, OfflineBanner, PlayButton,
   QualityBadge, ReleaseBadge, Rule, SeekBar, Segmented, Skeleton, Slider, Sonar, Toggle, TrackRow, Waveform,
   useToast, type DownloadState,
 } from '../components/ui'
@@ -32,7 +32,6 @@ export function Components() {
   const sysReduced = useSystemReducedMotion()
   const s = useSettings()
 
-  const [liked, setLiked] = useState<Record<string, boolean>>({ 'Black Rainbow': true, 'Soft Spine': true })
   const [playingRow, setPlayingRow] = useState('Black Rainbow')
   const [playing, setPlaying] = useState(true)
   const [pos, setPos] = useState(96)
@@ -79,11 +78,9 @@ export function Components() {
               <Button size="lg" icon="download">Download everything</Button>
             </div>
             <div className="cg-btns">
-              <IconButton icon="heart" label="Like" />
               <IconButton icon="lyrics" label="Lyrics" pressed />
               <IconButton icon="queue" label="Queue" />
               <IconButton icon="more" label="More" shape="square" />
-              <LikeButton liked={!!liked.demo} onToggle={(v) => setLiked((l) => ({ ...l, demo: v }))} size={22} />
             </div>
             <div className="t-mono">Hover, press and Tab through for states</div>
           </Panel>
@@ -142,8 +139,6 @@ export function Components() {
                   label={r.label}
                   download={r.dl}
                   playing={playingRow === r.t}
-                  liked={!!liked[r.t]}
-                  onLike={(v) => setLiked((l) => ({ ...l, [r.t]: v }))}
                   onPlay={() => setPlayingRow(r.t)}
                   onMore={() => toast.show({ icon: 'more', text: `Menu for ${r.t} comes in step 8.`, mutedIcon: true })}
                 />
@@ -202,7 +197,6 @@ export function Components() {
                   <div style={{ fontSize: 15, fontWeight: 500 }}>{playingRow}</div>
                   <div className="t-secondary">Spiritbox</div>
                 </div>
-                <LikeButton liked={!!liked[playingRow]} onToggle={(v) => setLiked((l) => ({ ...l, [playingRow]: v }))} />
               </div>
               <div className="cg-col" style={{ gap: 8, alignItems: 'center' }}>
                 <div className="cg-bar-ctl">
