@@ -10,6 +10,7 @@ public class MainActivity extends BridgeActivity {
         // local plugins must be registered before the bridge starts
         registerPlugin(PelagicNativePlugin.class);
         registerPlugin(PelagicPlayerPlugin.class);
+        registerPlugin(PelagicDownloadsPlugin.class);
         super.onCreate(savedInstanceState);
     }
 }

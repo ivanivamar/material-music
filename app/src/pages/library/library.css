@@ -172,6 +172,9 @@ a.ln:hover { color: var(--ink-primary); text-decoration: underline; text-underli
 .trow.trow-album { grid-template-columns: var(--cols); height: 48px; border-bottom-color: rgba(255, 255, 255, .04); }
 .trow.trow-album .trow-dl, .trow.trow-album .trow-label { display: none; }
 .trow.trow-album:hover { background: rgba(255, 255, 255, .04); }
+/* Android app: offline status column (✓ / progress ring) */
+.tracklist.has-dl { --cols: 36px minmax(0, 1fr) 24px 64px; }
+.tracklist.has-dl .trow.trow-album .trow-dl { display: flex; }
 
 .more-by { margin-top: 64px; display: flex; flex-direction: column; gap: 20px; }
 
@@ -184,6 +187,12 @@ a.ln:hover { color: var(--ink-primary); text-decoration: underline; text-underli
 .trow.trow-artist .trow-dur { order: 4; }
 .trow.trow-artist .trow-sub { font-size: 12px; }
 .trow.trow-artist .trow-label { letter-spacing: .1em; }
+.artist-songs.has-dl .trow.trow-artist { grid-template-columns: 28px minmax(0, 1fr) 24px 52px 52px; }
+.artist-songs.has-dl .trow.trow-artist .trow-dl { display: flex; }
+
+/* ── Download button (Android) ──────────────────────── */
+.actions-dl.is-done .btn-ic { color: var(--ink-primary); }
+.actions-dl-count { font-size: 12px; letter-spacing: .1em; }
 .more-btn {
   align-self: flex-start; height: 32px; padding: 0 12px; margin-left: 0; border-radius: 8px;
   border: 1.5px solid var(--border); background: none; cursor: pointer;

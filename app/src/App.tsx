@@ -19,6 +19,8 @@ import { AlbumPage } from './pages/library/AlbumPage'
 import { ArtistPage } from './pages/library/ArtistPage'
 import { Library } from './pages/library/Library'
 import { Search } from './pages/search/Search'
+import { Downloads } from './pages/downloads/Downloads'
+import { downloadsStore } from './state/downloads'
 import { libraryStore, useLibrary } from './state/library'
 import { useMotionAttribute } from './state/motion'
 import { playerStore } from './state/player'
@@ -42,6 +44,8 @@ initNativeUpdates()
 initBackButton()
 // Android: ExoPlayer in a background service (phase C) instead of HTML audio.
 playerStore.attach(isNative ? createNativeEngine() : createHtmlAudioEngine())
+// Android: offline downloads (phase D) — keeps the phone's stored files in line with the pins.
+downloadsStore.init()
 
 function Page({ route }: { route: Extract<Route, { kind: 'app' }> }) {
   switch (route.key) {
@@ -60,7 +64,7 @@ function Page({ route }: { route: Extract<Route, { kind: 'app' }> }) {
     case 'upload':
       return <Placeholder title="Upload" meta="FLAC → DRIVE + OPUS" icon="upload" line="Use the importer for now." body="Run tools/import on your PC (npm run import). In-app upload arrives in step 10." />
     case 'downloads':
-      return <Placeholder title="Downloads" meta="OFFLINE · ANDROID" icon="download" line="Nothing stored offline." body="Offline downloads come with the Android build in step 7." />
+      return <Downloads />
   }
 }
 

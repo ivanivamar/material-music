@@ -8,6 +8,7 @@ import { useLibrary, type Track } from '../state/library'
 import { nowPlayingStore, useNowPlayingUi } from '../state/nowPlaying'
 import { playerStore, usePlayer } from '../state/player'
 import { Icon } from '../design/icons'
+import { isNative } from '../native/bridge'
 import { albumHref, artistHref } from './routes'
 import './playerbar.css'
 
@@ -30,7 +31,7 @@ export function PlayerBar() {
     }
     playerStore.toggle()
   }
-  const sourceLabel = p.source === 'local' ? 'Playing from your local folder' : p.source === 'drive' ? 'Streaming from Google Drive' : undefined
+  const sourceLabel = p.source === 'local' ? (isNative ? 'Stored on this phone' : 'Playing from your local folder') : p.source === 'drive' ? 'Streaming from Google Drive' : undefined
 
   return (
     <footer
@@ -96,7 +97,7 @@ export function PlayerBar() {
       <div className="pb-right">
         {track && (
           <span className="pb-quality" title={sourceLabel}>
-            {p.source && <span className="pb-source t-mono">{p.source === 'local' ? 'LOCAL' : 'DRIVE'}</span>}
+            {p.source && <span className="pb-source t-mono">{p.source === 'local' ? (isNative ? 'OFFLINE' : 'LOCAL') : 'DRIVE'}</span>}
             <QualityBadge kind={qualityKind('flac', track.flac?.bitDepth, track.flac?.sampleRate)}>
               {qualityLabel('flac', { bitDepth: track.flac?.bitDepth, sampleRate: track.flac?.sampleRate })}
             </QualityBadge>

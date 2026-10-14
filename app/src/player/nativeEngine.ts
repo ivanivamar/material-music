@@ -13,10 +13,12 @@
  *   - on launch adopts what the native player is already doing (music kept playing while the app
  *     was closed) instead of restarting it.
  *
- * Audio: the Opus copy (`track.mobile`) when the importer made one, else the FLAC, streamed from
- * Drive by ExoPlayer (seekable, starts immediately). Covers for the notification load natively too.
+ * Audio: a downloaded copy when there is one (phase D — the service plays the stored file for its
+ * Drive URL), else the Opus copy (`track.mobile`) when the importer made one, else the FLAC, streamed
+ * from Drive by ExoPlayer (seekable, starts immediately). Covers for the notification load natively too.
  */
 import { isNative, PelagicPlayer, type NativePlayerState, type NativeQueueItem } from '../native/bridge'
+import { downloadsStore, storedFileOf } from '../state/downloads'
 import { libraryStore } from '../state/library'
 import { playerStore, type PlayerEngine } from '../state/player'
 import { onAccountReset, sessionStore } from '../state/session'
@@ -28,7 +30,9 @@ function toItem(id: string): NativeQueueItem {
   const data = libraryStore.get().data
   const track = data?.tracks[id]
   const album = track ? data?.albums[track.albumId] : undefined
-  const file = track?.mobile?.id ? track.mobile : track?.flac
+  // a downloaded copy (either quality) first: the native side plays it from the phone
+  const stored = storedFileOf(downloadsStore.get(), track)
+  const file = stored ? [track!.mobile, track!.flac].find((f) => f?.id === stored) : track?.mobile?.id ? track.mobile : track?.flac
   return {
     id,
     // a track gone from the catalogue gets a URL that fails, so the native player skips it.
@@ -40,6 +44,8 @@ function toItem(id: string): NativeQueueItem {
     artworkUri: album?.cover ? media(album.cover) : undefined,
   }
 }
+
+const isStored = (trackId: string | null) => !!trackId && !!storedFileOf(downloadsStore.get(), libraryStore.get().data?.tracks[trackId])
 
 const same = (a: readonly string[], b: readonly string[]) => a.length === b.length && a.every((x, i) => x === b[i])
 
@@ -125,7 +131,7 @@ export function createNativeEngine(): PlayerEngine {
       playing: active,
       buffering: active && st.buffering,
       position: Math.max(0, st.positionMs / 1000),
-      source: 'drive',
+      source: isStored(st.mediaId) ? 'local' : 'drive',
     })
   }
   void PelagicPlayer.addListener('state', apply)
@@ -171,7 +177,7 @@ export function createNativeEngine(): PlayerEngine {
   const engine: PlayerEngine = {
     load(_id, { autoplay, position }) {
       loadReq = { autoplay, position }
-      if (autoplay) playerStore.report({ playing: true, buffering: true, source: 'drive' })
+      if (autoplay) playerStore.report({ playing: true, buffering: true, source: isStored(_id) ? 'local' : 'drive' })
       flush()
     },
     play() {

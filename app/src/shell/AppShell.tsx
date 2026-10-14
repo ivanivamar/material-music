@@ -19,7 +19,9 @@ import { appUpdate, usePwa } from '../lib/pwa'
 import { nativeUpdates, useNativeUpdates } from '../native/updates'
 
 import { Sidebar } from './Sidebar'
-import { go, href, navKeyOf, type Route } from './routes'
+import { albumHref, go, href, navKeyOf, type Route } from './routes'
+import { albumOffline, downloadsStore } from '../state/downloads'
+import { fmtBytes } from '../state/views'
 import './shell.css'
 import './phone.css'
 
@@ -50,6 +52,24 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
       onLibraryUpdated(({ added }) => {
         const parts = [added.albums && `${added.albums} ALBUM${added.albums > 1 ? 'S' : ''}`, added.tracks && `${added.tracks} TRACK${added.tracks > 1 ? 'S' : ''}`].filter(Boolean)
         toast.show({ icon: 'check', text: 'Library updated from Drive.', meta: parts.length ? `+ ${parts.join(' · ')}` : 'TAGS CHANGED' })
+      }),
+    [toast],
+  )
+
+  // Android (phase D): an album finished downloading.
+  useEffect(
+    () =>
+      downloadsStore.onAlbumDone((albumId) => {
+        const s = downloadsStore.get()
+        const album = libraryStore.get().data?.albums[albumId]
+        const off = albumOffline(s, albumId)
+        if (!album) return
+        toast.show({
+          icon: 'check',
+          text: `${album.title} is stored offline.`,
+          meta: `${fmtBytes(off.bytesDone)} · ${s.prefs.quality === 'flac' ? 'FLAC' : 'OPUS 160'}`,
+          action: { label: 'View', onClick: () => go(albumHref(albumId)) },
+        })
       }),
     [toast],
   )

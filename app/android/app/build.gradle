@@ -72,6 +72,8 @@ dependencies {
     // Native player (phase C): ExoPlayer + MediaSessionService — see PelagicPlaybackService
     implementation "androidx.media3:media3-exoplayer:1.5.1"
     implementation "androidx.media3:media3-session:1.5.1"
+    // Offline downloads (phase D): background job with its own notification — see DownloadWorker
+    implementation "androidx.work:work-runtime:2.10.0"
     testImplementation "junit:junit:$junitVersion"
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"

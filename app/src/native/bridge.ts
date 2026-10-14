@@ -84,3 +84,55 @@ interface PelagicPlayerPlugin {
 
 /** ExoPlayer + MediaSessionService (android/…/PelagicPlayerPlugin.java, PelagicPlaybackService.java). */
 export const PelagicPlayer = registerPlugin<PelagicPlayerPlugin>('PelagicPlayer')
+
+/* ── Offline downloads (phase D) ─────────────────────── */
+
+export interface NativeDownloadItem {
+  /** Drive file id */
+  id: string
+  /** bytes (from the catalogue; 0 = unknown, e.g. covers) */
+  size: number
+  /** shown in the download notification */
+  title: string
+}
+
+export interface NativeDownloadProgress {
+  id: string
+  title: string | null
+  bytes: number
+  total: number
+}
+
+export interface NativeDownloadState {
+  /** complete files on the phone */
+  stored: { id: string; size: number }[]
+  /** wanted files not stored yet (excluding failed) */
+  pending: number
+  /** files Drive refused: skipped until retryFailed() */
+  failed: { id: string; reason: 'missing' | 'forbidden' }[]
+  current: NativeDownloadProgress | null
+  running: boolean
+  paused: boolean
+  wifiOnly: boolean
+  network: 'wifi' | 'cellular' | 'none'
+  /** the worker stopped: no space left, or no Drive token */
+  error: 'storage' | 'auth' | null
+  /** bytes: Pelagic's files, free and total on the phone's storage */
+  used: number
+  free: number
+  total: number
+}
+
+interface PelagicDownloadsPlugin {
+  /** The complete list of Drive files to keep offline: the rest is deleted, missing ones downloaded. */
+  sync(opts: { items: NativeDownloadItem[]; wifiOnly: boolean }): Promise<NativeDownloadState>
+  state(): Promise<NativeDownloadState>
+  setPaused(opts: { paused: boolean }): Promise<NativeDownloadState>
+  retryFailed(): Promise<NativeDownloadState>
+  askNotifications(): Promise<void>
+  addListener(event: 'progress', cb: (p: NativeDownloadProgress) => void): Promise<PluginListenerHandle>
+  addListener(event: 'changed', cb: () => void): Promise<PluginListenerHandle>
+}
+
+/** WorkManager downloads into the app's storage (android/…/Offline.java, DownloadWorker.java). */
+export const PelagicDownloads = registerPlugin<PelagicDownloadsPlugin>('PelagicDownloads')

@@ -132,6 +132,9 @@ html[data-phone][data-qp] .toasts.toasts-shell { right: 0; }
 .shell.is-phone .actions { gap: 10px; margin-bottom: 20px; }
 .shell.is-phone .actions .btn { flex: 1; min-width: 0; height: 48px; }
 .shell.is-phone .actions-spacer, .shell.is-phone .actions-info { display: none; }
+/* Download: a compact square next to Play / Shuffle (✓ / ring + 07/11) */
+.shell.is-phone .actions .actions-dl, .shell.is-phone .hero-buttons .actions-dl { flex: 0 0 auto; min-width: 48px; padding: 0 13px; gap: 8px; }
+.shell.is-phone .actions-dl .actions-dl-label { display: none; }
 .shell.is-phone .tracklist { --cols: 28px minmax(0, 1fr) 52px; }
 .shell.is-phone .tl-head, .shell.is-phone .trow.trow-album { padding: 0 4px; gap: 10px; }
 .shell.is-phone .trow.trow-album { height: 56px; }
@@ -141,6 +144,8 @@ html[data-phone][data-qp] .toasts.toasts-shell { right: 0; }
 .shell.is-phone .artist-disco { order: 0; }
 .shell.is-phone .trow.trow-artist { grid-template-columns: 24px minmax(0, 1fr) 52px; }
 .shell.is-phone .trow.trow-artist .trow-label { display: none; }
+.shell.is-phone .tracklist.has-dl { --cols: 28px minmax(0, 1fr) 22px 52px; }
+.shell.is-phone .artist-songs.has-dl .trow.trow-artist { grid-template-columns: 24px minmax(0, 1fr) 22px 52px; }
 .shell.is-phone .disco-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px 14px; }
 
 /* ── Search ── */

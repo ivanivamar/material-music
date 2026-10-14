@@ -12,6 +12,7 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { Atmosphere } from '../components/Atmosphere'
 import { IconButton, QualityBadge, SeekBar, Slider, Waveform, formatTime, qualityKind, qualityLabel, seedFrom } from '../components/ui'
 import { Icon } from '../design/icons'
+import { isNative } from '../native/bridge'
 import { rgba, sceneBackground, useArtTint } from '../design/tint'
 import { useCover } from '../lib/covers'
 import { useLibrary } from '../state/library'
@@ -100,9 +101,9 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
   ) : null
   const source =
     p.source === 'local' ? (
-      <span className="np-src" title="Playing from your local folder">
+      <span className="np-src" title={isNative ? 'Stored on this phone' : 'Playing from your local folder'}>
         <Icon name="check" />
-        LOCAL
+        {isNative ? 'OFFLINE' : 'LOCAL'}
       </span>
     ) : p.source === 'drive' ? (
       <span className="np-src" title="Streaming from Google Drive">

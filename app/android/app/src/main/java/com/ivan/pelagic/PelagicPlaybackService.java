@@ -13,6 +13,7 @@ import androidx.media3.common.Player;
 import androidx.media3.common.util.UnstableApi;
 import androidx.media3.datasource.DataSource;
 import androidx.media3.datasource.DataSourceBitmapLoader;
+import androidx.media3.datasource.DefaultDataSource;
 import androidx.media3.datasource.DefaultHttpDataSource;
 import androidx.media3.datasource.HttpDataSource;
 import androidx.media3.datasource.ResolvingDataSource;
@@ -25,6 +26,7 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.MoreExecutors;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -40,7 +42,7 @@ import java.util.concurrent.Executors;
  * queue and transport commands through PelagicNativePlugin and mirrors this player's state.
  *
  * Audio and artwork stream straight from Google Drive; every request to googleapis.com gets the
- * OAuth header from DriveAuth. A 401 drops the token and retries once with a fresh one; any other
+ * OAuth header from DriveAuth — unless the file is downloaded (Offline), then the stored copy plays. A 401 drops the token and retries once with a fresh one; any other
  * failure skips to the next track (at most 3 in a row), like the web player.
  */
 @UnstableApi
@@ -62,12 +64,17 @@ public class PelagicPlaybackService extends MediaSessionService {
             .setAllowCrossProtocolRedirects(true)
             .setConnectTimeoutMs(15_000)
             .setReadTimeoutMs(20_000);
-        DataSource.Factory drive = new ResolvingDataSource.Factory(http, new ResolvingDataSource.Resolver() {
+        // DefaultDataSource: http(s) through `http`, plus file:// for downloaded copies
+        DataSource.Factory any = new DefaultDataSource.Factory(this, http);
+        DataSource.Factory drive = new ResolvingDataSource.Factory(any, new ResolvingDataSource.Resolver() {
             @NonNull
             @Override
             public androidx.media3.datasource.DataSpec resolveDataSpec(@NonNull androidx.media3.datasource.DataSpec spec) throws IOException {
                 String host = spec.uri.getHost();
                 if (host == null || !host.endsWith("googleapis.com")) return spec;
+                // Offline downloads (phase D): a stored copy of this Drive file plays from the phone
+                File local = Offline.localFile(PelagicPlaybackService.this, spec.uri);
+                if (local != null) return spec.withUri(Uri.fromFile(local));
                 String token = DriveAuth.getToken(PelagicPlaybackService.this);
                 if (token == null) throw new IOException("Not signed in to Google Drive");
                 return spec.withAdditionalHeaders(Collections.singletonMap("Authorization", "Bearer " + token));

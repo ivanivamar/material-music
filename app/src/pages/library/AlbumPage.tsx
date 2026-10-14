@@ -13,6 +13,8 @@ import { artistHref, libraryHref } from '../../shell/routes'
 import { RELEASE_LABEL, albumInfos, artistInfos, fmtAdded, fmtBytes, fmtTotal, plural } from '../../state/views'
 import { formatTime } from '../../components/ui'
 import { Crumbs, LibAlbumCard, SectionHead } from './common'
+import { DownloadButton, trackDownload } from './DownloadButton'
+import { albumOffline, downloadsStore, useDownloadProgress, useDownloads } from '../../state/downloads'
 import { playList, useContextState, useNowPlaying, usePlayingAlbumId } from './playback'
 import './library.css'
 
@@ -36,6 +38,8 @@ export function AlbumPage({ id }: { id: string }) {
   const ctx = useContextState('album', id)
   const now = useNowPlaying()
   const playingAlbum = usePlayingAlbumId(data)
+  const dl = useDownloads()
+  const dlNow = useDownloadProgress()
 
   if (!data) return null
   if (!info || !album) {
@@ -118,6 +122,14 @@ export function AlbumPage({ id }: { id: string }) {
         <Button variant="secondary" icon="shuffle" onClick={() => playList(ids, context, { shuffle: true })} disabled={!ids.length}>
           Shuffle
         </Button>
+        {dl.available && (
+          <DownloadButton
+            state={albumOffline(dl, album.id)}
+            name={album.title}
+            onPin={() => downloadsStore.pin('album', album.id)}
+            onRemove={() => downloadsStore.removeAlbum(album.id)}
+          />
+        )}
         <span className="actions-spacer" />
         <div className="actions-info">
           <div className="actions-info-main">{released(album.date, album.year)}</div>
@@ -127,10 +139,11 @@ export function AlbumPage({ id }: { id: string }) {
         </div>
       </div>
 
-      <div className="tracklist" role="table">
+      <div className={`tracklist ${dl.available ? 'has-dl' : ''}`} role="table">
         <div className="tl-head" role="row">
           <span className="tl-h-n">NO</span>
           <span>TITLE</span>
+          {dl.available && <span />}
           <span className="tl-h-r">TIME</span>
         </div>
         {discs.map((d) => (
@@ -147,6 +160,7 @@ export function AlbumPage({ id }: { id: string }) {
                   subtitle={variousArtists || t.artist !== album.artist ? t.artist : undefined}
                   duration={t.duration ? formatTime(t.duration) : '—'}
                   playing={now.id === t.id}
+                  download={dl.available ? trackDownload(dl, t, dlNow) : undefined}
                   onPlay={() => playAt(i)}
                 />
               )

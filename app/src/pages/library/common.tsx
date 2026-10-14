@@ -7,13 +7,19 @@ import { type Album, type Artist, type Catalogue } from '../../state/library'
 import { albumHref, back, go } from '../../shell/routes'
 import { monogram } from '../../state/views'
 import { albumTrackIds, playList } from './playback'
+import { albumOffline, useDownloads, useOnline } from '../../state/downloads'
 
 /* ── Album card with a lazy cover ─────────────────── */
 
 export function LibAlbumCard({ c, album, subtitle, playingAlbumId, onOpen }: { c: Catalogue; album: Album; subtitle: ReactNode; playingAlbumId?: string | null; onOpen?: () => void }) {
   const [ref, cover] = useLazyCover<HTMLDivElement>(album.cover)
+  const dl = useDownloads()
+  const online = useOnline()
+  const off = dl.available ? albumOffline(dl, album.id) : null
   return (
     <AlbumCard
+      offline={!!off?.complete}
+      unavailable={!!off && !online && off.done === 0}
       cardRef={ref}
       title={album.title}
       subtitle={subtitle}

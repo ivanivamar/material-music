@@ -12,6 +12,8 @@ import { playerStore } from '../../state/player'
 import { libraryHref } from '../../shell/routes'
 import { RELEASE_LABEL, albumInfos, artistInfos, fmtTotal, plural, type ReleaseKind } from '../../state/views'
 import { ArtistAvatar, Crumbs, LibAlbumCard, SectionHead } from './common'
+import { DownloadButton, trackDownload } from './DownloadButton'
+import { artistOffline, downloadsStore, useDownloadProgress, useDownloads } from '../../state/downloads'
 import { playList, useContextState, useNowPlaying, usePlayingAlbumId } from './playback'
 import './library.css'
 
@@ -25,6 +27,8 @@ export function ArtistPage({ id }: { id: string }) {
   const ctx = useContextState('artist', id)
   const playingAlbum = usePlayingAlbumId(data)
   const [allSongs, setAllSongs] = useState(false)
+  const dl = useDownloads()
+  const dlNow = useDownloadProgress()
   const info = data ? artistInfos(data).get(id) : undefined
   const artist = info?.artist
   // banner: artist_background, else the photo blurred (not the generated mosaic)
@@ -84,11 +88,19 @@ export function ArtistPage({ id }: { id: string }) {
           <Button variant="secondary" icon="shuffle" onClick={() => playList(ids, context, { shuffle: true })} disabled={!ids.length}>
             Shuffle
           </Button>
+          {dl.available && (
+            <DownloadButton
+              state={artistOffline(dl, data, artist.id)}
+              name={artist.name}
+              onPin={() => downloadsStore.pin('artist', artist.id)}
+              onRemove={() => downloadsStore.removeArtist(artist.id)}
+            />
+          )}
         </div>
       </header>
 
       <div className="artist-cols">
-        <section className="artist-songs">
+        <section className={`artist-songs ${dl.available ? 'has-dl' : ''}`}>
           <SectionHead label="SONGS" right={plural(songs.length, 'TRACK')} />
           <div>
             {shown.map((t, i) => {
@@ -103,6 +115,7 @@ export function ArtistPage({ id }: { id: string }) {
                   duration={t.duration ? formatTime(t.duration) : '—'}
                   label={album?.year ?? ''}
                   playing={now.id === t.id}
+                  download={dl.available ? trackDownload(dl, t, dlNow) : undefined}
                   onPlay={() => playAt(t.id)}
                 />
               )

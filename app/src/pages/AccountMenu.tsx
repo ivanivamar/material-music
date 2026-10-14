@@ -8,6 +8,7 @@ import { isNative } from '../native/bridge'
 import { nativeUpdates, useNativeUpdates } from '../native/updates'
 import { libraryStore, useLibrary } from '../state/library'
 import { sessionStore, useSession } from '../state/session'
+import { go, href } from '../shell/routes'
 
 const time = (ms: number | null) =>
   ms ? new Date(ms).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '—'
@@ -86,6 +87,7 @@ export function AccountMenu() {
           {status === 'expired'
             ? item('refresh', 'Sign in again', () => void sessionStore.signIn())
             : item('refresh', lib.refreshing ? 'Checking Drive…' : 'Check Drive for changes', () => void libraryStore.sync({ force: true }), { disabled: lib.refreshing })}
+          {isNative && item('download', 'Downloads', () => go(href('downloads')))}
           {localFolder.supported && item('library', linked ? 'Change local music folder…' : 'Play FLAC from a local folder…', () => void linkFolder(), { disabled: !lib.data })}
           {linked && item('x', 'Stop using the local folder', () => void localFolder.unlink())}
           {pwa.canInstall && !pwa.installed && item('download', 'Install Pelagic app', () => void appUpdate.install())}
