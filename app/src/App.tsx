@@ -3,6 +3,7 @@ import { ToastProvider } from './components/ui'
 import { Components } from './dev/Components'
 import { Foundations } from './dev/Foundations'
 import { initDriveStream } from './lib/driveStream'
+import { initPwa } from './lib/pwa'
 import { Home } from './pages/Home'
 import { Placeholder } from './pages/Placeholder'
 import { LibraryError, LoadingLibrary, NoLibrary } from './screens/LibraryStatus'
@@ -29,6 +30,8 @@ try {
 void libraryStore.loadCache()
 // Player core (3d): HTML audio engine + the service worker that streams from Drive.
 void initDriveStream()
+// PWA (step 7): update toast, install prompt, launches into the open window.
+initPwa()
 playerStore.attach(createHtmlAudioEngine())
 
 function Page({ route }: { route: Extract<Route, { kind: 'app' }> }) {
@@ -48,7 +51,7 @@ function Page({ route }: { route: Extract<Route, { kind: 'app' }> }) {
     case 'upload':
       return <Placeholder title="Upload" meta="FLAC → DRIVE + OPUS" icon="upload" line="Use the importer for now." body="Run tools/import on your PC (npm run import). In-app upload arrives in step 10." />
     case 'downloads':
-      return <Placeholder title="Downloads" meta="OFFLINE · ANDROID" icon="download" line="Nothing stored offline." body="Offline downloads come with the Android build in step 6." />
+      return <Placeholder title="Downloads" meta="OFFLINE · ANDROID" icon="download" line="Nothing stored offline." body="Offline downloads come with the Android build in step 7." />
   }
 }
 

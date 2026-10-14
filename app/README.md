@@ -91,3 +91,16 @@ Keys: `/` or Ctrl/⌘+K from anywhere focuses Search · Enter opens the top resu
 Download the free web kit from https://www.fontshare.com/fonts/general-sans and copy
 `GeneralSans-Variable.woff2` and `GeneralSans-VariableItalic.woff2` into `public/fonts/`.
 Until then, the Fontshare CDN link in `index.html` loads the font online. On Android the font must be self-hosted to work offline.
+
+## PWA (step 7)
+
+| File | What |
+|---|---|
+| `public/manifest.webmanifest` + `public/icons/` | Install metadata: standalone window, `#0b0b0c` theme, 192/512 icons (+ maskable, apple-touch), Search / Library shortcuts, `launch_handler: focus-existing` (opening Pelagic again focuses the running window instead of starting a second player) |
+| `public/sw.js` | Besides the Drive proxy: offline app shell. On install it precaches index.html, JS, CSS, icons and Latin fonts; other hashed assets (CJK font subsets…) are cached on first use; Fontshare CSS/fonts stale-while-revalidate. Navigations get the cached index.html, so the installed app opens offline (the cached library and covers already come from IndexedDB). In dev (`BUILD = null`) caching is off |
+| `vite.config.ts` → `pelagic-sw` | After `vite build`, fills `BUILD` (hash of the precached files), `PRECACHE` and `ASSETS` into `dist/sw.js`. Also defines `__PELAGIC_VERSION__` (date · commit, shown at the bottom of the account menu) |
+| `src/lib/pwa.ts` | `initPwa()` (App.tsx): watches for a waiting worker (checks hourly and when the window becomes visible) → `usePwa().updateReady` → shell toast “A new version of Pelagic is ready · Reload” (also in the account menu); keeps `beforeinstallprompt` for the menu's “Install Pelagic app”; applies the launch URL's #route when a launch is focused into the open window |
+
+Update flow: a deploy changes `sw.js` → the browser installs it next to the running one and it **waits** → toast → Reload sends `pelagic:skip-waiting` → the page reloads on `controllerchange`. The first install takes over immediately. Ignoring the toast is fine: the new version starts the next time the app is opened with no Pelagic window left open.
+
+Test the production build locally with `npm run build && npm run preview` (http://localhost:4173 is a different origin from dev, so sign-in there needs that origin on the OAuth client; the shell, offline reload and update toast can be checked with an expired/cached session).

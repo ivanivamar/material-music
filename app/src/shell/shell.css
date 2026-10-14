@@ -70,6 +70,7 @@
 .menu-item:disabled { color: var(--ink-ghost); cursor: default; }
 .menu-item.is-danger { color: var(--danger); }
 .menu-item.is-danger .mi-ic { color: var(--danger); }
+.menu-foot { padding: 10px 12px 6px; margin-top: 6px; border-top: 1px solid var(--hairline); font-family: var(--font-mono); font-size: var(--fs-mono-xs); letter-spacing: .14em; color: var(--ink-ghost); }
 
 /* ── Shelves (Home) ────────────────────────────────── */
 .shelves { display: flex; flex-direction: column; gap: 44px; }

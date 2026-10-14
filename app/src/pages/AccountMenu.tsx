@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useToast } from '../components/ui'
 import { Icon, type IconName } from '../design/icons'
 import { localFolder, useLocalFolder } from '../lib/localFolder'
+import { APP_VERSION, appUpdate, usePwa } from '../lib/pwa'
 import { libraryStore, useLibrary } from '../state/library'
 import { sessionStore, useSession } from '../state/session'
 
@@ -14,6 +15,7 @@ export function AccountMenu() {
   const lib = useLibrary()
   const local = useLocalFolder()
   const toast = useToast()
+  const pwa = usePwa()
   const [open, setOpen] = useState(false)
   const wrap = useRef<HTMLDivElement>(null)
 
@@ -83,8 +85,11 @@ export function AccountMenu() {
             : item('refresh', lib.refreshing ? 'Checking Drive…' : 'Check Drive for changes', () => void libraryStore.sync({ force: true }), { disabled: lib.refreshing })}
           {localFolder.supported && item('library', linked ? 'Change local music folder…' : 'Play FLAC from a local folder…', () => void linkFolder(), { disabled: !lib.data })}
           {linked && item('x', 'Stop using the local folder', () => void localFolder.unlink())}
+          {pwa.canInstall && !pwa.installed && item('download', 'Install Pelagic app', () => void appUpdate.install())}
+          {pwa.updateReady && item('refresh', 'Reload to update Pelagic', () => appUpdate.apply())}
           {item('ext', 'Switch account', () => void sessionStore.signIn({ switchAccount: true }))}
           {item('x', 'Sign out', () => sessionStore.signOut(), { danger: true })}
+          <div className="menu-foot">PELAGIC {APP_VERSION.toUpperCase()}{pwa.installed ? ' · APP' : ''}</div>
         </div>
       )}
     </div>

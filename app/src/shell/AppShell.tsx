@@ -15,6 +15,7 @@ import { sessionStore, useSession } from '../state/session'
 import { PlayerBar } from './PlayerBar'
 import { MiniPlayer, TabBar } from './PhoneBars'
 import { useIsPhone } from '../state/viewport'
+import { appUpdate, usePwa } from '../lib/pwa'
 
 import { Sidebar } from './Sidebar'
 import { go, href, navKeyOf, type Route } from './routes'
@@ -51,6 +52,20 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
       }),
     [toast],
   )
+
+  // A new deploy is installed and waiting (PWA, step 7): one toast that stays until used.
+  const { updateReady } = usePwa()
+  useEffect(() => {
+    if (!updateReady) return
+    const id = toast.show({
+      icon: 'refresh',
+      text: 'A new version of Pelagic is ready.',
+      meta: 'UPDATE',
+      action: { label: 'Reload', onClick: () => appUpdate.apply() },
+      duration: 0,
+    })
+    return () => toast.dismiss(id)
+  }, [updateReady, toast])
 
   // Session expired while the shell is up: keep browsing the cached library, offer one-click sign-in.
   const expiredToast = useRef<number | null>(null)
