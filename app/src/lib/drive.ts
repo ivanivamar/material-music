@@ -26,8 +26,9 @@ export class DriveError extends Error {
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
 export async function driveFetch(path: string, init: RequestInit = {}, tries = 4): Promise<Response> {
+  let renewed = false
   for (let i = 1; ; i++) {
-    const token = sessionStore.token()
+    const token = await sessionStore.ensureToken()
     if (!token) throw new AuthError()
     let res: Response
     try {
@@ -42,6 +43,12 @@ export async function driveFetch(path: string, init: RequestInit = {}, tries = 4
       continue
     }
     if (res.status === 401) {
+      // Android: Play services may have handed out a token Google no longer accepts; renew once
+      if (!renewed && (await sessionStore.refresh())) {
+        renewed = true
+        i--
+        continue
+      }
       sessionStore.expire()
       throw new AuthError()
     }

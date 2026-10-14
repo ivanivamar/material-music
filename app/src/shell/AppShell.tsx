@@ -16,6 +16,7 @@ import { PlayerBar } from './PlayerBar'
 import { MiniPlayer, TabBar } from './PhoneBars'
 import { useIsPhone } from '../state/viewport'
 import { appUpdate, usePwa } from '../lib/pwa'
+import { nativeUpdates, useNativeUpdates } from '../native/updates'
 
 import { Sidebar } from './Sidebar'
 import { go, href, navKeyOf, type Route } from './routes'
@@ -66,6 +67,20 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
     })
     return () => toast.dismiss(id)
   }, [updateReady, toast])
+
+  // Android: a newer APK is on GitHub Releases.
+  const apk = useNativeUpdates().available
+  useEffect(() => {
+    if (!apk) return
+    const id = toast.show({
+      icon: 'download',
+      text: `Pelagic ${apk.versionName} is available.`,
+      meta: 'ANDROID UPDATE',
+      action: { label: 'Install', onClick: () => nativeUpdates.install() },
+      duration: 0,
+    })
+    return () => toast.dismiss(id)
+  }, [apk, toast])
 
   // Session expired while the shell is up: keep browsing the cached library, offer one-click sign-in.
   const expiredToast = useRef<number | null>(null)

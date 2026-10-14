@@ -104,3 +104,22 @@ Until then, the Fontshare CDN link in `index.html` loads the font online. On And
 Update flow: a deploy changes `sw.js` → the browser installs it next to the running one and it **waits** → toast → Reload sends `pelagic:skip-waiting` → the page reloads on `controllerchange`. The first install takes over immediately. Ignoring the toast is fine: the new version starts the next time the app is opened with no Pelagic window left open.
 
 Test the production build locally with `npm run build && npm run preview` (http://localhost:4173 is a different origin from dev, so sign-in there needs that origin on the OAuth client; the shell, offline reload and update toast can be checked with an expired/cached session).
+
+## Android app (step 7)
+
+Same web app inside Capacitor 8 (`capacitor.config.ts`, `android/`). The built `dist/` is bundled into the APK, so the UI opens offline.
+
+| File | What |
+|---|---|
+| `src/native/bridge.ts` | `isNative` + the `PelagicNative` plugin interface |
+| `android/app/src/main/java/com/ivan/pelagic/PelagicNativePlugin.java` | Google sign-in via Play services `AuthorizationClient` (Drive scope; silent token whenever needed, consent sheet only the first time), `clearToken`, `appInfo`, `openUrl` |
+| `src/state/session.ts` | On Android: native sign-in; tokens renewed silently 5 min before expiry, on return to foreground and on a Drive 401 (`ensureToken()` / `refresh()`), so "Session expired" only appears if Google needs you |
+| `src/native/updates.ts` | Checks GitHub Releases (`android-<versionCode>` + `pelagic.apk`) on launch / every 6 h in the foreground → toast "Pelagic 1.0.N is available · Install" (opens the APK in the browser) |
+| `src/player/htmlEngine.ts` | On Android plays the Opus copy (whole-file download) until the native Media3 player (phase C) |
+| `../.github/workflows/android.yml` | Push to main touching `app/` → build, sign, publish release `android-<run>` |
+
+Signing: one release key for every build (debug too) so the Google OAuth client's SHA-1 always matches and updates install over the old app. The key lives in `D:\pelagic\secrets\` (`pelagic-release.jks` + `android-signing.properties`, gitignored) and as GitHub secrets `PELAGIC_KEYSTORE_BASE64` / `PELAGIC_KEYSTORE_PASSWORD`. **Never lose it** — a new key means uninstalling the app to update.
+
+Local build (optional, needs Android Studio / JDK 21 + SDK): `npm run build && npx cap sync android`, then open `android/` in Android Studio or `cd android && gradlew assembleDebug`.
+
+Edge-to-edge: Capacitor's SystemBars (`insetsHandling: 'native'`) keeps `env(safe-area-inset-*)` correct; `src/shell/phone.css` pads the top/bottom with it.

@@ -1,0 +1,84 @@
+# Android APK (step 7): builds the Capacitor app on every push to main that touches app/,
+# signs it with the release key and publishes it as a GitHub Release "android-<run number>"
+# with pelagic.apk attached. The app checks these releases on launch (app/src/native/updates.ts).
+#
+# Secrets (repo → Settings → Secrets and variables → Actions):
+#   PELAGIC_KEYSTORE_BASE64    base64 of secrets/pelagic-release.jks
+#   PELAGIC_KEYSTORE_PASSWORD  storePassword from secrets/android-signing.properties (also the key password)
+name: Android APK
+
+on:
+  push:
+    branches: [main]
+    paths: ['app/**', '.github/workflows/android.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write # create releases
+
+concurrency:
+  group: android-apk
+  cancel-in-progress: false
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Build the web app
+        run: |
+          npm ci
+          npm run build
+
+      - name: Copy it into the Android project
+        run: |
+          npx cap sync android
+          # WebView reads woff2; the .woff fallbacks only make the APK bigger
+          find android/app/src/main/assets/public -name '*.woff' -delete
+
+      - name: Release key
+        env:
+          KEYSTORE_B64: ${{ secrets.PELAGIC_KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$KEYSTORE_B64" ]; then echo "::error::Secret PELAGIC_KEYSTORE_BASE64 is missing"; exit 1; fi
+          echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/pelagic-release.jks"
+
+      - name: Build the APK
+        working-directory: app/android
+        env:
+          PELAGIC_KEYSTORE_FILE: ${{ runner.temp }}/pelagic-release.jks
+          PELAGIC_KEYSTORE_PASSWORD: ${{ secrets.PELAGIC_KEYSTORE_PASSWORD }}
+          PELAGIC_KEY_ALIAS: pelagic
+          PELAGIC_KEY_PASSWORD: ${{ secrets.PELAGIC_KEYSTORE_PASSWORD }}
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease -PversionCode=${{ github.run_number }} --no-daemon --stacktrace
+          ls -la app/build/outputs/apk/release/
+          test -f app/build/outputs/apk/release/app-release.apk || { echo "::error::APK wasn't signed (check the keystore secrets)"; exit 1; }
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp android/app/build/outputs/apk/release/app-release.apk "$RUNNER_TEMP/pelagic.apk"
+          gh release create "android-${{ github.run_number }}" "$RUNNER_TEMP/pelagic.apk" \
+            --title "1.0.${{ github.run_number }}" \
+            --notes "Android build from ${GITHUB_SHA::7}: $(git log -1 --format=%s)" \
+            --target "$GITHUB_SHA"

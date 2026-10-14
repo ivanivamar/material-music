@@ -1,0 +1,82 @@
+apply plugin: 'com.android.application'
+
+// Signing (step 7): every build — debug and release — is signed with the one release key, so the
+// SHA-1 registered on the "Pelagic Android" OAuth client always matches and updates install in place.
+// Locally: D:\pelagic\secrets\android-signing.properties (gitignored). CI: env vars from GitHub secrets.
+def signingProps = new Properties()
+def signingFile = rootProject.file('../../secrets/android-signing.properties')
+if (signingFile.exists()) signingFile.withInputStream { signingProps.load(it) }
+def signingValue = { String key, String env -> System.getenv(env) ?: signingProps.getProperty(key) }
+// storeFile in the properties file is relative to that file's folder; the CI variable is an absolute path
+def keystoreFile = System.getenv('PELAGIC_KEYSTORE_FILE') ? new File(System.getenv('PELAGIC_KEYSTORE_FILE'))
+    : signingProps.getProperty('storeFile') ? new File(signingFile.parentFile, signingProps.getProperty('storeFile')) : null
+
+android {
+    namespace = "com.ivan.pelagic"
+    compileSdk = rootProject.ext.compileSdkVersion
+    defaultConfig {
+        applicationId "com.ivan.pelagic"
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        // CI passes -PversionCode=<run number>; local builds are 1
+        versionCode((project.findProperty('versionCode') ?: '1') as int)
+        versionName "1.0.${project.findProperty('versionCode') ?: '0'}"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        aaptOptions {
+             // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
+             // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
+            ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+        }
+    }
+    signingConfigs {
+        pelagic {
+            if (keystoreFile != null && keystoreFile.exists()) {
+                storeFile keystoreFile
+                storePassword signingValue('storePassword', 'PELAGIC_KEYSTORE_PASSWORD')
+                keyAlias signingValue('keyAlias', 'PELAGIC_KEY_ALIAS')
+                keyPassword signingValue('keyPassword', 'PELAGIC_KEY_PASSWORD')
+            }
+        }
+    }
+    buildTypes {
+        debug {
+            if (keystoreFile != null && keystoreFile.exists()) signingConfig signingConfigs.pelagic
+        }
+        release {
+            if (keystoreFile != null && keystoreFile.exists()) signingConfig signingConfigs.pelagic
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+repositories {
+    flatDir{
+        dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
+    }
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
+    implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
+    implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
+    implementation project(':capacitor-android')
+    // Google sign-in for Drive (AuthorizationClient) — see PelagicNativePlugin
+    implementation "com.google.android.gms:play-services-auth:21.4.0"
+    testImplementation "junit:junit:$junitVersion"
+    androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
+    androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
+    implementation project(':capacitor-cordova-android-plugins')
+}
+
+apply from: 'capacitor.build.gradle'
+
+try {
+    def servicesJSON = file('google-services.json')
+    if (servicesJSON.text) {
+        apply plugin: 'com.google.gms.google-services'
+    }
+} catch(Exception e) {
+    logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
+}

@@ -14,6 +14,7 @@
  */
 import { useSyncExternalStore } from 'react'
 import { initDriveStream } from './driveStream'
+import { isNative } from '../native/bridge'
 
 declare global {
   /** "YYYY-MM-DD · <commit>", set in vite.config.ts */
@@ -77,7 +78,7 @@ function track(reg: ServiceWorkerRegistration) {
 
 /** Call once at boot (after the service worker is registered by initDriveStream). */
 export function initPwa() {
-  if (started || typeof window === 'undefined') return
+  if (started || typeof window === 'undefined' || isNative) return // the APK updates itself (native/updates.ts)
   started = true
 
   window.addEventListener('beforeinstallprompt', (e) => {

@@ -7,7 +7,7 @@
 /* ── Shell: one column, bottom tabs, floating mini-player ── */
 .shell.is-phone { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); grid-template-areas: 'main'; }
 .shell.is-phone .shell-page {
-  padding: 18px 20px calc(var(--android-tabs-h) + 32px + env(safe-area-inset-bottom));
+  padding: calc(18px + env(safe-area-inset-top)) 20px calc(var(--android-tabs-h) + 32px + env(safe-area-inset-bottom));
 }
 .shell.is-phone.has-mini .shell-page {
   padding-bottom: calc(var(--android-tabs-h) + var(--android-mini-h) + 40px + env(safe-area-inset-bottom));
@@ -127,7 +127,7 @@ html[data-phone][data-qp] .toasts.toasts-shell { right: 0; }
 .shell.is-phone .hero.hero-artist .hero-meta { font-size: var(--fs-mono-xs); }
 .shell.is-phone .hero.hero-artist .hero-buttons { flex-basis: 100%; }
 .shell.is-phone .hero-buttons .btn { flex: 1; height: 48px; }
-.shell.is-phone .artist-banner { left: -20px; right: -20px; top: -18px; height: 320px; }
+.shell.is-phone .artist-banner { left: -20px; right: -20px; top: calc(-18px - env(safe-area-inset-top)); height: calc(320px + env(safe-area-inset-top)); }
 
 .shell.is-phone .actions { gap: 10px; margin-bottom: 20px; }
 .shell.is-phone .actions .btn { flex: 1; min-width: 0; height: 48px; }
@@ -160,6 +160,8 @@ html[data-phone][data-qp] .toasts.toasts-shell { right: 0; }
 .shell.is-phone .srch-recent-x { opacity: 1; }
 
 /* ── Full-screen player (handoff 05 Android Now Playing) ── */
+/* Android app (edge-to-edge): keep the player's content below the status bar */
+.shell.is-phone .np { top: env(safe-area-inset-top, 0px); }
 .shell.is-phone .np-head { height: 60px; padding: 0 14px; }
 .shell.is-phone .np-close { width: 44px; height: 44px; padding: 0; margin: 0; justify-content: center; font-size: 0; letter-spacing: 0; }
 .shell.is-phone .np-close svg { font-size: 22px; }

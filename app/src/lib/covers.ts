@@ -35,7 +35,7 @@ export function loadCover(fileId: string, v?: number): Promise<string | null> {
     p = (async () => {
       let blob = await idbGet<Blob>('covers', key)
       if (!blob) {
-        if (!sessionStore.token()) return null // expired / offline: try again next time
+        if (!(await sessionStore.ensureToken())) return null // expired / offline: try again next time
         blob = await slot(() => downloadBlob(fileId))
         void idbSet('covers', key, blob)
       }

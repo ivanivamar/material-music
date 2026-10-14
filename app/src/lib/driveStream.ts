@@ -7,6 +7,7 @@
  * player falls back to downloading the whole file with driveFetch.
  */
 import { sessionStore } from '../state/session'
+import { isNative } from '../native/bridge'
 
 const BASE = import.meta.env.BASE_URL
 let ready: Promise<boolean> | null = null
@@ -38,7 +39,8 @@ function waitForController(ms: number): Promise<boolean> {
 /** Register the worker (idempotent). Resolves true once it controls this page. */
 export function initDriveStream(): Promise<boolean> {
   ready ??= (async () => {
-    if (!('serviceWorker' in navigator) || !window.isSecureContext) return false
+    // Android app: no service worker (Capacitor serves the bundled files itself); audio downloads whole
+    if (isNative || !('serviceWorker' in navigator) || !window.isSecureContext) return false
     try {
       listen()
       await navigator.serviceWorker.register(`${BASE}sw.js`, { scope: BASE })

@@ -15,6 +15,7 @@ import { loadCover } from '../lib/covers'
 import { AuthError, downloadBlob } from '../lib/drive'
 import { streamUrl } from '../lib/driveStream'
 import { localFolder } from '../lib/localFolder'
+import { isNative } from '../native/bridge'
 import { libraryStore, type Album, type Track } from '../state/library'
 import { playerStore, type PlaybackSource, type PlayerEngine } from '../state/player'
 import { sessionStore } from '../state/session'
@@ -124,14 +125,17 @@ export function createHtmlAudioEngine(): PlayerEngine {
       if (my !== seq) return null
       if (file) return { trackId: id, url: URL.createObjectURL(file), owned: true, source: 'local', triedLocal: false }
     }
-    // 2. / 3. Google Drive
-    if (!track.flac?.id) throw new Error('This track has no FLAC on Drive.')
-    if (!sessionStore.token()) throw new NeedsAuth()
-    const url = await streamUrl(track.flac.id, track.flac.size)
+    // 2. / 3. Google Drive. The Android app plays the Opus copy (small, whole-file download) until
+    //    the native player (step 7, phase C) streams and caches on its own.
+    const file = isNative && track.mobile?.id ? track.mobile : track.flac
+    if (!file?.id) throw new Error('This track has no FLAC on Drive.')
+    if (!(await sessionStore.ensureToken())) throw new NeedsAuth()
+    if (my !== seq) return null
+    const url = await streamUrl(file.id, file.size, file === track.flac ? 'audio/flac' : 'audio/ogg')
     if (my !== seq) return null
     if (url) return { trackId: id, url, owned: false, source: 'drive', triedLocal: !allowLocal }
     try {
-      const blob = await downloadBlob(track.flac.id)
+      const blob = await downloadBlob(file.id)
       if (my !== seq) return null
       return { trackId: id, url: URL.createObjectURL(blob), owned: true, source: 'drive', triedLocal: !allowLocal }
     } catch (e) {

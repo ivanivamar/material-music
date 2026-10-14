@@ -4,6 +4,7 @@ import { Components } from './dev/Components'
 import { Foundations } from './dev/Foundations'
 import { initDriveStream } from './lib/driveStream'
 import { initPwa } from './lib/pwa'
+import { initNativeUpdates } from './native/updates'
 import { Home } from './pages/Home'
 import { Placeholder } from './pages/Placeholder'
 import { LibraryError, LoadingLibrary, NoLibrary } from './screens/LibraryStatus'
@@ -32,6 +33,8 @@ void libraryStore.loadCache()
 void initDriveStream()
 // PWA (step 7): update toast, install prompt, launches into the open window.
 initPwa()
+// Android app: check GitHub Releases for a newer APK.
+initNativeUpdates()
 playerStore.attach(createHtmlAudioEngine())
 
 function Page({ route }: { route: Extract<Route, { kind: 'app' }> }) {

@@ -4,6 +4,8 @@ import { useToast } from '../components/ui'
 import { Icon, type IconName } from '../design/icons'
 import { localFolder, useLocalFolder } from '../lib/localFolder'
 import { APP_VERSION, appUpdate, usePwa } from '../lib/pwa'
+import { isNative } from '../native/bridge'
+import { nativeUpdates, useNativeUpdates } from '../native/updates'
 import { libraryStore, useLibrary } from '../state/library'
 import { sessionStore, useSession } from '../state/session'
 
@@ -16,6 +18,7 @@ export function AccountMenu() {
   const local = useLocalFolder()
   const toast = useToast()
   const pwa = usePwa()
+  const apk = useNativeUpdates()
   const [open, setOpen] = useState(false)
   const wrap = useRef<HTMLDivElement>(null)
 
@@ -87,9 +90,12 @@ export function AccountMenu() {
           {linked && item('x', 'Stop using the local folder', () => void localFolder.unlink())}
           {pwa.canInstall && !pwa.installed && item('download', 'Install Pelagic app', () => void appUpdate.install())}
           {pwa.updateReady && item('refresh', 'Reload to update Pelagic', () => appUpdate.apply())}
+          {apk.available && item('download', `Install Pelagic ${apk.available.versionName}`, () => nativeUpdates.install())}
           {item('ext', 'Switch account', () => void sessionStore.signIn({ switchAccount: true }))}
           {item('x', 'Sign out', () => sessionStore.signOut(), { danger: true })}
-          <div className="menu-foot">PELAGIC {APP_VERSION.toUpperCase()}{pwa.installed ? ' · APP' : ''}</div>
+          <div className="menu-foot">
+            {isNative ? `PELAGIC ANDROID ${apk.current?.versionName ?? ''} · ${APP_VERSION}`.toUpperCase() : `PELAGIC ${APP_VERSION.toUpperCase()}${pwa.installed ? ' · APP' : ''}`}
+          </div>
         </div>
       )}
     </div>
