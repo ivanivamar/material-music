@@ -1,0 +1,29 @@
+.atm { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
+.atm-fixed { position: fixed; }
+
+.atm-stone   { position: absolute; inset: 0; background-size: 900px 900px; opacity: var(--atm-stone-opacity); }
+.atm-contour { position: absolute; inset: 0; background-size: cover; background-position: center; background-repeat: no-repeat; opacity: var(--atm-contour-opacity); }
+.atm-grain   { position: absolute; inset: 0; background-size: 220px 220px; opacity: var(--atm-grain-opacity); mix-blend-mode: screen; }
+
+.atm-pool { position: absolute; will-change: transform; }
+.atm-pool-a {
+  left: -15%; top: -25%; width: 75%; height: 85%;
+  background: radial-gradient(closest-side, rgba(255, 255, 255, .075), transparent);
+  animation: pg-pool 24s ease-in-out infinite alternate;
+}
+.atm-pool-b {
+  right: -20%; bottom: -30%; width: 70%; height: 80%;
+  background: radial-gradient(closest-side, rgba(255, 255, 255, .05), transparent);
+  animation: pg-pool 32s ease-in-out -12s infinite alternate-reverse;
+}
+
+.atm-snow { position: absolute; inset: 0; }
+.atm-flake {
+  position: absolute;
+  animation-name: pg-sway;
+  animation-timing-function: var(--ease-sway);
+  animation-iteration-count: infinite;
+  will-change: transform, opacity;
+}
+.atm-dot { border-radius: 50%; background: #fff; box-shadow: 0 0 4px rgba(255, 255, 255, .5); }
+.atm-bokeh { box-shadow: none; filter: blur(1.5px); }

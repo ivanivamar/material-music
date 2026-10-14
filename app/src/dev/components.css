@@ -1,0 +1,35 @@
+.cg { position: relative; min-height: 100%; background: var(--bg-1); }
+.cg-inner { position: relative; z-index: 1; padding: 64px 56px 120px; display: flex; flex-direction: column; gap: 48px; max-width: 1440px; margin: 0 auto; }
+.cg-head { display: flex; flex-direction: column; gap: 12px; }
+.cg-nav { display: flex; gap: 24px; align-items: center; font-size: 13px; }
+
+.cg-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 64px 72px; }
+.cg-panel { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+.cg-wide { grid-column: 1 / -1; }
+.cg-title { color: var(--ink-primary); border-bottom: 1px solid var(--hairline-strong); padding-bottom: 14px; }
+.cg-subtitle { color: var(--ink-primary); border-bottom: 1px solid var(--hairline-strong); padding-bottom: 14px; margin-top: 12px; }
+
+.cg-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.cg-col { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.cg-btns { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; }
+.cg-play { display: flex; gap: 28px; align-items: center; }
+.cg-vsep { width: 1px; height: 72px; background: var(--hairline-strong); }
+
+.cg-cards { display: grid; grid-template-columns: repeat(4, 124px); gap: 18px; }
+
+.cg-bar {
+  position: relative; height: var(--playerbar-h); border-radius: 16px;
+  display: grid; grid-template-columns: minmax(0, 1fr) 560px minmax(0, 1fr); align-items: center;
+  padding: 0 20px; gap: 24px; background: var(--bg-1); border-top: 1px solid rgba(255, 255, 255, .08);
+}
+.cg-bar-left { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.cg-bar-left img { width: 52px; height: 52px; border-radius: 8px; object-fit: cover; flex: none; }
+.cg-bar-ctl { display: flex; align-items: center; gap: 12px; }
+.cg-bar-ctl .ibtn { font-size: 19px; }
+.cg-bar-ctl .ibtn.is-strong { color: var(--ink-primary); }
+.cg-bar-right { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+.cg-bar-right .badge { margin-right: 8px; }
+
+.cg-sonar { height: 300px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 28px; }
+
+.cg-setting { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 14px 0; border-bottom: 1px solid var(--hairline); }
