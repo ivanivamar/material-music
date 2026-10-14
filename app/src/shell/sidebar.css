@@ -1,0 +1,119 @@
+/* Sidebar — handoff 04 Desktop. 232px, padding 30px 14px, sections 36px apart. */
+.sb {
+  grid-area: side;
+  position: relative; z-index: 2;
+  width: var(--sidebar-w); min-height: 0;
+  padding: 30px 14px;
+  display: flex; flex-direction: column; gap: 36px;
+  background: rgba(11, 11, 12, 0.7);
+  border-right: 1px solid var(--hairline);
+  overflow-y: auto; overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+.sb::-webkit-scrollbar { display: none; }
+
+/* ── Brand: 22px aperture + wordmark ───────────────── */
+.sb-brand { display: flex; align-items: center; gap: 12px; padding: 0 14px; color: var(--ink-primary); text-decoration: none; }
+.sb-brand:hover { color: var(--ink-primary); }
+.sb-mark { position: relative; width: 22px; height: 22px; flex: none; }
+.sb-mark-top, .sb-mark-bottom { position: absolute; inset: 0; border-radius: 50%; border: 1.5px solid; }
+.sb-mark-top { border-color: rgba(255, 255, 255, .9); clip-path: inset(0 0 50% 0); }
+.sb-mark-bottom { border-color: rgba(255, 255, 255, .22); clip-path: inset(50% 0 0 0); }
+.sb-mark-line { position: absolute; left: -5px; right: -5px; top: 10.5px; height: 1px; background: #fff; }
+.sb-word { font-size: 14px; font-weight: 500; letter-spacing: var(--ls-wordmark); text-transform: uppercase; }
+
+/* ── Nav items ─────────────────────────────────────── */
+.sb-nav { display: flex; flex-direction: column; gap: 4px; }
+
+.sb-item {
+  position: relative;
+  display: flex; align-items: center; gap: 12px;
+  height: 44px; padding: 4px 12px 4px 4px;
+  border-radius: 12px;
+  color: var(--ink-secondary);
+  font-size: 14px; font-weight: 500;
+  text-decoration: none;
+  /* leaving: text goes back to grey right away */
+  transition: color .5s ease, background-color .2s ease;
+}
+.sb-item:hover { color: var(--ink-secondary); background: rgba(255, 255, 255, .04); }
+.sb-item:focus-visible { outline: 1.5px solid rgba(255, 255, 255, .7); outline-offset: 2px; }
+.sb-item.is-on { color: var(--bg-1); transition: color .6s ease .3s, background-color .2s ease; }
+.sb-item.is-on:hover { color: var(--bg-1); }
+
+/* white fill: circle clip from the icon centre (22px = 4px padding + 18px half tile) */
+.sb-fill {
+  position: absolute; inset: 0; border-radius: 12px;
+  background: var(--ink-primary);
+  clip-path: circle(0px at 22px 50%);
+  opacity: 0;
+  pointer-events: none;
+  transition: clip-path 1s var(--ease-nav-out), opacity .8s ease .2s;
+}
+.sb-item.is-on .sb-fill {
+  clip-path: circle(160% at 22px 50%);
+  opacity: 1;
+  transition: clip-path 1.5s var(--ease-nav-in), opacity .4s ease;
+}
+
+.sb-ic {
+  position: relative;
+  width: 36px; height: 36px; flex: none;
+  border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+  background: transparent; color: var(--ink-secondary);
+  transition: background-color .5s ease, color .5s ease;
+}
+.sb-item:hover .sb-ic { color: var(--ink-primary); }
+.sb-item.is-on .sb-ic { background: var(--bg-1); color: #fff; transition: background-color .6s ease .3s, color .6s ease .3s; }
+
+.sb-label { position: relative; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sb-badge { position: relative; font-family: var(--font-mono); font-size: var(--fs-mono-sm); color: var(--ink-secondary); transition: color .5s ease; }
+.sb-item.is-on .sb-badge { color: var(--ink-tertiary); }
+
+/* rings around the icon tile */
+.sb-pings { position: absolute; inset: 0; pointer-events: none; }
+.sb-ring {
+  position: absolute; left: 4px; top: 4px; width: 36px; height: 36px;
+  border-radius: 50%; border: 1px solid; opacity: 0;
+  animation: pg-navping .8s var(--ease-sonar) forwards;
+}
+.sb-ring-on  { border-color: rgba(255, 255, 255, .8); }
+.sb-ring-on2 { border-color: rgba(255, 255, 255, .5); animation-delay: .18s; }
+.sb-ring-off { border-color: rgba(255, 255, 255, .5); animation-name: pg-navecho; }
+
+/* reduced motion: instant state swap */
+.sb-item.no-motion,
+.sb-item.no-motion .sb-fill,
+.sb-item.no-motion .sb-ic,
+.sb-item.no-motion .sb-badge { transition: none; }
+
+/* ── Playlists ─────────────────────────────────────── */
+.sb-playlists { display: flex; flex-direction: column; gap: 6px; }
+.sb-section-head { display: flex; align-items: center; justify-content: space-between; padding: 0 12px 8px; }
+.sb-section-label { font-family: var(--font-mono); font-size: var(--fs-mono-sm); letter-spacing: .16em; color: var(--ink-tertiary); }
+.sb-plus {
+  display: inline-flex; padding: 0; border: 0; background: none; cursor: pointer;
+  font-size: 16px; color: var(--ink-secondary);
+}
+.sb-plus:hover:not(:disabled) { color: var(--ink-primary); }
+.sb-plus:disabled { cursor: default; }
+
+.sb-pl {
+  display: flex; align-items: center; gap: 12px;
+  height: 44px; padding: 0 12px 0 7px; border-radius: 12px;
+  color: var(--ink-primary); text-decoration: none;
+  transition: background-color .2s ease;
+}
+.sb-pl:hover { color: var(--ink-primary); background: rgba(255, 255, 255, .04); }
+.sb-pl.is-active { background: var(--surface-1); }
+.sb-pl-liked {
+  width: 30px; height: 30px; flex: none; border-radius: 6px;
+  background: var(--ink-primary); color: var(--bg-1);
+  display: flex; align-items: center; justify-content: center; font-size: 17px;
+}
+.sb-pl-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.sb-pl-name { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sb-pl.is-active .sb-pl-name { font-weight: 500; }
+.sb-pl-meta { font-family: var(--font-mono); font-size: var(--fs-mono-sm); color: var(--ink-tertiary); letter-spacing: .1em; }

@@ -45,7 +45,18 @@ export function useToast(): ToastApi {
 const MAX = 3
 const LEAVE_MS = 350
 
-export function ToastProvider({ children, fixed = true, bottom }: { children: ReactNode; fixed?: boolean; bottom?: number }) {
+export function ToastProvider({
+  children,
+  fixed = true,
+  bottom,
+  className,
+}: {
+  children: ReactNode
+  fixed?: boolean
+  bottom?: number
+  /** extra class on the toast stack, e.g. to centre it over the shell's main area */
+  className?: string
+}) {
   const [items, setItems] = useState<ToastItem[]>([])
   const seq = useRef(0)
   const timers = useRef(new Map<number, number>())
@@ -101,7 +112,7 @@ export function ToastProvider({ children, fixed = true, bottom }: { children: Re
   return (
     <Ctx.Provider value={api}>
       {children}
-      <div className={`toasts ${fixed ? 'toasts-fixed' : ''}`} style={bottom != null ? { bottom } : undefined} role="status" aria-live="polite">
+      <div className={`toasts ${fixed ? 'toasts-fixed' : ''} ${className ?? ''}`} style={bottom != null ? { bottom } : undefined} role="status" aria-live="polite">
         {items.map((t) => (
           <div key={t.id} className={`toast ${t.tone === 'danger' ? 'toast-danger' : ''} ${t.leaving ? 'is-leaving' : ''}`}>
             {t.icon && (

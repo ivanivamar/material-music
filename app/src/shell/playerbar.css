@@ -1,0 +1,49 @@
+/* Player bar — handoff 04 Desktop. 84px, grid 1fr / 560px / 1fr, padding 0 20px, gap 24px. */
+.pb {
+  grid-area: bar;
+  position: relative; z-index: 3;
+  height: var(--playerbar-h);
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 560px) minmax(0, 1fr);
+  align-items: center; gap: 24px; padding: 0 20px;
+  background: var(--bg-1);
+  border-top: 1px solid rgba(255, 255, 255, .08);
+}
+
+/* now playing */
+.pb-now { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.pb-cover { width: 52px; height: 52px; flex: none; border-radius: 8px; object-fit: cover; display: block; background: var(--surface-1); }
+.pb-cover-empty { border: 1.5px dashed rgba(255, 255, 255, .12); background: transparent; }
+.pb-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.pb-title { font-size: 15px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pb-title-empty { color: var(--ink-secondary); font-weight: 400; }
+.pb-sub { font-size: 13px; color: var(--ink-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pb-sub.t-mono { font-size: var(--fs-mono-xs); color: var(--ink-tertiary); }
+.pb-like { margin-left: 8px; flex: none; }
+
+/* transport */
+.pb-center { display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 0; }
+.pb-transport { display: flex; align-items: center; gap: 24px; }
+.pb-transport .ibtn { width: 28px; height: 28px; font-size: 19px; }
+.pb-skip { color: var(--ink-primary); }
+.pb .ibtn.pb-skip:disabled { color: var(--ink-ghost); }
+.pb-mode.is-on { color: #fff; }
+.pb-mode.is-on svg { filter: drop-shadow(0 0 5px rgba(255, 255, 255, .55)); }
+.pb-repeat-wrap { position: relative; display: inline-flex; }
+.pb-repeat-one {
+  position: absolute; right: -3px; top: -3px;
+  font-family: var(--font-mono); font-size: 8px; line-height: 1; color: #fff; pointer-events: none;
+}
+.pb.is-empty .playbtn { background: var(--surface-2); color: var(--ink-ghost); cursor: default; box-shadow: none; }
+
+/* right cluster: 18px icons, 18px gaps */
+.pb-right { display: flex; align-items: center; justify-content: flex-end; gap: 18px; min-width: 0; }
+.pb-right .ibtn { width: 26px; height: 26px; font-size: 18px; }
+.pb-volume { display: inline-flex; align-items: center; gap: 10px; }
+.pb-vol-slider { flex: none; width: 80px; }
+
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+@media (max-width: 1100px) {
+  .pb { gap: 16px; }
+  .pb-right .badge { display: none; }
+}
