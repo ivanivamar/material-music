@@ -10,6 +10,9 @@
  *   rows: drag handle · cover · title/artist · length · ↑ play next · × remove   (click = play)
  *   DRAG TO REORDER · ↑ PLAY NEXT · × REMOVE
  *
+ * Reordering: HTML drag-and-drop on desktop (whole row); on the phone (touch) the grip is always
+ * visible and dragging it moves the row (pointer events, auto-scroll near the list edges).
+ *
  * Long queues (a whole library from Songs) are windowed: only rows near the viewport mount.
  */
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type DragEvent, type KeyboardEvent, type PointerEvent } from 'react'
@@ -76,6 +79,8 @@ interface Dnd {
   start: (abs: number) => (e: DragEvent) => void
   over: (abs: number) => (e: DragEvent) => void
   end: () => void
+  /** phone: touch-drag from the grip (HTML drag-and-drop doesn't exist on touch) */
+  grip: (abs: number) => { onPointerDown: (e: PointerEvent<HTMLElement>) => void; onClick: (e: React.MouseEvent) => void }
 }
 
 /** Glowing drop line above / below a row while dragging. */
@@ -197,7 +202,7 @@ function PlayedSection({ c, ids, active, dnd, last }: { c: Catalogue; ids: strin
                   onKeyDown={onKey(i)}
                 >
                   <DropLine dnd={dnd} abs={i} />
-                  <span className="qp-handle qp-grip" aria-hidden>
+                  <span className="qp-handle qp-grip" aria-hidden {...dnd.grip(i)}>
                     <span className="qp-played-n t-mono">{String(i + 1).padStart(2, '0')}</span>
                     <span className="qp-grip-ic">
                       <Icon name="drag" />
@@ -273,7 +278,9 @@ export function QueuePanel() {
   const [grabDy, setGrabDy] = useState<number | null>(null)
   const grab = useRef({ y0: 0, y: 0, t: 0, v: 0, moved: false, onHandle: false })
   if (!open && expanded) setExpanded(false)
-  const normalTop = () => window.innerHeight * 0.5 // opens at half height (CSS: top 50vh)
+  const sheetRef = useRef<HTMLElement>(null)
+  // how far the full-height sheet is pushed down at half height (CSS --qp-rest: 50vh − status bar)
+  const normalTop = () => window.innerHeight * 0.5 - (sheetRef.current?.offsetTop ?? 0)
 
   const onGrabDown = (e: PointerEvent<HTMLDivElement>) => {
     if (!phone || (e.target as HTMLElement).closest('button')) return
@@ -309,7 +316,8 @@ export function QueuePanel() {
     } else if (dy < 0 && !expanded && (dy < -80 || v < -0.5)) setExpanded(true)
   }
   const sheetStyle: CSSProperties | undefined =
-    grabDy === null ? undefined : grabDy > 0 ? { transform: `translateY(${grabDy}px)` } : grabDy < 0 ? { top: `${normalTop() + grabDy}px` } : undefined
+    // transform only (never top/height): the sheet follows the finger from its resting offset
+    grabDy === null ? undefined : { transform: `translate3d(0, calc(var(--qp-rest) + ${grabDy}px), 0)` }
   const scrimStyle: CSSProperties | undefined =
     grabDy !== null && grabDy > 0 ? { opacity: Math.max(0, 1 - grabDy / Math.max(1, window.innerHeight - (expanded ? 0 : normalTop()))) } : undefined
 
@@ -356,7 +364,93 @@ export function QueuePanel() {
     }
     setDrag(null)
   }
-  const dnd: Dnd = { enabled: !phone, drag, start: onDragStart, over: onDragOver, end: () => setDrag(null) }
+
+  /* phone: touch drag from the grip. The finger's row (any [data-abs] in the panel, the current
+   * track included) is the drop target; near the top / bottom of a list it scrolls. */
+  const dragRef = useRef<DragState | null>(null)
+  const setDragNow = (d: DragState | null) => {
+    dragRef.current = d
+    setDrag(d)
+  }
+  const touchEnd = useRef<(() => void) | null>(null)
+  // sheet closed (Back, queue emptied) or unmounted mid-drag: drop it
+  useEffect(() => {
+    if (!open) touchEnd.current?.()
+  }, [open])
+  useEffect(() => () => touchEnd.current?.(), [])
+  const onGripDown = (abs: number) => (e: PointerEvent<HTMLElement>) => {
+    if (!phone || !e.isPrimary || touchEnd.current) return
+    e.preventDefault()
+    e.stopPropagation()
+    const pid = e.pointerId
+    const pt = { x: e.clientX, y: e.clientY }
+    let raf = 0
+    setDragNow({ from: abs, over: null, after: false })
+    navigator.vibrate?.(8)
+
+    const hit = () => {
+      const d = dragRef.current
+      const el = document.elementFromPoint(pt.x, pt.y)?.closest<HTMLElement>('.qp [data-abs]')
+      if (!d || !el) return
+      const over = Number(el.dataset.abs)
+      const r = el.getBoundingClientRect()
+      const after = pt.y > r.top + r.height / 2
+      if (d.over !== over || d.after !== after) setDragNow({ ...d, over, after })
+    }
+    // auto-scroll: within 56px of a list's visible top / bottom edge (or past it), faster the closer
+    const tick = () => {
+      raf = requestAnimationFrame(tick)
+      const EDGE = 56
+      for (const list of document.querySelectorAll<HTMLElement>('.qp .qp-list')) {
+        const r = list.getBoundingClientRect()
+        const top = r.top
+        const bottom = Math.min(r.bottom, window.innerHeight) // half-height sheet: bottom is off-screen
+        if (pt.y < top - EDGE || pt.y > bottom + EDGE) continue
+        let v = 0
+        if (pt.y < top + EDGE && list.scrollTop > 0) v = -Math.min(1, (top + EDGE - pt.y) / EDGE)
+        else if (pt.y > bottom - EDGE) v = Math.min(1, (pt.y - (bottom - EDGE)) / EDGE)
+        if (v) {
+          list.scrollTop += v * 14
+          hit()
+        }
+      }
+    }
+    const onMove = (ev: globalThis.PointerEvent) => {
+      if (ev.pointerId !== pid) return
+      ev.preventDefault()
+      pt.x = ev.clientX
+      pt.y = ev.clientY
+      hit()
+    }
+    const finish = (commit: boolean) => {
+      cancelAnimationFrame(raf)
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+      window.removeEventListener('pointercancel', onCancel)
+      touchEnd.current = null
+      const d = dragRef.current
+      setDragNow(null)
+      if (commit && d && d.over !== null && d.over !== d.from) {
+        const pos = d.over + (d.after ? 1 : 0)
+        const to = pos > d.from ? pos - 1 : pos
+        if (to !== d.from) playerStore.move(d.from, to)
+      }
+    }
+    const onUp = (ev: globalThis.PointerEvent) => ev.pointerId === pid && finish(true)
+    const onCancel = (ev: globalThis.PointerEvent) => ev.pointerId === pid && finish(false)
+    window.addEventListener('pointermove', onMove, { passive: false })
+    window.addEventListener('pointerup', onUp)
+    window.addEventListener('pointercancel', onCancel)
+    touchEnd.current = () => finish(false)
+    raf = requestAnimationFrame(tick)
+  }
+  const grip = (abs: number) => ({
+    onPointerDown: onGripDown(abs),
+    // a tap on the grip must not play the row
+    onClick: (e: React.MouseEvent) => phone && e.stopPropagation(),
+  })
+
+  const dnd: Dnd = { enabled: !phone, drag, start: onDragStart, over: onDragOver, end: () => setDrag(null), grip }
 
   const onRowKey = (abs: number) => (e: KeyboardEvent) => {
     if (e.target !== e.currentTarget) return
@@ -394,6 +488,7 @@ export function QueuePanel() {
     <>
       <div className={`qp-scrim pg-anim ${overNp ? 'is-over-np' : ''} ${open ? 'is-open' : ''} ${grabDy !== null ? 'is-grabbing' : ''}`} style={scrimStyle} onClick={close} aria-hidden />
       <aside
+        ref={sheetRef}
         className={`qp pg-anim ${overNp ? 'is-over-np' : ''} ${open ? 'is-open' : ''} ${drag ? 'is-dragging' : ''} ${expanded ? 'is-expanded' : ''} ${grabDy !== null ? 'is-grabbing' : ''}`}
         style={sheetStyle}
         aria-label="Queue"
@@ -439,7 +534,7 @@ export function QueuePanel() {
         {played.length > 0 && data && <PlayedSection c={data} ids={played} active={open} dnd={dnd} last={p.queue.length - 1} />}
 
         {current && data && (
-          <div className="qp-now" onDragOver={onDragOver(p.index)}>
+          <div className="qp-now" data-abs={p.index} onDragOver={onDragOver(p.index)}>
             <DropLine dnd={dnd} abs={p.index} />
             <span className="qp-handle">
               <Eq playing={p.playing} />
@@ -486,7 +581,7 @@ export function QueuePanel() {
                     onKeyDown={onRowKey(abs)}
                   >
                     <DropLine dnd={dnd} abs={abs} />
-                    <span className="qp-handle qp-grip" aria-hidden>
+                    <span className="qp-handle qp-grip" aria-hidden {...dnd.grip(abs)}>
                       <Icon name="drag" />
                     </span>
                     {t ? <Cover c={data} albumId={t.albumId} size={40} /> : <span className="qp-cover qp-cover-empty" />}
@@ -548,7 +643,7 @@ export function QueuePanel() {
           </div>
         )}
 
-        <div className="qp-foot t-mono">{phone ? 'TAP TO PLAY · ↑ PLAY NEXT · × REMOVE' : 'DRAG TO REORDER · ↑ PLAY NEXT · × REMOVE'}</div>
+        <div className="qp-foot t-mono">{phone ? 'HOLD ⠿ TO REORDER · ↑ PLAY NEXT · × REMOVE' : 'DRAG TO REORDER · ↑ PLAY NEXT · × REMOVE'}</div>
       </aside>
     </>
   )

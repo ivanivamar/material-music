@@ -5,6 +5,7 @@ import { Foundations } from './dev/Foundations'
 import { initDriveStream } from './lib/driveStream'
 import { initPwa } from './lib/pwa'
 import { initNativeUpdates } from './native/updates'
+import { initBackButton } from './native/backButton'
 import { Home } from './pages/Home'
 import { Placeholder } from './pages/Placeholder'
 import { LibraryError, LoadingLibrary, NoLibrary } from './screens/LibraryStatus'
@@ -37,6 +38,8 @@ void initDriveStream()
 initPwa()
 // Android app: check GitHub Releases for a newer APK.
 initNativeUpdates()
+// Android: the system Back button navigates inside the app instead of closing it.
+initBackButton()
 // Android: ExoPlayer in a background service (phase C) instead of HTML audio.
 playerStore.attach(isNative ? createNativeEngine() : createHtmlAudioEngine())
 

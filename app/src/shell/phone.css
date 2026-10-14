@@ -232,20 +232,24 @@ html[data-phone][data-qp] .toasts.toasts-shell { right: 0; }
 
 /* ── Queue: bottom sheet (handoff 07 Android Queue) ── */
 .shell.is-phone .qp-scrim, .shell.is-phone .qp-scrim.is-over-np { top: 0; bottom: 0; z-index: 44; }
+/* The sheet is always laid out at full height and only ever moves with translateY (GPU):
+   --qp-rest = half height (normal) or 0 (expanded); closed = off-screen. Changing its `top` / size
+   while dragging made the Android WebView re-rasterise a resized layer every frame, which showed up
+   as the sheet blinking out for a frame (the player under the cover flickering through). */
 .shell.is-phone .qp, .shell.is-phone .qp.is-over-np {
-  left: 0; right: 0; top: 50vh; bottom: 0; width: auto; z-index: 45;
+  --qp-rest: calc(50vh - env(safe-area-inset-top, 0px));
+  left: 0; right: 0; top: env(safe-area-inset-top, 0px); bottom: 0; width: auto; z-index: 45;
   padding: 12px 16px calc(16px + env(safe-area-inset-bottom)); gap: 16px;
   border-left: 0; border-top: 1.5px solid rgba(255, 255, 255, .1); border-radius: 24px 24px 0 0;
-  transform: translateY(105%);
+  transform: translate3d(0, 105%, 0);
+  will-change: transform;
+  transition: transform var(--dur-panel) var(--ease), visibility 0s linear var(--dur-panel);
 }
-.shell.is-phone .qp.is-open { transform: none; }
-/* Android WebView: without their own layers the sheet / scrim could be painted under the player's
-   scrolling content (np-main) while they animate — the "flicker" below the cover */
-.shell.is-phone .qp, .shell.is-phone .qp-scrim { will-change: transform, opacity; backface-visibility: hidden; }
-.shell.is-phone .qp { transition: transform var(--dur-panel) var(--ease), top .5s var(--ease), visibility 0s linear var(--dur-panel); }
-.shell.is-phone .qp.is-open { transition: transform .5s var(--ease), top .5s var(--ease), visibility 0s; }
-.shell.is-phone .qp.is-expanded { top: env(safe-area-inset-top, 0px); }
-/* following the finger: no easing */
+.shell.is-phone .qp.is-expanded { --qp-rest: 0px; }
+.shell.is-phone .qp.is-open { transform: translate3d(0, var(--qp-rest), 0); transition: transform .5s var(--ease), visibility 0s; }
+/* at half height the bottom half of the sheet is off-screen: let the list scroll its last rows up */
+.shell.is-phone .qp:not(.is-expanded) .qp-list:not(.qp-played-list) { padding-bottom: var(--qp-rest); }
+.shell.is-phone .qp-scrim { will-change: opacity; }
 .shell.is-phone .qp.is-grabbing, .shell.is-phone .qp-scrim.is-grabbing { transition: none; }
 /* drag handle + header = grab area */
 .shell.is-phone .qp-grab-zone { display: flex; flex-direction: column; gap: 12px; margin: -12px -16px 0; padding: 12px 16px 0; touch-action: none; cursor: grab; user-select: none; }
@@ -258,8 +262,12 @@ html[data-phone][data-qp] .toasts.toasts-shell { right: 0; }
 .shell.is-phone .qp-tool-sq, .shell.is-phone .qp-tool-x { width: 44px; }
 .shell.is-phone .qp-now { height: 60px; padding: 0 10px; }
 .shell.is-phone .qp-row { cursor: pointer; padding: 0 2px 0 0; gap: 10px; }
-.shell.is-phone .qp-grip { display: none; }
+/* touch reorder: the grip is always shown and is the only place a row drag starts (the rest of
+   the row scrolls the list); a wide hit area, no browser panning on it */
+.shell.is-phone .qp-grip { display: flex; align-items: center; align-self: stretch; width: 36px; margin-left: -6px; color: var(--ink-secondary); touch-action: none; cursor: grab; }
 .shell.is-phone .qp-played-n { display: none; }
+.shell.is-phone .qp-grip-ic { display: inline-flex; }
+.shell.is-phone .qp-row.is-drag { opacity: .4; background: var(--surface-2); }
 .shell.is-phone .qp-act { width: 36px; height: 44px; }
 .shell.is-phone .qp-list { margin-right: -6px; padding-right: 6px; }
 

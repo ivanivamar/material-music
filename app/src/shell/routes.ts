@@ -92,10 +92,25 @@ export const navKeyOf = (r: Route): RouteKey => (r.kind === 'app' ? (r.key === '
 
 /** In-app history depth (hash changes since load), so Back can fall back to a page when there's none. */
 let depth = 0
-if (typeof window !== 'undefined') window.addEventListener('hashchange', () => depth++)
+/** The next hashchange replaced the current entry (no new history entry): don't count it. */
+let replacing = false
+if (typeof window !== 'undefined')
+  window.addEventListener('hashchange', () => {
+    if (replacing) replacing = false
+    else depth++
+  })
+/** Is there an in-app page to go back to? */
+export const canGoBack = () => depth > 0
 export function back(fallback: string) {
   if (depth > 0) {
     depth -= 2 // the popstate itself fires one more hashchange
     window.history.back()
   } else go(fallback)
+}
+/** Go to an `#/…` href in place of the current history entry. */
+export function replace(to: string) {
+  const hash = '#' + to.replace(/^#/, '')
+  if (window.location.hash === hash) return
+  replacing = true
+  window.location.replace(hash)
 }
