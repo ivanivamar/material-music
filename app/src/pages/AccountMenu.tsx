@@ -6,6 +6,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useToast } from '../components/ui'
+import { useSheetDrag } from '../components/useSheetDrag'
 import { Icon, type IconName } from '../design/icons'
 import { localFolder, useLocalFolder } from '../lib/localFolder'
 import { APP_VERSION, appUpdate, usePwa } from '../lib/pwa'
@@ -209,11 +210,16 @@ function AccountSheet({ onClosed }: { onClosed: () => void }) {
     return () => document.removeEventListener('keydown', onKey)
   }, [])
 
+  // drag the handle / header (or the list at its top) down to close
+  const sheetRef = useRef<HTMLDivElement>(null)
+  const scrimRef = useRef<HTMLDivElement>(null)
+  useSheetDrag(sheetRef, scrimRef, () => close())
+
   const open = shown && !closing
   return (
     <>
-      <div className={`as-scrim pg-anim ${open ? 'is-on' : ''}`} onClick={() => close()} />
-      <div className={`as as-account pg-anim ${open ? 'is-on' : ''}`} role="dialog" aria-label="Account">
+      <div ref={scrimRef} className={`as-scrim pg-anim ${open ? 'is-on' : ''}`} onClick={() => close()} />
+      <div ref={sheetRef} className={`as as-account pg-anim ${open ? 'is-on' : ''}`} role="dialog" aria-label="Account">
         <button type="button" className="as-handle" aria-label="Close" onClick={() => close()}>
           <span />
         </button>

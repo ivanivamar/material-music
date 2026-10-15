@@ -11,6 +11,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { QualityBadge, qualityKind, qualityLabel, useToast } from '../components/ui'
 import { Icon, type IconName } from '../design/icons'
+import { useSheetDrag } from '../components/useSheetDrag'
 import { useCover } from '../lib/covers'
 import { registerBack } from '../native/backButton'
 import { albumTrackIds, artistTrackIds } from '../pages/library/playback'
@@ -480,12 +481,16 @@ function Sheet({ target, picker }: { target: ActionTarget; picker: boolean }) {
       then?.()
     }, 260)
   }
+  // drag the handle / header (or a list scrolled to the top) down to close
+  const sheetRef = useRef<HTMLDivElement>(null)
+  const scrimRef = useRef<HTMLDivElement>(null)
+  useSheetDrag(sheetRef, scrimRef, () => close(), !!d)
   if (!d) return null
   const open = shown && !closing
   return (
     <>
-      <div className={`as-scrim pg-anim ${open ? 'is-on' : ''}`} onClick={() => close()} />
-      <div className={`as pg-anim ${open ? 'is-on' : ''}`} role="dialog" aria-label={d.title}>
+      <div ref={scrimRef} className={`as-scrim pg-anim ${open ? 'is-on' : ''}`} onClick={() => close()} />
+      <div ref={sheetRef} className={`as pg-anim ${open ? 'is-on' : ''}`} role="dialog" aria-label={d.title}>
         <button type="button" className="as-handle" aria-label="Close" onClick={() => close()}>
           <span />
         </button>

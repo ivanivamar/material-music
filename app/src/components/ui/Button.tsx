@@ -1,4 +1,4 @@
-import { type ButtonHTMLAttributes, type ReactNode } from 'react'
+import { useState, type ButtonHTMLAttributes, type ReactNode } from 'react'
 import { Icon, type IconName } from '../../design/icons'
 
 type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost'
@@ -59,15 +59,29 @@ interface PlayButtonProps {
 
 export function PlayButton({ state, onClick, size = 60 }: PlayButtonProps) {
   const label = state === 'paused' ? 'Play' : 'Pause'
+  // bumps on every press so the ripple rings re-mount and replay (same rings as the sidebar nav)
+  const [ping, setPing] = useState(0)
   return (
     <button
       type="button"
       className={`playbtn is-${state}`}
       style={{ width: size, height: size, fontSize: Math.round(size * 0.42) }}
-      onClick={onClick}
+      onClick={
+        onClick &&
+        (() => {
+          setPing((n) => n + 1)
+          onClick()
+        })
+      }
       aria-label={label}
       title={label}
     >
+      {ping > 0 && (
+        <span className="playbtn-pings" key={ping} aria-hidden>
+          <span className="playbtn-ring pg-anim" />
+          <span className="playbtn-ring playbtn-ring2 pg-anim" />
+        </span>
+      )}
       <Icon name={state === 'paused' ? 'playF' : 'pauseF'} />
       {state === 'buffering' && <span className="playbtn-spin pg-anim" aria-hidden />}
     </button>

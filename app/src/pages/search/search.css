@@ -64,7 +64,6 @@
 .srch-top-avatar { background: var(--bg-1); }
 .srch-top-pl { flex: none; border-radius: 12px; overflow: hidden; }
 .srch-top-avatar .avatar-art-mono { font-size: 26px; }
-.srch-top:hover .srch-top-avatar img { filter: none; }
 .srch-top-foot { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; }
 .srch-top-text { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .srch-top-name {

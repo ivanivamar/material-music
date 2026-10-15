@@ -59,6 +59,14 @@
 .playbtn:hover { background: #fff; }
 .playbtn.is-playing { box-shadow: 0 0 36px -8px rgba(255, 255, 255, .5); }
 .playbtn.is-buffering { background: transparent; color: var(--ink-primary); border: var(--bw-control) solid var(--border-strong); }
+/* press ripple: two 1px rings scale out from the button (same pg-navping as the sidebar nav) */
+.playbtn-pings { position: absolute; inset: 0; pointer-events: none; }
+.playbtn-ring {
+  position: absolute; inset: 0; border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, .8); opacity: 0;
+  animation: pg-navping .8s var(--ease-sonar) forwards;
+}
+.playbtn-ring2 { border-color: rgba(255, 255, 255, .5); animation-delay: .18s; }
 .playbtn-spin {
   position: absolute; inset: -1.5px; border-radius: 50%;
   border: 1px solid transparent; border-top-color: #fff;

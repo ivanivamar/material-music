@@ -20,6 +20,11 @@ export function useSwipeDown(ref: RefObject<HTMLElement | null>, enabled: boolea
   useEffect(() => {
     const el = ref.current
     if (!el || !enabled) return
+    // reopened before the swiped-away sheet unmounted: bring it back on screen
+    if (el.classList.contains('is-swiped')) {
+      el.classList.remove('is-swiped')
+      el.style.transform = ''
+    }
 
     let armed = false
     let decided = false
@@ -112,7 +117,9 @@ export function useSwipeDown(ref: RefObject<HTMLElement | null>, enabled: boolea
       el.removeEventListener('touchcancel', onEnd)
       el.removeEventListener('click', onClick, true)
       el.classList.remove('is-swiping', 'is-springing')
-      el.style.transform = ''
+      // swiped away: this cleanup runs because the player is now closing — leave the sheet off
+      // screen until it unmounts, or it would snap back to full height for a moment
+      if (!el.classList.contains('is-swiped')) el.style.transform = ''
     }
   }, [ref, enabled, onClose])
 }
