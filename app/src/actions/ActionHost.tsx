@@ -195,14 +195,22 @@ export function ActionHost() {
     }
   }, [menu, dialog])
 
-  // routes change → menus go
+  // routes change / window resized → menus go. Only a width change counts as a resize: on phones the
+  // soft keyboard shrinks the viewport height and fires `resize`, which would close the sheet the
+  // moment its "New playlist name" field is focused.
   useEffect(() => {
     const close = () => actions.closeMenu()
+    let w = window.innerWidth
+    const onResize = () => {
+      if (window.innerWidth === w) return
+      w = window.innerWidth
+      close()
+    }
     window.addEventListener('hashchange', close)
-    window.addEventListener('resize', close)
+    window.addEventListener('resize', onResize)
     return () => {
       window.removeEventListener('hashchange', close)
-      window.removeEventListener('resize', close)
+      window.removeEventListener('resize', onResize)
     }
   }, [])
 
