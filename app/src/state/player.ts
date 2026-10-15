@@ -52,6 +52,11 @@ export interface PlayerEngine {
   setVolume(volume: number, muted: boolean): void
   /** Drop the current track (queue cleared / sign-out). */
   unload(): void
+  /**
+   * The track that will play after the current one (null = none / unknown). Engines that can
+   * prepare it ahead of time (PC: gapless playback) do so; others ignore it. Idempotent.
+   */
+  preload?(trackId: string | null): void
 }
 
 /** Things the engine needs the UI to say (toasts). */
@@ -94,6 +99,9 @@ const listeners = new Set<() => void>()
 const noticeListeners = new Set<(n: PlayerNotice) => void>()
 const movedListeners = new Set<(from: number, to: number) => void>()
 let persistTimer = 0
+/** `go()` loads the track first and tells the engine about the next one afterwards */
+let holdPreload = false
+let lastPreload: string | null | undefined
 
 function persist() {
   window.clearTimeout(persistTimer)
@@ -111,6 +119,24 @@ function set(patch: Partial<PlayerState>) {
   listeners.forEach((l) => l())
   // throttle, not debounce: the engine reports position several times a second while playing
   if (!persistTimer) persistTimer = window.setTimeout(persist, 1000)
+  if (!holdPreload) syncPreload()
+}
+
+/** Id of the track that follows the current one, as the queue / repeat mode stand now. */
+function nextId(): string | null {
+  const { queue, index, repeat } = state
+  if (index < 0 || repeat === 'one') return null
+  const next = index < queue.length - 1 ? queue[index + 1] : repeat === 'all' ? queue[0] : undefined
+  return next && next !== queue[index] ? next : null
+}
+
+/** Tell the engine which track to prepare (only when it changed, unless `force`). */
+function syncPreload(force = false) {
+  if (!engine?.preload) return
+  const id = nextId()
+  if (!force && id === lastPreload) return
+  lastPreload = id
+  engine.preload(id)
 }
 window.addEventListener('pagehide', persist)
 
@@ -157,9 +183,15 @@ function unshuffledOrder(): Pick<PlayerState, 'queue' | 'index'> | null {
 const current = () => (state.index >= 0 ? (state.queue[state.index] ?? null) : null)
 
 function go(index: number, autoplay: boolean) {
-  set({ index, position: 0 })
+  holdPreload = true
+  try {
+    set({ index, position: 0 })
+  } finally {
+    holdPreload = false
+  }
   const id = current()
   if (id && engine) engine.load(id, { autoplay })
+  syncPreload(true) // after load(): the engine may have just taken over the preloaded track
 }
 
 export const playerStore = {
@@ -169,6 +201,7 @@ export const playerStore = {
     return () => listeners.delete(l)
   },
   currentId: current,
+  nextId,
   hasEngine: () => engine !== null,
 
   /** Step 3d: the engine reports back through `report`. */
@@ -177,6 +210,7 @@ export const playerStore = {
     e.setVolume(state.volume, state.muted)
     const id = current()
     if (id) e.load(id, { autoplay: false, position: state.position })
+    syncPreload(true)
     return () => {
       if (engine === e) engine = null
     }
