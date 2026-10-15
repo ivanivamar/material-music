@@ -19,6 +19,7 @@ import { appUpdate, usePwa } from '../lib/pwa'
 import { nativeUpdates, useNativeUpdates } from '../native/updates'
 
 import { Sidebar } from './Sidebar'
+import { ActionHost } from '../actions/ActionHost'
 import { albumHref, go, href, navKeyOf, type Route } from './routes'
 import { albumOffline, downloadsStore } from '../state/downloads'
 import { fmtBytes, plural } from '../state/views'
@@ -333,6 +334,7 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
         {!phone && (
           <Sidebar
             active={navKeyOf(route)}
+            activePlaylist={route.kind === 'app' && route.key === 'playlist' ? route.id : null}
             badges={{
               ...(up.running && upRun.total ? { upload: `${upRun.done}/${upRun.total}` } : {}),
               ...(newReleases ? { new: String(newReleases) } : {}),
@@ -353,6 +355,7 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
       </div>
       <NowPlaying />
       <QueuePanel />
+      <ActionHost />
     </div>
   )
 }

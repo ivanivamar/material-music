@@ -4,7 +4,8 @@
  * (disc headers when there's more than one), then more by the same artist.
  */
 import type { CSSProperties } from 'react'
-import { Button, EmptyState, QualityBadge, TrackRow, qualityKind, qualityLabel } from '../../components/ui'
+import { Button, EmptyState, IconButton, QualityBadge, TrackRow, qualityKind, qualityLabel } from '../../components/ui'
+import { actions, trackDrag } from '../../actions/actions'
 import { rgba, sceneBackground, useArtTint } from '../../design/tint'
 import { useCover } from '../../lib/covers'
 import { playerStore } from '../../state/player'
@@ -130,6 +131,7 @@ export function AlbumPage({ id }: { id: string }) {
             onRemove={() => downloadsStore.removeAlbum(album.id)}
           />
         )}
+        <IconButton icon="more" label="More" shape="square" className="actions-more" onClick={(e) => actions.menu({ kind: 'album', albumId: album.id }, e)} />
         <span className="actions-spacer" />
         <div className="actions-info">
           <div className="actions-info-main">{released(album.date, album.year)}</div>
@@ -162,6 +164,8 @@ export function AlbumPage({ id }: { id: string }) {
                   playing={now.id === t.id}
                   download={dl.available ? trackDownload(dl, t, dlNow) : undefined}
                   onPlay={() => playAt(i)}
+                  onMore={(e) => actions.menu({ kind: 'track', trackId: t.id }, e)}
+                  rowProps={trackDrag(() => [t.id], `${t.title} · ${t.artist}`)}
                 />
               )
             })}

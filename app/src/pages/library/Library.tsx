@@ -1,5 +1,5 @@
 /**
- * Library (handoff 06 Desktop Library): header with counts, Artists / Albums / Songs chips,
+ * Library (handoff 06 Desktop Library): header with counts, Artists / Albums / Playlists / Songs chips,
  * sort row, then the tab's view. The tab lives in the URL (#/library/albums) and is remembered.
  */
 import { isTouch } from '../../state/viewport'
@@ -8,7 +8,7 @@ import { Button, Chip, EmptyState, Eq } from '../../components/ui'
 import { Icon } from '../../design/icons'
 import { libraryStats, useLibrary, type Catalogue, type Track } from '../../state/library'
 import { libraryPrefs, useLibraryPrefs, type ArtistSort } from '../../state/libraryPrefs'
-import { albumHref, artistHref, go, libraryHref, type LibraryTab } from '../../shell/routes'
+import { LIBRARY_TABS, albumHref, artistHref, go, libraryHref, type LibraryTab } from '../../shell/routes'
 import {
   ALBUM_SORTS,
   allAlbums,
@@ -26,13 +26,15 @@ import {
   type SongSort,
 } from '../../state/views'
 import { PageHeader } from '../PageHeader'
+import { PlaylistsView } from '../playlists/PlaylistsView'
 import { ArtistAvatar, LibAlbumCard, SortMenu } from './common'
 import { playList, useContextState, useNowPlaying, usePlayingAlbumId } from './playback'
 import { playerStore } from '../../state/player'
 import { ROW_H, useWindow } from './useWindow'
+import { actions, trackDrag } from '../../actions/actions'
 import './library.css'
 
-const TAB_LABEL: Record<LibraryTab, string> = { artists: 'Artists', albums: 'Albums', songs: 'Songs' }
+const TAB_LABEL: Record<LibraryTab, string> = { artists: 'Artists', albums: 'Albums', playlists: 'Playlists', songs: 'Songs' }
 
 export function Library({ tab: routeTab }: { tab: LibraryTab | null }) {
   const { data } = useLibrary()
@@ -53,7 +55,7 @@ export function Library({ tab: routeTab }: { tab: LibraryTab | null }) {
         title="Library"
         tools={
           <div className="lib-tabs" role="tablist" aria-label="Library view">
-            {(['artists', 'albums', 'songs'] as LibraryTab[]).map((t) => (
+            {LIBRARY_TABS.map((t) => (
               <Chip key={t} selected={t === tab} onClick={() => go(libraryHref(t))}>
                 {TAB_LABEL[t]}
               </Chip>
@@ -69,6 +71,8 @@ export function Library({ tab: routeTab }: { tab: LibraryTab | null }) {
         <AlbumsView c={data} />
       ) : tab === 'artists' ? (
         <ArtistsView c={data} />
+      ) : tab === 'playlists' ? (
+        <PlaylistsView c={data} />
       ) : (
         <SongsView c={data} />
       )}
@@ -163,7 +167,7 @@ function ArtistsView({ c }: { c: Catalogue }) {
             {g.letter && <div className="art-letter">{g.letter}</div>}
             <div className="art-grid">
               {g.items.map((i) => (
-                <a key={i.artist.id} className="art-tile" href={artistHref(i.artist.id)}>
+                <a key={i.artist.id} className="art-tile" href={artistHref(i.artist.id)} onContextMenu={(e) => actions.menu({ kind: 'artist', artistId: i.artist.id }, e)}>
                   <ArtistAvatar artist={i.artist} size="100%" className="art-tile-img" />
                   <span className="art-tile-name">{i.artist.name}</span>
                   <span className="art-tile-meta">
@@ -269,6 +273,8 @@ function SongRow({ c, t, n, top, playing, current, onPlay }: { c: Catalogue; t: 
     <div
       className={`trow songs-row ${current ? 'is-playing' : ''}`}
       style={{ transform: `translateY(${top}px)` }}
+      onContextMenu={(e) => actions.menu({ kind: 'track', trackId: t.id }, e)}
+      {...trackDrag(() => [t.id], `${t.title} · ${t.artist}`)}
       onDoubleClick={onPlay}
       onClick={(e) => {
         if (isTouch() && !(e.target as HTMLElement).closest('a, button')) onPlay()

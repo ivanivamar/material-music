@@ -15,3 +15,5 @@ export const CATALOGUE_NAME = 'library.json'
 export const HISTORY_NAME = 'history.json'
 /** New Releases feed + marks (step 11, state/releases.ts). */
 export const RELEASES_NAME = 'releases.json'
+/** One JSON file per playlist (+ optional <id>.jpg cover) in Pelagic/playlists/ (step 9, state/playlists.ts). */
+export const PLAYLISTS_DIR = 'playlists'

@@ -96,6 +96,21 @@ Keys: `/` or Ctrl/⌘+K from anywhere focuses Search · Enter opens the top resu
 | `src/player/playTracker.ts` | Counts plays from the player store (any engine): ≥ 30 s actually heard (half the track if shorter than a minute), seeking doesn't count, starting over re-arms. Android screen off: when the native player jumped several rows while JS slept, the rows in between count if their lengths fit in the elapsed time |
 | `src/state/history.ts` | Play history store. Rows `[unixSeconds, trackId, deviceId]` (device `w-…` browser / `a-…` Android, localStorage `pelagic.device.v1`). Local copy in IndexedDB `kv.history`; Drive `Pelagic/history.json` merged by union (rows never change, so devices can't conflict). Downloads only when Drive's `version` moved, writes only when this device has new plays (20 s after a play, on leaving the app, on reconnect), re-checks the version right before writing. Syncs on sign-in, Home open (≥ 60 s apart), focus, “Check Drive for changes” |
 
+## Playlists (step 9)
+
+No Liked songs playlist and no hearts (see the plan).
+
+| File | What |
+|---|---|
+| `src/state/playlists.ts` | Store + Drive sync. One file per playlist, `Pelagic/playlists/<id>.json` (+ `<id>.jpg` custom cover). Offline-first: edits land in IndexedDB `kv.playlists` at once and go up 2 s later (or on reconnect / leaving the app). Merge per entry: adds from both devices survive, removals are tombstones (`removed` + `removedAt`, Undo flips them back with a newer stamp), order is a fractional `pos` where the latest move wins (`movedAt`); name / description / cover / deleted: latest edit per field wins (`stamps`). Deleting writes `deleted: true` and moves the file to the Drive trash (Undo / restore untrashes); once the trash is emptied the file is gone and the playlist is dropped locally. Downloads a file only when its Drive `version` moved, writes only playlists changed here, re-checks the version right before writing |
+| `src/state/playlistViews.ts` | Entries resolved against the catalogue (track id → ISRC → artist + title, so a tag edit doesn't lose songs; missing ones stay as "not in your library" rows), totals, mosaic covers, duplicate check, M3U export (`.m3u8`, paths relative to the music folder from `source.path`) |
+| `src/pages/playlists/PlaylistPage.tsx` | `#/playlist/<id>` (handoff 09): 200px cover (custom or 2×2 mosaic; click = Edit details), PLAYLIST · BY YOU · UPDATED …, name, description, tracks · length (· offline), Play / Shuffle / Download (Android) / ⋯. Table # · title · album · quality · added · time · ⋯; double-click plays, drag rows to reorder (desktop: whole row, also onto a sidebar playlist; phone: the grip), right-click / ⋯ = track menu with Remove from playlist. Empty: "… is empty · Find songs" |
+| `src/pages/playlists/PlaylistsView.tsx` | Library › Playlists tab (A–Z): desktop grid with a New playlist tile; phone list (handoff 07 Android Playlists) |
+| `src/pages/playlists/PlaylistCover.tsx` | Custom image or mosaic (1 album → full tile, 2–3 repeat) |
+| `src/actions/` | Handoff 15 Actions. `actions.ts` (what's open), `ActionHost.tsx` (desktop context menu + Add to playlist submenu with search / phone bottom sheet with a picker page), `Dialogs.tsx` (New playlist, Edit playlist: name, description, cover image → 600px JPEG on Drive or back to the mosaic), `ops.ts` (add with duplicate warning — songs already in it are skipped, all already there → "Add anyway"; create, remove, delete, all with Undo toasts) |
+
+Entry points: right-click or ⋯ on any song row (album, artist, playlist, Library › Songs, Search, queue rows, full-screen player header), album cards / album ⋯, artist tiles / artist ⋯, sidebar playlists (+ to create; drop songs or album cards onto one to add them), queue panel "Save the queue as a playlist". Phone: long-press or ⋯ opens the sheet. Esc and Android Back close menus and dialogs first. Android: a playlist can be downloaded (a `playlist` pin — only its tracks, filed under their albums as partial album plans).
+
 ## New releases (step 11)
 
 | File | What |

@@ -2,7 +2,7 @@
  * Offline downloads (step 7 phase D, Android).
  *
  * What the user asked to keep offline is a list of *pins*: an album, an artist (all their albums,
- * including ones imported later) or the whole library. Albums can be left out of an artist / library
+ * including ones imported later), a playlist (just its tracks, step 9) or the whole library. Albums can be left out of an artist / library
  * pin (`excluded`). From the pins and the catalogue the store derives the exact list of Drive files
  * — each album's cover, then its tracks in the chosen quality (Opus 160, or the original FLAC) — and
  * hands that complete list to the native side (PelagicDownloads.sync). Native deletes anything not
@@ -17,10 +17,12 @@
 import { useSyncExternalStore } from 'react'
 import { isNative, PelagicDownloads, type NativeDownloadItem, type NativeDownloadProgress, type NativeDownloadState } from '../native/bridge'
 import { libraryStore, tracksByAlbum, type Catalogue, type Track } from './library'
+import { playlistsStore, type Playlist } from './playlists'
+import { playlistInfo } from './playlistViews'
 import { artistInfos, sortAlbums } from './views'
 
 export type DownloadQuality = 'opus' | 'flac'
-export type Pin = { kind: 'album' | 'artist'; id: string; at: number } | { kind: 'all'; id: '*'; at: number }
+export type Pin = { kind: 'album' | 'artist' | 'playlist'; id: string; at: number } | { kind: 'all'; id: '*'; at: number }
 
 export interface Prefs {
   pins: Pin[]
@@ -54,6 +56,8 @@ export interface AlbumPlan {
   bytes: number
   /** pin time (order of the queue / list) */
   at: number
+  /** only some tracks are wanted (they come from playlist pins, the album itself isn't pinned) */
+  partial?: boolean
 }
 
 export interface Plan {
@@ -71,7 +75,13 @@ export const fileFor = (t: Track, q: DownloadQuality) => (q === 'flac' || !t.mob
 function albumsOf(c: Catalogue, pin: Pin): string[] {
   if (pin.kind === 'album') return c.albums[pin.id] ? [pin.id] : []
   if (pin.kind === 'artist') return (artistInfos(c).get(pin.id)?.albums ?? []).map((a) => a.id)
+  if (pin.kind === 'playlist') return [...new Set(playlistTracks(c, pin.id).map((t) => t.albumId))]
   return sortAlbums(Object.values(c.albums), 'added').map((a) => a.id)
+}
+
+function playlistTracks(c: Catalogue, playlistId: string): Track[] {
+  const p: Playlist | undefined = playlistsStore.get().byId.get(playlistId)
+  return p ? playlistInfo(c, p).ids.map((id) => c.tracks[id]).filter((t): t is Track => !!t) : []
 }
 
 function buildPlan(c: Catalogue, prefs: Prefs): Plan {
@@ -79,10 +89,38 @@ function buildPlan(c: Catalogue, prefs: Prefs): Plan {
   const excluded = new Set(prefs.excluded)
   const plan: Plan = { albums: [], byAlbum: new Map(), items: [], bytes: 0 }
   const seenFiles = new Set<string>()
-  // explicit album pins first, then artists, then "everything" — each in pin order
-  const rank = { album: 0, artist: 1, all: 2 }
+  // explicit album pins first, then artists, then "everything", then playlists — each in pin order
+  const rank = { album: 0, artist: 1, all: 2, playlist: 3 }
   const pins = prefs.pins.slice().sort((a, b) => rank[a.kind] - rank[b.kind] || a.at - b.at)
   for (const pin of pins) {
+    if (pin.kind === 'playlist') {
+      // just the playlist's tracks, filed under their albums (a partial album plan)
+      for (const t of playlistTracks(c, pin.id)) {
+        const album = c.albums[t.albumId]
+        if (!album || excluded.has(t.albumId)) continue
+        let ap = plan.byAlbum.get(t.albumId)
+        if (ap && !ap.partial) continue // the whole album is wanted anyway
+        if (!ap) {
+          ap = { albumId: t.albumId, files: [], trackFiles: new Map(), bytes: 0, at: pin.at, partial: true }
+          if (album.cover && !seenFiles.has(album.cover)) {
+            seenFiles.add(album.cover)
+            ap.files.push({ id: album.cover, size: 0, title: `${album.title} · cover` })
+          }
+          plan.albums.push(ap)
+          plan.byAlbum.set(t.albumId, ap)
+        }
+        const f = fileFor(t, prefs.quality)
+        if (!f?.id || ap.trackFiles.has(t.id)) continue
+        ap.trackFiles.set(t.id, f.id)
+        if (seenFiles.has(f.id)) continue
+        seenFiles.add(f.id)
+        const item = { id: f.id, size: f.size || 0, title: `${t.title} · ${t.artist}` }
+        ap.files.push(item)
+        ap.bytes += item.size
+        plan.bytes += item.size
+      }
+      continue
+    }
     for (const albumId of albumsOf(c, pin)) {
       if (plan.byAlbum.has(albumId) || (pin.kind !== 'album' && excluded.has(albumId))) continue
       const album = c.albums[albumId]
@@ -102,10 +140,10 @@ function buildPlan(c: Catalogue, prefs: Prefs): Plan {
       }
       plan.albums.push(ap)
       plan.byAlbum.set(albumId, ap)
-      plan.items.push(...ap.files)
       plan.bytes += ap.bytes
     }
   }
+  plan.items = plan.albums.flatMap((ap) => ap.files)
   return plan
 }
 
@@ -168,7 +206,7 @@ function applyNative(s: NativeDownloadState) {
   for (const ap of state.plan.albums) {
     const complete = ap.files.length > 0 && ap.files.every((f) => stored.has(f.id))
     if (!complete) seenIncomplete.add(ap.albumId)
-    else if (seenIncomplete.delete(ap.albumId) && !first) done.push(ap.albumId)
+    else if (seenIncomplete.delete(ap.albumId) && !first && !ap.partial) done.push(ap.albumId)
   }
   set({ stored, native: rest })
   for (const id of done) albumDoneListeners.forEach((l) => l(id))
@@ -180,6 +218,8 @@ let syncTimer: number | null = null
 /** Recompute the plan and send it to the phone (debounced). Never without a catalogue: that would empty the phone. */
 function schedulePush(delay = 300) {
   if (!isNative || !catalogue) return
+  // same for playlist pins before the playlists' local copy is read
+  if (state.prefs.pins.some((p) => p.kind === 'playlist') && !playlistsStore.get().loaded) return
   const plan = buildPlan(catalogue, state.prefs)
   if (state.native) for (const ap of plan.albums) if (!ap.files.every((f) => state.stored.has(f.id))) seenIncomplete.add(ap.albumId)
   set({ plan })
@@ -225,6 +265,14 @@ function start() {
   }
   libraryStore.subscribe(onLib)
   onLib()
+  // playlist pins follow their playlist (tracks added / removed on either device)
+  let lists = playlistsStore.get().byId
+  playlistsStore.subscribe(() => {
+    const now = playlistsStore.get().byId
+    if (now === lists) return
+    lists = now
+    if (state.prefs.pins.some((p) => p.kind === 'playlist')) schedulePush(1000)
+  })
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') void PelagicDownloads.state().then(applyNative).catch(() => {})
   })
@@ -256,7 +304,7 @@ export const downloadsStore = {
   },
   init: start,
 
-  pin(kind: 'album' | 'artist' | 'all', id: string) {
+  pin(kind: 'album' | 'artist' | 'playlist' | 'all', id: string) {
     if (!isNative) return
     if (!askedNotifications) {
       askedNotifications = true
@@ -267,6 +315,10 @@ export const downloadsStore = {
       pins.push(kind === 'all' ? { kind: 'all', id: '*', at: Date.now() } : { kind, id, at: Date.now() })
       let excluded = p.excluded
       if (kind === 'album') excluded = excluded.filter((x) => x !== id)
+      else if (kind === 'playlist' && catalogue) {
+        const mine = new Set(playlistTracks(catalogue, id).map((t) => t.albumId))
+        excluded = excluded.filter((x) => !mine.has(x))
+      }
       else if (kind === 'artist' && catalogue) {
         const mine = new Set((artistInfos(catalogue).get(id)?.albums ?? []).map((a) => a.id))
         excluded = excluded.filter((x) => !mine.has(x))
@@ -292,6 +344,11 @@ export const downloadsStore = {
       const all = pins.some((x) => x.kind === 'all')
       return { ...p, pins, excluded: all ? [...new Set([...p.excluded, ...albums])] : p.excluded }
     }, UNDO_MS)
+  },
+
+  /** Stop keeping a playlist offline (its tracks stay if an album / artist pin wants them). */
+  removePlaylist(playlistId: string) {
+    updatePrefs((p) => ({ ...p, pins: p.pins.filter((x) => !(x.kind === 'playlist' && x.id === playlistId)) }), UNDO_MS)
   },
 
   removeAll() {
@@ -320,8 +377,10 @@ export const downloadsStore = {
 /* ── Queries ───────────────────────────────────────── */
 
 export interface AlbumOffline {
-  /** in the plan (pinned directly, or through its artist / the whole library) */
+  /** in the plan (pinned directly, or through its artist / the whole library) — not just some playlist tracks */
   wanted: boolean
+  /** only some of its tracks are wanted (through playlists) */
+  partial?: boolean
   /** pinned on its own (not only through an artist / library pin) */
   direct: boolean
   /** tracks stored / tracks wanted */
@@ -349,7 +408,32 @@ export function albumOffline(s: DownloadsState, albumId: string): AlbumOffline {
   }
   const count = ap.trackFiles.size
   const direct = s.prefs.pins.some((p) => p.kind === 'album' && p.id === albumId)
-  return { wanted: true, direct, done, count, bytesDone, bytes: ap.bytes, complete: done === count && ap.files.every((f) => s.stored.has(f.id)) }
+  return { wanted: !ap.partial, partial: ap.partial, direct, done, count, bytesDone, bytes: ap.bytes, complete: done === count && ap.files.every((f) => s.stored.has(f.id)) }
+}
+
+/** A playlist's tracks on the phone (the playlist page's Download button). */
+export function playlistOffline(s: DownloadsState, c: Catalogue, p: Playlist): AlbumOffline {
+  const ids = playlistInfo(c, p).ids
+  const pinned = s.prefs.pins.some((x) => x.kind === 'playlist' && x.id === p.id)
+  let done = 0
+  let count = 0
+  let bytes = 0
+  let bytesDone = 0
+  for (const id of new Set(ids)) {
+    const t = c.tracks[id]
+    const fid = t && s.plan.byAlbum.get(t.albumId)?.trackFiles.get(id)
+    if (!fid) continue
+    count++
+    const size = fileFor(t, s.prefs.quality)?.size ?? 0
+    bytes += size
+    const b = s.stored.get(fid)
+    if (b !== undefined) {
+      done++
+      bytesDone += b
+    }
+  }
+  const all = ids.length > 0 && count === new Set(ids).size
+  return { wanted: pinned, direct: pinned, done, count, bytesDone, bytes, complete: all && done === count }
 }
 
 /** Every album of the artist wanted? (the artist page's Download button) */

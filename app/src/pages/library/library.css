@@ -190,6 +190,10 @@ a.ln:hover { color: var(--ink-primary); text-decoration: underline; text-underli
 .artist-songs.has-dl .trow.trow-artist { grid-template-columns: 28px minmax(0, 1fr) 24px 52px 52px; }
 .artist-songs.has-dl .trow.trow-artist .trow-dl { display: flex; }
 
+/* ⋯ next to Play / Shuffle (album / artist menu) */
+.actions-more.ibtn { width: 46px; height: 46px; font-size: 21px; color: var(--ink-primary); border: 1.5px solid var(--border-strong); box-sizing: border-box; }
+.actions-more.ibtn:hover:not(:disabled) { border-color: rgba(255, 255, 255, .4); }
+
 /* ── Download button (Android) ──────────────────────── */
 .actions-dl.is-done .btn-ic { color: var(--ink-primary); }
 .actions-dl-count { font-size: 12px; letter-spacing: .1em; }

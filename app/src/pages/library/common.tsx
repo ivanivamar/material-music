@@ -8,6 +8,7 @@ import { albumHref, back, go } from '../../shell/routes'
 import { monogram } from '../../state/views'
 import { albumTrackIds, playList } from './playback'
 import { albumOffline, useDownloads, useOnline } from '../../state/downloads'
+import { actions, trackDrag } from '../../actions/actions'
 
 /* ── Album card with a lazy cover ─────────────────── */
 
@@ -18,9 +19,13 @@ export function LibAlbumCard({ c, album, subtitle, playingAlbumId, onOpen }: { c
   const off = dl.available ? albumOffline(dl, album.id) : null
   return (
     <AlbumCard
-      offline={!!off?.complete}
+      offline={!!off?.complete && off.wanted}
       unavailable={!!off && !online && off.done === 0}
       cardRef={ref}
+      cardProps={{
+        onContextMenu: (e) => actions.menu({ kind: 'album', albumId: album.id }, e),
+        ...trackDrag(() => albumTrackIds(c, album.id), album.title),
+      }}
       title={album.title}
       subtitle={subtitle}
       cover={cover ?? undefined}

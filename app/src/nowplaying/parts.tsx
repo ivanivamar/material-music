@@ -5,7 +5,7 @@ import { Icon } from '../design/icons'
 import { useLibrary, type Album, type Track } from '../state/library'
 import { nowPlayingStore, useNowPlayingUi } from '../state/nowPlaying'
 import { playerStore, usePlayer, type PlayContext, type PlayerState } from '../state/player'
-import { albumHref, artistHref } from '../shell/routes'
+import { albumHref, artistHref, playlistHref } from '../shell/routes'
 
 export interface Current {
   p: PlayerState
@@ -35,7 +35,7 @@ const KICKER: Record<PlayContext['kind'], string> = {
 export function contextLine(ctx: PlayContext | null): { kicker: string; label: string; href?: string } {
   if (!ctx) return { kicker: 'PLAYING FROM QUEUE', label: 'Queue' }
   const label = ctx.label.replace(/^(Library|Search) · /, '')
-  const href = ctx.id && ctx.kind === 'album' ? albumHref(ctx.id) : ctx.id && ctx.kind === 'artist' ? artistHref(ctx.id) : undefined
+  const href = !ctx.id ? undefined : ctx.kind === 'album' ? albumHref(ctx.id) : ctx.kind === 'artist' ? artistHref(ctx.id) : ctx.kind === 'playlist' ? playlistHref(ctx.id) : undefined
   return { kicker: KICKER[ctx.kind], label, href }
 }
 

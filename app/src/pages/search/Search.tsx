@@ -22,6 +22,7 @@ import { isTouch } from '../../state/viewport'
 import { ArtistAvatar, LibAlbumCard, SectionHead } from '../library/common'
 import { useWindow } from '../library/useWindow'
 import { albumTrackIds, artistTrackIds, playList, useContextState, useNowPlaying, usePlayingAlbumId } from '../library/playback'
+import { actions, trackDrag } from '../../actions/actions'
 import '../library/library.css'
 import './search.css'
 
@@ -433,6 +434,8 @@ function SongRow({ c, t, tokens, onPlay, style }: { c: Catalogue; t: Track; toke
       style={style}
       tabIndex={0}
       data-nav
+      onContextMenu={(e) => actions.menu({ kind: 'track', trackId: t.id }, e)}
+      {...trackDrag(() => [t.id], `${t.title} · ${t.artist}`)}
       onDoubleClick={onPlay}
       onClick={(e) => {
         if (isTouch() && !(e.target as HTMLElement).closest('a, button')) onPlay()

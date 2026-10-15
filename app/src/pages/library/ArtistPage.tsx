@@ -5,7 +5,8 @@
  * sits faintly behind the header.
  */
 import { useState, type CSSProperties } from 'react'
-import { Button, EmptyState, TrackRow, formatTime } from '../../components/ui'
+import { Button, EmptyState, IconButton, TrackRow, formatTime } from '../../components/ui'
+import { actions, trackDrag } from '../../actions/actions'
 import { useCover } from '../../lib/covers'
 import { useLibrary } from '../../state/library'
 import { playerStore } from '../../state/player'
@@ -96,6 +97,7 @@ export function ArtistPage({ id }: { id: string }) {
               onRemove={() => downloadsStore.removeArtist(artist.id)}
             />
           )}
+          <IconButton icon="more" label="More" shape="square" className="actions-more" onClick={(e) => actions.menu({ kind: 'artist', artistId: artist.id }, e)} />
         </div>
       </header>
 
@@ -117,6 +119,8 @@ export function ArtistPage({ id }: { id: string }) {
                   playing={now.id === t.id}
                   download={dl.available ? trackDownload(dl, t, dlNow) : undefined}
                   onPlay={() => playAt(t.id)}
+                  onMore={(e) => actions.menu({ kind: 'track', trackId: t.id }, e)}
+                  rowProps={trackDrag(() => [t.id], `${t.title} · ${t.artist}`)}
                 />
               )
             })}

@@ -1,5 +1,5 @@
 /** Track row and album card — the two most repeated library elements. */
-import type { MouseEvent, ReactNode } from 'react'
+import type { HTMLAttributes, MouseEvent, ReactNode } from 'react'
 import { Icon } from '../../design/icons'
 import { DownloadIcon, Eq, type DownloadState } from './Status'
 import { isTouch } from '../../state/viewport'
@@ -20,12 +20,15 @@ interface TrackRowProps {
   onMore?: (e: MouseEvent) => void
   /** extra class, e.g. a column variant (`trow-album`) */
   className?: string
+  /** extra props on the row (drag to a playlist) */
+  rowProps?: HTMLAttributes<HTMLDivElement>
 }
 
 /** `download` omitted → empty status cell (PC: nothing is stored offline). */
-export function TrackRow({ n, title, subtitle, duration, label, playing, download, onPlay, onMore, className }: TrackRowProps) {
+export function TrackRow({ n, title, subtitle, duration, label, playing, download, onPlay, onMore, className, rowProps }: TrackRowProps) {
   return (
     <div
+      {...rowProps}
       className={['trow', playing && 'is-playing', className].filter(Boolean).join(' ')}
       onDoubleClick={onPlay}
       onClick={(e) => {
@@ -77,11 +80,14 @@ interface AlbumCardProps {
   onPlay?: () => void
   /** ref on the card (lazy cover loading) */
   cardRef?: (el: HTMLDivElement | null) => void
+  /** extra props on the card (right-click menu, drag to a playlist) */
+  cardProps?: HTMLAttributes<HTMLDivElement>
 }
 
-export function AlbumCard({ title, subtitle, cover, playing, unavailable, offline, onOpen, onPlay, cardRef }: AlbumCardProps) {
+export function AlbumCard({ title, subtitle, cover, playing, unavailable, offline, onOpen, onPlay, cardRef, cardProps }: AlbumCardProps) {
   return (
     <div
+      {...cardProps}
       ref={cardRef}
       className={`acard ${playing ? 'is-playing' : ''} ${unavailable ? 'is-unavailable' : ''}`}
       role="link"

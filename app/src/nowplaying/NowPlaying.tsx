@@ -24,6 +24,7 @@ import { albumHref, artistHref } from '../shell/routes'
 import { Lyrics } from './Lyrics'
 import { useSwipeDown } from './swipe'
 import { NpLink, Transport, ViewButtons, contextLine, useCurrent } from './parts'
+import { actions } from '../actions/actions'
 import './nowplaying.css'
 
 /** Hero title steps down with length (≤ 2 lines at 1440 wide), and with the viewport. */
@@ -132,7 +133,9 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
             <div className="np-from-l">{ctx.label}</div>
           )}
         </div>
-        <div className="np-head-r" />
+        <div className="np-head-r">
+          {track && <IconButton icon="more" label="More: add to playlist, go to album…" className="np-more" onClick={(e) => actions.menu({ kind: 'track', trackId: track.id }, e)} />}
+        </div>
       </header>
 
       {track && (

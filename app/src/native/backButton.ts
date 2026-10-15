@@ -1,6 +1,7 @@
 /**
  * Android system Back button (gesture or button). Without a handler Android finishes the activity,
  * i.e. Back closed the app from anywhere. Now, in order:
+ *  -1. an action sheet / dialog (actions/ActionHost, registered with 'top') → close it
  *   0. a page overlay (New Releases panel / sheet) → close it
  *   1. account menu open      → close it
  *   2. queue panel open       → close it
@@ -20,11 +21,14 @@ import { isNative } from './bridge'
 
 /** Page overlays that close on Back (latest first). The handler returns true when it handled it. */
 const overlays: (() => boolean)[] = []
-export function registerBack(fn: () => boolean): () => void {
-  overlays.push(fn)
+/** Same, but checked before the queue / full-screen player (menus and dialogs opened over them). */
+const topOverlays: (() => boolean)[] = []
+export function registerBack(fn: () => boolean, level: 'page' | 'top' = 'page'): () => void {
+  const list = level === 'top' ? topOverlays : overlays
+  list.push(fn)
   return () => {
-    const i = overlays.lastIndexOf(fn)
-    if (i >= 0) overlays.splice(i, 1)
+    const i = list.lastIndexOf(fn)
+    if (i >= 0) list.splice(i, 1)
   }
 }
 
@@ -35,6 +39,7 @@ export function handleBack(): void {
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
     return
   }
+  for (let i = topOverlays.length - 1; i >= 0; i--) if (topOverlays[i]()) return
   const ui = nowPlayingStore.get()
   if (ui.queue) return nowPlayingStore.closeQueue()
   if (ui.open) return nowPlayingStore.close()

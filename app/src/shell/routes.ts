@@ -1,14 +1,15 @@
 /**
- * Hash routes: #/home, #/library[/albums|artists|songs], #/album/<id>, #/artist/<id> …
+ * Hash routes: #/home, #/library[/artists|albums|playlists|songs], #/album/<id>, #/artist/<id>,
+ * #/playlist/<id> …
  * plus the dev reference pages (#/dev/components, #/dev/foundations).
  */
 import { useSyncExternalStore } from 'react'
 import type { IconName } from '../design/icons'
 
-export type RouteKey = 'home' | 'library' | 'search' | 'new' | 'upload' | 'downloads' | 'album' | 'artist'
+export type RouteKey = 'home' | 'library' | 'search' | 'new' | 'upload' | 'downloads' | 'album' | 'artist' | 'playlist'
 export type DevRoute = 'dev/components' | 'dev/foundations'
-export type LibraryTab = 'albums' | 'artists' | 'songs'
-export const LIBRARY_TABS: LibraryTab[] = ['artists', 'albums', 'songs']
+export type LibraryTab = 'albums' | 'artists' | 'playlists' | 'songs'
+export const LIBRARY_TABS: LibraryTab[] = ['artists', 'albums', 'playlists', 'songs']
 
 export interface NavItem {
   key: RouteKey
@@ -26,14 +27,14 @@ export const NAV: NavItem[] = [
   { key: 'downloads', label: 'Downloads', icon: 'download' },
 ]
 
-type SimpleKey = Exclude<RouteKey, 'library' | 'album' | 'artist'>
+type SimpleKey = Exclude<RouteKey, 'library' | 'album' | 'artist' | 'playlist'>
 const KEYS = new Set<string>(['home', 'search', 'new', 'upload', 'downloads'])
 const DEV = new Set<string>(['dev/components', 'dev/foundations'])
 
 export type Route =
   | { kind: 'app'; key: SimpleKey; path: string }
   | { kind: 'app'; key: 'library'; tab: LibraryTab | null; path: string }
-  | { kind: 'app'; key: 'album' | 'artist'; id: string; path: string }
+  | { kind: 'app'; key: 'album' | 'artist' | 'playlist'; id: string; path: string }
   | { kind: 'dev'; key: DevRoute; path: string }
 
 function parse(hash: string): Route {
@@ -44,7 +45,7 @@ function parse(hash: string): Route {
     const tab = rest[0] as LibraryTab | undefined
     return { kind: 'app', key: 'library', tab: tab && LIBRARY_TABS.includes(tab) ? tab : null, path }
   }
-  if ((head === 'album' || head === 'artist') && rest[0]) {
+  if ((head === 'album' || head === 'artist' || head === 'playlist') && rest[0]) {
     let id = rest.join('/')
     try {
       id = decodeURIComponent(id)
@@ -78,6 +79,7 @@ export const href = (key: RouteKey) => `#/${key}`
 export const libraryHref = (tab: LibraryTab) => `#/library/${tab}`
 export const albumHref = (id: string) => `#/album/${encodeURIComponent(id)}`
 export const artistHref = (id: string) => `#/artist/${encodeURIComponent(id)}`
+export const playlistHref = (id: string) => `#/playlist/${encodeURIComponent(id)}`
 
 export function navigate(key: RouteKey) {
   window.location.hash = `/${key}`
@@ -87,8 +89,8 @@ export function go(to: string) {
   window.location.hash = to.replace(/^#/, '')
 }
 
-/** Sidebar item lit for a route: album / artist pages live under Library. */
-export const navKeyOf = (r: Route): RouteKey => (r.kind === 'app' ? (r.key === 'album' || r.key === 'artist' ? 'library' : r.key) : 'home')
+/** Sidebar item lit for a route: album / artist / playlist pages live under Library. */
+export const navKeyOf = (r: Route): RouteKey => (r.kind === 'app' ? (r.key === 'album' || r.key === 'artist' || r.key === 'playlist' ? 'library' : r.key) : 'home')
 
 /** In-app history depth (hash changes since load), so Back can fall back to a page when there's none. */
 let depth = 0

@@ -7,10 +7,19 @@
  * Leaving item: the fill contracts over 1s cubic-bezier(.55,0,.6,.4) and fades, with one faint
  * echo ring (1 → 2). Reduced motion: instant swap, no rings.
  */
-import { useState } from 'react'
+import { useState, type DragEvent } from 'react'
+import { useToast } from '../components/ui'
 import { Icon } from '../design/icons'
+import { actions, DRAG_MIME, draggedTracks } from '../actions/actions'
+import { addToPlaylist } from '../actions/ops'
+import { PlaylistCover } from '../pages/playlists/PlaylistCover'
+import { useLibrary } from '../state/library'
 import { useMotion } from '../state/motion'
-import { NAV, href, type NavItem, type RouteKey } from './routes'
+import { playlistInfo } from '../state/playlistViews'
+import { usePlaylists, type Playlist } from '../state/playlists'
+import { usePlayer } from '../state/player'
+import { plural } from '../state/views'
+import { NAV, href, playlistHref, type NavItem, type RouteKey } from './routes'
 import './sidebar.css'
 
 interface NavEvent {
@@ -20,7 +29,7 @@ interface NavEvent {
   n: number
 }
 
-export function Sidebar({ active, badges }: { active: RouteKey; badges?: Partial<Record<RouteKey, string>> }) {
+export function Sidebar({ active, activePlaylist, badges }: { active: RouteKey; activePlaylist?: string | null; badges?: Partial<Record<RouteKey, string>> }) {
   const motion = useMotion()
   // "previous value in state" pattern: derive the change event during render, no effect needed
   const [ev, setEv] = useState<NavEvent>({ on: active, off: null, n: 0 })
@@ -51,16 +60,73 @@ export function Sidebar({ active, badges }: { active: RouteKey; badges?: Partial
         ))}
       </nav>
 
-      <section className="sb-playlists" aria-label="Playlists">
-        <div className="sb-section-head">
-          <span className="sb-section-label">PLAYLISTS</span>
-          <button type="button" className="sb-plus" aria-label="New playlist" title="New playlist (coming with playlists)" disabled>
-            <Icon name="plus" />
-          </button>
-        </div>
-        <div className="sb-pl-none">No playlists yet</div>
-      </section>
+      <SidebarPlaylists active={activePlaylist ?? null} />
     </aside>
+  )
+}
+
+/**
+ * Playlists (handoff 09): 30px cover (greyscale until active), name, N TRACKS. The open playlist
+ * is lit white. Each row is a drop target: drag songs (or an album card) onto it to add them.
+ */
+function SidebarPlaylists({ active }: { active: string | null }) {
+  const { list, loaded } = usePlaylists()
+  return (
+    <section className="sb-playlists" aria-label="Playlists">
+      <div className="sb-section-head">
+        <span className="sb-section-label">PLAYLISTS</span>
+        <button type="button" className="sb-plus" aria-label="New playlist" title="New playlist" onClick={() => actions.newPlaylist([], '', true)}>
+          <Icon name="plus" />
+        </button>
+      </div>
+      {list.map((p) => (
+        <SidebarPlaylist key={p.id} p={p} on={p.id === active} />
+      ))}
+      {loaded && !list.length && <div className="sb-pl-none">No playlists yet</div>}
+    </section>
+  )
+}
+
+function SidebarPlaylist({ p, on }: { p: Playlist; on: boolean }) {
+  const { data } = useLibrary()
+  const toast = useToast()
+  const player = usePlayer()
+  const [over, setOver] = useState(false)
+  const count = data ? playlistInfo(data, p).ids.length : 0
+  const playing = player.playing && player.context?.kind === 'playlist' && player.context.id === p.id
+  const accepts = (e: DragEvent) => e.dataTransfer.types.includes(DRAG_MIME)
+  return (
+    <a
+      href={playlistHref(p.id)}
+      className={`sb-pl ${on ? 'is-active' : ''} ${over ? 'is-drop' : ''}`}
+      aria-current={on ? 'page' : undefined}
+      onContextMenu={(e) => actions.menu({ kind: 'playlist', playlistId: p.id }, e)}
+      onDragEnter={(e) => accepts(e) && setOver(true)}
+      onDragOver={(e) => {
+        if (!accepts(e)) return
+        e.preventDefault()
+        e.dataTransfer.dropEffect = 'copy'
+        if (!over) setOver(true)
+      }}
+      onDragLeave={(e) => {
+        if (!(e.currentTarget as Node).contains(e.relatedTarget as Node)) setOver(false)
+      }}
+      onDrop={(e) => {
+        setOver(false)
+        const ids = draggedTracks(e)
+        if (!ids) return
+        e.preventDefault()
+        document.documentElement.removeAttribute('data-dragging-tracks')
+        addToPlaylist(toast, p.id, ids)
+      }}
+    >
+      <PlaylistCover playlist={p} size={30} lazy className="sb-pl-cover" />
+      <span className="sb-pl-text">
+        <span className="sb-pl-name">{p.name}</span>
+        <span className="sb-pl-meta">{plural(count, 'TRACK')}</span>
+      </span>
+      {playing && <span className="sb-pl-dot" aria-label="Playing" role="img" />}
+    </a>
   )
 }
 

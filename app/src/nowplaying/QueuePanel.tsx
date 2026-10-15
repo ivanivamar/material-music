@@ -25,6 +25,7 @@ import { playerStore, usePlayer } from '../state/player'
 import { fmtTotal } from '../state/views'
 import { useIsPhone } from '../state/viewport'
 import { contextLine } from './parts'
+import { actions } from '../actions/actions'
 import './queue.css'
 
 const ROW = 60 // 58px row + 2px gap
@@ -199,6 +200,7 @@ function PlayedSection({ c, ids, active, dnd, last }: { c: Catalogue; ids: strin
                   onDragOver={dnd.over(i)}
                   onDragEnd={dnd.end}
                   onClick={() => playerStore.jump(i)}
+                  onContextMenu={(e) => t && actions.menu({ kind: 'track', trackId: t.id }, e)}
                   onKeyDown={onKey(i)}
                 >
                   <DropLine dnd={dnd} abs={i} />
@@ -521,6 +523,16 @@ export function QueuePanel() {
             >
               <Icon name="shuffle" />
             </button>
+            <button
+              type="button"
+              className="qp-tool qp-tool-sq"
+              title="Save the queue as a playlist"
+              aria-label="Save the queue as a playlist"
+              disabled={!p.queue.length}
+              onClick={(e) => actions.addTo({ kind: 'tracks', trackIds: p.queue.filter((id) => data?.tracks[id]), label: 'Queue' }, e)}
+            >
+              <Icon name="playlist" />
+            </button>
             <button type="button" className="qp-tool qp-tool-text" disabled={!upcoming.length} onClick={onClear}>
               Clear
             </button>
@@ -534,7 +546,7 @@ export function QueuePanel() {
         {played.length > 0 && data && <PlayedSection c={data} ids={played} active={open} dnd={dnd} last={p.queue.length - 1} />}
 
         {current && data && (
-          <div className="qp-now" data-abs={p.index} onDragOver={onDragOver(p.index)}>
+          <div className="qp-now" data-abs={p.index} onDragOver={onDragOver(p.index)} onContextMenu={(e) => actions.menu({ kind: 'track', trackId: current.id }, e)}>
             <DropLine dnd={dnd} abs={p.index} />
             <span className="qp-handle">
               <Eq playing={p.playing} />
@@ -578,6 +590,7 @@ export function QueuePanel() {
                     onDragOver={onDragOver(abs)}
                     onDragEnd={() => setDrag(null)}
                     onClick={() => playerStore.jump(abs)}
+                    onContextMenu={(e) => t && actions.menu({ kind: 'track', trackId: t.id }, e)}
                     onKeyDown={onRowKey(abs)}
                   >
                     <DropLine dnd={dnd} abs={abs} />

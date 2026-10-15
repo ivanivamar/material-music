@@ -21,6 +21,8 @@ import { Search } from './pages/search/Search'
 import { Downloads } from './pages/downloads/Downloads'
 import { Upload } from './pages/upload/Upload'
 import { NewReleases } from './pages/releases/NewReleases'
+import { PlaylistPage } from './pages/playlists/PlaylistPage'
+import { playlistsStore } from './state/playlists'
 import { downloadsStore } from './state/downloads'
 import { libraryStore, useLibrary } from './state/library'
 import { useMotionAttribute } from './state/motion'
@@ -55,6 +57,8 @@ initPlayTracker()
 downloadsStore.init()
 // New releases (step 11): daily MusicBrainz sweep, feed + marks synced through Drive releases.json.
 releasesStore.init()
+// Playlists (step 9): one Drive file per playlist, edited offline-first and merged entry by entry.
+playlistsStore.init()
 
 function Page({ route }: { route: Extract<Route, { kind: 'app' }> }) {
   switch (route.key) {
@@ -66,6 +70,8 @@ function Page({ route }: { route: Extract<Route, { kind: 'app' }> }) {
       return <AlbumPage key={route.id} id={route.id} />
     case 'artist':
       return <ArtistPage key={route.id} id={route.id} />
+    case 'playlist':
+      return <PlaylistPage key={route.id} id={route.id} />
     case 'search':
       return <Search />
     case 'new':

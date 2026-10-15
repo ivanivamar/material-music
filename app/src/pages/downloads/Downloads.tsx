@@ -122,7 +122,7 @@ export function Downloads() {
           <EmptyState
             icon="download"
             title="No music stored offline"
-            body="Download an album or an artist to play it without a connection."
+            body="Download an album, playlist or artist to play it without a connection."
             actions={
               <>
                 <Button variant="secondary" icon="library" onClick={() => go(libraryHref('albums'))}>
