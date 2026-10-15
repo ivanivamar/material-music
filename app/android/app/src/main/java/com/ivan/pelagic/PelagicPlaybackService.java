@@ -1,5 +1,6 @@
 package com.ivan.pelagic;
 
+import android.app.PendingIntent;
 import android.content.Intent;
 import android.net.Uri;
 
@@ -107,7 +108,17 @@ public class PelagicPlaybackService extends MediaSessionService {
             }
         });
 
+        // tapping the media notification / lock-screen player brings the app to the front
+        // (MainActivity is singleTask, so the running instance is reused)
+        Intent open = new Intent(this, MainActivity.class)
+            .setAction(Intent.ACTION_MAIN)
+            .addCategory(Intent.CATEGORY_LAUNCHER)
+            .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        PendingIntent openApp = PendingIntent.getActivity(this, 0, open,
+            PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
+
         session = new MediaSession.Builder(this, player)
+            .setSessionActivity(openApp)
             .setCallback(new MediaSession.Callback() {
                 // Controllers can't send playable URIs across; the web app puts the Drive URL in
                 // requestMetadata.mediaUri and it is restored here.
