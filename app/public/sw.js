@@ -80,6 +80,8 @@ self.addEventListener('fetch', (e) => {
       return
     }
     if (!BUILD || req.method !== 'GET' || !url.href.startsWith(SCOPE.href)) return
+    // the sign-in helper (Cloudflare Pages Function) always goes to the network
+    if (url.pathname.startsWith(`${SCOPE.pathname}api/`)) return
     if (req.mode === 'navigate') e.respondWith(appShell(req))
     else e.respondWith(cacheFirst(req, url))
     return

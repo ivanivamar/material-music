@@ -1,9 +1,13 @@
 /**
  * Google sign-in (Google Identity Services, token model — no backend).
  *
- * The browser gets a ~1 hour access token. There is no refresh token in this model, so when it
- * runs out the session becomes `expired`: the cached library keeps working and one click on
- * "Sign in again" gets a fresh token (Google skips the consent screen once it has been granted).
+ * Browser (PC): when the site has its token helper (Cloudflare Pages Function `functions/api/auth`,
+ * which holds the OAuth client secret), sign-in uses the authorization-code flow: the helper swaps
+ * the code for tokens and keeps the refresh token in an HttpOnly cookie, and the app silently gets a
+ * new 1-hour access token from `/api/auth/refresh` 5 min before the old one runs out, on wake-up and
+ * when the connection comes back — so you sign in once, not every hour. Without the helper (local
+ * `npm run dev`, or the secret not set in Cloudflare) it falls back to the token model: a ~1 hour
+ * token and no refresh, so the session becomes `expired` and one click on "Sign in again" renews it.
  *
  * Persisted in localStorage `pelagic.session.v1` so a reload inside the hour stays signed in.
  *
@@ -37,6 +41,8 @@ interface Stored {
   token: string
   expiresAt: number
   account: Account | null
+  /** the browser session can be renewed through the site's token helper (`/api/auth/refresh`) */
+  renew?: 'server'
 }
 
 const KEY = 'pelagic.session.v1'
@@ -45,8 +51,8 @@ const SKEW_MS = 60_000
 
 let stored: Stored | null = readStored()
 let state: Session = {
-  // Android: a stale token is renewed silently right after boot (see the end of this file)
-  status: !stored ? 'signed-out' : isLive(stored) || (isNative && !!stored.account) ? 'signed-in' : 'expired',
+  // Android / token helper: a stale token is renewed silently right after boot (see the end of this file)
+  status: !stored ? 'signed-out' : isLive(stored) || (canRenew(stored) && !!stored.account) ? 'signed-in' : 'expired',
   account: stored?.account ?? null,
   pending: false,
   error: null,
@@ -73,24 +79,80 @@ function writeStored(s: Stored | null) {
 function isLive(s: Stored) {
   return Date.now() < s.expiresAt - SKEW_MS
 }
+/** Can a new token be had without the user (Play services on Android, the token helper on the web)? */
+function canRenew(s: Stored | null): boolean {
+  return isNative || s?.renew === 'server'
+}
 
 function set(patch: Partial<Session>) {
   state = { ...state, ...patch }
   listeners.forEach((l) => l())
 }
 
-/** Android: renew this long before the token runs out */
-const NATIVE_RENEW_MS = 5 * 60_000
+/** Renewable sessions: renew this long before the token runs out */
+const RENEW_EARLY_MS = 5 * 60_000
 
 function armExpiry() {
   window.clearTimeout(expiryTimer)
   if (!stored || !stored.token) return
   const ms = stored.expiresAt - SKEW_MS - Date.now()
   // setTimeout can't take more than ~24 days; tokens last an hour, so this is fine
-  if (isNative) expiryTimer = window.setTimeout(() => void sessionStore.refresh(), Math.max(0, ms - NATIVE_RENEW_MS))
+  if (canRenew(stored)) expiryTimer = window.setTimeout(() => void sessionStore.refresh().then((ok) => ok || sessionStore.expire()), Math.max(0, ms - RENEW_EARLY_MS))
   else if (ms > 0) expiryTimer = window.setTimeout(() => sessionStore.expire(), ms)
 }
 armExpiry()
+
+/* ── Token helper (Cloudflare Pages Function, web only) ── */
+
+const AUTH_API = `${import.meta.env.BASE_URL}api/auth/`
+interface HelperTokens {
+  access_token: string
+  expires_in: number
+  scope: string
+  refresh?: boolean
+}
+
+let helperProbe: Promise<boolean> | null = null
+/** Is the token helper deployed and configured on this origin? (dev server: no — it answers index.html) */
+function helperAvailable(): Promise<boolean> {
+  if (isNative) return Promise.resolve(false)
+  helperProbe ??= fetch(`${AUTH_API}status`, { credentials: 'same-origin', cache: 'no-store' })
+    .then(async (r) => r.ok && (r.headers.get('content-type') ?? '').includes('application/json') && !!((await r.json()) as { configured?: boolean }).configured)
+    .catch(() => false)
+  // a network failure shouldn't stick for the whole session
+  void helperProbe.then((ok) => ok || (helperProbe = null))
+  return helperProbe
+}
+
+/** Does the helper already hold a refresh token for this browser (cookie)? */
+async function helperHasSession(): Promise<boolean> {
+  try {
+    const r = await fetch(`${AUTH_API}status`, { credentials: 'same-origin', cache: 'no-store' })
+    return r.ok && !!((await r.json()) as { session?: boolean }).session
+  } catch {
+    return false
+  }
+}
+
+class HelperError extends Error {
+  status: number
+  constructor(status: number, message: string) {
+    super(message)
+    this.status = status
+  }
+}
+
+async function helper<T>(action: 'exchange' | 'refresh' | 'logout', body?: unknown): Promise<T> {
+  const res = await fetch(AUTH_API + action, {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { 'X-Pelagic': '1', ...(body ? { 'Content-Type': 'application/json' } : {}) },
+    body: body ? JSON.stringify(body) : undefined,
+  })
+  const j = (await res.json().catch(() => ({}))) as T & { error?: string; message?: string }
+  if (!res.ok) throw new HelperError(res.status, j.message || j.error || `Sign-in helper answered ${res.status}`)
+  return j
+}
 
 /* ── Google Identity Services loader ───────────────── */
 
@@ -112,7 +174,17 @@ function loadGis(): Promise<void> {
 }
 /** Start loading early (sign-in screen mount) so the popup opens inside the click's user gesture. */
 export const preloadGoogle = () => {
-  if (!isNative) void loadGis().catch(() => {})
+  if (isNative) return
+  void loadGis().catch(() => {})
+  void helperAvailable()
+}
+
+function popupError(err: google.accounts.oauth2.ClientConfigError): string {
+  return err.type === 'popup_closed'
+    ? 'The Google window was closed before signing in.'
+    : err.type === 'popup_failed_to_open'
+      ? 'The browser blocked the Google window. Allow pop-ups for this site.'
+      : err.message || 'Sign-in failed.'
 }
 
 let client: google.accounts.oauth2.TokenClient | null = null
@@ -128,15 +200,7 @@ function tokenClient() {
       if (resp.error) pendingReject?.(new Error(resp.error_description || resp.error))
       else pendingResolve?.(resp)
     },
-    error_callback: (err) => {
-      const msg =
-        err.type === 'popup_closed'
-          ? 'The Google window was closed before signing in.'
-          : err.type === 'popup_failed_to_open'
-            ? 'The browser blocked the Google window. Allow pop-ups for this site.'
-            : err.message || 'Sign-in failed.'
-      pendingReject?.(new Error(msg))
-    },
+    error_callback: (err) => pendingReject?.(new Error(popupError(err))),
   })
   return client
 }
@@ -166,10 +230,10 @@ async function tokenLifetimeMs(token: string): Promise<number> {
 }
 
 /** Store a fresh token (both platforms) and announce an account switch. */
-async function adopt(token: string, expiresAt: number, withAccount: boolean) {
+async function adopt(token: string, expiresAt: number, withAccount: boolean, renew?: 'server') {
   const account = (withAccount ? await fetchAccount(token).catch(() => null) : null) ?? state.account
   const switched = !!state.account && !!account && state.account.email !== account.email
-  stored = { token, expiresAt, account }
+  stored = { token, expiresAt, account, ...(renew ? { renew } : {}) }
   writeStored(stored)
   armExpiry()
   set({ status: 'signed-in', account, pending: false, error: null })
@@ -213,19 +277,39 @@ export const sessionStore = {
     return stored?.token && isLive(stored) ? { token: stored.token, expiresAt: stored.expiresAt } : null
   },
 
-  /** A usable token, renewing it first on Android if needed (web: same as token()). */
+  /** A usable token, renewing it first if this session can (Android, or the web token helper). */
   async ensureToken(): Promise<string | null> {
-    const t = sessionStore.token()
-    if (t || !isNative) return t
+    if (stored?.token && isLive(stored)) return stored.token
+    if (!canRenew(stored)) return sessionStore.token()
     return (await sessionStore.refresh()) ? sessionStore.token() : null
   },
 
   /**
-   * Android only: get a new token from Play services without any UI. Resolves false on the web,
-   * when signed out, or if Google needs the user (then the session shows "expired" as on the web).
+   * Get a new token without any UI: Play services on Android, the token helper's refresh token on
+   * the web. Resolves false when the session can't renew, when signed out, or if Google needs the
+   * user (then the session shows "expired").
    */
   refresh(): Promise<boolean> {
-    if (!isNative || !stored?.account) return Promise.resolve(false)
+    if (!canRenew(stored) || !stored?.account) return Promise.resolve(false)
+    if (!isNative) {
+      refreshing ??= (async () => {
+        try {
+          const t = await helper<HelperTokens>('refresh')
+          await adopt(t.access_token, Date.now() + Number(t.expires_in) * 1000, false, 'server')
+          return true
+        } catch (e) {
+          // 401: the grant is gone (revoked, or unused for 6 months) → sign in again
+          if (e instanceof HelperError && e.status === 401 && stored) {
+            stored = { ...stored, renew: undefined }
+            writeStored(stored)
+          }
+          return false
+        } finally {
+          refreshing = null
+        }
+      })()
+      return refreshing
+    }
     refreshing ??= (async () => {
       try {
         // drop the cached (old or rejected) token so Play services mints a full-length one
@@ -263,7 +347,32 @@ export const sessionStore = {
       return
     }
     try {
-      await loadGis()
+      // GIS needs the popup opened inside the click, so both of these were warmed up by preloadGoogle()
+      const [, viaHelper] = await Promise.all([loadGis(), helperAvailable()])
+      if (viaHelper) {
+        const code = await new Promise<string>((resolve, reject) => {
+          const hint = opts.switchAccount ? undefined : state.account?.email
+          google.accounts.oauth2
+            .initCodeClient({
+              client_id: GOOGLE_CLIENT_ID,
+              scope: DRIVE_SCOPE,
+              ux_mode: 'popup',
+              include_granted_scopes: true,
+              select_account: !!opts.switchAccount,
+              ...(hint ? { login_hint: hint } : {}),
+              callback: (r) => (r.error || !r.code ? reject(new Error(r.error_description || r.error || 'Sign-in failed.')) : resolve(r.code)),
+              error_callback: (err) => reject(new Error(popupError(err))),
+            })
+            .requestCode()
+        })
+        const t = await helper<HelperTokens>('exchange', { code })
+        if (!t.scope.split(' ').includes(DRIVE_SCOPE)) {
+          throw new Error('Pelagic needs access to Google Drive to read your library. Tick the Drive box when Google asks.')
+        }
+        // no refresh token (Google only issues one per grant): still signed in, renewing by hand as before
+        await adopt(t.access_token, Date.now() + Number(t.expires_in) * 1000, true, t.refresh || (await helperHasSession()) ? 'server' : undefined)
+        return
+      }
       const resp = await new Promise<google.accounts.oauth2.TokenResponse>((resolve, reject) => {
         pendingResolve = resolve
         pendingReject = reject
@@ -287,7 +396,7 @@ export const sessionStore = {
   /** Token ran out or Drive answered 401. Keeps the account so "Sign in again" can hint it. */
   expire() {
     if (!stored) return
-    if (isNative && state.status === 'signed-in') {
+    if (canRenew(stored) && state.status === 'signed-in') {
       // try a silent renewal first; only show "expired" if Google needs the user
       void sessionStore.refresh().then((ok) => ok || sessionStore.markExpired())
       return
@@ -309,6 +418,8 @@ export const sessionStore = {
       revokeRemote(token)
       void PelagicNative.clearToken({ token }).catch(() => {})
     } else if (token && window.google?.accounts?.oauth2) google.accounts.oauth2.revoke(token)
+    // the helper revokes the refresh token and clears its cookie
+    if (stored?.renew === 'server') void helper('logout').catch(() => {})
     stored = null
     writeStored(null)
     window.clearTimeout(expiryTimer)
@@ -339,15 +450,17 @@ declare global {
   }
 }
 
-// Android: renew a stale token right after boot and whenever the app comes back to the foreground
-// (timers don't run while the app is in the background).
-if (isNative) {
-  const renewIfNeeded = () => {
-    if (state.status !== 'signed-in' || !stored) return
-    if (!stored.token || stored.expiresAt - SKEW_MS - Date.now() < NATIVE_RENEW_MS) {
-      void sessionStore.refresh().then((ok) => ok || sessionStore.markExpired())
-    }
-  }
-  renewIfNeeded()
-  document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && renewIfNeeded())
+// Renewable sessions (Android, web with the token helper): renew a stale token right after boot,
+// whenever the app comes back to the foreground (timers are throttled / frozen in the background)
+// and when the connection returns (an offline renewal attempt left the session "expired").
+let lastAttempt = 0
+const renewIfNeeded = () => {
+  if (!stored || !canRenew(stored) || state.status === 'signed-out') return
+  const stale = !stored.token || stored.expiresAt - SKEW_MS - Date.now() < RENEW_EARLY_MS
+  if (!stale || (state.status === 'expired' && Date.now() - lastAttempt < 10_000)) return
+  lastAttempt = Date.now()
+  void sessionStore.refresh().then((ok) => ok || sessionStore.markExpired())
 }
+renewIfNeeded()
+document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && renewIfNeeded())
+window.addEventListener('online', renewIfNeeded)

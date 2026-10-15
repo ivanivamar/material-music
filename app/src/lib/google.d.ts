@@ -29,6 +29,27 @@ declare namespace google.accounts.oauth2 {
     requestAccessToken(override?: OverridableTokenClientConfig): void
   }
   function initTokenClient(config: TokenClientConfig): TokenClient
+  /** Authorization-code flow (popup): the code goes to the site's token helper (functions/api/auth). */
+  interface CodeResponse {
+    code?: string
+    scope?: string
+    error?: string
+    error_description?: string
+  }
+  interface CodeClientConfig {
+    client_id: string
+    scope: string
+    ux_mode?: 'popup' | 'redirect'
+    include_granted_scopes?: boolean
+    select_account?: boolean
+    login_hint?: string
+    callback: (resp: CodeResponse) => void
+    error_callback?: (err: ClientConfigError) => void
+  }
+  interface CodeClient {
+    requestCode(): void
+  }
+  function initCodeClient(config: CodeClientConfig): CodeClient
   function hasGrantedAllScopes(resp: TokenResponse, ...scopes: string[]): boolean
   function revoke(token: string, done?: () => void): void
 }

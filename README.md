@@ -11,10 +11,10 @@ A personal music player for my own FLAC library. The same library plays on PC an
 ```
 
 - **Google Drive is the master copy.** It holds the FLAC originals, 160 kbps Opus phone copies (about 5× smaller), album and artist art, and a `library.json` catalogue.
-- **There is no backend.** The app talks to the Google Drive API directly with the signed-in user's token. All data stays in my Drive.
+- **There is no backend.** The app talks to the Google Drive API directly with the signed-in user's token. All data stays in my Drive. The only server-side code is a tiny sign-in helper on Cloudflare Pages (`app/functions/api/auth`) that keeps the OAuth client secret and the refresh token, so the PC app stays signed in instead of asking every hour.
 - **On PC,** Pelagic is a web app installed from Chrome or Edge. It plays FLAC from a linked local folder (the Google Drive for desktop `Pelagic` folder or the music folder) and streams from Drive for anything that isn't there.
 - **On Android,** the same app is wrapped with Capacitor. A native player (Media3 / ExoPlayer) streams the Opus copies from Drive, keeps playing in the background, and shows lock-screen and notification controls.
-- **Playlists, history and settings** will be small JSON files in Drive, so both devices stay in sync.
+- **Playlists, history and settings** are small JSON files in Drive, so both devices stay in sync.
 
 ## Features
 
@@ -26,9 +26,9 @@ A personal music player for my own FLAC library. The same library plays on PC an
 - [x] Phone layout (bottom tabs, mini-player, bottom-sheet queue, swipe to close)
 - [x] PC: installable app (PWA) that opens offline, update prompt
 - [x] Android app: native Google sign-in, background playback, in-app update check
-- [ ] Android offline downloads (Opus, or FLAC per album)
+- [x] Android offline downloads (Opus, or FLAC per album)
 - [ ] Home: recently listened, most played, rediscover
-- [ ] Playlists
+- [x] Playlists
 - [ ] Upload new music from the app
 - [ ] New releases from my artists (MusicBrainz)
 
@@ -55,7 +55,7 @@ Pelagic/
 
 ## Distribution
 
-- **Web / PC:** Cloudflare Pages is linked to this repo and builds `app/` on every push to `main` (root `app`, command `npm run build`, output `dist`). Install it from Chrome or Edge with the install icon or the account menu. The installed app shows "A new version of Pelagic is ready · Reload" after each deploy.
+- **Web / PC:** Cloudflare Pages is linked to this repo and builds `app/` on every push to `main` (root `app`, command `npm run build`, output `dist`; `app/functions/` deploys as Pages Functions). Set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` (the Pelagic Web client's id and secret, the secret encrypted) under Settings → Variables and secrets, then redeploy — that turns on stay-signed-in. Install it from Chrome or Edge with the install icon or the account menu. The installed app shows "A new version of Pelagic is ready · Reload" after each deploy.
 - **Android:** every push to `main` that touches `app/` runs the **Android APK** workflow. It builds the web app, syncs it into the Capacitor project, builds a signed APK and publishes it as a GitHub Release (`android-<run number>`, asset `pelagic.apk`). The first time, install it from the Releases page. After that, the app checks Releases on launch and offers "Install" for newer builds.
   - Repository secrets: `PELAGIC_KEYSTORE_BASE64` (the release keystore, base64) and `PELAGIC_KEYSTORE_PASSWORD`.
   - Every build is signed with the same release key so updates install over the old app. Keep the key in `secrets/` and backed up; losing it means uninstalling the app to update.
