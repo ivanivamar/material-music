@@ -2,6 +2,7 @@
  * Album (handoff 04 Desktop Album): tinted wash from the cover, 264px cover, hero title,
  * artist · track count · length · quality badge, Play / Shuffle, tracklist
  * (disc headers when there's more than one), then more by the same artist.
+ * Android app: "Available offline" toggle + Opus / FLAC switch for this album where the release info sits on PC.
  */
 import type { CSSProperties } from 'react'
 import { Button, EmptyState, IconButton, QualityBadge, TrackRow, qualityKind, qualityLabel } from '../../components/ui'
@@ -14,8 +15,9 @@ import { artistHref, libraryHref } from '../../shell/routes'
 import { RELEASE_LABEL, albumInfos, artistInfos, fmtAdded, fmtBytes, fmtTotal, plural } from '../../state/views'
 import { formatTime } from '../../components/ui'
 import { Crumbs, LibAlbumCard, SectionHead } from './common'
-import { DownloadButton, trackDownload } from './DownloadButton'
-import { albumOffline, downloadsStore, useDownloadProgress, useDownloads } from '../../state/downloads'
+import { trackDownload } from './DownloadButton'
+import { AlbumOfflineToggle } from './OfflineToggle'
+import { useDownloadProgress, useDownloads } from '../../state/downloads'
 import { playList, useContextState, useNowPlaying, usePlayingAlbumId } from './playback'
 import './library.css'
 
@@ -123,22 +125,18 @@ export function AlbumPage({ id }: { id: string }) {
         <Button variant="secondary" icon="shuffle" onClick={() => playList(ids, context, { shuffle: true })} disabled={!ids.length}>
           Shuffle
         </Button>
-        {dl.available && (
-          <DownloadButton
-            state={albumOffline(dl, album.id)}
-            name={album.title}
-            onPin={() => downloadsStore.pin('album', album.id)}
-            onRemove={() => downloadsStore.removeAlbum(album.id)}
-          />
-        )}
         <IconButton icon="more" label="More" shape="square" className="actions-more" onClick={(e) => actions.menu({ kind: 'album', albumId: album.id }, e)} />
         <span className="actions-spacer" />
-        <div className="actions-info">
-          <div className="actions-info-main">{released(album.date, album.year)}</div>
-          <div className="actions-info-meta">
-            ADDED {fmtAdded(album.addedAt)} · {fmtBytes(info.bytes)} FLAC
+        {dl.available ? (
+          <AlbumOfflineToggle c={data} albumId={album.id} name={album.title} />
+        ) : (
+          <div className="actions-info">
+            <div className="actions-info-main">{released(album.date, album.year)}</div>
+            <div className="actions-info-meta">
+              ADDED {fmtAdded(album.addedAt)} · {fmtBytes(info.bytes)} FLAC
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       <div className={`tracklist ${dl.available ? 'has-dl' : ''}`} role="table">

@@ -11,7 +11,11 @@
  * Playback needs nothing from here: the native player plays a stored copy of a Drive file whenever
  * there is one. This store only tells the UI what is stored / downloading.
  *
- * Persisted in localStorage `pelagic.downloads.v1` (pins, quality, Wi-Fi only). In the browser
+ * Quality is global (`quality`) with a per-album override (`albumQuality`, the album page's Opus / FLAC
+ * switch). While an album switches quality, the copy already on the phone is kept in the list (`plan.keep`)
+ * until its replacement has arrived, so the album stays playable offline the whole time.
+ *
+ * Persisted in localStorage `pelagic.downloads.v1` (pins, quality, per-album quality, Wi-Fi only). In the browser
  * (`isNative` false) the store stays empty and the UI shows no download controls.
  */
 import { useSyncExternalStore } from 'react'
@@ -29,11 +33,13 @@ export interface Prefs {
   /** album ids left out of an artist / whole-library pin */
   excluded: string[]
   quality: DownloadQuality
+  /** album id → quality for that album (overrides `quality`) */
+  albumQuality: Record<string, DownloadQuality>
   wifiOnly: boolean
 }
 
 const KEY = 'pelagic.downloads.v1'
-const DEFAULT_PREFS: Prefs = { pins: [], excluded: [], quality: 'opus', wifiOnly: true }
+const DEFAULT_PREFS: Prefs = { pins: [], excluded: [], quality: 'opus', albumQuality: {}, wifiOnly: true }
 
 function loadPrefs(): Prefs {
   try {
@@ -64,13 +70,18 @@ export interface Plan {
   /** wanted albums in queue order */
   albums: AlbumPlan[]
   byAlbum: Map<string, AlbumPlan>
+  /** copies already on the phone in the other quality, kept until their replacement is stored */
+  keep: NativeDownloadItem[]
   items: NativeDownloadItem[]
   bytes: number
 }
 
-const EMPTY_PLAN: Plan = { albums: [], byAlbum: new Map(), items: [], bytes: 0 }
+const EMPTY_PLAN: Plan = { albums: [], byAlbum: new Map(), keep: [], items: [], bytes: 0 }
 
 export const fileFor = (t: Track, q: DownloadQuality) => (q === 'flac' || !t.mobile?.id ? t.flac : t.mobile)
+
+/** The quality an album is downloaded in: its own choice, else the global one. */
+export const qualityOf = (p: Pick<Prefs, 'quality' | 'albumQuality'>, albumId: string): DownloadQuality => p.albumQuality?.[albumId] ?? p.quality
 
 function albumsOf(c: Catalogue, pin: Pin): string[] {
   if (pin.kind === 'album') return c.albums[pin.id] ? [pin.id] : []
@@ -84,10 +95,10 @@ function playlistTracks(c: Catalogue, playlistId: string): Track[] {
   return p ? playlistInfo(c, p).ids.map((id) => c.tracks[id]).filter((t): t is Track => !!t) : []
 }
 
-function buildPlan(c: Catalogue, prefs: Prefs): Plan {
+function buildPlan(c: Catalogue, prefs: Prefs, stored: Map<string, number>): Plan {
   const byTracks = tracksByAlbum(c)
   const excluded = new Set(prefs.excluded)
-  const plan: Plan = { albums: [], byAlbum: new Map(), items: [], bytes: 0 }
+  const plan: Plan = { albums: [], byAlbum: new Map(), keep: [], items: [], bytes: 0 }
   const seenFiles = new Set<string>()
   // explicit album pins first, then artists, then "everything", then playlists — each in pin order
   const rank = { album: 0, artist: 1, all: 2, playlist: 3 }
@@ -109,7 +120,7 @@ function buildPlan(c: Catalogue, prefs: Prefs): Plan {
           plan.albums.push(ap)
           plan.byAlbum.set(t.albumId, ap)
         }
-        const f = fileFor(t, prefs.quality)
+        const f = fileFor(t, qualityOf(prefs, t.albumId))
         if (!f?.id || ap.trackFiles.has(t.id)) continue
         ap.trackFiles.set(t.id, f.id)
         if (seenFiles.has(f.id)) continue
@@ -129,8 +140,9 @@ function buildPlan(c: Catalogue, prefs: Prefs): Plan {
         seenFiles.add(album.cover)
         ap.files.push({ id: album.cover, size: 0, title: `${album.title} · cover` })
       }
+      const q = qualityOf(prefs, albumId)
       for (const t of byTracks.get(albumId) ?? []) {
-        const f = fileFor(t, prefs.quality)
+        const f = fileFor(t, q)
         if (!f?.id) continue
         ap.trackFiles.set(t.id, f.id)
         if (seenFiles.has(f.id)) continue
@@ -143,7 +155,19 @@ function buildPlan(c: Catalogue, prefs: Prefs): Plan {
       plan.bytes += ap.bytes
     }
   }
-  plan.items = plan.albums.flatMap((ap) => ap.files)
+  // quality switch: keep the other-quality copy already on the phone until the wanted one is stored
+  for (const ap of plan.albums)
+    for (const [tid, fid] of ap.trackFiles) {
+      if (stored.has(fid)) continue
+      const t = c.tracks[tid]
+      for (const f of [t?.mobile, t?.flac]) {
+        if (!f?.id || f.id === fid || !stored.has(f.id) || seenFiles.has(f.id)) continue
+        seenFiles.add(f.id)
+        plan.keep.push({ id: f.id, size: stored.get(f.id) || f.size || 0, title: `${t.title} · ${t.artist}` })
+      }
+    }
+  // kept copies go last: they are on the phone already, so the worker never fetches them
+  plan.items = [...plan.albums.flatMap((ap) => ap.files), ...plan.keep]
   return plan
 }
 
@@ -210,17 +234,33 @@ function applyNative(s: NativeDownloadState) {
   }
   set({ stored, native: rest })
   for (const id of done) albumDoneListeners.forEach((l) => l(id))
+  if (first && pushWaiting) schedulePush()
+  // a quality switch went through (or a kept copy vanished): send the shorter list so the old copy goes
+  else if (state.plan.keep.length && catalogue) {
+    const keep = buildPlan(catalogue, state.prefs, stored).keep
+    if (keep.length !== state.plan.keep.length || keep.some((k, i) => k.id !== state.plan.keep[i].id)) schedulePush(1000)
+  }
 }
 
 let catalogue: Catalogue | null = null
 let syncTimer: number | null = null
+/** a push asked for before the phone said what it has stored (kept copies would be dropped) */
+let pushWaiting = false
+/** the phone's state couldn't be read: push anyway, without kept copies */
+let nativeUnknown = false
 
 /** Recompute the plan and send it to the phone (debounced). Never without a catalogue: that would empty the phone. */
 function schedulePush(delay = 300) {
   if (!isNative || !catalogue) return
   // same for playlist pins before the playlists' local copy is read
   if (state.prefs.pins.some((p) => p.kind === 'playlist') && !playlistsStore.get().loaded) return
-  const plan = buildPlan(catalogue, state.prefs)
+  // and not before the phone's stored list is known: an in-progress quality switch would lose its old copies
+  if (!state.native && !nativeUnknown) {
+    pushWaiting = true
+    return
+  }
+  pushWaiting = false
+  const plan = buildPlan(catalogue, state.prefs, state.stored)
   if (state.native) for (const ap of plan.albums) if (!ap.files.every((f) => state.stored.has(f.id))) seenIncomplete.add(ap.albumId)
   set({ plan })
   if (syncTimer !== null) window.clearTimeout(syncTimer)
@@ -255,7 +295,12 @@ function start() {
   void PelagicDownloads.addListener('changed', () => {
     void PelagicDownloads.state().then(applyNative).catch(() => {})
   })
-  void PelagicDownloads.state().then(applyNative).catch(() => {})
+  void PelagicDownloads.state()
+    .then(applyNative)
+    .catch(() => {
+      nativeUnknown = true
+      if (pushWaiting) schedulePush()
+    })
   const onLib = () => {
     const data = libraryStore.get().data
     if (data && data !== catalogue) {
@@ -363,6 +408,15 @@ export const downloadsStore = {
   setQuality(quality: DownloadQuality) {
     updatePrefs((p) => ({ ...p, quality }))
   },
+  /** One album's quality (the album page's Opus / FLAC switch); the global quality clears the override. */
+  setAlbumQuality(albumId: string, quality: DownloadQuality) {
+    updatePrefs((p) => {
+      const albumQuality = { ...p.albumQuality }
+      if (quality === p.quality) delete albumQuality[albumId]
+      else albumQuality[albumId] = quality
+      return { ...p, albumQuality }
+    })
+  },
   setWifiOnly(wifiOnly: boolean) {
     updatePrefs((p) => ({ ...p, wifiOnly }))
   },
@@ -424,7 +478,7 @@ export function playlistOffline(s: DownloadsState, c: Catalogue, p: Playlist): A
     const fid = t && s.plan.byAlbum.get(t.albumId)?.trackFiles.get(id)
     if (!fid) continue
     count++
-    const size = fileFor(t, s.prefs.quality)?.size ?? 0
+    const size = fileFor(t, qualityOf(s.prefs, t.albumId))?.size ?? 0
     bytes += size
     const b = s.stored.get(fid)
     if (b !== undefined) {
@@ -457,16 +511,53 @@ export function artistOffline(s: DownloadsState, c: Catalogue, artistId: string)
 /** A stored Drive file for this track (the wanted quality first), or null. */
 export function storedFileOf(s: DownloadsState, t: Track | undefined): string | null {
   if (!t) return null
-  const first = fileFor(t, s.prefs.quality)
+  const first = fileFor(t, qualityOf(s.prefs, t.albumId))
   for (const f of [first, t.mobile, t.flac]) if (f?.id && s.stored.has(f.id)) return f.id
   return null
 }
 
-/** Size of everything in the library in the chosen quality (the "Download everything" button). */
-export function libraryBytes(c: Catalogue, q: DownloadQuality): number {
+/** Size of everything in the library in the chosen qualities (the "Download everything" button). */
+export function libraryBytes(c: Catalogue, prefs: Pick<Prefs, 'quality' | 'albumQuality'>): number {
   let n = 0
-  for (const t of Object.values(c.tracks)) n += fileFor(t, q)?.size ?? 0
+  for (const t of Object.values(c.tracks)) n += fileFor(t, qualityOf(prefs, t.albumId))?.size ?? 0
   return n
+}
+
+/** Size of one album's tracks in a quality (the album page's Opus / FLAC switch). */
+export function albumBytes(tracks: Track[], q: DownloadQuality): number {
+  return tracks.reduce((n, t) => n + (fileFor(t, q)?.size ?? 0), 0)
+}
+
+/* ── What plays offline (the Library's "Offline only" filter) ── */
+
+export interface OfflineIndex {
+  /** tracks with a copy on the phone (either quality) */
+  tracks: Set<string>
+  /** album id → tracks of it on the phone */
+  albums: Map<string, number>
+  /** artist id → albums of theirs with something on the phone */
+  artists: Map<string, number>
+}
+
+let indexCache: { stored: Map<string, number>; c: Catalogue; index: OfflineIndex } | null = null
+
+/** Everything that plays without a connection, from what the phone has stored. */
+export function offlineIndex(s: DownloadsState, c: Catalogue): OfflineIndex {
+  if (indexCache && indexCache.stored === s.stored && indexCache.c === c) return indexCache.index
+  const index: OfflineIndex = { tracks: new Set(), albums: new Map(), artists: new Map() }
+  if (s.stored.size)
+    for (const t of Object.values(c.tracks)) {
+      if (!((t.mobile?.id && s.stored.has(t.mobile.id)) || (t.flac?.id && s.stored.has(t.flac.id)))) continue
+      index.tracks.add(t.id)
+      const n = index.albums.get(t.albumId) ?? 0
+      index.albums.set(t.albumId, n + 1)
+      if (n === 0) {
+        const artistId = c.albums[t.albumId]?.artistId ?? t.artistId
+        index.artists.set(artistId, (index.artists.get(artistId) ?? 0) + 1)
+      }
+    }
+  indexCache = { stored: s.stored, c, index }
+  return index
 }
 
 /* ── Hooks ─────────────────────────────────────────── */

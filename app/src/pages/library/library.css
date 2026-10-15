@@ -7,6 +7,11 @@
 .lib-bar { display: flex; align-items: center; gap: 16px; margin-bottom: 32px; min-height: 28px; }
 .lib-bar-line { flex: 1; height: 1px; background: rgba(255, 255, 255, .08); }
 .lib-bar-meta { font-family: var(--font-mono); font-size: var(--fs-mono-sm); letter-spacing: .16em; color: var(--ink-secondary); white-space: nowrap; }
+/* Android app: OFFLINE ONLY switch on the sort row; offline banner under the header */
+.lib-offl { display: inline-flex; align-items: center; gap: 12px; cursor: pointer; flex: none; }
+.lib-offl-label { font-family: var(--font-mono); font-size: var(--fs-mono-sm); letter-spacing: .16em; color: var(--ink-secondary); transition: color .3s var(--ease); }
+.lib-offl.is-on .lib-offl-label { color: var(--ink-primary); }
+.lib-offline { margin: -12px 0 28px; }
 
 .sort { position: relative; }
 .sort-btn {
@@ -194,6 +199,14 @@ a.ln:hover { color: var(--ink-primary); text-decoration: underline; text-underli
 .actions-more.ibtn { width: 46px; height: 46px; font-size: 21px; color: var(--ink-primary); border: 1.5px solid var(--border-strong); box-sizing: border-box; }
 .actions-more.ibtn:hover:not(:disabled) { border-color: rgba(255, 255, 255, .4); }
 
+/* ── Available offline (album page, Android app) ────── */
+.offl { display: flex; align-items: center; gap: 16px; flex: none; }
+.offl-main { display: flex; align-items: center; gap: 16px; cursor: pointer; }
+.offl-text { display: flex; flex-direction: column; gap: 3px; align-items: flex-end; text-align: right; }
+.offl-title { font-size: 14px; }
+.offl-status { font-family: var(--font-mono); font-size: var(--fs-mono-sm); letter-spacing: .12em; color: var(--ink-secondary); white-space: nowrap; }
+.offl.is-on .offl-status { color: var(--ink-primary); }
+
 /* ── Download button (Android) ──────────────────────── */
 .actions-dl.is-done .btn-ic { color: var(--ink-primary); }
 .actions-dl-count { font-size: 12px; letter-spacing: .1em; }
@@ -222,6 +235,9 @@ a.ln:hover { color: var(--ink-primary); text-decoration: underline; text-underli
   .hero { gap: 28px; }
   .hero-cover { width: 200px; height: 200px; }
   .actions-info { display: none; }
+  .actions:has(.offl) { flex-wrap: wrap; row-gap: 20px; }
+  .actions .offl { flex-basis: 100%; justify-content: space-between; }
+  .actions .offl-text { align-items: flex-start; text-align: left; }
   .songs { --cols: 48px minmax(0, 1.3fr) minmax(0, 1fr) 28px 64px; }
   .songs-head > :nth-child(5), .songs-row .trow-label { display: none; }
 }

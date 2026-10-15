@@ -170,6 +170,22 @@ html[data-phone][data-qp] .toasts.toasts-shell { right: 0; }
 /* Download: a compact square next to Play / Shuffle (✓ / ring + 07/11) */
 .shell.is-phone .actions .actions-dl, .shell.is-phone .hero-buttons .actions-dl { flex: 0 0 auto; min-width: 48px; padding: 0 13px; gap: 8px; }
 .shell.is-phone .actions-dl .actions-dl-label { display: none; }
+/* album "Available offline": full-width card under Play / Shuffle */
+.shell.is-phone .actions:has(.offl) { flex-wrap: wrap; row-gap: 12px; }
+.shell.is-phone .actions .offl {
+  order: 10; flex: 1 0 100%; flex-direction: column; align-items: stretch; gap: 12px;
+  padding: 14px 16px; border-radius: 14px; border: 1.5px solid rgba(255, 255, 255, .09); background: rgba(255, 255, 255, .03);
+}
+.shell.is-phone .offl-main { justify-content: space-between; }
+.shell.is-phone .offl-text { align-items: flex-start; text-align: left; min-width: 0; }
+.shell.is-phone .offl-status { white-space: normal; }
+.shell.is-phone .offl .seg { display: flex; }
+.shell.is-phone .offl .seg-opt { flex: 1; justify-content: center; height: 34px; }
+/* library: OFFLINE ONLY keeps its label; the count moves to the next line if needed */
+.shell.is-phone .lib-bar:has(.lib-offl) { flex-wrap: wrap; row-gap: 10px; }
+.shell.is-phone .lib-bar:has(.lib-offl) .lib-bar-meta { display: none; }
+.shell.is-phone .lib-offline { margin: -8px 0 20px; }
+.shell.is-phone .lib-offline .offline-banner { display: flex; border-radius: 14px; align-items: flex-start; }
 .shell.is-phone .tracklist { --cols: 28px minmax(0, 1fr) 52px; }
 .shell.is-phone .tl-head, .shell.is-phone .trow.trow-album { padding: 0 4px; gap: 10px; }
 .shell.is-phone .trow.trow-album { height: 56px; }

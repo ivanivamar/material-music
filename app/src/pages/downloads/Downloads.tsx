@@ -13,7 +13,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Button, EmptyState, IconButton, QualityBadge, Segmented, Toggle, qualityKind, useToast } from '../../components/ui'
 import { useCover } from '../../lib/covers'
-import { albumOffline, downloadsStore, libraryBytes, useDownloadProgress, useDownloads, type AlbumPlan, type DownloadQuality, type DownloadsState } from '../../state/downloads'
+import { albumOffline, downloadsStore, libraryBytes, qualityOf, useDownloadProgress, useDownloads, type AlbumPlan, type DownloadQuality, type DownloadsState } from '../../state/downloads'
 import { useLibrary, type Catalogue } from '../../state/library'
 import { useIsPhone } from '../../state/viewport'
 import { fmtBytes, plural } from '../../state/views'
@@ -64,6 +64,7 @@ export function Downloads() {
       toast.show({
         icon: 'download',
         text: q === 'flac' ? 'Downloads switch to the original FLAC.' : 'Downloads switch to Opus 160.',
+        // albums with their own quality (album page) keep it
         meta: 'FILES ARE REPLACED AS THEY ARRIVE',
         action: { label: 'Undo', onClick: () => downloadsStore.setQuality(before) },
       })
@@ -76,7 +77,7 @@ export function Downloads() {
   const downloadAll = () => {
     const before = dl.prefs
     downloadsStore.pin('all', '*')
-    toast.show({ icon: 'download', text: 'Downloading your whole library.', meta: `${fmtBytes(libraryBytes(data, dl.prefs.quality))} · ${dl.prefs.wifiOnly ? 'WI-FI ONLY' : 'ANY NETWORK'}`, action: { label: 'Undo', onClick: () => downloadsStore.restore(before) } })
+    toast.show({ icon: 'download', text: 'Downloading your whole library.', meta: `${fmtBytes(libraryBytes(data, dl.prefs))} · ${dl.prefs.wifiOnly ? 'WI-FI ONLY' : 'ANY NETWORK'}`, action: { label: 'Undo', onClick: () => downloadsStore.restore(before) } })
   }
 
   const settings = (
@@ -129,7 +130,7 @@ export function Downloads() {
                   Browse library
                 </Button>
                 <Button variant="secondary" icon="download" onClick={downloadAll}>
-                  Everything · {fmtBytes(libraryBytes(data, dl.prefs.quality))}
+                  Everything · {fmtBytes(libraryBytes(data, dl.prefs))}
                 </Button>
               </>
             }
@@ -149,14 +150,14 @@ export function Downloads() {
             <section className="dl-sect">
               <div className="dl-sect-head">ON THIS DEVICE</div>
               {done.map(({ ap, off }) => (
-                <DoneRow key={ap.albumId} c={data} ap={ap} count={off.count} bytes={off.bytesDone} quality={dl.prefs.quality} />
+                <DoneRow key={ap.albumId} c={data} ap={ap} count={off.count} bytes={off.bytesDone} quality={qualityOf(dl.prefs, ap.albumId)} />
               ))}
             </section>
           )}
           <div className="dl-foot">
             {!hasAll && (
               <Button variant="secondary" icon="download" onClick={downloadAll}>
-                Download everything · {fmtBytes(libraryBytes(data, dl.prefs.quality))}
+                Download everything · {fmtBytes(libraryBytes(data, dl.prefs))}
               </Button>
             )}
             <Button variant="danger" icon="x" onClick={removeAll}>

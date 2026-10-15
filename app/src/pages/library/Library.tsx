@@ -1,12 +1,18 @@
 /**
  * Library (handoff 06 Desktop Library): header with counts, Artists / Albums / Playlists / Songs chips,
  * sort row, then the tab's view. The tab lives in the URL (#/library/albums) and is remembered.
+ *
+ * Android app: an "OFFLINE ONLY" switch on the Albums / Artists / Songs sort row narrows each view to what
+ * plays from the phone (any track stored, either quality; remembered per device). Without a connection
+ * the header counts playable albums and the handoff 11 offline banner shows (albums with nothing stored
+ * are greyed by LibAlbumCard).
  */
 import { isTouch } from '../../state/viewport'
 import { useEffect, useMemo, useRef } from 'react'
-import { Button, Chip, EmptyState, Eq } from '../../components/ui'
+import { Button, Chip, EmptyState, Eq, OfflineBanner, Toggle } from '../../components/ui'
+import { offlineIndex, useDownloads, useOnline, type OfflineIndex } from '../../state/downloads'
 import { Icon } from '../../design/icons'
-import { libraryStats, useLibrary, type Catalogue, type Track } from '../../state/library'
+import { libraryStats, tracksByAlbum, useLibrary, type Catalogue, type Track } from '../../state/library'
 import { libraryPrefs, useLibraryPrefs, type ArtistSort } from '../../state/libraryPrefs'
 import { LIBRARY_TABS, albumHref, artistHref, go, libraryHref, type LibraryTab } from '../../shell/routes'
 import {
@@ -45,13 +51,24 @@ export function Library({ tab: routeTab }: { tab: LibraryTab | null }) {
     if (routeTab && routeTab !== libraryPrefs.get().tab) libraryPrefs.set({ tab: routeTab })
   }, [routeTab])
 
+  const dl = useDownloads()
+  const online = useOnline()
+
   if (!data) return null
   const stats = libraryStats(data)
+  // what plays from the phone (Android app); null in the browser
+  const offline = dl.available ? offlineIndex(dl, data) : null
+  const filter = offline && prefs.offlineOnly ? offline : null
+  const cut = !!offline && !online
 
   return (
     <>
       <PageHeader
-        meta={`${plural(stats.albums, 'ALBUM')} · ${plural(stats.artists, 'ARTIST')} · ${plural(stats.tracks, 'SONG')}`}
+        meta={
+          cut
+            ? `${offline.albums.size} OF ${plural(stats.albums, 'ALBUM')} PLAYABLE`
+            : `${plural(stats.albums, 'ALBUM')} · ${plural(stats.artists, 'ARTIST')} · ${plural(stats.tracks, 'SONG')}`
+        }
         title="Library"
         tools={
           <div className="lib-tabs" role="tablist" aria-label="Library view">
@@ -63,47 +80,89 @@ export function Library({ tab: routeTab }: { tab: LibraryTab | null }) {
           </div>
         }
       />
+      {cut && (
+        <div className="lib-offline">
+          <OfflineBanner />
+        </div>
+      )}
       {stats.tracks === 0 ? (
         <div className="placeholder">
           <EmptyState icon="library" title="Your library is empty." body="Run the importer on your PC (npm run import) to fill it." />
         </div>
       ) : tab === 'albums' ? (
-        <AlbumsView c={data} />
+        <AlbumsView c={data} offline={offline} filter={filter} />
       ) : tab === 'artists' ? (
-        <ArtistsView c={data} />
+        <ArtistsView c={data} offline={offline} filter={filter} />
       ) : tab === 'playlists' ? (
         <PlaylistsView c={data} />
       ) : (
-        <SongsView c={data} />
+        <SongsView c={data} offline={offline} filter={filter} />
       )}
     </>
   )
 }
 
+/* ── Offline only (Android app) ─────────────────────── */
+
+/** offline: what plays from the phone (null in the browser: no switch). filter: same, when the switch is on. */
+type OfflineProps = { offline: OfflineIndex | null; filter: OfflineIndex | null }
+
+function OfflineSwitch({ offline, filter }: OfflineProps) {
+  if (!offline) return null
+  return (
+    <label className={`lib-offl ${filter ? 'is-on' : ''}`}>
+      <span className="lib-offl-label">OFFLINE ONLY</span>
+      <Toggle checked={!!filter} onChange={(v) => libraryPrefs.set({ offlineOnly: v })} label="Show only music stored on this phone" />
+    </label>
+  )
+}
+
+function NothingOffline() {
+  return (
+    <div className="placeholder">
+      <EmptyState
+        icon="download"
+        title="No music stored offline"
+        body="Download an album, playlist or artist to play it without a connection."
+        actions={
+          <Button variant="secondary" onClick={() => libraryPrefs.set({ offlineOnly: false })}>
+            Show everything
+          </Button>
+        }
+      />
+    </div>
+  )
+}
+
 /* ── Albums ───────────────────────────────────────── */
 
-function AlbumsView({ c }: { c: Catalogue }) {
+function AlbumsView({ c, offline, filter }: { c: Catalogue } & OfflineProps) {
   const { albumSort } = useLibraryPrefs()
-  const albums = useMemo(() => sortAlbums(allAlbums(c), albumSort), [c, albumSort])
+  const sorted = useMemo(() => sortAlbums(allAlbums(c), albumSort), [c, albumSort])
+  const albums = useMemo(() => (filter ? sorted.filter((a) => filter.albums.has(a.id)) : sorted), [sorted, filter])
   const playingAlbum = usePlayingAlbumId(c)
   return (
     <>
       <div className="lib-bar">
         <SortMenu value={albumSort} options={ALBUM_SORTS} onChange={(v) => libraryPrefs.set({ albumSort: v })} />
         <span className="lib-bar-line" />
+        <OfflineSwitch offline={offline} filter={filter} />
         <span className="lib-bar-meta">{plural(albums.length, 'ALBUM')}</span>
       </div>
-      <div className="lib-grid">
-        {albums.map((a) => (
-          <LibAlbumCard
-            key={a.id}
-            c={c}
-            album={a}
-            subtitle={albumSort === 'year' && a.year ? `${a.artist} · ${a.year}` : a.artist}
-            playingAlbumId={playingAlbum}
-          />
-        ))}
-      </div>
+      {filter && albums.length === 0 ? (
+        <NothingOffline />
+      ) : (
+        <div className="lib-grid">
+          {albums.map((a) => {
+            const base = albumSort === 'year' && a.year ? `${a.artist} · ${a.year}` : a.artist
+            // offline only: an album that's only partly on the phone (playlist tracks) says how much
+            const have = filter?.albums.get(a.id) ?? 0
+            const total = tracksByAlbum(c).get(a.id)?.length ?? a.trackCount ?? have
+            const partial = filter && have < total ? `${base} · ${have}/${total} OFFLINE` : base
+            return <LibAlbumCard key={a.id} c={c} album={a} subtitle={partial} playingAlbumId={playingAlbum} />
+          })}
+        </div>
+      )}
     </>
   )
 }
@@ -124,9 +183,12 @@ function sortArtists(list: ArtistInfo[], sort: ArtistSort): ArtistInfo[] {
   return out.sort((a, b) => latest(b).localeCompare(latest(a)) || byName(a.artist.name, b.artist.name))
 }
 
-function ArtistsView({ c }: { c: Catalogue }) {
+function ArtistsView({ c, offline, filter }: { c: Catalogue } & OfflineProps) {
   const { artistSort } = useLibraryPrefs()
-  const artists = useMemo(() => sortArtists(artistsByName(c), artistSort), [c, artistSort])
+  const artists = useMemo(() => {
+    const list = sortArtists(artistsByName(c), artistSort)
+    return filter ? list.filter((a) => filter.artists.has(a.artist.id)) : list
+  }, [c, artistSort, filter])
   const groups = useMemo(() => {
     if (artistSort !== 'name') return [{ letter: null as string | null, items: artists }]
     const out: { letter: string | null; items: ArtistInfo[] }[] = []
@@ -159,8 +221,10 @@ function ArtistsView({ c }: { c: Catalogue }) {
             ))}
           </nav>
         )}
+        <OfflineSwitch offline={offline} filter={filter} />
         <span className="lib-bar-meta">{plural(artists.length, 'ARTIST')}</span>
       </div>
+      {filter && artists.length === 0 && <NothingOffline />}
       <div className="art-groups">
         {groups.map((g) => (
           <section key={g.letter ?? 'all'} className="art-group" id={g.letter ? `az-${g.letter}` : undefined}>
@@ -171,7 +235,7 @@ function ArtistsView({ c }: { c: Catalogue }) {
                   <ArtistAvatar artist={i.artist} size="100%" className="art-tile-img" />
                   <span className="art-tile-name">{i.artist.name}</span>
                   <span className="art-tile-meta">
-                    {plural(i.albums.length, 'RELEASE')} · {plural(i.tracks, 'TRACK')}
+                    {filter ? `${filter.artists.get(i.artist.id) ?? 0} OF ${plural(i.albums.length, 'RELEASE')} OFFLINE` : `${plural(i.albums.length, 'RELEASE')} · ${plural(i.tracks, 'TRACK')}`}
                   </span>
                 </a>
               ))}
@@ -194,20 +258,23 @@ const SONG_SORTS: { value: SongSort; label: string }[] = [
 ]
 
 
-function SongsView({ c }: { c: Catalogue }) {
+function SongsView({ c, offline, filter }: { c: Catalogue } & OfflineProps) {
   const { songSort, songDesc } = useLibraryPrefs()
-  const tracks = useMemo(() => sortTracks(c, allTracks(c), songSort, songDesc), [c, songSort, songDesc])
+  const tracks = useMemo(() => {
+    const list = sortTracks(c, allTracks(c), songSort, songDesc)
+    return filter ? list.filter((t) => filter.tracks.has(t.id)) : list
+  }, [c, songSort, songDesc, filter])
   const listRef = useRef<HTMLDivElement>(null)
   const {
     range: [from, to],
     stuck,
   } = useWindow(listRef, tracks.length)
   const now = useNowPlaying()
-  const ctx = useContextState('library', 'songs')
+  const ctx = useContextState('library', filter ? 'songs-offline' : 'songs')
   const seconds = useMemo(() => tracks.reduce((s, t) => s + (t.duration ?? 0), 0), [tracks])
 
   const sortBy = (s: SongSort) => libraryPrefs.set(s === songSort ? { songDesc: !songDesc } : { songSort: s, songDesc: false })
-  const context = { kind: 'library' as const, id: 'songs', label: 'Library · Songs' }
+  const context = filter ? { kind: 'library' as const, id: 'songs-offline', label: 'Library · Songs offline' } : { kind: 'library' as const, id: 'songs', label: 'Library · Songs' }
   const ids = () => tracks.map((t) => t.id)
   const play = (i: number) => playList(ids(), context, { start: i })
   // Play: from the top of the list in its current sort (Pause / Resume while it's the playing context)
@@ -233,10 +300,12 @@ function SongsView({ c }: { c: Catalogue }) {
       <div className="lib-bar">
         <SortMenu value={songSort} options={SONG_SORTS} onChange={(v) => libraryPrefs.set({ songSort: v, songDesc: false })} />
         <span className="lib-bar-line" />
+        <OfflineSwitch offline={offline} filter={filter} />
         <span className="lib-bar-meta">
           {plural(tracks.length, 'SONG')} · {fmtTotal(seconds)}
         </span>
       </div>
+      {filter && tracks.length === 0 && <NothingOffline />}
       <div className="songs" role="table" aria-rowcount={tracks.length}>
         <div className={`songs-head ${stuck ? 'is-stuck' : ''}`} role="row">
           <span className="songs-h songs-h-n">#</span>
