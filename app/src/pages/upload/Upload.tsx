@@ -170,7 +170,7 @@ function DropZone({ reading, compact }: { reading: number; compact: boolean }) {
       </div>
       <div className="up-drop-text">
         <div className="up-drop-title">{over ? 'Let go to add them' : 'Drop files or a whole album folder'}</div>
-        <div className="up-drop-sub">{reading > 0 ? <span className="up-mono">READING {plural(reading, 'FILE')}…</span> : compact ? 'Tags and covers come from the files.' : 'Tags and cover art are read from the files.'}</div>
+        <div className="up-drop-sub">{reading > 0 ? <span className="up-mono">READING {plural(reading, 'FILE')}…</span> : compact ? 'Tags and covers come from the files.' : 'Tags and cover art are read from the files. An artist.jpg in the artist folder becomes the artist photo.'}</div>
       </div>
       <div className="up-drop-btns">
         <Button variant="secondary" size="sm" onClick={() => folderInput.current?.click()}>
@@ -388,6 +388,26 @@ function Panel({ a, s }: { a: UploadAlbum; s: UploadState }) {
 
   // TRACKTOTAL counts one disc, so "n of N" only for single-disc albums
   const tracks = a.trackTotal && found <= a.trackTotal && !(a.discTotal && a.discTotal > 1) ? `${found} of ${a.trackTotal} found` : `${found} found`
+  // artist photo: from the dropped folder, already in the library, or looked up on Deezer when added
+  const ex = lib?.artists[a.artistId]
+  const src = ex?.image?.source
+  const writing = a.state === 'review' || a.state === 'error'
+  const photo =
+    writing && a.artistPhoto
+      ? 'FROM YOUR FOLDER'
+      : ex?.image && !(writing && src === 'mosaic')
+        ? src === 'local'
+          ? 'FROM YOUR FOLDER'
+          : src === 'deezer'
+            ? 'FROM DEEZER'
+            : src === 'mosaic'
+              ? 'ALBUM MOSAIC'
+              : 'IN LIBRARY'
+        : a.state === 'done'
+          ? 'NONE FOUND'
+          : a.state === 'running'
+            ? 'ADDING…'
+            : 'DEEZER, WHEN ADDED'
   const rows: [string, string][] = [
     ['ALBUM ARTIST', a.artist],
     ['ALBUM', a.title],
@@ -395,6 +415,8 @@ function Panel({ a, s }: { a: UploadAlbum; s: UploadState }) {
     ['GENRE', a.genre ?? '—'],
     ['TRACKS', dups ? `${tracks} · ${dups} already in library` : tracks],
     ['SIZE', `${fmtBytes(bytes || items.reduce((n, i) => n + i.size, 0))} FLAC`],
+    ['ARTIST PHOTO', photo],
+    ...(a.artistBg ? ([['ARTIST BANNER', 'FROM YOUR FOLDER']] as [string, string][]) : []),
   ]
 
   const add = () => {

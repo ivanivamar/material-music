@@ -6,7 +6,8 @@
  * Review: the matched-album panel shows what was found; album-level tags can be edited.
  * Add to library: per track, an Opus 160 copy is encoded in the browser (WebCodecs), then the FLAC
  * and the Opus go to Pelagic/library/… and Pelagic/mobile/… (same names as the importer). The cover
- * goes to covers/<albumId>.jpg if the album has none yet. When an album's tracks are through,
+ * goes to covers/<albumId>.jpg if the album has none yet. The artist's photo/banner come from
+ * artist.jpg / artist_background.jpg in the dropped artist folder, else Deezer (upload/artistImages.ts). When an album's tracks are through,
  * library.json is read fresh, merged and written back, and the app adopts the new catalogue.
  *
  * State lives in this module, so uploads keep going while browsing other pages (toast + sidebar
@@ -17,6 +18,7 @@ import { AuthError } from '../lib/drive'
 import { idbSet } from '../lib/idb'
 import { readFlac, toMeta, idsFor, safeName, type FlacInfo, type TrackMeta } from '../upload/flac'
 import { canEncodeOpus, flacToOpus } from '../upload/opus'
+import { prepareArtist, type ArtistPatch, type ArtistSources } from '../upload/artistImages'
 import { putFile, resetFolders, updateCatalogue, type Uploaded } from '../upload/driveWrite'
 import { libraryStore, type Album, type Catalogue, type Track } from './library'
 import { onAccountReset } from './session'
@@ -64,6 +66,9 @@ export interface UploadAlbum {
   discTotal?: number
   cover: Blob | null
   coverUrl: string | null
+  /** artist.jpg / artist_background.jpg found in the artist's folder of the drop */
+  artistPhoto?: File | null
+  artistBg?: File | null
   /** catalogue already has this album (adding tracks to it) */
   inLibrary: boolean
   edits: AlbumEdits
@@ -148,13 +153,35 @@ export interface DroppedFile {
 }
 
 const COVER_NAME = /^(cover|folder|front|album)\.(jpe?g|png|webp)$/i
+const ARTIST_PHOTO = /^artist\.(jpe?g|png|webp)$/i
+const ARTIST_BG = /^artist_background\.(jpe?g|png|webp)$/i
 const dirOf = (rel: string) => rel.split('/').slice(0, -1).join('/')
+
+/** artist.jpg / artist_background.jpg of a track's artist folder (…/Artist/Album/file → …/Artist, or the file's own folder). */
+function artistFor(map: Map<string, ArtistSources>, rel: string): ArtistSources | null {
+  const parts = rel.split('/').filter(Boolean)
+  for (const dir of [parts.slice(0, -2).join('/'), parts.slice(0, -1).join('/')]) {
+    const hit = dir ? map.get(dir) : undefined
+    if (hit) return hit
+  }
+  return null
+}
 
 /** Files picked or dropped (folders already walked). */
 export async function addFiles(dropped: DroppedFile[]) {
   const flacs = dropped.filter((d) => /\.flac$/i.test(d.file.name))
   const images = new Map<string, File>() // folder → cover image
   for (const d of dropped) if (COVER_NAME.test(d.file.name) && !images.has(dirOf(d.rel))) images.set(dirOf(d.rel), d.file)
+  const artistImgs = new Map<string, ArtistSources>() // folder → artist photo / banner
+  for (const d of dropped) {
+    const dir = dirOf(d.rel)
+    const photo = ARTIST_PHOTO.test(d.file.name)
+    if (!dir || (!photo && !ARTIST_BG.test(d.file.name))) continue
+    const e = artistImgs.get(dir) ?? {}
+    if (photo) e.photo ??= d.file
+    else e.bg ??= d.file
+    artistImgs.set(dir, e)
+  }
   const others = dropped.filter((d) => !/\.flac$/i.test(d.file.name) && !/\.(jpe?g|png|webp|gif|bmp|txt|log|cue|m3u8?|nfo|lrc|ini|db|ds_store)$/i.test(d.file.name)).length
 
   // skip files already in the list (same path + size), e.g. a folder dropped twice
@@ -187,7 +214,7 @@ export async function addFiles(dropped: DroppedFile[]) {
         try {
           const info = await readFlac(it.file)
           const meta = toMeta(info, it.rel)
-          await place(it.id, info, meta, images.get(dirOf(it.rel)) ?? null)
+          await place(it.id, info, meta, images.get(dirOf(it.rel)) ?? null, artistFor(artistImgs, it.rel))
         } catch (e) {
           patchItem(it.id, { state: 'invalid', error: (e as Error).message || 'Couldn’t read this file' })
           // keep unreadable files visible under an "Unreadable" group
@@ -201,7 +228,7 @@ export async function addFiles(dropped: DroppedFile[]) {
 }
 
 /** Put a read item into its album group (new group per album id, unless one is still in review). */
-async function place(id: number, info: FlacInfo, meta: TrackMeta, folderCover: File | null) {
+async function place(id: number, info: FlacInfo, meta: TrackMeta, folderCover: File | null, artistImgs: ArtistSources | null) {
   const { albumId, artistId } = await idsFor(meta)
   let album = state.albums.find((a) => a.albumId === albumId && a.state === 'review' && !a.key.startsWith('!'))
   if (!album) {
@@ -239,6 +266,8 @@ async function place(id: number, info: FlacInfo, meta: TrackMeta, folderCover: F
     p.cover = img
     p.coverUrl = URL.createObjectURL(img)
   }
+  if (artistImgs?.photo && !a.artistPhoto) p.artistPhoto = artistImgs.photo
+  if (artistImgs?.bg && !a.artistBg) p.artistBg = artistImgs.bg
   if (Object.keys(p).length) patchAlbum(a.key, p)
   await refreshIds(a.key)
 }
@@ -537,9 +566,16 @@ function finishAlbum(key: string): Promise<void> {
       } catch {
         coverId = null
       }
+      // artist photo / banner: from the dropped artist folder, else Deezer for an artist without a photo
+      let artistPatch: ArtistPatch | null = null
+      try {
+        artistPatch = await artistImages(a, effective(a, ready[0].meta!))
+      } catch {
+        artistPatch = null
+      }
       try {
         const lib = libraryStore.get()
-        const w = await updateCatalogue((c) => merge(c, a, ready, coverId), { data: lib.data, version: lib.fileVersion })
+        const w = await updateCatalogue((c) => merge(c, a, ready, coverId, artistPatch), { data: lib.data, version: lib.fileVersion })
         libraryStore.adopt(w.data, w.fileId, w.version)
         for (const it of ready) patchItem(it.id, { state: 'done' })
       } catch (e) {
@@ -556,11 +592,20 @@ function finishAlbum(key: string): Promise<void> {
   return commits
 }
 
+/** Photo / banner for the album's artist, based on what the catalogue has right now. */
+function artistImages(a: UploadAlbum, m: TrackMeta): Promise<ArtistPatch | null> {
+  const data = libraryStore.get().data
+  const titles = new Set(Object.values(data?.albums ?? {}).filter((x) => x.artistId === a.artistId).map((x) => x.title))
+  titles.add(m.album)
+  return prepareArtist(data?.artists[a.artistId], a.artistId, m.albumArtist, [...titles], { photo: a.artistPhoto, bg: a.artistBg })
+}
+
 /** Same entries as tools/import/src/import.js. */
-function merge(c: Catalogue, a: UploadAlbum, ready: UploadItem[], coverId: string | null) {
+function merge(c: Catalogue, a: UploadAlbum, ready: UploadItem[], coverId: string | null, artistPatch: ArtistPatch | null = null) {
   const now = new Date().toISOString()
   const first = effective(a, ready[0].meta!)
-  c.artists[a.artistId] ??= { id: a.artistId, name: first.albumArtist, addedAt: now }
+  const artist = (c.artists[a.artistId] ??= { id: a.artistId, name: first.albumArtist, addedAt: now })
+  if (artistPatch) Object.assign(artist, artistPatch)
   const album: Album = (c.albums[a.albumId] ??= { id: a.albumId, title: first.album, artistId: a.artistId, artist: first.albumArtist, addedAt: now, cover: null })
   Object.assign(album, {
     year: first.year ?? album.year,

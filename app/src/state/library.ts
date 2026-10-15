@@ -16,6 +16,10 @@ export interface ArtistImage {
   id: string
   v?: number
   source?: 'local' | 'deezer' | 'mosaic'
+  /** local: mtime of the source file (the importer and the Upload page both set it) */
+  mtime?: number
+  /** mosaic: how many albums it was made from */
+  albums?: number
 }
 export interface Artist {
   id: string
@@ -23,7 +27,7 @@ export interface Artist {
   addedAt: string
   dir?: string
   image?: ArtistImage
-  background?: { id: string; v?: number }
+  background?: { id: string; v?: number; mtime?: number }
   mbid?: string
   deezerId?: number
 }
