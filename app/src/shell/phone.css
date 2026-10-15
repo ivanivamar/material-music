@@ -224,10 +224,11 @@ html[data-phone][data-qp] .toasts.toasts-shell { right: 0; }
 /* Android app (edge-to-edge): keep the player's content below the status bar */
 .shell.is-phone .np { top: env(safe-area-inset-top, 0px); }
 /* swipe down to close (nowplaying/swipe.ts) */
-.shell.is-phone .np.is-touchmoved:not(.is-closing) { animation: none; }
-.shell.is-phone .np.is-swiping { transition: none; }
-.shell.is-phone .np.is-springing { transition: transform .3s var(--ease); }
-.shell.is-phone .np.is-swiped { animation: none !important; transition: transform .26s cubic-bezier(.4, 0, 1, 1); pointer-events: none; }
+/* swipe state is a data attribute (swipe.ts) — React rewrites className when closing */
+.shell.is-phone .np[data-swipe]:not(.is-closing) { animation: none; }
+.shell.is-phone .np[data-swipe="dragging"] { transition: none; }
+.shell.is-phone .np[data-swipe="springing"] { transition: transform .3s var(--ease); }
+.shell.is-phone .np[data-swipe="swiped"] { animation: none !important; transition: transform .26s cubic-bezier(.4, 0, 1, 1); pointer-events: none; }
 .shell.is-phone .np-head { height: 60px; padding: 0 14px; }
 .shell.is-phone .np-close { width: 44px; height: 44px; padding: 0; margin: 0; justify-content: center; font-size: 0; letter-spacing: 0; }
 .shell.is-phone .np-close svg { font-size: 22px; }

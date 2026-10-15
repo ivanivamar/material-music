@@ -8,6 +8,10 @@
  *
  * The overlay follows the finger; on release it closes past CLOSE_PX or on a downward flick,
  * otherwise it springs back. A drag swallows the click that would follow it.
+ *
+ * The drag state lives in data-swipe on the element, not in classes: React owns className and
+ * rewrites it whole when the player switches to is-closing, which used to wipe the swiped state —
+ * the np-out exit animation then played from full height (the "flash" on swipe-close).
  */
 import { useEffect, type RefObject } from 'react'
 
@@ -21,8 +25,8 @@ export function useSwipeDown(ref: RefObject<HTMLElement | null>, enabled: boolea
     const el = ref.current
     if (!el || !enabled) return
     // reopened before the swiped-away sheet unmounted: bring it back on screen
-    if (el.classList.contains('is-swiped')) {
-      el.classList.remove('is-swiped')
+    if (el.dataset.swipe === 'swiped') {
+      delete el.dataset.swipe
       el.style.transform = ''
     }
 
@@ -71,8 +75,8 @@ export function useSwipeDown(ref: RefObject<HTMLElement | null>, enabled: boolea
           return
         }
         dragging = true
-        // is-touchmoved drops the (finished) entry animation, whose fill would override the inline transform
-        el.classList.add('is-touchmoved', 'is-swiping')
+        // any data-swipe drops the (finished) entry animation, whose fill would override the inline transform
+        el.dataset.swipe = 'dragging'
       }
       if (!dragging) return
       if (e.cancelable) e.preventDefault()
@@ -88,13 +92,12 @@ export function useSwipeDown(ref: RefObject<HTMLElement | null>, enabled: boolea
       if (!dragging) return reset()
       swallowClick = true
       window.setTimeout(() => (swallowClick = false), 350)
-      el.classList.remove('is-swiping')
       const close = dy > CLOSE_PX || (velocity > FLICK && dy > 24)
-      el.classList.add(close ? 'is-swiped' : 'is-springing')
+      el.dataset.swipe = close ? 'swiped' : 'springing'
       el.style.transform = close ? 'translate3d(0, 100%, 0)' : ''
       window.setTimeout(() => {
-        el.classList.remove('is-springing')
         if (close) onClose()
+        else if (el.dataset.swipe === 'springing') el.dataset.swipe = 'idle'
       }, close ? 260 : 320)
       reset()
     }
@@ -116,10 +119,12 @@ export function useSwipeDown(ref: RefObject<HTMLElement | null>, enabled: boolea
       el.removeEventListener('touchend', onEnd)
       el.removeEventListener('touchcancel', onEnd)
       el.removeEventListener('click', onClick, true)
-      el.classList.remove('is-swiping', 'is-springing')
       // swiped away: this cleanup runs because the player is now closing — leave the sheet off
       // screen until it unmounts, or it would snap back to full height for a moment
-      if (!el.classList.contains('is-swiped')) el.style.transform = ''
+      if (el.dataset.swipe !== 'swiped') {
+        if (el.dataset.swipe) el.dataset.swipe = 'idle'
+        el.style.transform = ''
+      }
     }
   }, [ref, enabled, onClose])
 }
