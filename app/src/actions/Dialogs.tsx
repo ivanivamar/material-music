@@ -25,11 +25,11 @@ function Shell({ label, children, onClose, wide }: { label: string; children: Re
   }, [])
   return (
     <>
-      <div className={`ad-scrim pg-anim ${on ? 'is-on' : ''}`} onClick={onClose} />
-      <div className={`ad pg-anim ${on ? 'is-on' : ''} ${wide ? 'is-wide' : ''}`} role="dialog" aria-modal="true" aria-label={label}>
-        <div className="ad-top">
-          <div className="ad-label">{label.toUpperCase()}</div>
-          <button type="button" className="ad-x" aria-label="Close" onClick={onClose}>
+      <div className={`dlg-scrim pg-anim ${on ? 'is-on' : ''}`} onClick={onClose} />
+      <div className={`dlg pg-anim ${on ? 'is-on' : ''} ${wide ? 'is-wide' : ''}`} role="dialog" aria-modal="true" aria-label={label}>
+        <div className="dlg-top">
+          <div className="dlg-label">{label.toUpperCase()}</div>
+          <button type="button" className="dlg-x" aria-label="Close" onClick={onClose}>
             <Icon name="x" />
           </button>
         </div>
@@ -69,26 +69,26 @@ export function NewPlaylistDialog({ trackIds, hint, open, name: initial }: { tra
   return (
     <Shell label="New playlist" onClose={() => actions.closeDialog()}>
       <form
-        className="ad-new"
+        className="dlg-new"
         onSubmit={(e) => {
           e.preventDefault()
           create()
         }}
       >
-        <div className="ad-new-row">
-          <div className={`plc ad-new-cover ${covers.length > 1 ? 'is-mosaic' : covers.length ? '' : 'is-empty'}`}>
+        <div className="dlg-new-row">
+          <div className={`plc dlg-new-cover ${covers.length > 1 ? 'is-mosaic' : covers.length ? '' : 'is-empty'}`}>
             {covers.length > 1 ? <MosaicTiles covers={covers} /> : covers.length ? <MiniTile id={covers[0]} /> : <Icon name="playlist" />}
           </div>
-          <div className="ad-new-field">
-            <input className="ad-input ad-input-lg" value={name} onChange={(e) => setName(e.target.value)} placeholder="Name it" autoFocus maxLength={120} enterKeyHint="done" />
-            <div className="ad-hint">{trackIds.length ? hint : 'EMPTY · ADD SONGS FROM ANY ALBUM'}</div>
+          <div className="dlg-new-field">
+            <input className="dlg-input dlg-input-lg" value={name} onChange={(e) => setName(e.target.value)} placeholder="Name it" autoFocus maxLength={120} enterKeyHint="done" />
+            <div className="dlg-hint">{trackIds.length ? hint : 'EMPTY · ADD SONGS FROM ANY ALBUM'}</div>
           </div>
         </div>
-        <div className="ad-buttons">
-          <button type="button" className="ad-cancel" onClick={() => actions.closeDialog()}>
+        <div className="dlg-buttons">
+          <button type="button" className="dlg-cancel" onClick={() => actions.closeDialog()}>
             Cancel
           </button>
-          <button type="submit" className="ad-ok" disabled={!name.trim()}>
+          <button type="submit" className="dlg-ok" disabled={!name.trim()}>
             Create
           </button>
         </div>
@@ -157,47 +157,47 @@ export function EditPlaylistDialog({ playlistId }: { playlistId: string }) {
   return (
     <Shell label="Edit playlist" onClose={() => actions.closeDialog()} wide>
       <form
-        className="ad-edit"
+        className="dlg-edit"
         onSubmit={(e) => {
           e.preventDefault()
           save()
         }}
       >
-        <div className="ad-edit-cover">
+        <div className="dlg-edit-cover">
           {showCustom ? (
-            <div className="plc ad-edit-img">
+            <div className="plc dlg-edit-img">
               <img className="plc-full" src={showCustom} alt="" />
             </div>
           ) : (
-            <PlaylistCover playlist={showCustom === null ? { ...p, cover: null } : p} className="ad-edit-img" />
+            <PlaylistCover playlist={showCustom === null ? { ...p, cover: null } : p} className="dlg-edit-img" />
           )}
-          <div className="ad-edit-cover-btns">
-            <button type="button" className="ad-link" disabled={!online} title={online ? undefined : 'Needs a connection to Drive'} onClick={() => file.current?.click()}>
+          <div className="dlg-edit-cover-btns">
+            <button type="button" className="dlg-link" disabled={!online} title={online ? undefined : 'Needs a connection to Drive'} onClick={() => file.current?.click()}>
               {p.cover || cover instanceof Blob ? 'Change image' : 'Choose image'}
             </button>
             {(cover instanceof Blob || (p.cover && cover !== 'mosaic')) && (
-              <button type="button" className="ad-link" onClick={() => setCover(cover instanceof Blob && !p.cover ? null : 'mosaic')}>
+              <button type="button" className="dlg-link" onClick={() => setCover(cover instanceof Blob && !p.cover ? null : 'mosaic')}>
                 Use mosaic
               </button>
             )}
           </div>
           <input ref={file} type="file" accept="image/*" hidden onChange={(e) => void pick(e.target.files?.[0])} />
         </div>
-        <div className="ad-edit-fields">
-          <label className="ad-field">
-            <span className="ad-hint">NAME</span>
-            <input className="ad-input" value={name} onChange={(e) => setName(e.target.value)} maxLength={120} autoFocus />
+        <div className="dlg-edit-fields">
+          <label className="dlg-field">
+            <span className="dlg-hint">NAME</span>
+            <input className="dlg-input" value={name} onChange={(e) => setName(e.target.value)} maxLength={120} autoFocus />
           </label>
-          <label className="ad-field">
-            <span className="ad-hint">DESCRIPTION</span>
-            <textarea className="ad-input ad-textarea" value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="Add a description" rows={3} maxLength={300} />
+          <label className="dlg-field">
+            <span className="dlg-hint">DESCRIPTION</span>
+            <textarea className="dlg-input dlg-textarea" value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="Add a description" rows={3} maxLength={300} />
           </label>
         </div>
-        <div className="ad-buttons">
-          <button type="button" className="ad-cancel" onClick={() => actions.closeDialog()}>
+        <div className="dlg-buttons">
+          <button type="button" className="dlg-cancel" onClick={() => actions.closeDialog()}>
             Cancel
           </button>
-          <button type="submit" className="ad-ok" disabled={!name.trim()}>
+          <button type="submit" className="dlg-ok" disabled={!name.trim()}>
             Save
           </button>
         </div>

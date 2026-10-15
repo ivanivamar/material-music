@@ -27,10 +27,15 @@ A personal music player for my own FLAC library. The same library plays on PC an
 - [x] PC: installable app (PWA) that opens offline, update prompt
 - [x] Android app: native Google sign-in, background playback, in-app update check
 - [x] Android offline downloads (Opus, or FLAC per album)
-- [ ] Home: recently listened, most played, rediscover
+- [x] PC stays signed in (sign-in helper on Cloudflare renews the Google session silently)
 - [x] Playlists
-- [ ] Upload new music from the app
-- [ ] New releases from my artists (MusicBrainz)
+- [x] Home: recently listened, most played, rediscover
+- [x] Upload new music from the app
+- [x] New releases from my artists (MusicBrainz)
+
+## Status
+
+Everything above is built and tested on the real setup (real Drive library, PC app, Android app, Cloudflare hosting, MusicBrainz). The PC sign-in helper keeps the session alive with silent renewal. The code for Home, Playlists, Upload, New releases and the sign-in helper isn't committed to git yet.
 
 ## Repo layout
 
@@ -55,7 +60,7 @@ Pelagic/
 
 ## Distribution
 
-- **Web / PC:** Cloudflare Pages is linked to this repo and builds `app/` on every push to `main` (root `app`, command `npm run build`, output `dist`; `app/functions/` deploys as Pages Functions). Set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` (the Pelagic Web client's id and secret, the secret encrypted) under Settings → Variables and secrets, then redeploy — that turns on stay-signed-in. Install it from Chrome or Edge with the install icon or the account menu. The installed app shows "A new version of Pelagic is ready · Reload" after each deploy.
+- **Web / PC:** Cloudflare Pages is linked to this repo and builds `app/` on every push to `main` (root `app`, command `npm run build`, output `dist`; `app/functions/` deploys as Pages Functions). Set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` (the Pelagic Web client's id and secret, the secret encrypted) under Settings → Variables and secrets, then redeploy — that turns on stay-signed-in. Paste both values with no leading or trailing spaces: a stray space in the client id makes the sign-in popup finish but leaves the app signed out. To check, open `<site>/api/auth/status`; it should answer `{"configured":true,...}`. Because the app is unverified, Google shows a "Google hasn't verified this app" warning at sign-in; choose Continue and tick the Drive box. Install it from Chrome or Edge with the install icon or the account menu. The installed app shows "A new version of Pelagic is ready · Reload" after each deploy.
 - **Android:** every push to `main` that touches `app/` runs the **Android APK** workflow. It builds the web app, syncs it into the Capacitor project, builds a signed APK and publishes it as a GitHub Release (`android-<run number>`, asset `pelagic.apk`). The first time, install it from the Releases page. After that, the app checks Releases on launch and offers "Install" for newer builds.
   - Repository secrets: `PELAGIC_KEYSTORE_BASE64` (the release keystore, base64) and `PELAGIC_KEYSTORE_PASSWORD`.
   - Every build is signed with the same release key so updates install over the old app. Keep the key in `secrets/` and backed up; losing it means uninstalling the app to update.
