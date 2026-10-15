@@ -7,16 +7,14 @@
  * Shelves that need history stay hidden until the first play is counted.
  */
 import { useEffect, useState, type ReactNode } from 'react'
-import { Icon } from '../design/icons'
 import { libraryStats, useLibrary, type Album, type Catalogue } from '../state/library'
 import { historyStore, useHistory } from '../state/history'
 import { homeShelves, monthYear } from '../state/homeViews'
 import { useSession } from '../state/session'
 import { fmtN, plural } from '../state/views'
-import { href, libraryHref } from '../shell/routes'
+import { libraryHref } from '../shell/routes'
 import { LibAlbumCard } from './library/common'
 import { usePlayingAlbumId } from './library/playback'
-import { AccountMenu } from './AccountMenu'
 import { PageHeader } from './PageHeader'
 
 function useMinuteClock() {
@@ -80,17 +78,6 @@ export function Home() {
       <PageHeader
         meta={meta}
         title={first ? `${greeting(now.getHours())}, ${first}` : greeting(now.getHours())}
-        tools={
-          <>
-            <a className="search-pill" href={href('search')}>
-              <span className="sp-ic">
-                <Icon name="search" />
-              </span>
-              Search your library
-            </a>
-            <AccountMenu />
-          </>
-        }
       />
       <div className="shelves">
         {shelves.listened.length > 0 && (

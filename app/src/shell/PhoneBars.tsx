@@ -1,5 +1,5 @@
 /**
- * Phone shell (handoff 05 Android): bottom tab bar (88px, HOME · LIBRARY · SEARCH · NEW) and the
+ * Phone shell (handoff 05 Android): bottom tab bar (88px, HOME · LIBRARY · SEARCH · NEW · YOU) and the
  * floating mini-player (62px, 8px from the edges, just above the tabs).
  *
  * Mini-player: cover · title / artist · lyrics · play, with a 1px glowing progress line along
@@ -10,6 +10,7 @@ import { useCover } from '../lib/covers'
 import { useLibrary } from '../state/library'
 import { nowPlayingStore } from '../state/nowPlaying'
 import { playerStore, usePlayer } from '../state/player'
+import { AccountTab } from '../pages/AccountMenu'
 import { href, type RouteKey } from './routes'
 
 const TABS: { key: RouteKey; label: string; icon: 'home' | 'library' | 'search' | 'newr' }[] = [
@@ -31,6 +32,7 @@ export function TabBar({ active, dots }: { active: RouteKey; dots?: Partial<Reco
           <span className="tab-label">{t.label}</span>
         </a>
       ))}
+      <AccountTab />
     </nav>
   )
 }

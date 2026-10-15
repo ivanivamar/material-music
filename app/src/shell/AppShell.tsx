@@ -4,6 +4,8 @@
  */
 import { useEffect, useLayoutEffect, useRef, type ReactNode } from 'react'
 import { Atmosphere } from '../components/Atmosphere'
+import { Icon } from '../design/icons'
+import { AccountMenu } from '../pages/AccountMenu'
 import { useToast } from '../components/ui'
 import { libraryStore, onLibraryUpdated, useLibrary } from '../state/library'
 import { NowPlaying } from '../nowplaying/NowPlaying'
@@ -342,6 +344,27 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
           />
         )}
         <main className="shell-main" ref={mainRef} id="main" tabIndex={-1}>
+          {!phone && (
+            <div className="topbar">
+              {!(route.kind === 'app' && route.key === 'search') && (
+                <button
+                  type="button"
+                  className="search-pill"
+                  onClick={() => {
+                    go(href('search'))
+                    searchStore.requestFocus()
+                  }}
+                >
+                  <span className="sp-ic">
+                    <Icon name="search" />
+                  </span>
+                  <span className="sp-text">Search your library</span>
+                  <kbd className="sp-kbd">/</kbd>
+                </button>
+              )}
+              <AccountMenu />
+            </div>
+          )}
           <div className="shell-page">{children}</div>
         </main>
         {phone ? (

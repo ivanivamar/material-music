@@ -16,22 +16,48 @@
 .tabs {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
   height: calc(var(--android-tabs-h) + env(safe-area-inset-bottom));
-  display: grid; grid-template-columns: repeat(4, 1fr);
-  padding: 6px 8px calc(22px + env(safe-area-inset-bottom));
+  display: grid; grid-template-columns: repeat(5, 1fr);
+  padding: 6px 4px calc(22px + env(safe-area-inset-bottom));
   background: var(--bg-1); border-top: 1px solid rgba(255, 255, 255, .06);
 }
 .tab {
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
-  color: var(--ink-secondary); text-decoration: none; -webkit-tap-highlight-color: transparent;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;
+  min-width: 0; padding: 0; border: 0; background: none; font: inherit;
+  color: var(--ink-secondary); text-decoration: none; cursor: pointer; -webkit-tap-highlight-color: transparent;
 }
 .tab:hover { color: var(--ink-primary); }
 .tab.is-on { color: #fff; }
-.tab-ic { position: relative; display: inline-flex; font-size: var(--icon-tab); }
-.tab.is-on .tab-ic::before {
-  content: ''; position: absolute; left: 50%; top: -9px; width: 16px; height: 1px; margin-left: -8px;
-  background: #fff; box-shadow: 0 0 6px rgba(255, 255, 255, .8);
+/* icon sits in a pill; the active tab's pill lights up */
+.tab-ic {
+  position: relative; display: inline-flex; align-items: center; justify-content: center;
+  width: 54px; height: 30px; border-radius: 999px; font-size: var(--icon-tab);
+  transition: background .25s ease, box-shadow .25s ease, transform .25s ease;
 }
-.tab-label { font-family: var(--font-mono); font-size: var(--fs-mono-xs); letter-spacing: .14em; }
+.tab:active .tab-ic { transform: scale(.94); }
+.tab.is-on .tab-ic {
+  background: linear-gradient(180deg, rgba(255, 255, 255, .16), rgba(255, 255, 255, .07));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .16), 0 0 18px -2px rgba(255, 255, 255, .22);
+}
+.tab-label { font-family: var(--font-mono); font-size: var(--fs-mono-xs); letter-spacing: .14em; transition: color .25s ease; }
+.tab.is-on .tab-label { text-shadow: 0 0 8px rgba(255, 255, 255, .5); }
+/* avatar tab */
+.tab-av {
+  width: 24px; height: 24px; border-radius: 50%; overflow: hidden; display: flex; align-items: center; justify-content: center;
+  font-size: 12px; color: var(--ink-primary); background: var(--surface-2); box-shadow: 0 0 0 1.5px rgba(255, 255, 255, .22);
+}
+.tab-av img { width: 100%; height: 100%; object-fit: cover; filter: grayscale(1); }
+.tab.is-on .tab-av { box-shadow: 0 0 0 1.5px #fff; }
+
+/* account bottom sheet (shares the .as look with the action sheets) */
+.as-me-av {
+  width: 52px; height: 52px; flex: none; border-radius: 50%; overflow: hidden; display: flex; align-items: center; justify-content: center;
+  font-size: 20px; background: var(--surface-2); box-shadow: 0 0 0 1.5px rgba(255, 255, 255, .18);
+}
+.as-me-av img { width: 100%; height: 100%; object-fit: cover; filter: grayscale(1); }
+.as-me-meta { display: flex; flex-direction: column; gap: 5px; padding: 12px 20px 8px; flex: none; font-family: var(--font-mono); font-size: var(--fs-mono-xs); letter-spacing: .14em; color: var(--ink-tertiary); }
+.as-me-foot { padding: 10px 20px 0; flex: none; font-family: var(--font-mono); font-size: var(--fs-mono-xs); letter-spacing: .14em; color: var(--ink-ghost); }
+.as-item:disabled { color: var(--ink-ghost); }
+.as-item:disabled .as-ic { color: var(--ink-ghost); }
 
 .mini {
   position: fixed; left: 8px; right: 8px; z-index: 21;
@@ -421,7 +447,7 @@ html[data-phone] .toast-meta { display: none; }
 .shell.is-phone .nrp-art-c { font-size: var(--fs-mono-xs); }
 
 /* the New tab: a glowing dot while there are new releases */
-.tab-dot { position: absolute; right: -6px; top: -2px; width: 6px; height: 6px; border-radius: 50%; background: #fff; box-shadow: 0 0 6px 1px rgba(255, 255, 255, .7); }
+.tab-dot { position: absolute; right: 9px; top: 3px; width: 6px; height: 6px; border-radius: 50%; background: #fff; box-shadow: 0 0 6px 1px rgba(255, 255, 255, .7); }
 
 /* ── Playlists (step 9) ── */
 /* Library chips: four now (Artists · Albums · Playlists · Songs), scroll sideways if they don't fit */
