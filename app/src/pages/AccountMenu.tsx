@@ -6,6 +6,7 @@ import { localFolder, useLocalFolder } from '../lib/localFolder'
 import { APP_VERSION, appUpdate, usePwa } from '../lib/pwa'
 import { isNative } from '../native/bridge'
 import { nativeUpdates, useNativeUpdates } from '../native/updates'
+import { historyStore } from '../state/history'
 import { libraryStore, useLibrary } from '../state/library'
 import { sessionStore, useSession } from '../state/session'
 import { go, href } from '../shell/routes'
@@ -86,7 +87,10 @@ export function AccountMenu() {
           </div>
           {status === 'expired'
             ? item('refresh', 'Sign in again', () => void sessionStore.signIn())
-            : item('refresh', lib.refreshing ? 'Checking Drive…' : 'Check Drive for changes', () => void libraryStore.sync({ force: true }), { disabled: lib.refreshing })}
+            : item('refresh', lib.refreshing ? 'Checking Drive…' : 'Check Drive for changes', () => {
+                  void libraryStore.sync({ force: true })
+                  void historyStore.sync()
+                }, { disabled: lib.refreshing })}
           {isNative && item('download', 'Downloads', () => go(href('downloads')))}
           {localFolder.supported && item('library', linked ? 'Change local music folder…' : 'Play FLAC from a local folder…', () => void linkFolder(), { disabled: !lib.data })}
           {linked && item('x', 'Stop using the local folder', () => void localFolder.unlink())}

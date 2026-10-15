@@ -92,6 +92,7 @@ let state = load()
 let engine: PlayerEngine | null = null
 const listeners = new Set<() => void>()
 const noticeListeners = new Set<(n: PlayerNotice) => void>()
+const movedListeners = new Set<(from: number, to: number) => void>()
 let persistTimer = 0
 
 function persist() {
@@ -192,6 +193,8 @@ export const playerStore = {
    */
   engineMoved(index: number) {
     if (index === state.index || index < 0 || index >= state.queue.length) return
+    const from = state.index
+    movedListeners.forEach((l) => l(from, index))
     set({ index, position: 0 })
   },
   /** Engine calls this when a track finishes. */
@@ -343,6 +346,17 @@ export function onPlayerNotice(l: (n: PlayerNotice) => void) {
   noticeListeners.add(l)
   return () => {
     noticeListeners.delete(l)
+  }
+}
+
+/**
+ * The native engine moved from queue row `from` to `to` by itself (fires before the store changes).
+ * The play counter uses it to account for tracks that played while the app's JS was asleep.
+ */
+export function onEngineMoved(l: (from: number, to: number) => void) {
+  movedListeners.add(l)
+  return () => {
+    movedListeners.delete(l)
   }
 }
 

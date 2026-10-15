@@ -76,6 +76,15 @@ html[data-phone][data-qp] .toasts.toasts-shell { right: 0; }
 .shell.is-phone .shelf-label { font-size: var(--fs-mono-sm); }
 .shell.is-phone .shelf-sub { flex-basis: 100%; order: 3; font-size: var(--fs-mono-xs); }
 .shell.is-phone .shelf-row { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px 14px; }
+/* one row that scrolls sideways, bleeding off the right edge (handoff 05: 140px cards, 14px gap) */
+.shell.is-phone .shelf-one {
+  display: flex; gap: 14px; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity; scroll-padding: 0 20px; scrollbar-width: none;
+  margin: -6px -20px 0; padding: 6px 20px 0;
+}
+.shell.is-phone .shelf-one::-webkit-scrollbar { display: none; }
+.shell.is-phone .shelf-one > .acard { width: 140px; flex: none; scroll-snap-align: start; }
+.shell.is-phone .shelf-one .acard-sub { font-size: 12px; }
 
 /* ── Library ── */
 .shell.is-phone .lib-bar { gap: 12px; margin-bottom: 20px; }

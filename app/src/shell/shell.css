@@ -83,5 +83,7 @@
 .shelf-link:hover { color: var(--ink-primary); }
 .shelf-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 28px 24px; }
 .shelf-row .acard-img { border-radius: var(--r-cover); }
+/* one row: as many cards as fit, the rest clipped (top/side padding keeps the cover hover outline and playing glow visible) */
+.shelf-one { grid-template-rows: auto; grid-auto-rows: 0; row-gap: 0; overflow: hidden; padding: 6px 6px 0; margin: -6px -6px 0; }
 
 .placeholder { min-height: 52vh; display: flex; align-items: center; justify-content: center; }

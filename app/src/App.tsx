@@ -25,6 +25,8 @@ import { downloadsStore } from './state/downloads'
 import { libraryStore, useLibrary } from './state/library'
 import { useMotionAttribute } from './state/motion'
 import { playerStore } from './state/player'
+import { historyStore } from './state/history'
+import { initPlayTracker } from './player/playTracker'
 import { useSession } from './state/session'
 
 // Liked songs were dropped (Oct 2026): clear the old local store once.
@@ -45,6 +47,9 @@ initNativeUpdates()
 initBackButton()
 // Android: ExoPlayer in a background service (phase C) instead of HTML audio.
 playerStore.attach(isNative ? createNativeEngine() : createHtmlAudioEngine())
+// Home (step 8): play history — counted from the player, synced through Drive history.json.
+historyStore.init()
+initPlayTracker()
 // Android: offline downloads (phase D) — keeps the phone's stored files in line with the pins.
 downloadsStore.init()
 

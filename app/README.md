@@ -40,7 +40,7 @@ No Liked songs list and no heart buttons (dropped Oct 2026).
 | `src/state/player.ts` | Queue / transport / volume store the player bar binds to. Step 3d attaches the audio engine with `playerStore.attach()` |
 | `src/shell/` | `AppShell` (grid: sidebar · main · player bar), `Sidebar` (circle-clip active animation + rings), `PlayerBar`, hash `routes` |
 | `src/screens/` | Sign-in, Session expired, first sync ("Charting your library"), No library on Drive, library error |
-| `src/pages/` | Home (greeting + Recently added from the real catalogue), placeholders for later steps |
+| `src/pages/` | Home (see step 8), placeholders for later steps |
 
 Routes: `#/home` (default), `#/library[/artists|albums|songs]`, `#/album/<id>`, `#/artist/<id>`, `#/search`, `#/new`, `#/upload`, `#/downloads`.
 Sign-out (avatar menu on Home) revokes the token and clears the cached catalogue and covers.
@@ -86,6 +86,15 @@ Navigation: Home cards and the player bar's title / artist link to the album and
 | `src/pages/library/useWindow.ts` | Fixed-row windowing shared by Library Songs and Search songs |
 
 Keys: `/` or Ctrl/⌘+K from anywhere focuses Search · Enter opens the top result · Esc clears · ↓/↑ move through results · Enter on a song plays it.
+
+## Home + play history (step 8)
+
+| File | What |
+|---|---|
+| `src/pages/Home.tsx` | Greeting header + four album shelves: **Recently listened** (played in the last 30 days, newest first), **Recently added**, **Most played** (all time, with play counts), **Rediscover** (heard before but not for 30+ days — favourites first — then albums never played; the pick changes once a day). Desktop: one row per shelf (as many cards as fit). Phone: rows scroll sideways. Shelves that need history appear after the first counted play |
+| `src/state/homeViews.ts` | The shelf logic (`homeShelves`, `albumPlays`), memoised per catalogue + history + day |
+| `src/player/playTracker.ts` | Counts plays from the player store (any engine): ≥ 30 s actually heard (half the track if shorter than a minute), seeking doesn't count, starting over re-arms. Android screen off: when the native player jumped several rows while JS slept, the rows in between count if their lengths fit in the elapsed time |
+| `src/state/history.ts` | Play history store. Rows `[unixSeconds, trackId, deviceId]` (device `w-…` browser / `a-…` Android, localStorage `pelagic.device.v1`). Local copy in IndexedDB `kv.history`; Drive `Pelagic/history.json` merged by union (rows never change, so devices can't conflict). Downloads only when Drive's `version` moved, writes only when this device has new plays (20 s after a play, on leaving the app, on reconnect), re-checks the version right before writing. Syncs on sign-in, Home open (≥ 60 s apart), focus, “Check Drive for changes” |
 
 ### General Sans (to do once)
 Download the free web kit from https://www.fontshare.com/fonts/general-sans and copy

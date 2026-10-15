@@ -11,3 +11,5 @@ export const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive'
 /** Folder in My Drive written by tools/import, and the catalogue inside it. */
 export const DRIVE_ROOT = 'Pelagic'
 export const CATALOGUE_NAME = 'library.json'
+/** Play history in the same folder (step 8, state/history.ts). */
+export const HISTORY_NAME = 'history.json'
