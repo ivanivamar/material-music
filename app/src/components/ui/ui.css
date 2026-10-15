@@ -59,13 +59,16 @@
 .playbtn:hover { background: #fff; }
 .playbtn.is-playing { box-shadow: 0 0 36px -8px rgba(255, 255, 255, .5); }
 .playbtn.is-buffering { background: transparent; color: var(--ink-primary); border: var(--bw-control) solid var(--border-strong); }
-/* press ripple: two 1px rings scale out from the button (same pg-navping as the sidebar nav) */
+/* press ripple: two 1px rings grow out from the button (timing of the sidebar nav's pg-navping).
+   They grow by animating `inset`, not `transform: scale` — scaling a ring rasterised at button
+   size stretches its 1px edge into flat, flickering segments at the top / right / bottom / left. */
 .playbtn-pings { position: absolute; inset: 0; pointer-events: none; }
 .playbtn-ring {
   position: absolute; inset: 0; border-radius: 50%;
   border: 1px solid rgba(255, 255, 255, .8); opacity: 0;
-  animation: pg-navping .8s var(--ease-sonar) forwards;
+  animation: pg-playping .8s var(--ease-sonar) forwards;
 }
+@keyframes pg-playping { 0% { inset: 0; opacity: .4; } 100% { inset: -80%; opacity: 0; } }
 .playbtn-ring2 { border-color: rgba(255, 255, 255, .5); animation-delay: .18s; }
 .playbtn-spin {
   position: absolute; inset: -1.5px; border-radius: 50%;
