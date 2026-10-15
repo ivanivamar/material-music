@@ -62,6 +62,7 @@
 .srch-top:focus-visible { border-color: rgba(255, 255, 255, .45); }
 .srch-top.is-active { box-shadow: var(--glow-ring); }
 .srch-top-avatar { background: var(--bg-1); }
+.srch-top-pl { flex: none; border-radius: 12px; overflow: hidden; }
 .srch-top-avatar .avatar-art-mono { font-size: 26px; }
 .srch-top:hover .srch-top-avatar img { filter: none; }
 .srch-top-foot { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; }

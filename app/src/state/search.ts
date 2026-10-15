@@ -4,6 +4,7 @@
  * Text is folded once per catalogue (case, accents, full-width forms, punctuation), so a query
  * like "beyonce deja" finds "Beyoncé — Déjà Vu". Every query word must match somewhere in the item
  * (title, artist, album); a match at the start of a word in the title ranks highest.
+ * Playlists (from the playlists store, passed in) match on name and description.
  * When nothing matches, `suggest()` offers the closest name ("spiritbx" → Spiritbox).
  *
  * The query, filter and recent searches live in `searchStore` (query survives navigation and
@@ -11,6 +12,7 @@
  */
 import { useSyncExternalStore } from 'react'
 import { type Album, type Artist, type Catalogue, type Track } from './library'
+import type { Playlist } from './playlists'
 import { onAccountReset } from './session'
 import { artistInfos, byName } from './views'
 
@@ -158,13 +160,14 @@ export interface Hit<T> {
   score: number
 }
 
-export type TopHit = { kind: 'artist'; item: Artist } | { kind: 'album'; item: Album } | { kind: 'track'; item: Track }
+export type TopHit = { kind: 'artist'; item: Artist } | { kind: 'album'; item: Album } | { kind: 'track'; item: Track } | { kind: 'playlist'; item: Playlist }
 
 export interface SearchResults {
   query: string
   tokens: string[]
   artists: Hit<Artist>[]
   albums: Hit<Album>[]
+  playlists: Hit<Playlist>[]
   tracks: Hit<Track>[]
   top: TopHit | null
   total: number
@@ -183,26 +186,29 @@ function run<T>(list: Entry<T>[], tokens: string[], whole: string, tie: (a: T, b
 
 const albumYear = (a: Album) => a.date ?? (a.year ? String(a.year) : '')
 
-export function search(c: Catalogue, query: string): SearchResults {
+export function search(c: Catalogue, query: string, playlists: Playlist[] = []): SearchResults {
   const t0 = performance.now()
   const tokens = queryTokens(query)
   const whole = fold(query).trim()
-  const empty: SearchResults = { query, tokens, artists: [], albums: [], tracks: [], top: null, total: 0, ms: 0 }
+  const empty: SearchResults = { query, tokens, artists: [], albums: [], playlists: [], tracks: [], top: null, total: 0, ms: 0 }
   if (!tokens.length) return empty
   const ix = indexOf(c)
   const infos = artistInfos(c)
   const artists = run(ix.artists, tokens, whole, (a, b) => (infos.get(b.id)?.tracks ?? 0) - (infos.get(a.id)?.tracks ?? 0) || byName(a.name, b.name))
   const albums = run(ix.albums, tokens, whole, (a, b) => byName(a.artist, b.artist) || albumYear(b).localeCompare(albumYear(a)) || byName(a.title, b.title))
+  const plEntries: Entry<Playlist>[] = playlists.map((p) => ({ item: p, primary: fold(p.name), secondary: p.description ? [fold(p.description)] : [], name: p.name }))
+  const pls = run(plEntries, tokens, whole, (a, b) => byName(a.name, b.name))
   const tracks = run(ix.tracks, tokens, whole, (a, b) => a.title.length - b.title.length || byName(a.title, b.title) || byName(a.artist, b.artist))
 
   // Top result: best score, artists first on ties, then albums.
   const cands: [TopHit, number][] = []
   if (artists[0]) cands.push([{ kind: 'artist', item: artists[0].item }, artists[0].score + 0.15])
   if (albums[0]) cands.push([{ kind: 'album', item: albums[0].item }, albums[0].score + 0.05])
+  if (pls[0]) cands.push([{ kind: 'playlist', item: pls[0].item }, pls[0].score + 0.1])
   if (tracks[0]) cands.push([{ kind: 'track', item: tracks[0].item }, tracks[0].score])
   const top = cands.sort((a, b) => b[1] - a[1])[0]?.[0] ?? null
 
-  return { query, tokens, artists, albums, tracks, top, total: artists.length + albums.length + tracks.length, ms: performance.now() - t0 }
+  return { query, tokens, artists, albums, playlists: pls, tracks, top, total: artists.length + albums.length + pls.length + tracks.length, ms: performance.now() - t0 }
 }
 
 /* ── "Did you mean" ────────────────────────────────── */
@@ -298,7 +304,7 @@ export function highlight(text: string, tokens: string[]): Segment[] {
 
 /* ── Store: query, filter, recent searches ─────────── */
 
-export type SearchFilter = 'all' | 'artists' | 'albums' | 'songs'
+export type SearchFilter = 'all' | 'artists' | 'albums' | 'playlists' | 'songs'
 
 export interface SearchState {
   query: string
@@ -324,7 +330,7 @@ function loadRecent(): string[] {
 function loadSession(): Pick<SearchState, 'query' | 'filter'> {
   try {
     const v = JSON.parse(sessionStorage.getItem(SESSION_KEY) ?? '{}') as Partial<SearchState>
-    const filter = (['all', 'artists', 'albums', 'songs'] as const).find((f) => f === v.filter) ?? 'all'
+    const filter = (['all', 'artists', 'albums', 'playlists', 'songs'] as const).find((f) => f === v.filter) ?? 'all'
     return { query: typeof v.query === 'string' ? v.query : '', filter }
   } catch {
     return { query: '', filter: 'all' }

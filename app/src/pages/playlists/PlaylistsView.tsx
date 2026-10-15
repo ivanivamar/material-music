@@ -3,6 +3,7 @@
  * 07 Android Playlists): "New playlist" row, then one row per playlist — 52px cover, name,
  * N TRACKS · N OFFLINE, ✓ when all of it is on the phone, ›.
  */
+import type { ReactNode } from 'react'
 import { EmptyState, Eq, Button } from '../../components/ui'
 import { Icon } from '../../design/icons'
 import { actions } from '../../actions/actions'
@@ -84,15 +85,22 @@ export function PlaylistsView({ c }: { c: Catalogue }) {
   )
 }
 
-function PlaylistCard({ c, pl, playing }: { c: Catalogue; pl: Playlist; playing: boolean }) {
+export function PlaylistCard({ c, pl, playing, title, onOpen }: { c: Catalogue; pl: Playlist; playing: boolean; title?: ReactNode; onOpen?: () => void }) {
   const info = playlistInfo(c, pl)
   return (
     <div
       className={`acard pls-card ${playing ? 'is-playing' : ''}`}
       role="link"
       tabIndex={0}
-      onClick={() => go(playlistHref(pl.id))}
-      onKeyDown={(e) => e.key === 'Enter' && go(playlistHref(pl.id))}
+      onClick={() => {
+        onOpen?.()
+        go(playlistHref(pl.id))
+      }}
+      onKeyDown={(e) => {
+        if (e.key !== 'Enter') return
+        onOpen?.()
+        go(playlistHref(pl.id))
+      }}
       onContextMenu={(e) => actions.menu({ kind: 'playlist', playlistId: pl.id }, e)}
     >
       <div className="acard-cover">
@@ -120,7 +128,7 @@ function PlaylistCard({ c, pl, playing }: { c: Catalogue; pl: Playlist; playing:
       </div>
       <div className="acard-meta">
         <div className="acard-text">
-          <div className="acard-title">{pl.name}</div>
+          <div className="acard-title">{title ?? pl.name}</div>
           <div className="acard-sub">{plural(info.ids.length, 'track', 'tracks')}</div>
         </div>
       </div>

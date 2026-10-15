@@ -2,7 +2,7 @@
  * Search (handoff 06–07 Desktop Search "instant, grouped" + 11 "Search · no match").
  *
  * Instant over the cached catalogue (state/search.ts). Field with live "N RESULTS · 4 MS",
- * All / Artists / Albums / Songs chips, then: Top result + Songs, Albums, Artists (All), or the
+ * All / Artists / Albums / Playlists / Songs chips, then: Top result + Songs, Albums, Playlists, Artists (All), or the
  * full list for one kind. Matched query text glows. No match → "Did you mean …".
  * Empty field → recent searches.
  *
@@ -14,9 +14,14 @@ import { Button, Chip, EmptyState, Eq, PlayButton } from '../../components/ui'
 import { Icon } from '../../design/icons'
 import { useLazyCover } from '../../lib/covers'
 import { useLibrary, type Album, type Catalogue, type Track } from '../../state/library'
-import { playerStore } from '../../state/player'
+import { playerStore, usePlayer } from '../../state/player'
+import { usePlaylists, type Playlist } from '../../state/playlists'
+import { playlistInfo } from '../../state/playlistViews'
+import { playPlaylist } from '../../actions/ops'
+import { PlaylistCard } from '../playlists/PlaylistsView'
+import { PlaylistCover } from '../playlists/PlaylistCover'
 import { highlight, search, searchStore, suggest, useSearch, type SearchFilter, type SearchResults, type TopHit } from '../../state/search'
-import { albumHref, artistHref, go } from '../../shell/routes'
+import { albumHref, artistHref, go, playlistHref } from '../../shell/routes'
 import { albumInfos, artistInfos, fmtN, fmtTotal, plural, RELEASE_LABEL } from '../../state/views'
 import { isTouch } from '../../state/viewport'
 import { ArtistAvatar, LibAlbumCard, SectionHead } from '../library/common'
@@ -30,6 +35,7 @@ const FILTERS: { value: SearchFilter; label: string }[] = [
   { value: 'all', label: 'All' },
   { value: 'artists', label: 'Artists' },
   { value: 'albums', label: 'Albums' },
+  { value: 'playlists', label: 'Playlists' },
   { value: 'songs', label: 'Songs' },
 ]
 
@@ -63,7 +69,8 @@ export function Search() {
 
   // Typing stays responsive on big libraries: results follow a frame behind if needed.
   const deferred = useDeferredValue(query)
-  const results = useMemo(() => (data && deferred.trim() ? search(data, deferred) : null), [data, deferred])
+  const { list: playlists } = usePlaylists()
+  const results = useMemo(() => (data && deferred.trim() ? search(data, deferred, playlists) : null), [data, deferred, playlists])
   const suggestion = useMemo(() => (data && results && results.total === 0 ? suggest(data, deferred) : null), [data, results, deferred])
 
   useEffect(() => {
@@ -80,6 +87,7 @@ export function Search() {
     remember()
     if (top.kind === 'artist') go(artistHref(top.item.id))
     else if (top.kind === 'album') go(albumHref(top.item.id))
+    else if (top.kind === 'playlist') go(playlistHref(top.item.id))
     else playTracks(results.tracks.map((h) => h.item.id), 0, query)
   }
 
@@ -113,7 +121,7 @@ export function Search() {
     else items[Math.min(next, items.length - 1)]?.focus()
   }
 
-  const shownCount = results ? (filter === 'artists' ? results.artists.length : filter === 'albums' ? results.albums.length : filter === 'songs' ? results.tracks.length : results.total) : 0
+  const shownCount = results ? (filter === 'artists' ? results.artists.length : filter === 'albums' ? results.albums.length : filter === 'playlists' ? results.playlists.length : filter === 'songs' ? results.tracks.length : results.total) : 0
 
   return (
     <div className="srch">
@@ -127,7 +135,7 @@ export function Search() {
           className="srch-input"
           type="search"
           value={query}
-          placeholder="Artists, albums, songs"
+          placeholder="Artists, albums, playlists, songs"
           aria-label="Search your library"
           autoComplete="off"
           spellCheck={false}
@@ -173,6 +181,8 @@ export function Search() {
           <ArtistsList r={results} remember={remember} />
         ) : filter === 'albums' ? (
           <AlbumsList c={data} r={results} remember={remember} />
+        ) : filter === 'playlists' ? (
+          <PlaylistsList c={data} r={results} remember={remember} />
         ) : (
           <SongsList c={data} r={results} />
         )}
@@ -187,7 +197,7 @@ function Recent({ recent }: { recent: string[] }) {
   if (!recent.length) {
     return (
       <div className="placeholder srch-empty">
-        <EmptyState icon="search" title="Search your library" body="Artists, albums and songs, matched as you type." />
+        <EmptyState icon="search" title="Search your library" body="Artists, albums, playlists and songs, matched as you type." />
         <div className="srch-hint">
           <kbd>/</kbd> OR <kbd>CTRL K</kbd> TO SEARCH FROM ANYWHERE
         </div>
@@ -261,6 +271,7 @@ function AllView({ c, r, remember }: { c: Catalogue; r: SearchResults; remember:
   const playingAlbum = usePlayingAlbumId(c)
   const songs = r.tracks.slice(0, ALL_SONGS)
   const albums = r.albums.slice(0, ALL_CARDS)
+  const playlists = r.playlists.slice(0, ALL_CARDS)
   // the top artist already has the big card; list the others
   const artists = r.artists.filter((h) => !(r.top?.kind === 'artist' && r.top.item.id === h.item.id)).slice(0, ALL_CARDS)
   const more = (f: SearchFilter, n: number, shown: number) =>
@@ -299,6 +310,17 @@ function AllView({ c, r, remember }: { c: Catalogue; r: SearchResults; remember:
           <div className="lib-grid lib-grid-sm srch-row">
             {albums.map((h) => (
               <LibAlbumCard key={h.item.id} c={c} album={h.item} subtitle={<AlbumSub a={h.item} tokens={r.tokens} />} playingAlbumId={playingAlbum} onOpen={remember} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {playlists.length > 0 && (
+        <section className="srch-sect">
+          <SectionHead label="PLAYLISTS" right={more('playlists', r.playlists.length, playlists.length)} />
+          <div className="lib-grid lib-grid-sm srch-row">
+            {playlists.map((h) => (
+              <PlaylistHit key={h.item.id} c={c} pl={h.item} tokens={r.tokens} remember={remember} />
             ))}
           </div>
         </section>
@@ -354,6 +376,13 @@ function TopCard({ c, top, r, remember }: { c: Catalogue; top: TopHit; r: Search
     art = <Cover id={top.item.cover} size={96} />
     open = () => go(albumHref(top.item.id))
     play = () => playList(albumTrackIds(c, top.item.id), { kind: 'album', id: top.item.id, label: top.item.title })
+  } else if (top.kind === 'playlist') {
+    const n = playlistInfo(c, top.item).ids.length
+    name = top.item.name
+    meta = `PLAYLIST · ${plural(n, 'TRACK')}`
+    art = <PlaylistCover playlist={top.item} size={96} className="srch-top-pl" />
+    open = () => go(playlistHref(top.item.id))
+    play = () => playPlaylist(top.item.id)
   } else {
     const album = c.albums[top.item.albumId]
     name = top.item.title
@@ -498,6 +527,13 @@ function ArtistTile({ c, id, tokens, remember }: { c: Catalogue; id: string; tok
   )
 }
 
+/** Playlist card for results: name glows where it matches; lit while it is the playing context. */
+function PlaylistHit({ c, pl, tokens, remember }: { c: Catalogue; pl: Playlist; tokens: string[]; remember: () => void }) {
+  const p = usePlayer()
+  const playing = p.playing && p.context?.kind === 'playlist' && p.context.id === pl.id
+  return <PlaylistCard c={c} pl={pl} playing={playing} title={<Hl text={pl.name} tokens={tokens} />} onOpen={remember} />
+}
+
 /* ── One kind: full lists ─────────────────────────── */
 
 function ArtistsList({ r, remember }: { r: SearchResults; remember: () => void }) {
@@ -509,6 +545,20 @@ function ArtistsList({ r, remember }: { r: SearchResults; remember: () => void }
       <div className="art-grid">
         {r.artists.map((h) => (
           <ArtistTile key={h.item.id} c={data} id={h.item.id} tokens={r.tokens} remember={remember} />
+        ))}
+      </div>
+    </section>
+  )
+}
+
+function PlaylistsList({ c, r, remember }: { c: Catalogue; r: SearchResults; remember: () => void }) {
+  if (!r.playlists.length) return <NoneOfKind kind="playlists" />
+  return (
+    <section className="srch-sect">
+      <SectionHead label="PLAYLISTS" right={pad2(r.playlists.length)} />
+      <div className="lib-grid">
+        {r.playlists.map((h) => (
+          <PlaylistHit key={h.item.id} c={c} pl={h.item} tokens={r.tokens} remember={remember} />
         ))}
       </div>
     </section>
@@ -569,7 +619,7 @@ function SongsList({ c, r }: { c: Catalogue; r: SearchResults }) {
   )
 }
 
-function NoneOfKind({ kind }: { kind: 'artists' | 'albums' | 'songs' }) {
+function NoneOfKind({ kind }: { kind: 'artists' | 'albums' | 'playlists' | 'songs' }) {
   return (
     <div className="placeholder">
       <EmptyState
