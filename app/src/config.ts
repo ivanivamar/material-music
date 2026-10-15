@@ -13,3 +13,5 @@ export const DRIVE_ROOT = 'Pelagic'
 export const CATALOGUE_NAME = 'library.json'
 /** Play history in the same folder (step 8, state/history.ts). */
 export const HISTORY_NAME = 'history.json'
+/** New Releases feed + marks (step 11, state/releases.ts). */
+export const RELEASES_NAME = 'releases.json'

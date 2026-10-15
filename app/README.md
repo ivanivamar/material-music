@@ -40,7 +40,7 @@ No Liked songs list and no heart buttons (dropped Oct 2026).
 | `src/state/player.ts` | Queue / transport / volume store the player bar binds to. Step 3d attaches the audio engine with `playerStore.attach()` |
 | `src/shell/` | `AppShell` (grid: sidebar · main · player bar), `Sidebar` (circle-clip active animation + rings), `PlayerBar`, hash `routes` |
 | `src/screens/` | Sign-in, Session expired, first sync ("Charting your library"), No library on Drive, library error |
-| `src/pages/` | Home (see step 8), placeholders for later steps |
+| `src/pages/` | Home (step 8), New releases (step 11), placeholders for later steps |
 
 Routes: `#/home` (default), `#/library[/artists|albums|songs]`, `#/album/<id>`, `#/artist/<id>`, `#/search`, `#/new`, `#/upload`, `#/downloads`.
 Sign-out (avatar menu on Home) revokes the token and clears the cached catalogue and covers.
@@ -95,6 +95,19 @@ Keys: `/` or Ctrl/⌘+K from anywhere focuses Search · Enter opens the top resu
 | `src/state/homeViews.ts` | The shelf logic (`homeShelves`, `albumPlays`), memoised per catalogue + history + day |
 | `src/player/playTracker.ts` | Counts plays from the player store (any engine): ≥ 30 s actually heard (half the track if shorter than a minute), seeking doesn't count, starting over re-arms. Android screen off: when the native player jumped several rows while JS slept, the rows in between count if their lengths fit in the elapsed time |
 | `src/state/history.ts` | Play history store. Rows `[unixSeconds, trackId, deviceId]` (device `w-…` browser / `a-…` Android, localStorage `pelagic.device.v1`). Local copy in IndexedDB `kv.history`; Drive `Pelagic/history.json` merged by union (rows never change, so devices can't conflict). Downloads only when Drive's `version` moved, writes only when this device has new plays (20 s after a play, on leaving the app, on reconnect), re-checks the version right before writing. Syncs on sign-in, Home open (≥ 60 s apart), focus, “Check Drive for changes” |
+
+## New releases (step 11)
+
+| File | What |
+|---|---|
+| `src/pages/releases/NewReleases.tsx` | `#/new` (handoff 12, `NewReleases.dc.html`). Header: sonar line (`LAST SONAR · 15 OCT 06:12 · N ARTISTS` / `SONAR SWEEP · n / N` while sweeping, progress hairline), Followed artists, refresh (Check MusicBrainz now, sonar rings while sweeping). Type chips (Albums / EPs / Singles on, Live / Other off) · Show seen · `N NEW · N SEEN · N HIDDEN`. Hero = newest release (last 30 days) from the artist you play most. Groups Upcoming (countdown) / This week / Earlier this month / Older; desktop cards with seen / I've got it / MusicBrainz / remind (upcoming) / dismiss; phone rows: drag right = seen, left = dismiss, tap = sheet. States: first sweep, no sonar yet, caught up (Bring everything back), offline pill, MusicBrainz error with Retry now |
+| `src/pages/releases/ReleasePanel.tsx` | Right panel (desktop) / bottom sheet (phone, handle drag closes): release detail (cover, library match, actions, facts, MusicBrainz / Bandcamp / artist site links, tracklist — greyed preview, or your own tracks playable once in the library) and Followed artists (hide reissues, filter, mute per artist) |
+| `src/pages/releases/parts.tsx` | Cover (Cover Art Archive `front-250/500`, else a generated NO COVER ART sleeve seeded by the release id), badges, actions + toasts, swipe row |
+| `src/state/releases.ts` | Store + sweep + Drive `Pelagic/releases.json`. Daily sweep after 06:00 (also from the page and the refresh button): every library artist with a MusicBrainz id (importer's `mbid`, else a name search verified by album titles), release groups from the last ~6 months + upcoming. Each artist is stamped when checked, so a cut-short sweep resumes and an artist the other device already checked today is skipped. First sight of a release older than 30 days → starts as seen. Marks (new / seen / acq / gone), reminders, muted artists, hide reissues and fetched tracklists are timestamped entries merged entry by entry between devices (latest wins), same version-check pattern as history.json. Filters per device in localStorage `pelagic.releases.v1` |
+| `src/state/releaseViews.ts` | Feed (memoised): status (`lib` = album title — or for a single, the song — by that artist is in the catalogue; derived, never stored), visibility, hero, groups, counts; per-track matches for the panel; Followed artists rows |
+| `src/lib/musicbrainz.ts` | ws/2 JSON client from the browser (CORS), one request per 1.1 s, panel requests first, 503 back-off 4/8/16 s then error (auto retry after 30 min). Release-group browse, artist search, release tracklist + label, artist URL relations |
+
+"I've got it" marks a release *acquired* (MATCHING) until it shows up in the catalogue (upload or import); then toast "… is in your library · Play". Sidebar badge = new releases in the feed; phone NEW tab gets a dot. Reminders: on the release day, toast "… is out today · View" (once, on either device). Back (Android) / Esc close the panel first.
 
 ### General Sans (to do once)
 Download the free web kit from https://www.fontshare.com/fonts/general-sans and copy

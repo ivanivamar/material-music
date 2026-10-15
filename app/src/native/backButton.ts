@@ -1,6 +1,7 @@
 /**
  * Android system Back button (gesture or button). Without a handler Android finishes the activity,
  * i.e. Back closed the app from anywhere. Now, in order:
+ *   0. a page overlay (New Releases panel / sheet) → close it
  *   1. account menu open      → close it
  *   2. queue panel open       → close it
  *   3. full-screen player     → close it
@@ -17,6 +18,16 @@ import { back, canGoBack, href, replace } from '../shell/routes'
 import { nowPlayingStore } from '../state/nowPlaying'
 import { isNative } from './bridge'
 
+/** Page overlays that close on Back (latest first). The handler returns true when it handled it. */
+const overlays: (() => boolean)[] = []
+export function registerBack(fn: () => boolean): () => void {
+  overlays.push(fn)
+  return () => {
+    const i = overlays.lastIndexOf(fn)
+    if (i >= 0) overlays.splice(i, 1)
+  }
+}
+
 export function handleBack(): void {
   // Popover menus close on Escape (AccountMenu listens on document; not bubbling to window keeps
   // AppShell's Esc handler out of it).
@@ -27,6 +38,7 @@ export function handleBack(): void {
   const ui = nowPlayingStore.get()
   if (ui.queue) return nowPlayingStore.closeQueue()
   if (ui.open) return nowPlayingStore.close()
+  for (let i = overlays.length - 1; i >= 0; i--) if (overlays[i]()) return
   if (canGoBack()) return back(href('home'))
   const path = window.location.hash.replace(/^#\/?/, '').split('?')[0]
   if (path && path !== 'home') return replace(href('home'))

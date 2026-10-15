@@ -23,6 +23,10 @@ import { albumHref, go, href, navKeyOf, type Route } from './routes'
 import { albumOffline, downloadsStore } from '../state/downloads'
 import { fmtBytes, plural } from '../state/views'
 import { onAlbumAdded, runSummary, useUpload } from '../state/upload'
+import { onReleasesEvent, releasesStore, useReleases } from '../state/releases'
+import { buildFeed, fmtClock } from '../state/releaseViews'
+import { historyStore, useHistory } from '../state/history'
+import { playRelease } from '../pages/releases/parts'
 import './shell.css'
 import './phone.css'
 
@@ -107,6 +111,37 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
           meta: r.failed ? `${plural(r.added, 'TRACK')} · ${r.failed} FAILED` : `${plural(r.added, 'TRACK')} ADDED`,
           action: { label: 'View', onClick: () => go(albumHref(r.albumId)) },
         })
+      }),
+    [toast],
+  )
+
+  // New releases (step 11): sidebar count / tab dot, and the feed's toasts from anywhere in the app.
+  const rs = useReleases()
+  const plays = useHistory().plays
+  const newReleases = lib.data && rs.doc.sweep.at !== null ? buildFeed(rs.doc, lib.data, plays, rs.prefs).counts.new : 0
+  useEffect(
+    () =>
+      onReleasesEvent((e) => {
+        if (e.kind === 'swept') {
+          if (!e.manual) return
+          toast.show({
+            icon: 'refresh',
+            text: e.fresh ? `Sweep finished. ${e.fresh} new release${e.fresh === 1 ? '' : 's'}.` : e.since ? `Sweep finished. Nothing new since ${fmtClock(e.since)}.` : 'Sweep finished. Nothing new.',
+            meta: `${e.artists} ARTISTS`,
+          })
+        } else if (e.kind === 'matched') {
+          const c = libraryStore.get().data
+          const st = releasesStore.get()
+          const item = c ? buildFeed(st.doc, c, historyStore.get().plays, st.prefs).byId.get(e.id) : undefined
+          toast.show({
+            icon: 'playF',
+            text: `${e.title} is in your library.`,
+            meta: item?.match?.quality,
+            action: item?.match ? { label: 'Play', onClick: () => playRelease(item) } : undefined,
+          })
+        } else if (e.kind === 'reminder') {
+          toast.show({ icon: 'bellF', text: `${e.title} by ${e.artist} is out today.`, meta: 'NEW RELEASE', action: { label: 'View', onClick: () => go(href('new')) }, duration: 8000 })
+        }
       }),
     [toast],
   )
@@ -295,14 +330,22 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
       <Atmosphere fixed seed={17} paused={np.open} />
       {/* the full-screen player is modal: everything behind it is inert */}
       <div className="shell-layer" inert={np.open}>
-        {!phone && <Sidebar active={navKeyOf(route)} badges={up.running && upRun.total ? { upload: `${upRun.done}/${upRun.total}` } : undefined} />}
+        {!phone && (
+          <Sidebar
+            active={navKeyOf(route)}
+            badges={{
+              ...(up.running && upRun.total ? { upload: `${upRun.done}/${upRun.total}` } : {}),
+              ...(newReleases ? { new: String(newReleases) } : {}),
+            }}
+          />
+        )}
         <main className="shell-main" ref={mainRef} id="main" tabIndex={-1}>
           <div className="shell-page">{children}</div>
         </main>
         {phone ? (
           <>
             <MiniPlayer />
-            <TabBar active={navKeyOf(route)} />
+            <TabBar active={navKeyOf(route)} dots={{ new: newReleases > 0 }} />
           </>
         ) : (
           <PlayerBar />

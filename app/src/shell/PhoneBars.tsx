@@ -19,13 +19,14 @@ const TABS: { key: RouteKey; label: string; icon: 'home' | 'library' | 'search' 
   { key: 'new', label: 'NEW', icon: 'newr' },
 ]
 
-export function TabBar({ active }: { active: RouteKey }) {
+export function TabBar({ active, dots }: { active: RouteKey; dots?: Partial<Record<RouteKey, boolean>> }) {
   return (
     <nav className="tabs" aria-label="Main">
       {TABS.map((t) => (
         <a key={t.key} href={href(t.key)} className={`tab ${t.key === active ? 'is-on' : ''}`} aria-current={t.key === active ? 'page' : undefined}>
           <span className="tab-ic">
             <Icon name={t.icon} />
+            {dots?.[t.key] && <span className="tab-dot" aria-label="New" role="img" />}
           </span>
           <span className="tab-label">{t.label}</span>
         </a>

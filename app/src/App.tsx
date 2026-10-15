@@ -7,7 +7,6 @@ import { initPwa } from './lib/pwa'
 import { initNativeUpdates } from './native/updates'
 import { initBackButton } from './native/backButton'
 import { Home } from './pages/Home'
-import { Placeholder } from './pages/Placeholder'
 import { LibraryError, LoadingLibrary, NoLibrary } from './screens/LibraryStatus'
 import { createHtmlAudioEngine } from './player/htmlEngine'
 import { createNativeEngine } from './player/nativeEngine'
@@ -21,11 +20,13 @@ import { Library } from './pages/library/Library'
 import { Search } from './pages/search/Search'
 import { Downloads } from './pages/downloads/Downloads'
 import { Upload } from './pages/upload/Upload'
+import { NewReleases } from './pages/releases/NewReleases'
 import { downloadsStore } from './state/downloads'
 import { libraryStore, useLibrary } from './state/library'
 import { useMotionAttribute } from './state/motion'
 import { playerStore } from './state/player'
 import { historyStore } from './state/history'
+import { releasesStore } from './state/releases'
 import { initPlayTracker } from './player/playTracker'
 import { useSession } from './state/session'
 
@@ -52,6 +53,8 @@ historyStore.init()
 initPlayTracker()
 // Android: offline downloads (phase D) — keeps the phone's stored files in line with the pins.
 downloadsStore.init()
+// New releases (step 11): daily MusicBrainz sweep, feed + marks synced through Drive releases.json.
+releasesStore.init()
 
 function Page({ route }: { route: Extract<Route, { kind: 'app' }> }) {
   switch (route.key) {
@@ -66,7 +69,7 @@ function Page({ route }: { route: Extract<Route, { kind: 'app' }> }) {
     case 'search':
       return <Search />
     case 'new':
-      return <Placeholder title="New releases" meta="MUSICBRAINZ · DAILY" icon="newr" line="No sweep has run yet." body="The MusicBrainz feed for the artists you follow arrives in step 11." />
+      return <NewReleases />
     case 'upload':
       return <Upload />
     case 'downloads':
