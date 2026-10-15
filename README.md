@@ -11,7 +11,7 @@ A personal music player for my own FLAC library. The same library plays on PC an
 ```
 
 - **Google Drive is the master copy.** It holds the FLAC originals, 160 kbps Opus phone copies (about 5× smaller), album and artist art, and a `library.json` catalogue.
-- **There is no backend.** The app talks to the Google Drive API directly with the signed-in user's token. All data stays in my Drive. The only server-side code is a tiny sign-in helper on Cloudflare Pages (`app/functions/api/auth`) that keeps the OAuth client secret and the refresh token, so the PC app stays signed in instead of asking every hour.
+- **There is no backend.** The app talks to the Google Drive API directly with the signed-in user's token. All data stays in my Drive. The only server-side code is two tiny Cloudflare Pages Functions: a sign-in helper (`app/functions/api/auth`) that keeps the OAuth client secret and the refresh token, so the PC app stays signed in instead of asking every hour, and a Deezer proxy (`app/functions/api/deezer`) that fetches artist photos for the Upload page (the browser can't call Deezer directly).
 - **On PC,** Pelagic is a web app installed from Chrome or Edge. It plays FLAC from a linked local folder (the Google Drive for desktop `Pelagic` folder or the music folder) and streams from Drive for anything that isn't there.
 - **On Android,** the same app is wrapped with Capacitor. A native player (Media3 / ExoPlayer) streams the Opus copies from Drive, keeps playing in the background, and shows lock-screen and notification controls.
 - **Playlists, history and settings** are small JSON files in Drive, so both devices stay in sync.
@@ -21,7 +21,7 @@ A personal music player for my own FLAC library. The same library plays on PC an
 - [x] Library import to Drive (tags, covers, artist images, Opus phone copies, synced lyrics)
 - [x] Player: queue, shuffle / repeat, seek, media keys (PC) and lock-screen controls (Android)
 - [x] Library: artists, albums, songs, album and artist pages
-- [x] Search (my library only, accent-insensitive, instant)
+- [x] Search (my library only, accent-insensitive, instant; artists, albums, playlists and songs)
 - [x] Full-screen player, editable queue, synced lyrics
 - [x] Phone layout (bottom tabs, mini-player, bottom-sheet queue, swipe to close)
 - [x] PC: installable app (PWA) that opens offline, update prompt
@@ -30,12 +30,13 @@ A personal music player for my own FLAC library. The same library plays on PC an
 - [x] PC stays signed in (sign-in helper on Cloudflare renews the Google session silently)
 - [x] Playlists
 - [x] Home: recently listened, most played, rediscover
-- [x] Upload new music from the app
+- [x] Upload new music from the app (artist photo and banner taken from the dropped artist folder, or the photo from Deezer)
+- [x] Search bar and account menu on every page on PC; on the phone the account sits in the bottom tab bar and opens as a bottom sheet
 - [x] New releases from my artists (MusicBrainz)
 
 ## Status
 
-Everything above is built and tested on the real setup (real Drive library, PC app, Android app, Cloudflare hosting, MusicBrainz). The PC sign-in helper keeps the session alive with silent renewal. The code for Home, Playlists, Upload, New releases and the sign-in helper isn't committed to git yet.
+Everything above is built and tested on the real setup (real Drive library, PC app, Android app, Cloudflare hosting, MusicBrainz). The PC sign-in helper keeps the session alive with silent renewal. Everything is committed and pushed.
 
 ## Repo layout
 
