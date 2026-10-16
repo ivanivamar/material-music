@@ -221,15 +221,16 @@ html[data-phone][data-qp] .toasts.toasts-shell { right: 0; }
 .shell.is-phone .srch-recent-x { opacity: 1; }
 
 /* ── Full-screen player (handoff 05 Android Now Playing) ── */
-/* Android app (edge-to-edge): keep the player's content below the status bar */
-.shell.is-phone .np { top: env(safe-area-inset-top, 0px); }
+/* Android app (edge-to-edge): the player's background reaches the top of the screen (behind the
+   status bar); only its content is pushed below it */
+.shell.is-phone .np { --np-sat: env(safe-area-inset-top, 0px); }
 /* swipe down to close (nowplaying/swipe.ts) */
 /* swipe state is a data attribute (swipe.ts) — React rewrites className when closing */
 .shell.is-phone .np[data-swipe]:not(.is-closing) { animation: none; }
 .shell.is-phone .np[data-swipe="dragging"] { transition: none; }
 .shell.is-phone .np[data-swipe="springing"] { transition: transform .3s var(--ease); }
 .shell.is-phone .np[data-swipe="swiped"] { animation: none !important; transition: transform .26s cubic-bezier(.4, 0, 1, 1); pointer-events: none; }
-.shell.is-phone .np-head { height: 60px; padding: 0 14px; }
+.shell.is-phone .np-head { top: var(--np-sat); height: 60px; padding: 0 14px; }
 .shell.is-phone .np-close { width: 44px; height: 44px; padding: 0; margin: 0; justify-content: center; font-size: 0; letter-spacing: 0; }
 .shell.is-phone .np-close svg { font-size: 22px; }
 .shell.is-phone .np-from-k { font-size: var(--fs-mono-xs); }
@@ -237,11 +238,11 @@ html[data-phone][data-qp] .toasts.toasts-shell { right: 0; }
 .shell.is-phone .np-from { max-width: 60vw; }
 
 .shell.is-phone .np-main {
-  inset: 60px 0 0; padding: 4px 24px calc(28px + env(safe-area-inset-bottom));
+  inset: calc(60px + var(--np-sat)) 0 0; padding: 4px 24px calc(28px + env(safe-area-inset-bottom));
   display: flex; flex-direction: column; justify-content: flex-start; gap: clamp(16px, 3.4vh, 30px);
   overflow-y: auto; overscroll-behavior: contain;
 }
-.shell.is-phone .np { --np-cover: min(364px, calc(100vw - 48px), calc(100vh - 470px)); }
+.shell.is-phone .np { --np-cover: min(364px, calc(100vw - 48px), calc(100vh - 470px - var(--np-sat))); }
 .shell.is-phone .np-cover-wrap { align-self: center; }
 .shell.is-phone .np-info { gap: clamp(16px, 3.4vh, 30px); max-width: none; flex: 1; }
 .shell.is-phone .np-text { gap: 8px; }
@@ -262,7 +263,7 @@ html[data-phone][data-qp] .toasts.toasts-shell { right: 0; }
 .shell.is-phone .np-vbtn { height: 40px; padding: 0 14px; }
 
 /* lyrics view: top strip · lyrics · seek + transport */
-.shell.is-phone .np-ly { inset: 60px 0 0; display: flex; flex-direction: column; }
+.shell.is-phone .np-ly { inset: calc(60px + var(--np-sat)) 0 0; display: flex; flex-direction: column; }
 .shell.is-phone .np-ly-col { flex: 1; min-height: 0; }
 .npp-strip { display: flex; align-items: center; gap: 12px; padding: 0 14px 0 24px; height: 56px; flex: none; }
 .npp-strip-cover { width: 40px; height: 40px; flex: none; border-radius: 8px; object-fit: cover; display: block; }
