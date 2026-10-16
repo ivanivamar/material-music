@@ -24,7 +24,7 @@ import { usePlaylists, type Playlist } from '../state/playlists'
 import { useIsPhone } from '../state/viewport'
 import { artistInfos, fmtTotal, plural } from '../state/views'
 import { actions, useActions, type ActionTarget } from './actions'
-import { EditPlaylistDialog, NewPlaylistDialog } from './Dialogs'
+import { EditPlaylistDialog, NewPlaylistDialog, RemoveDialog } from './Dialogs'
 import { addToPlaylist, createPlaylist, deletePlaylist, goTo, playPlaylist, queueTracks, removeFromPlaylist } from './ops'
 import { playList } from '../pages/library/playback'
 import './actions.css'
@@ -72,7 +72,9 @@ function describe(t: ActionTarget, c: Catalogue, toast: Toast, lists: Map<string
       { icon: 'library', label: 'Go to album', run: () => goTo(albumHref(tr.albumId)) },
       { icon: 'library', label: 'Go to artist', run: () => goTo(artistHref(album?.artistId ?? tr.artistId)) },
     ]
-    if (pl && t.entryId) rows.push(div, { icon: 'x', label: `Remove from ${pl.name}`, danger: true, run: () => removeFromPlaylist(toast, pl.id, [t.entryId!]) })
+    rows.push(div)
+    if (pl && t.entryId) rows.push({ icon: 'x', label: `Remove from ${pl.name}`, danger: true, run: () => removeFromPlaylist(toast, pl.id, [t.entryId!]) })
+    rows.push({ icon: 'x', label: 'Remove from library…', danger: true, run: () => actions.confirmRemove({ kind: 'track', trackIds: [tr.id] }) })
     return {
       title: tr.title,
       sub: ['TRACK', tr.artist, tr.duration ? fmtTotal(tr.duration) : null].filter(Boolean).join(' · ').toUpperCase(),
@@ -104,6 +106,8 @@ function describe(t: ActionTarget, c: Catalogue, toast: Toast, lists: Map<string
         { icon: 'playlist', label: 'Add to playlist', picker: true },
         div,
         { icon: 'library', label: 'Go to artist', run: () => goTo(artistHref(album.artistId)) },
+        div,
+        { icon: 'x', label: 'Remove from library…', danger: true, run: () => actions.confirmRemove({ kind: 'album', albumId: album.id }) },
       ],
     }
   }
@@ -125,6 +129,8 @@ function describe(t: ActionTarget, c: Catalogue, toast: Toast, lists: Map<string
         { icon: 'next', label: 'Play next', run: () => queueTracks(toast, ids(), true) },
         { icon: 'queue', label: 'Add to queue', run: () => queueTracks(toast, ids(), false) },
         { icon: 'playlist', label: 'Add to playlist', picker: true },
+        div,
+        { icon: 'x', label: 'Remove from library…', danger: true, run: () => actions.confirmRemove({ kind: 'artist', artistId: t.artistId }) },
       ],
     }
   }
@@ -220,6 +226,7 @@ export function ActionHost() {
       {menu && (phone ? <Sheet key={menu.key} target={menu.target} picker={menu.picker} /> : <Menu key={menu.key} target={menu.target} at={menu.at} picker={menu.picker} />)}
       {dialog?.kind === 'new' && <NewPlaylistDialog trackIds={dialog.trackIds} hint={dialog.hint} open={!!dialog.open} name={dialog.name} />}
       {dialog?.kind === 'edit' && <EditPlaylistDialog playlistId={dialog.playlistId} />}
+      {dialog?.kind === 'remove' && <RemoveDialog target={dialog.target} />}
     </>
   )
 }

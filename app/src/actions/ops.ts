@@ -4,7 +4,9 @@
  */
 import type { useToast } from '../components/ui'
 import { playList } from '../pages/library/playback'
-import { go, playlistHref, libraryHref } from '../shell/routes'
+import { albumHref, artistHref, go, playlistHref, libraryHref } from '../shell/routes'
+import { AuthError } from '../lib/drive'
+import { removeFromLibrary, undoRemoval, type RemoveTarget } from '../state/removal'
 import { libraryStore } from '../state/library'
 import { nowPlayingStore } from '../state/nowPlaying'
 import { playerStore } from '../state/player'
@@ -114,3 +116,63 @@ export function queueTracks(toast: Toast, trackIds: string[], next: boolean) {
   else playerStore.addToQueue(trackIds)
   toast.show({ icon: next ? 'next' : 'queue', text: next ? `${what(trackIds)} plays next.` : `Added ${what(trackIds)} to the queue.` })
 }
+
+/** Name for toasts: the song / album / artist title. */
+function removalName(t: RemoveTarget): string {
+  const c = libraryStore.get().data
+  if (t.kind === 'album') return c?.albums[t.albumId]?.title ?? 'the album'
+  if (t.kind === 'artist') return c?.artists[t.artistId]?.name ?? 'the artist'
+  return what(t.trackIds)
+}
+
+/**
+ * Remove from the library (after the confirm dialog): library.json first, then the files to the
+ * Drive trash. Leaves the album / artist page if that's what went. Undo in the toast.
+ */
+export async function removeFromLibraryOp(toast: Toast, target: RemoveTarget) {
+  const name = removalName(target)
+  const id = toast.show({ icon: 'refresh', mutedIcon: true, text: `Removing ${name}…`, duration: 0 })
+  try {
+    const r = await removeFromLibrary(target)
+    const c = libraryStore.get().data
+    const hash = window.location.hash
+    const leftAlbum = r.ids.albumIds.find((a) => hash === albumHref(a))
+    const leftArtist = r.ids.artistIds.find((a) => hash === artistHref(a))
+    if (leftArtist) goTo(libraryHref('artists'))
+    else if (leftAlbum) {
+      const artistId = target.kind === 'album' ? c?.removed?.albums[target.albumId]?.album.artistId : undefined
+      goTo(artistId && c?.artists[artistId] ? artistHref(artistId) : libraryHref('albums'))
+    }
+    const parts = [plural(r.tracks, 'SONG')]
+    if (r.trashed) parts.push(`${plural(r.trashed, 'FILE')} TO DRIVE TRASH`)
+    toast.update(id, {
+      icon: 'check',
+      mutedIcon: false,
+      text: `Removed ${name} from your library.`,
+      meta: r.trashFailed ? `${plural(r.trashFailed, 'FILE')} COULDN’T BE TRASHED — DELETE BY HAND` : parts.join(' · '),
+      tone: r.trashFailed ? 'danger' : 'default',
+      duration: 8000,
+      action: {
+        label: 'Undo',
+        onClick: () => {
+          const u = toast.show({ icon: 'refresh', mutedIcon: true, text: `Putting ${name} back…`, duration: 0 })
+          undoRemoval(r.ids)
+            .then((b) =>
+              toast.update(u, {
+                icon: 'check',
+                mutedIcon: false,
+                text: `${name} is back in your library.`,
+                meta: b.untrashFailed ? `${plural(b.untrashFailed, 'FILE')} STILL IN DRIVE TRASH` : undefined,
+                duration: 4500,
+              }),
+            )
+            .catch((e) => toast.update(u, { icon: 'alert', tone: 'danger', text: `Couldn’t put ${name} back.`, meta: errText(e), duration: 6000 }))
+        },
+      },
+    })
+  } catch (e) {
+    toast.update(id, { icon: 'alert', mutedIcon: false, tone: 'danger', text: `Couldn’t remove ${name}.`, meta: errText(e), duration: 6000 })
+  }
+}
+
+const errText = (e: unknown) => (e instanceof AuthError ? 'SIGN IN AGAIN' : !navigator.onLine ? 'NO CONNECTION' : ((e as Error)?.message ?? 'DRIVE ERROR').toUpperCase().slice(0, 80))

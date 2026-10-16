@@ -363,6 +363,33 @@ export const playerStore = {
     queue.splice(state.index + 1, 0, ...ids)
     set({ queue })
   },
+  /**
+   * Songs left the library (state/removal.ts): take every row of them out of the queue. If the
+   * current song is one of them, the next remaining row takes its place (playing on if it was
+   * playing); nothing left → the queue is cleared.
+   */
+  dropTracks(ids: Set<string>) {
+    if (lastCleared) lastCleared = lastCleared.filter((id) => !ids.has(id))
+    if (!state.queue.some((id) => ids.has(id))) return
+    const unshuffled = state.unshuffled ? state.unshuffled.filter((id) => !ids.has(id)) : null
+    const queue: string[] = []
+    let index = -1
+    state.queue.forEach((id, i) => {
+      if (i === state.index) index = queue.length
+      if (!ids.has(id)) queue.push(id)
+    })
+    if (!queue.length) return playerStore.clear()
+    const cur = current()
+    if (state.index < 0 || !cur || !ids.has(cur)) return set({ queue, unshuffled, index: state.index < 0 ? -1 : index })
+    const playing = state.playing
+    set({ queue, unshuffled })
+    if (index < queue.length) go(index, playing)
+    else {
+      // the removed song was the last one: stop on the new last row
+      engine?.pause()
+      go(queue.length - 1, false)
+    }
+  },
   /** Append tracks to the end of the queue. */
   addToQueue(ids: string[]) {
     if (!ids.length) return

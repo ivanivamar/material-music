@@ -62,12 +62,24 @@ export interface Track {
   source?: { path: string; size: number; mtime: number }
   addedAt: string
 }
+/**
+ * What was removed from the library (state/removal.ts). The full entries are kept so a removal can
+ * be undone, and so the importer / Upload page know not to bring them back: the importer skips a
+ * file whose `source.path` or track id is listed here (unless `--include-removed`), the Upload page
+ * clears the entry when the same track is dropped again.
+ */
+export interface Removed {
+  tracks: Record<string, { at: string; track: Track }>
+  albums: Record<string, { at: string; album: Album }>
+  artists: Record<string, { at: string; artist: Artist }>
+}
 export interface Catalogue {
   version: number
   updatedAt: string | null
   artists: Record<string, Artist>
   albums: Record<string, Album>
   tracks: Record<string, Track>
+  removed?: Removed
 }
 
 /* ── Store ─────────────────────────────────────────── */

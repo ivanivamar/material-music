@@ -15,7 +15,9 @@ import { useLibrary } from '../state/library'
 import { playlistsStore, usePlaylists } from '../state/playlists'
 import { useSession } from '../state/session'
 import { actions } from './actions'
-import { createPlaylist } from './ops'
+import { createPlaylist, removeFromLibraryOp } from './ops'
+import { planRemoval, type RemoveTarget } from '../state/removal'
+import { fmtBytes, plural } from '../state/views'
 
 function Shell({ label, children, onClose, wide }: { label: string; children: React.ReactNode; onClose: () => void; wide?: boolean }) {
   const [on, setOn] = useState(false)
@@ -199,6 +201,86 @@ export function EditPlaylistDialog({ playlistId }: { playlistId: string }) {
           </button>
           <button type="submit" className="dlg-ok" disabled={!name.trim()}>
             Save
+          </button>
+        </div>
+      </form>
+    </Shell>
+  )
+}
+
+/**
+ * "Remove from library" confirmation. Says what goes (songs · size, plus the album / artist when
+ * nothing else is left of them) and where the files go (Drive trash, 30 days). Needs Drive.
+ */
+export function RemoveDialog({ target }: { target: RemoveTarget }) {
+  const toast = useToast()
+  const { data } = useLibrary()
+  const session = useSession()
+  const online = session.status === 'signed-in' && navigator.onLine
+  const plan = useMemo(() => (data ? planRemoval(data, target) : null), [data, target])
+
+  let title = ''
+  let sub = ''
+  let coverId: string | null | undefined
+  let round = false
+  if (data && target.kind === 'album') {
+    const a = data.albums[target.albumId]
+    title = a?.title ?? ''
+    sub = ['ALBUM', a?.artist, a?.year].filter(Boolean).join(' · ')
+    coverId = a?.cover
+  } else if (data && target.kind === 'artist') {
+    const a = data.artists[target.artistId]
+    title = a?.name ?? ''
+    sub = `ARTIST · ${plural(plan?.albumIds.length ?? 0, 'ALBUM')}`
+    coverId = a?.image?.id
+    round = true
+  } else if (data && target.kind === 'track') {
+    const t = data.tracks[target.trackIds[0]]
+    title = target.trackIds.length === 1 ? (t?.title ?? '') : plural(target.trackIds.length, 'song', 'songs')
+    sub = target.trackIds.length === 1 ? ['SONG', t?.artist].filter(Boolean).join(' · ') : 'SONGS'
+    coverId = t ? data.albums[t.albumId]?.cover : null
+  }
+  const cover = useCover(coverId)
+  if (!data || !plan || !plan.trackIds.length) return null
+
+  const alsoAlbums = target.kind === 'track' ? plan.albumIds.map((id) => data.albums[id]?.title).filter(Boolean) : []
+  const alsoArtists = target.kind !== 'artist' ? plan.artistIds.map((id) => data.artists[id]?.name).filter(Boolean) : []
+  const remove = () => {
+    actions.closeDialog()
+    void removeFromLibraryOp(toast, target)
+  }
+  return (
+    <Shell label="Remove from library" onClose={() => actions.closeDialog()}>
+      <form
+        className="dlg-rm"
+        onSubmit={(e) => {
+          e.preventDefault()
+          if (online) remove()
+        }}
+      >
+        <div className="dlg-rm-head">
+          {cover ? <img className={`dlg-rm-cover ${round ? 'is-round' : ''}`} src={cover} alt="" /> : <span className={`dlg-rm-cover ${round ? 'is-round' : ''}`} />}
+          <div className="dlg-rm-text">
+            <div className="dlg-rm-title">{title}</div>
+            <div className="dlg-hint">{sub.toUpperCase()}</div>
+          </div>
+        </div>
+        <p className="dlg-rm-body">
+          <b>
+            {plural(plan.trackIds.length, 'song', 'songs')} · {fmtBytes(plan.bytes)}
+          </b>{' '}
+          leave your library on every device
+          {alsoAlbums.length ? <>, and {alsoAlbums.length === 1 ? <b>{alsoAlbums[0]}</b> : plural(alsoAlbums.length, 'album', 'albums')} with {alsoAlbums.length === 1 ? 'it' : 'them'} (nothing else is left in it)</> : null}
+          {alsoArtists.length ? <>. {alsoArtists.length === 1 ? <b>{alsoArtists[0]}</b> : plural(alsoArtists.length, 'artist', 'artists')} leaves your artists too</> : null}
+          . The files go to the Google Drive trash, where they stay for 30 days. Undo right after, or re-add them from the Upload page; the import script skips them from now on.
+        </p>
+        {!online && <div className="dlg-hint">NEEDS A CONNECTION TO DRIVE</div>}
+        <div className="dlg-buttons">
+          <button type="button" className="dlg-cancel" onClick={() => actions.closeDialog()} autoFocus>
+            Cancel
+          </button>
+          <button type="submit" className="dlg-ok is-danger" disabled={!online}>
+            Remove
           </button>
         </div>
       </form>

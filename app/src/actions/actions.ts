@@ -10,6 +10,7 @@
  * `actions.newPlaylist(trackIds)`, `actions.editPlaylist(id)`.
  */
 import { useSyncExternalStore, type MouseEvent as ReactMouseEvent } from 'react'
+import type { RemoveTarget } from '../state/removal'
 import { onAccountReset } from '../state/session'
 import { isTouch } from '../state/viewport'
 
@@ -30,6 +31,8 @@ export interface MenuAt {
 export type Dialog =
   | { kind: 'new'; trackIds: string[]; hint: string; /** go to the playlist once created */ open?: boolean; /** prefilled name */ name?: string }
   | { kind: 'edit'; playlistId: string }
+  /** "Remove from library" confirmation */
+  | { kind: 'remove'; target: RemoveTarget }
 
 export interface ActionsState {
   menu: { target: ActionTarget; at: MenuAt; /** open straight on the Add to playlist list */ picker: boolean; key: number } | null
@@ -85,6 +88,10 @@ export const actions = {
   },
   editPlaylist(playlistId: string) {
     set({ menu: null, dialog: { kind: 'edit', playlistId } })
+  },
+  /** Ask before removing songs / an album / an artist from the library (files go to the Drive trash). */
+  confirmRemove(target: RemoveTarget) {
+    set({ menu: null, dialog: { kind: 'remove', target } })
   },
   closeDialog() {
     if (state.dialog) set({ dialog: null })

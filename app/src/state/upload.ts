@@ -636,6 +636,12 @@ function merge(c: Catalogue, a: UploadAlbum, ready: UploadItem[], coverId: strin
     c.tracks[t.id] = JSON.parse(JSON.stringify(t)) as Track // drop undefined fields like the importer's JSON
   }
   album.trackCount = Object.values(c.tracks).filter((t) => t.albumId === a.albumId).length
+  // dropped again after a "Remove from library": it's wanted back (the importer stops skipping it too)
+  if (c.removed) {
+    for (const it of ready) delete c.removed.tracks?.[it.trackId!]
+    delete c.removed.albums?.[a.albumId]
+    delete c.removed.artists?.[a.artistId]
+  }
 }
 
 /**

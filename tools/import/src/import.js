@@ -7,8 +7,11 @@
  *   npm run dry-run                      # just scan + read tags, change nothing
  *   npm run import -- --out ./out        # write to a local folder instead of Drive (testing)
  *   npm run import -- --force            # re-process everything
+ *   npm run import -- --include-removed  # also bring back songs removed in the app
  *
  * Re-runnable: unchanged files (same path, size, mtime) are skipped.
+ * Songs removed in the app ("Remove from library", listed in library.json `removed`) are skipped
+ * by source path or track id, unless --include-removed.
  * Never deletes anything from Drive.
  */
 import fs from 'node:fs/promises';
@@ -31,6 +34,7 @@ const { values: args } = parseArgs({
     bitrate: { type: 'string', default: DEFAULTS.opusBitrate },
     offline: { type: 'boolean', default: false },
     'refresh-artists': { type: 'boolean', default: false },
+    'include-removed': { type: 'boolean', default: false },
   },
 });
 
@@ -63,11 +67,26 @@ async function main() {
   const cat = (await store.readJson(CATALOGUE_NAME)) ?? emptyCatalogue();
   const byPath = new Map(Object.values(cat.tracks).map((t) => [t.source?.path, t]));
 
+  // Removed in the app: skip unless asked to bring them back (then the tombstone goes on import)
+  cat.removed ??= { tracks: {}, albums: {}, artists: {} };
+  for (const k of ['tracks', 'albums', 'artists']) cat.removed[k] ??= {};
+  const removedPaths = new Set(Object.values(cat.removed.tracks).map((r) => r.track?.source?.path).filter(Boolean));
+  const keepRemoved = args['include-removed'];
+  let skippedRemoved = 0;
+
   const todo = files.filter((f) => {
+    if (!keepRemoved && removedPaths.has(f.rel)) {
+      skippedRemoved++;
+      return false;
+    }
     const t = byPath.get(f.rel);
     return args.force || !t || t.source.size !== f.size || t.source.mtime !== f.mtime;
   });
-  console.log(`  ${files.length - todo.length} unchanged, ${todo.length} to process\n`);
+  console.log(
+    `  ${files.length - todo.length - skippedRemoved} unchanged, ${todo.length} to process` +
+      (skippedRemoved ? `, ${skippedRemoved} removed in the app (skipped; --include-removed brings them back)` : '') +
+      '\n',
+  );
   if (!todo.length) console.log('Tracks are up to date.');
 
   await fs.mkdir(TMP_DIR, { recursive: true });
@@ -85,7 +104,7 @@ async function main() {
   };
 
   const coverJobs = new Map(); // albumId -> Promise
-  const stats = { done: 0, failed: 0, dupes: 0, flac: 0, opus: 0 };
+  const stats = { done: 0, failed: 0, dupes: 0, removed: 0, flac: 0, opus: 0 };
   const failures = [];
   const now = () => new Date().toISOString();
 
@@ -96,6 +115,18 @@ async function main() {
     const artistId = slug(m.albumArtist);
     const albumId = `${artistId}--${slug(m.album)}`;
     const trackId = hashId(albumId, m.disc, m.track ?? '', m.title);
+
+    // removed in the app under another path (file moved / renamed): still skipped
+    if (cat.removed.tracks[trackId]) {
+      if (!keepRemoved) {
+        stats.removed++;
+        console.log(`${tag} ⊘ removed in the app — skipped (${f.rel})`);
+        return;
+      }
+      delete cat.removed.tracks[trackId];
+      delete cat.removed.albums[albumId];
+      delete cat.removed.artists[artistId];
+    }
 
     const existing = cat.tracks[trackId];
     if (existing && existing.source?.path !== f.rel && !args.force) {
@@ -209,7 +240,7 @@ async function main() {
   await save(true);
 
   console.log(
-    `\nDone: ${stats.done} imported, ${stats.dupes} duplicates skipped, ${stats.failed} failed.` +
+    `\nDone: ${stats.done} imported, ${stats.dupes} duplicates skipped, ${skippedRemoved + stats.removed} removed in the app skipped, ${stats.failed} failed.` +
       `\n  uploaded ${fmtGB(stats.flac)} FLAC + ${fmtGB(stats.opus)} Opus` +
       `\n  library: ${Object.keys(cat.artists).length} artists, ${Object.keys(cat.albums).length} albums, ${Object.keys(cat.tracks).length} tracks`,
   );

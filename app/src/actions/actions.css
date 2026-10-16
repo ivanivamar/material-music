@@ -158,6 +158,18 @@
 .dlg-ok { height: 44px; padding: 0 22px; border-radius: 12px; border: 0; background: var(--ink-primary); color: var(--bg-1); font: inherit; font-size: 15px; font-weight: 500; cursor: pointer; transition: background .2s, box-shadow .3s; }
 .dlg-ok:hover:not(:disabled) { background: #fff; box-shadow: 0 0 32px -6px rgba(255, 255, 255, .5); }
 .dlg-ok:disabled { opacity: .35; cursor: default; }
+.dlg-ok.is-danger { background: var(--danger); color: #1a0e0c; }
+.dlg-ok.is-danger:hover:not(:disabled) { background: rgb(240, 168, 158); box-shadow: 0 0 32px -6px rgba(230, 150, 140, .55); }
+
+/* Remove from library */
+.dlg-rm { display: flex; flex-direction: column; gap: 22px; }
+.dlg-rm-head { display: flex; gap: 16px; align-items: center; min-width: 0; }
+.dlg-rm-cover { width: 72px; height: 72px; border-radius: 10px; flex: none; object-fit: cover; background: rgba(255, 255, 255, .05); }
+.dlg-rm-cover.is-round { border-radius: 50%; }
+.dlg-rm-text { min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.dlg-rm-title { font-size: 20px; font-weight: 500; color: var(--ink-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dlg-rm-body { margin: 0; font-size: 14px; line-height: 1.55; color: var(--ink-secondary); }
+.dlg-rm-body b { font-weight: 500; color: var(--ink-primary); }
 
 .dlg-edit { display: grid; grid-template-columns: 160px minmax(0, 1fr); gap: 22px 24px; }
 .dlg-edit .dlg-buttons { grid-column: 1 / -1; }
