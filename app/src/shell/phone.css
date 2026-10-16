@@ -240,10 +240,11 @@ html[data-phone][data-qp] .toasts.toasts-shell { right: 0; }
 .shell.is-phone .np-main {
   inset: calc(60px + var(--np-sat)) 0 0; padding: 4px 24px calc(28px + env(safe-area-inset-bottom));
   display: flex; flex-direction: column; justify-content: flex-start; gap: clamp(16px, 3.4vh, 30px);
+  /* stretch, not the desktop grid's centre: a centred flex child grows to its widest unbreakable line */
+  align-items: stretch;
   overflow-y: auto; overscroll-behavior: contain;
 }
-.shell.is-phone .np { --np-cover: max(180px, min(364px, calc(100vw - 48px), calc(100vh - 470px - var(--np-sat) - var(--np-title-room, 0px)))); }
-.shell.is-phone .np-cover { transition: width .5s var(--ease), height .5s var(--ease); }
+.shell.is-phone .np { --np-cover: max(180px, min(364px, calc(100vw - 48px), calc(100vh - 470px - var(--np-sat)))); }
 .shell.is-phone .np-cover-wrap { align-self: center; }
 .shell.is-phone .np-info { gap: clamp(16px, 3.4vh, 30px); max-width: none; flex: 1; }
 .shell.is-phone .np-text { gap: 8px; }

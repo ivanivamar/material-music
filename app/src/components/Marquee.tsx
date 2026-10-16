@@ -1,19 +1,22 @@
 /**
- * Single-line text that scrolls when it doesn't fit (player bar, mini-player, lyrics strip).
+ * Single-line text that scrolls when it doesn't fit (player bar, mini-player, lyrics strip, and the
+ * full-screen player's title / artist lines).
  *
  * Fits → plain text. Too long → holds for a beat, glides left at a steady reading speed until a
  * second copy lands exactly where the first started, then holds again (seamless loop). Edges fade
  * through a mask, the left fade only while the text is moving. Pauses under a mouse pointer.
  * Reduced motion (in-app setting or system) → ellipsis, no movement.
+ *
+ * Content is `text`, or `children` (e.g. links) with `text` as the re-measure key. The second copy
+ * is aria-hidden and inert. Gap and fade scale with the font (CSS --mq-gap / --mq-fade, in em), and
+ * the speed scales with font size too, so a hero line doesn't crawl.
  */
-import { useLayoutEffect, useRef, useState } from 'react'
+import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { useMotion } from '../state/motion'
 import './marquee.css'
 
-const SPEED = 34 // px per second
+const SPEED = 34 // px per second at 15px text
 const HOLD = 2600 // ms at rest between loops
-const GAP = 48 // px between the two copies
-const FADE = 14 // px edge fade
 const FADE_MS = 360
 
 // lets the left-edge fade animate (unsupported → no left fade, everything else still works)
@@ -28,23 +31,33 @@ function registerFadeProp() {
   }
 }
 
-export function Marquee({ text, className = '' }: { text: string; className?: string }) {
+export function Marquee({ text, children, className = '' }: { text: string; children?: ReactNode; className?: string }) {
   const motion = useMotion()
   const outerRef = useRef<HTMLSpanElement>(null)
   const itemRef = useRef<HTMLSpanElement>(null)
   const trackRef = useRef<HTMLSpanElement>(null)
   const [overflow, setOverflow] = useState(false)
+  const [fontKey, setFontKey] = useState(0)
   const on = motion && overflow
 
-  // does the text fit? (re-checked on resize and once web fonts are in)
+  // does it fit? (re-checked when the box or the text size changes, and once web fonts are in)
   useLayoutEffect(() => {
     const outer = outerRef.current
     const item = itemRef.current
     if (!outer || !item) return
-    const measure = () => setOverflow(item.scrollWidth > outer.clientWidth + 1)
+    let size = getComputedStyle(outer).fontSize
+    const measure = () => {
+      setOverflow(item.scrollWidth > outer.clientWidth + 1)
+      const s = getComputedStyle(outer).fontSize
+      if (s !== size) {
+        size = s
+        setFontKey((k) => k + 1) // restart the loop with the new distance / speed
+      }
+    }
     measure()
     const ro = new ResizeObserver(measure)
     ro.observe(outer)
+    ro.observe(item)
     document.fonts?.ready.then(measure).catch(() => {})
     return () => ro.disconnect()
   }, [text])
@@ -56,8 +69,13 @@ export function Marquee({ text, className = '' }: { text: string; className?: st
     const item = itemRef.current
     if (!on || !outer || !track || !item) return
     registerFadeProp()
-    const dist = item.offsetWidth + GAP
-    const scroll = (dist / SPEED) * 1000
+    const cs = getComputedStyle(outer)
+    const fontPx = parseFloat(cs.fontSize) || 15
+    const gap = parseFloat(getComputedStyle(track).columnGap) || 48
+    const fadePx = fontPx * 0.95 // = --mq-fade
+    const dist = item.offsetWidth + gap
+    const speed = SPEED * Math.sqrt(fontPx / 15)
+    const scroll = (dist / speed) * 1000
     const total = HOLD + scroll
     const start = HOLD / total
     const fadeIn = Math.min(start + FADE_MS / total, 1)
@@ -75,8 +93,8 @@ export function Marquee({ text, className = '' }: { text: string; className?: st
       [
         { '--mq-l': '0px', offset: 0 },
         { '--mq-l': '0px', offset: start },
-        { '--mq-l': `${FADE}px`, offset: fadeIn },
-        { '--mq-l': `${FADE}px`, offset: fadeOut },
+        { '--mq-l': `${fadePx}px`, offset: fadeIn },
+        { '--mq-l': `${fadePx}px`, offset: fadeOut },
         { '--mq-l': '0px', offset: 1 },
       ] as Keyframe[],
       opts,
@@ -98,17 +116,18 @@ export function Marquee({ text, className = '' }: { text: string; className?: st
       outer.removeEventListener('pointerenter', pause)
       outer.removeEventListener('pointerleave', resume)
     }
-  }, [on, text])
+  }, [on, text, fontKey])
 
+  const content = children ?? text
   return (
     <span ref={outerRef} className={`mq ${on ? 'is-on' : ''} ${className}`}>
       <span ref={trackRef} className="mq-track">
         <span ref={itemRef} className="mq-item">
-          {text}
+          {content}
         </span>
         {on && (
-          <span className="mq-item" aria-hidden>
-            {text}
+          <span className="mq-item" aria-hidden inert>
+            {content}
           </span>
         )}
       </span>

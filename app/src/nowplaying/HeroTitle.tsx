@@ -1,14 +1,14 @@
 /**
- * The full-screen player's hero title, made to survive any length.
+ * The full-screen player's title block, one line per row whatever the length.
  *
  * 1. Trailing qualifiers — "(Remastered 2011)", "[Live]", "- Radio Edit", "feat. X" — move off the
  *    hero line onto a small mono line under it ("—— REMASTERED 2011 · LIVE").
- * 2. The rest is fitted to the column by measurement, not by character count: the largest size
- *    that fits on ≤ 2 lines without breaking a word, else the largest on ≤ 3 lines, else the floor
- *    size clamped to 3 lines. Re-fits whenever the column width changes.
- * 3. Still too long → the last line ends in "…" and a tap/click expands the full title in place.
+ * 2. The hero title is sized to fit its column on one line, between a max and a floor size. Past
+ *    the floor it stays at the floor and auto-scrolls (Marquee). Re-fits when the column resizes.
+ * 3. "Artist · Album" (HeroSub) is one line too, auto-scrolling when it doesn't fit.
  */
-import { useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode, type RefObject } from 'react'
+import { useLayoutEffect, useRef, type ReactNode } from 'react'
+import { Marquee } from '../components/Marquee'
 
 const QUALIFIER =
   /\b(remaster(ed)?|live|version|ver\.|mix|remix|edit|mono|stereo|demo|acoustic|instrumental|feat\.?|ft\.|featuring|radio|extended|original|bonus|session|reprise|deluxe|anniversary|unplugged|bootleg|outtake|alternate|alt\.|from|soundtrack|ost|interlude|intro|outro|re-?recorded|taylor'?s|vip|rework|sped up|slowed)(?!\w)/i
@@ -43,155 +43,33 @@ export function splitTitle(title: string): { main: string; extra?: string } {
   return extras.length ? { main, extra: extras.join(' · ') } : { main }
 }
 
-interface Fit {
-  lines: number
-  size: number
-  truncated: boolean
-}
-
 /** px sizes for the current viewport */
 function scale(phone: boolean) {
   const vw = window.innerWidth
   if (phone) {
     const max = Math.max(26, Math.min(34, vw * 0.083))
-    return { max, min2: 24, min3: 21, lh: 1.1 }
+    return { max, floor: Math.min(max, 28) }
   }
   const max = Math.min(84, vw / 14.4)
-  return { max, min2: Math.min(max, Math.max(32, vw * 0.031)), min3: Math.min(max, Math.max(32, vw * 0.031), Math.max(28, Math.min(36, vw * 0.024))), lh: 1.08 }
+  return { max, floor: Math.min(max, Math.max(40, vw * 0.033)) }
 }
 
-function useFit(ref: RefObject<HTMLElement | null>, text: string, phone: boolean, expanded: boolean): Fit {
-  const [fit, setFit] = useState<Fit>({ lines: 1, size: 0, truncated: false })
-
-  useLayoutEffect(() => {
-    const el = ref.current
-    const box = el?.parentElement
-    if (!el || !box) return
-
-    const run = () => {
-      const { max, min2, min3, lh } = scale(phone)
-      el.style.setProperty('--np-lh', String(lh))
-      el.classList.add('is-measuring')
-      const lineCount = (size: number) => {
-        el.style.fontSize = `${size}px`
-        return Math.round(el.getBoundingClientRect().height / (size * lh))
-      }
-      // whole words only while searching: a word wider than the column means "smaller"
-      const fits = (size: number, lines: number) => lineCount(size) <= lines && el.scrollWidth <= el.clientWidth + 1
-      const search = (lo: number, hi: number, lines: number): number | null => {
-        if (fits(hi, lines)) return hi
-        if (!fits(lo, lines)) return null
-        let a = lo
-        let b = hi
-        while (b - a > 0.5) {
-          const m = (a + b) / 2
-          if (fits(m, lines)) a = m
-          else b = m
-        }
-        return Math.floor(a)
-      }
-      let result: Fit
-      const two = search(min2, max, 2)
-      const three = two === null ? search(min3, min2, 3) : null
-      if (two !== null) result = { size: two, lines: lineCount(two), truncated: false }
-      else if (three !== null) result = { size: three, lines: lineCount(three), truncated: false }
-      else {
-        // floor size; long words may now break anywhere
-        el.style.overflowWrap = 'anywhere'
-        const n = lineCount(min3)
-        el.style.overflowWrap = ''
-        result = { size: min3, lines: n, truncated: n > 3 }
-      }
-      el.classList.remove('is-measuring')
-      el.style.fontSize = `${result.size}px`
-      el.style.setProperty('--np-clamp', expanded ? 'none' : String(Math.min(3, Math.max(2, result.lines))))
-      setFit((f) => (f.size === result.size && f.lines === result.lines && f.truncated === result.truncated ? f : result))
-    }
-
-    run()
-    let width = box.clientWidth
-    const ro = new ResizeObserver(() => {
-      if (box.clientWidth === width) return
-      width = box.clientWidth
-      run()
-    })
-    ro.observe(box)
-    let alive = true
-    document.fonts?.ready.then(() => alive && run()).catch(() => {})
-    return () => {
-      alive = false
-      ro.disconnect()
-    }
-  }, [ref, text, phone, expanded])
-
-  return fit
-}
-
-export function HeroTitle({ title, phone, onLines }: { title: string; phone: boolean; onLines?: (lines: number, hasExtra: boolean) => void }) {
+export function HeroTitle({ title, phone }: { title: string; phone: boolean }) {
   const { main, extra } = splitTitle(title)
   const ref = useRef<HTMLHeadingElement>(null)
-  const [expanded, setExpanded] = useState(false)
-  const [lastTitle, setLastTitle] = useState(title)
-  if (title !== lastTitle) {
-    setLastTitle(title)
-    setExpanded(false)
-  }
-  const fit = useFit(ref, main, phone, expanded)
-  const shown = expanded ? Math.max(fit.lines, 3) : Math.min(fit.lines, 3)
+  const probeRef = useRef<HTMLSpanElement>(null)
 
-  const onLinesRef = useRef(onLines)
-  onLinesRef.current = onLines
-  useLayoutEffect(() => {
-    onLinesRef.current?.(shown, !!extra)
-  }, [shown, extra])
-
-  const toggle = fit.truncated || expanded
-  return (
-    <div className={`np-titles ${expanded ? 'is-expanded' : ''}`}>
-      <h1
-        ref={ref}
-        className={`np-title ${toggle ? 'is-toggle' : ''}`}
-        title={title}
-        {...(toggle
-          ? {
-              role: 'button',
-              tabIndex: 0,
-              'aria-expanded': expanded,
-              onClick: () => setExpanded((v) => !v),
-              onKeyDown: (e: KeyboardEvent) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault()
-                  setExpanded((v) => !v)
-                }
-              },
-            }
-          : {})}
-      >
-        {main}
-      </h1>
-      {extra && (
-        <div className="np-title-x t-mono">
-          <span className="np-title-x-line" aria-hidden />
-          <span className="np-title-x-t">{extra}</span>
-        </div>
-      )}
-    </div>
-  )
-}
-
-/**
- * "Artist · Album" under the hero title. One line while it fits; when it doesn't (long names,
- * several artists) it stacks: artists on up to two balanced lines, the album on its own line
- * below, each ellipsised on its own instead of the album silently vanishing off the end.
- */
-export function HeroSub({ artist, album, text }: { artist: ReactNode; album?: ReactNode; /** re-measure when this changes */ text: string }) {
-  const ref = useRef<HTMLDivElement>(null)
+  // largest size that fits on one line (text width scales linearly with font size)
   useLayoutEffect(() => {
     const el = ref.current
-    if (!el) return
+    const probe = probeRef.current
+    if (!el || !probe) return
     const run = () => {
-      el.classList.remove('is-stacked')
-      if (el.scrollWidth > el.clientWidth + 1) el.classList.add('is-stacked')
+      const { max, floor } = scale(phone)
+      const w100 = probe.getBoundingClientRect().width // probe is set at 100px
+      const avail = el.clientWidth
+      const fit = w100 > 0 && avail > 0 ? (avail / w100) * 100 * 0.985 : max
+      el.style.fontSize = `${Math.floor(Math.max(floor, Math.min(max, fit)))}px`
     }
     run()
     let width = el.clientWidth
@@ -207,39 +85,41 @@ export function HeroSub({ artist, album, text }: { artist: ReactNode; album?: Re
       alive = false
       ro.disconnect()
     }
-  }, [text])
+  }, [main, phone])
+
   return (
-    <div ref={ref} className="np-sub">
-      {artist}
-      {album && (
-        <>
-          <span className="np-sub-dot" aria-hidden>
-            {' · '}
-          </span>
-          {album}
-        </>
+    <div className="np-titles">
+      <h1 ref={ref} className="np-title" title={title}>
+        <span ref={probeRef} className="np-title-probe" aria-hidden>
+          {main}
+        </span>
+        <Marquee text={main} />
+      </h1>
+      {extra && (
+        <div className="np-title-x t-mono">
+          <span className="np-title-x-line" aria-hidden />
+          <Marquee className="np-title-x-t" text={extra} />
+        </div>
       )}
     </div>
   )
 }
 
-/**
- * "Major Lazer & DJ Snake feat. MØ" with each name kept whole, so a wrapped list breaks between
- * artists ("Major Lazer & / DJ Snake feat. MØ") rather than inside one. Text is unchanged.
- */
-export function ArtistNames({ names }: { names: string }) {
-  const parts = names.split(/(\s*(?:,|;|\/|&|\+|\s(?:x|×|feat\.?|ft\.|featuring|with|vs\.?)\s)\s*)/i)
+/** "Artist · Album" under the hero title — one line, auto-scrolling when it doesn't fit. */
+export function HeroSub({ artist, album, text }: { artist: ReactNode; album?: ReactNode; /** re-measure when this changes */ text: string }) {
   return (
-    <>
-      {parts.map((part, i) =>
-        i % 2 === 1 || part.length > 34 ? (
-          part
-        ) : (
-          <span key={i} className="np-name">
-            {part}
-          </span>
-        ),
-      )}
-    </>
+    <div className="np-sub">
+      <Marquee text={text}>
+        {artist}
+        {album && (
+          <>
+            <span className="np-sub-dot" aria-hidden>
+              {' · '}
+            </span>
+            {album}
+          </>
+        )}
+      </Marquee>
+    </div>
   )
 }

@@ -22,7 +22,7 @@ import { playerStore } from '../state/player'
 import { isTouch, useIsPhone } from '../state/viewport'
 import { albumHref, artistHref } from '../shell/routes'
 import { Marquee } from '../components/Marquee'
-import { ArtistNames, HeroSub, HeroTitle } from './HeroTitle'
+import { HeroSub, HeroTitle } from './HeroTitle'
 import { Lyrics } from './Lyrics'
 import { useSwipeDown } from './swipe'
 import { NpLink, Transport, ViewButtons, contextLine, useCurrent } from './parts'
@@ -88,10 +88,7 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
   const duration = track?.duration ?? 0
   const frac = duration > 0 ? Math.min(1, p.position / duration) : 0
   const glow = tint ? rgba(tint.glow, 0.9) : 'rgba(255,255,255,0.12)'
-  // phone: a tall title takes its extra height from the cover, so the transport stays on screen
-  const [titleRoom, setTitleRoom] = useState(0)
-  const onTitleLines = (lines: number, hasExtra: boolean) => setTitleRoom(Math.max(0, lines - 2) * 34 + (hasExtra ? 24 : 0))
-  const scene = { background: tint ? sceneBackground(tint) : '#0B0B0C', '--np-title-room': `${titleRoom}px` } as CSSProperties
+  const scene: CSSProperties = { background: tint ? sceneBackground(tint) : '#0B0B0C' }
 
   const nextIdx = p.index + 1 < p.queue.length ? p.index + 1 : p.repeat === 'all' && p.queue.length > 1 ? 0 : -1
   const next = nextIdx >= 0 ? data?.tracks[p.queue[nextIdx]] : undefined
@@ -155,12 +152,12 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
                   {source}
                   {trackNo && <span>{trackNo}</span>}
                 </div>
-                <HeroTitle title={track.title} phone={phone} onLines={onTitleLines} />
+                <HeroTitle title={track.title} phone={phone} />
                 <HeroSub
                   text={`${track.artist}\n${album?.title ?? ''}`}
                   artist={
                     <NpLink href={artistHref(track.artistId)} className="np-artist" title={track.artist}>
-                      <ArtistNames names={track.artist} />
+                      {track.artist}
                     </NpLink>
                   }
                   album={
