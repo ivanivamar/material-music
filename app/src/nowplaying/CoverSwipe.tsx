@@ -1,16 +1,20 @@
 /**
- * Phone full-screen player: the queue as a horizontal row of covers (native scroll + scroll snap).
+ * Phone full-screen player: the queue as a horizontal row of covers.
  *
- * One slot per queue row, each as wide as the scroller, the cover centred in it. The browser does
- * the dragging, flinging and snapping (`scroll-snap-stop: always`: one song per swipe). Nothing in
- * the player changes while the row moves; only when the scroll has settled on another slot does
- * the player switch (next / back / jump), and with it the title, tint and the rest of the screen.
+ * One slot per queue row, each as wide as the row, the cover centred in it. Slots are keyed by
+ * queue position and never move: a song change only changes the row's scroll position — no
+ * transforms on covers, no swapping of <img>s (that was the flicker in the first versions).
  *
- * Slots are keyed by queue position and never move, so a song change never re-positions or swaps
- * an <img>: the row only scrolls. When the song changes from elsewhere (buttons, the track ending,
- * lock screen, queue edits) the row scrolls to it — smoothly for a neighbour, instantly for a jump —
- * once the index has been stable for a moment and no finger is on the row (a brief back-and-forth
- * of the store can't drag the row around).
+ * The row is an overflow-hidden scroller moved only by this component (no native momentum or snap
+ * to fight with): it follows the finger while dragging (`touch-action: pan-y`, so vertical drags
+ * still scroll / swipe the player down), and on release glides to the target slot with a short,
+ * gentle ease-out. Target: the flick direction (finger speed past FLICK), else the nearest slot;
+ * never more than one song from where the touch started. The song switches at COMMIT_AT of the
+ * glide — slightly before the cover lands — and with it the title, tint and the rest of the screen.
+ *
+ * When the song changes elsewhere (buttons, the track ending, lock screen, queue edits) the row
+ * glides to it once the index has held for SYNC_MS and no finger is on it (instant for jumps), so a
+ * brief back-and-forth of the store can't drag the row around.
  *
  * Only slots near what's on screen / playing get an image; the rest are empty boxes.
  * No wrap-around at the ends of the queue (repeat-all still wraps with the buttons).
@@ -24,31 +28,33 @@ import { playerStore } from '../state/player'
 import { useCurrent } from './parts'
 
 const NEAR = 2 // slots either side that get their cover
-const SETTLE_MS = 140 // no scroll events for this long = settled (fallback when there's no scrollend)
 const SYNC_MS = 180 // the store index must hold this long before the row follows it
+const DEAD_ZONE = 8 // px before a touch counts as a horizontal drag
+const FLICK = 0.3 // px per ms: a release this fast goes to the next slot that way
+const EDGE = 0.28 // drag resistance past the first / last song
+const GLIDE_MIN = 170 // ms, glide duration for a short distance…
+const GLIDE_MAX = 280 // …up to this for a whole slot
+const COMMIT_AT = 0.45 // share of the glide after which the song switches
+/** gentle ease-out (quadratic): quick to start, short tail */
+const ease = (t: number) => t * (2 - t)
 
 export function CoverSwipe({ glow }: { cover: string | null; glow: string }) {
   const { p } = useCurrent()
   const motion = useMotion()
   const n = p.queue.length
   const scRef = useRef<HTMLDivElement>(null)
-  /** slot under the centre of the scroller (follows the finger), drives which covers load */
+  const trackRef = useRef<HTMLDivElement>(null)
+  /** slot under the centre of the row (follows the finger), drives which covers load */
   const [shown, setShown] = useState(p.index)
   const live = useRef({ motion, index: p.index })
   live.current = { motion, index: p.index }
 
+  /** finger on the row (horizontal drag decided or not) */
   const touching = useRef(false)
-  /** a finger moved the row since the last settle: only then does settling switch songs */
-  const gesture = useRef(false)
+  /** shared with the sync effect: start / stop a glide */
+  const glideRef = useRef<{ to: (k: number, onCommit?: () => void) => void; stop: () => void } | null>(null)
 
   const slotWidth = () => scRef.current?.clientWidth || 1
-  const scrollTo = (i: number, smooth: boolean) => {
-    const sc = scRef.current
-    if (!sc) return
-    const left = i * slotWidth()
-    if (Math.abs(sc.scrollLeft - left) < 1) return
-    sc.scrollTo({ left, behavior: smooth ? 'smooth' : 'auto' })
-  }
 
   // first paint: already on the current song
   useLayoutEffect(() => {
@@ -61,7 +67,9 @@ export function CoverSwipe({ glow }: { cover: string | null; glow: string }) {
     const sc = scRef.current
     if (!sc || typeof ResizeObserver === 'undefined') return
     const ro = new ResizeObserver(() => {
-      if (!touching.current) sc.scrollLeft = live.current.index * slotWidth()
+      if (touching.current) return
+      glideRef.current?.stop()
+      sc.scrollLeft = live.current.index * slotWidth()
     })
     ro.observe(sc)
     return () => ro.disconnect()
@@ -78,8 +86,13 @@ export function CoverSwipe({ glow }: { cover: string | null; glow: string }) {
       () => {
         if (touching.current) return
         const at = Math.round(sc.scrollLeft / slotWidth())
-        if (at === p.index) return
-        scrollTo(p.index, live.current.motion && !queueChanged && Math.abs(at - p.index) === 1)
+        if (at === p.index && Math.abs(sc.scrollLeft - p.index * slotWidth()) < 1) return
+        if (live.current.motion && !queueChanged && Math.abs(at - p.index) <= 1) glideRef.current?.to(p.index)
+        else {
+          glideRef.current?.stop()
+          sc.scrollLeft = p.index * slotWidth()
+          setShown(p.index)
+        }
       },
       queueChanged ? 0 : SYNC_MS,
     )
@@ -88,49 +101,160 @@ export function CoverSwipe({ glow }: { cover: string | null; glow: string }) {
 
   useEffect(() => {
     const sc = scRef.current
-    if (!sc) return
-    let settleTimer = 0
+    const track = trackRef.current
+    if (!sc || !track) return
+    let raf = 0
+    let gliding = false
+    // touch
+    let armed = false
+    let decided = false
+    let dragging = false
+    let startX = 0
+    let startY = 0
+    let startLeft = 0
+    let startSlot = 0
+    let lastX = 0
+    let lastT = 0
+    let velocity = 0 // px/ms of the finger, + = moving right (row going back)
+    let over = 0 // rubber-band offset past the ends (scrollLeft can't go there)
 
-    const settle = () => {
-      window.clearTimeout(settleTimer)
-      if (touching.current) return
-      const k = Math.round(sc.scrollLeft / slotWidth())
-      setShown(k)
-      if (!gesture.current) return
-      gesture.current = false
+    const maxLeft = () => Math.max(0, (playerStore.get().queue.length - 1) * slotWidth())
+    const setPos = (x: number) => {
+      const clamped = Math.max(0, Math.min(maxLeft(), x))
+      sc.scrollLeft = clamped
+      over = x - clamped
+      track.style.transform = over ? `translate3d(${-over}px, 0, 0)` : ''
+    }
+    const pos = () => sc.scrollLeft + over
+
+    const commit = (k: number) => {
       const s = playerStore.get()
       if (k === s.index || k < 0 || k >= s.queue.length) return
       if (k === s.index + 1) playerStore.next()
       else if (k === s.index - 1) playerStore.back()
       else playerStore.jump(k)
     }
-    const onScroll = () => {
-      setShown(Math.round(sc.scrollLeft / slotWidth()))
-      window.clearTimeout(settleTimer)
-      settleTimer = window.setTimeout(settle, SETTLE_MS)
+
+    const stop = () => {
+      if (!gliding) return
+      cancelAnimationFrame(raf)
+      gliding = false
     }
-    const onStart = () => {
+
+    const to = (k: number, onCommit?: () => void) => {
+      stop()
+      const w = slotWidth()
+      const from = pos()
+      const target = k * w
+      const dist = Math.abs(target - from)
+      if (dist < 1 || !live.current.motion) {
+        setPos(target)
+        setShown(k)
+        onCommit?.()
+        return
+      }
+      const ms = GLIDE_MIN + (GLIDE_MAX - GLIDE_MIN) * Math.min(1, dist / w)
+      const t0 = performance.now()
+      let committed = !onCommit
+      gliding = true
+      const step = (now: number) => {
+        const t = Math.min(1, (now - t0) / ms)
+        setPos(from + (target - from) * ease(t))
+        if (!committed && t >= COMMIT_AT) {
+          committed = true
+          onCommit?.()
+        }
+        if (t < 1) raf = requestAnimationFrame(step)
+        else {
+          gliding = false
+          setPos(target)
+        }
+      }
+      raf = requestAnimationFrame(step)
+    }
+    glideRef.current = { to, stop }
+
+    const onScroll = () => setShown(Math.round(sc.scrollLeft / slotWidth()))
+
+    const onStart = (e: TouchEvent) => {
+      armed = decided = dragging = false
+      if (e.touches.length !== 1) return
+      armed = true
+      startX = lastX = e.touches[0].clientX
+      startY = e.touches[0].clientY
+      lastT = e.timeStamp
+      velocity = 0
       touching.current = true
-      gesture.current = true
     }
+
+    const onMove = (e: TouchEvent) => {
+      if (!armed) return
+      const x = e.touches[0].clientX
+      const y = e.touches[0].clientY
+      if (!decided) {
+        const ddx = x - startX
+        const ddy = y - startY
+        if (Math.abs(ddx) < DEAD_ZONE && Math.abs(ddy) < DEAD_ZONE) return
+        decided = true
+        // mostly vertical: leave it to scrolling / swipe-down-to-close
+        if (Math.abs(ddx) < Math.abs(ddy) * 1.2) {
+          armed = false
+          return
+        }
+        dragging = true
+        // grabbed mid-glide: carry on from where the row is; one song at most from the playing one
+        const wasGliding = gliding
+        stop()
+        startLeft = pos()
+        startSlot = wasGliding ? playerStore.get().index : Math.round(startLeft / slotWidth())
+        startX = lastX = x // no jump by the dead zone
+        lastT = e.timeStamp
+      }
+      if (!dragging) return
+      const dt = e.timeStamp - lastT
+      if (dt > 0) velocity = 0.7 * ((x - lastX) / dt) + 0.3 * velocity
+      lastX = x
+      lastT = e.timeStamp
+      let left = startLeft - (x - startX)
+      const max = maxLeft()
+      if (left < 0) left *= EDGE
+      else if (left > max) left = max + (left - max) * EDGE
+      setPos(left)
+    }
+
     const onEnd = (e: TouchEvent) => {
       if (e.touches.length) return
       touching.current = false
-      // no scroll after the finger lifted (or it never moved): settle now / soon
-      window.clearTimeout(settleTimer)
-      settleTimer = window.setTimeout(settle, SETTLE_MS)
+      const was = dragging
+      armed = decided = dragging = false
+      if (!was) return
+      // a pause before lifting = no flick
+      if (e.timeStamp - lastT > 80) velocity = 0
+      const w = slotWidth()
+      const n = playerStore.get().queue.length
+      const at = pos() / w
+      let k = Math.round(at)
+      if (velocity < -FLICK) k = Math.ceil(at - 0.02)
+      else if (velocity > FLICK) k = Math.floor(at + 0.02)
+      k = Math.max(Math.max(0, startSlot - 1), Math.min(Math.min(n - 1, startSlot + 1), k))
+      to(k, () => {
+        setShown(k)
+        commit(k)
+      })
     }
-    const hasScrollEnd = 'onscrollend' in window
+
     sc.addEventListener('scroll', onScroll, { passive: true })
-    if (hasScrollEnd) sc.addEventListener('scrollend', settle)
     sc.addEventListener('touchstart', onStart, { passive: true })
+    sc.addEventListener('touchmove', onMove, { passive: true })
     sc.addEventListener('touchend', onEnd, { passive: true })
     sc.addEventListener('touchcancel', onEnd, { passive: true })
     return () => {
-      window.clearTimeout(settleTimer)
+      stop()
+      glideRef.current = null
+      touching.current = false
       sc.removeEventListener('scroll', onScroll)
-      if (hasScrollEnd) sc.removeEventListener('scrollend', settle)
       sc.removeEventListener('touchstart', onStart)
+      sc.removeEventListener('touchmove', onMove)
       sc.removeEventListener('touchend', onEnd)
       sc.removeEventListener('touchcancel', onEnd)
     }
@@ -143,8 +267,10 @@ export function CoverSwipe({ glow }: { cover: string | null; glow: string }) {
   }
 
   return (
-    <div ref={scRef} className="npc" data-motion={motion ? undefined : 'off'}>
-      <div className="npc-track">{slots}</div>
+    <div ref={scRef} className="npc">
+      <div ref={trackRef} className="npc-track">
+        {slots}
+      </div>
     </div>
   )
 }
