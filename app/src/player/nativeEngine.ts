@@ -67,6 +67,22 @@ export function createNativeEngine(): PlayerEngine {
    */
   let expect: { id: string; until: number } | null = null
   const EXPECT_MS = 4000
+  /**
+   * The track we just left with a load(). Even after native has reported the new track, a late /
+   * queued event can still carry the old one (seen on the phone: the old cover kept flashing in and
+   * out after a swipe). Events naming it are dropped for LEFT_MS.
+   */
+  let left: { id: string; until: number } | null = null
+  const LEFT_MS = 2500
+  /** what native last reported (accepted events only) */
+  let nativeId: string | null = null
+  /**
+   * "Native moved by itself" must be seen twice in a row before the store follows, so one stray
+   * event can never jump the store. When it is first seen, a getState() 350 ms later confirms it
+   * (native may not send another event while paused).
+   */
+  let candidate: { index: number; mediaId: string } | null = null
+  let confirmTimer = 0
 
   /* ── launch: adopt what the native player is already doing ── */
   const ready: Promise<void> = PelagicPlayer.getState()
@@ -77,6 +93,11 @@ export function createNativeEngine(): PlayerEngine {
         sentRepeat = s.repeat
         // keep playing where it is: don't let the restore's load() rewind it
         if (loadReq && !loadReq.autoplay) loadReq = null
+        // native may have moved on while the app was closed: follow it now, not the restored track
+        if (!loadReq) {
+          expect = null
+          if (st.index !== s.index && s.queue[st.index] === st.mediaId) playerStore.engineMoved(st.index)
+        }
         apply(st)
       }
     })
@@ -130,13 +151,31 @@ export function createNativeEngine(): PlayerEngine {
   /* ── native → store ── */
   function apply(st: NativePlayerState) {
     if (st.count === 0) return
+    const now = performance.now()
     if (expect) {
-      if (st.mediaId === expect.id || performance.now() > expect.until) expect = null
-      else return // still the track from before our load(): stale
+      if (st.mediaId === expect.id || now > expect.until) {
+        expect = null
+        if (left) left.until = now + LEFT_MS // the echo window starts once native is on the new track
+      } else return // still the track from before our load(): stale
     }
+    if (left && (now > left.until || left.id === playerStore.currentId())) left = null
+    if (left && st.mediaId === left.id) return // late echo of the track we just left
+    nativeId = st.mediaId ?? null
     const s = playerStore.get()
-    // moved by itself (auto-advance, lock screen): follow, but only if the row really matches
-    if (st.index >= 0 && st.index !== s.index && s.queue[st.index] === st.mediaId) playerStore.engineMoved(st.index)
+    // moved by itself (auto-advance, lock screen): follow, but only if the row really matches and
+    // a second report agrees
+    if (st.index >= 0 && st.index !== s.index && st.mediaId && s.queue[st.index] === st.mediaId) {
+      if (candidate && candidate.index === st.index && candidate.mediaId === st.mediaId) {
+        candidate = null
+        window.clearTimeout(confirmTimer)
+        playerStore.engineMoved(st.index)
+      } else {
+        candidate = { index: st.index, mediaId: st.mediaId }
+        window.clearTimeout(confirmTimer)
+        confirmTimer = window.setTimeout(() => void PelagicPlayer.getState().then(apply).catch(() => {}), 350)
+        return
+      }
+    } else candidate = null
     const cur = playerStore.get()
     if (cur.queue[cur.index] !== st.mediaId) return // stale event from before a queue change
     const active = st.playWhenReady && !st.ended && !st.idle
@@ -190,7 +229,11 @@ export function createNativeEngine(): PlayerEngine {
   const engine: PlayerEngine = {
     load(_id, { autoplay, position }) {
       loadReq = { autoplay, position }
-      expect = { id: _id, until: performance.now() + EXPECT_MS }
+      const now = performance.now()
+      expect = { id: _id, until: now + EXPECT_MS }
+      left = nativeId && nativeId !== _id ? { id: nativeId, until: now + EXPECT_MS + LEFT_MS } : null
+      candidate = null
+      window.clearTimeout(confirmTimer)
       if (autoplay) playerStore.report({ playing: true, buffering: true, source: isStored(_id) ? 'local' : 'drive' })
       flush()
     },
