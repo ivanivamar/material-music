@@ -16,6 +16,7 @@
  */
 import { useEffect, useLayoutEffect, useRef } from 'react'
 import { useCover } from '../lib/covers'
+import { useArtTint } from '../design/tint'
 import { useLibrary } from '../state/library'
 import { useMotion } from '../state/motion'
 import { playerStore } from '../state/player'
@@ -39,6 +40,10 @@ export function CoverSwipe({ cover, glow }: { cover: string | null; glow: string
   const nextT = nextIdx >= 0 ? data?.tracks[p.queue[nextIdx]] : undefined
   const prevCover = useCover(prevT ? data?.albums[prevT.albumId]?.cover : null)
   const nextCover = useCover(nextT ? data?.albums[nextT.albumId]?.cover : null)
+  // work out the neighbours' tints now, so the scene colour is ready the moment the song switches
+  // (otherwise the background drops to neutral for a beat, then pops to the new tint)
+  useArtTint(prevCover)
+  useArtTint(nextCover)
 
   const rootRef = useRef<HTMLDivElement>(null)
   const trackRef = useRef<HTMLDivElement>(null)
@@ -182,25 +187,31 @@ export function CoverSwipe({ cover, glow }: { cover: string | null; glow: string
     }
   }, [])
 
-  const img = (src: string | null, cls: string, main = false) =>
+  // Keyed by queue row, not by slot: after a swipe the neighbour's <img> element itself becomes the
+  // main cover (only its class / position change). Swapping the src on a fixed element instead made
+  // the browser re-decode it and show a blank / stale frame — the flicker on every swipe.
+  const img = (key: string, src: string | null, cls: string, main = false) =>
     src ? (
       <img
+        key={key}
         className={`np-cover ${cls}`}
         src={src}
         alt=""
         draggable={false}
+        decoding="sync"
         style={main ? { boxShadow: `0 0 0 1px rgba(255,255,255,0.08), 0 60px 120px -40px ${glow}` } : undefined}
       />
     ) : (
-      <span className={`np-cover np-cover-empty ${cls}`} aria-hidden />
+      <span key={key} className={`np-cover np-cover-empty ${cls}`} aria-hidden />
     )
 
   return (
     <div ref={rootRef} className="npc">
       <div ref={trackRef} className="npc-track">
-        {prevT && img(prevCover, 'npc-side is-prev')}
-        {img(cover, 'npc-main', true)}
-        {nextT && img(nextCover, 'npc-side is-next')}
+        {/* queue of two with repeat-all: previous and next are the same row */}
+        {prevT && img(prevIdx === nextIdx ? `q${prevIdx}p` : `q${prevIdx}`, prevCover, 'npc-side is-prev')}
+        {img(`q${p.index}`, cover, 'npc-main', true)}
+        {nextT && img(`q${nextIdx}`, nextCover, 'npc-side is-next')}
       </div>
     </div>
   )
