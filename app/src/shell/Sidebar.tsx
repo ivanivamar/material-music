@@ -75,9 +75,14 @@ function SidebarPlaylists({ active }: { active: string | null }) {
     <section className="sb-playlists" aria-label="Playlists">
       <div className="sb-section-head">
         <span className="sb-section-label">PLAYLISTS</span>
-        <button type="button" className="sb-plus" aria-label="New playlist" title="New playlist" onClick={() => actions.newPlaylist([], '', true)}>
-          <Icon name="plus" />
-        </button>
+        <span className="sb-heads">
+          <button type="button" className="sb-plus" aria-label="New smart playlist" title="New smart playlist" onClick={() => actions.smartPlaylist()}>
+            <Icon name="smart" />
+          </button>
+          <button type="button" className="sb-plus" aria-label="New playlist" title="New playlist" onClick={() => actions.newPlaylist([], '', true)}>
+            <Icon name="plus" />
+          </button>
+        </span>
       </div>
       {list.map((p) => (
         <SidebarPlaylist key={p.id} p={p} on={p.id === active} />
@@ -94,7 +99,8 @@ function SidebarPlaylist({ p, on }: { p: Playlist; on: boolean }) {
   const [over, setOver] = useState(false)
   const count = data ? playlistInfo(data, p).ids.length : 0
   const playing = player.playing && player.context?.kind === 'playlist' && player.context.id === p.id
-  const accepts = (e: DragEvent) => e.dataTransfer.types.includes(DRAG_MIME)
+  // smart playlists fill themselves: not a drop target
+  const accepts = (e: DragEvent) => !p.smart && e.dataTransfer.types.includes(DRAG_MIME)
   return (
     <a
       href={playlistHref(p.id)}
@@ -123,7 +129,7 @@ function SidebarPlaylist({ p, on }: { p: Playlist; on: boolean }) {
       <PlaylistCover playlist={p} size={30} lazy className="sb-pl-cover" />
       <span className="sb-pl-text">
         <span className="sb-pl-name">{p.name}</span>
-        <span className="sb-pl-meta">{plural(count, 'TRACK')}</span>
+        <span className="sb-pl-meta">{p.smart ? `SMART · ${plural(count, 'TRACK')}` : plural(count, 'TRACK')}</span>
       </span>
       {playing && <span className="sb-pl-dot" aria-label="Playing" role="img" />}
     </a>

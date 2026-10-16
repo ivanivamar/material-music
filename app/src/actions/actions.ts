@@ -7,7 +7,7 @@
  *   phone    bottom sheet (long-press a row or tap ⋯), Add to playlist as the sheet's second page
  *
  * Opening something from anywhere: `actions.menu(target, event)`, `actions.addTo(target, event)`,
- * `actions.newPlaylist(trackIds)`, `actions.editPlaylist(id)`.
+ * `actions.newPlaylist(trackIds)`, `actions.editPlaylist(id)`, `actions.smartPlaylist(id?)`.
  */
 import { useSyncExternalStore, type MouseEvent as ReactMouseEvent } from 'react'
 import type { RemoveTarget } from '../state/removal'
@@ -31,6 +31,8 @@ export interface MenuAt {
 export type Dialog =
   | { kind: 'new'; trackIds: string[]; hint: string; /** go to the playlist once created */ open?: boolean; /** prefilled name */ name?: string }
   | { kind: 'edit'; playlistId: string }
+  /** New smart playlist (no id) or Edit rules of one (step 20) */
+  | { kind: 'smart'; playlistId?: string }
   /** "Remove from library" confirmation */
   | { kind: 'remove'; target: RemoveTarget }
 
@@ -85,6 +87,10 @@ export const actions = {
   },
   newPlaylist(trackIds: string[] = [], hint = '', open = false, name = '') {
     set({ menu: null, dialog: { kind: 'new', trackIds, hint, open, name } })
+  },
+  /** New smart playlist, or edit the rules of one. */
+  smartPlaylist(playlistId?: string) {
+    set({ menu: null, dialog: { kind: 'smart', playlistId } })
   },
   editPlaylist(playlistId: string) {
     set({ menu: null, dialog: { kind: 'edit', playlistId } })

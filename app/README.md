@@ -112,6 +112,24 @@ No Liked songs playlist and no hearts (see the plan).
 
 Entry points: right-click or ⋯ on any song row (album, artist, playlist, Library › Songs, Search, queue rows, full-screen player header), album cards / album ⋯, artist tiles / artist ⋯, sidebar playlists (+ to create; drop songs or album cards onto one to add them), queue panel "Save the queue as a playlist". Phone: long-press or ⋯ opens the sheet. Esc and Android Back close menus and dialogs first. Android: a playlist can be downloaded (a `playlist` pin — only its tracks, filed under their albums as partial album plans).
 
+## Smart playlists (step 20)
+
+Playlists that fill themselves from rules. New from the sidebar's ✦ button, the Library › Playlists
+"New smart playlist" tile/row, or the empty state. Starting points: Recently added, Never played,
+Not played in a year, Most played this month, Genre, Decade, Custom.
+
+- Rules (`src/state/smart.ts`): date added / last played (in the last N days·weeks·months·years, or
+  not), play count, plays in a period, genre, decade, year, artist, album, title — match all or any.
+  Sort (also picks what's kept with a limit) + optional "limit to N songs".
+- Stored in the playlist's own Drive file as `smart` (+ `stamps.smart`, latest edit wins), so the
+  rules sync like the name; `entries` stays empty. Songs are worked out on each device from the
+  catalogue + `history.json`; views recompute after every counted play and once an hour.
+- Same UI as playlists (`playlistInfo()` returns the computed rows): page shows the rules line
+  (click = Edit rules) and a PLAYS / LAST PLAYED / ADDED column depending on the sort. No reorder,
+  no "Remove from", not offered in Add to playlist pickers or as a sidebar drop target.
+- Android download of a smart playlist follows it (files come and go with the rules); it waits until
+  the history was read from Drive once so "Never played" never briefly means the whole library.
+
 ## New releases (step 11)
 
 | File | What |

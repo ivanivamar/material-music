@@ -25,6 +25,7 @@ import { useIsPhone } from '../state/viewport'
 import { artistInfos, fmtBytes, fmtTotal, plural } from '../state/views'
 import { actions, useActions, type ActionTarget } from './actions'
 import { EditPlaylistDialog, NewPlaylistDialog, RemoveDialog } from './Dialogs'
+import { SmartDialog } from './SmartDialog'
 import { addToPlaylist, createPlaylist, deletePlaylist, downloadTrack, goTo, playPlaylist, queueTracks, removeFromPlaylist, removeTrackDownload } from './ops'
 import { playList } from '../pages/library/playback'
 import './actions.css'
@@ -165,6 +166,7 @@ function describe(t: ActionTarget, c: Catalogue, toast: Toast, lists: Map<string
     { icon: 'queue', label: 'Add to queue', run: () => queueTracks(toast, ids(), false) },
     { icon: 'playlist', label: 'Add to another playlist', picker: true },
     div,
+    ...(p.smart ? [{ icon: 'smart', label: 'Edit rules', run: () => actions.smartPlaylist(p.id) } satisfies Item] : []),
     { icon: 'gear', label: 'Edit details', run: () => actions.editPlaylist(p.id) },
   ]
   if (dl.available) {
@@ -178,7 +180,7 @@ function describe(t: ActionTarget, c: Catalogue, toast: Toast, lists: Map<string
   rows.push(div, { icon: 'x', label: 'Delete playlist', danger: true, run: () => deletePlaylist(toast, p.id) })
   return {
     title: p.name,
-    sub: `PLAYLIST · ${plural(info.ids.length, 'TRACK')}`,
+    sub: `${p.smart ? 'SMART PLAYLIST' : 'PLAYLIST'} · ${plural(info.ids.length, 'TRACK')}`,
     cover: null,
     playlist: p,
     trackIds: ids,
@@ -236,6 +238,7 @@ export function ActionHost() {
       {dialog?.kind === 'new' && <NewPlaylistDialog trackIds={dialog.trackIds} hint={dialog.hint} open={!!dialog.open} name={dialog.name} />}
       {dialog?.kind === 'edit' && <EditPlaylistDialog playlistId={dialog.playlistId} />}
       {dialog?.kind === 'remove' && <RemoveDialog target={dialog.target} />}
+      {dialog?.kind === 'smart' && <SmartDialog key={dialog.playlistId ?? 'new'} playlistId={dialog.playlistId} />}
     </>
   )
 }
@@ -424,7 +427,7 @@ function Picker({ d, target, subRef, autoFocus }: { d: Described; target: Action
   const toast = useToast()
   const [q, setQ] = useState('')
   const own = target.kind === 'playlist' ? target.playlistId : null
-  const shown = list.filter((p) => p.id !== own && (!q.trim() || p.name.toLowerCase().includes(q.trim().toLowerCase())))
+  const shown = list.filter((p) => p.id !== own && !p.smart && (!q.trim() || p.name.toLowerCase().includes(q.trim().toLowerCase())))
   const has = useMemo(() => (data && target.kind === 'track' ? playlistsWith(data, list, target.trackId) : new Set<string>()), [data, list, target])
 
   return (
@@ -594,7 +597,7 @@ function SheetPicker({ d, target, onBack, onDone }: { d: Described; target: Acti
       </form>
       <div className="as-pl-list">
         {list
-          .filter((p) => p.id !== own)
+          .filter((p) => p.id !== own && !p.smart)
           .map((p) => {
             const info = data ? playlistInfo(data, p) : null
             return (
@@ -612,7 +615,7 @@ function SheetPicker({ d, target, onBack, onDone }: { d: Described; target: Acti
               </button>
             )
           })}
-        {!list.length && <div className="as-pl-none">No playlists yet. Name one above.</div>}
+        {!list.some((p) => !p.smart) && <div className="as-pl-none">No playlists yet. Name one above.</div>}
       </div>
     </>
   )

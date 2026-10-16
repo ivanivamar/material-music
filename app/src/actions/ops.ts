@@ -13,6 +13,7 @@ import { nowPlayingStore } from '../state/nowPlaying'
 import { playerStore } from '../state/player'
 import { alreadyIn, playlistInfo } from '../state/playlistViews'
 import { playlistsStore } from '../state/playlists'
+import type { SmartRules } from '../state/smart'
 import { fmtBytes, plural } from '../state/views'
 
 type Toast = ReturnType<typeof useToast>
@@ -36,6 +37,10 @@ export function addToPlaylist(toast: Toast, playlistId: string, trackIds: string
   const c = libraryStore.get().data
   const p = playlistsStore.get().byId.get(playlistId)
   if (!c || !p || !trackIds.length) return
+  if (p.smart) {
+    toast.show({ icon: 'playlist', mutedIcon: true, text: `${p.name} fills itself from its rules.`, meta: 'SMART PLAYLIST' })
+    return
+  }
   const unique = [...new Set(trackIds)]
   const dup = alreadyIn(c, p, unique)
   const fresh = unique.filter((id) => !dup.has(id))
@@ -74,6 +79,25 @@ export function createPlaylist(toast: Toast, name: string, trackIds: string[], o
     action: open ? undefined : { label: 'View', onClick: () => goTo(playlistHref(id)) },
   })
   return id
+}
+
+/** New smart playlist (step 20). */
+export function createSmartPlaylist(toast: Toast, name: string, smart: SmartRules, description = '') {
+  const id = playlistsStore.create(name, [], description, smart)
+  const p = playlistsStore.get().byId.get(id)
+  goTo(playlistHref(id))
+  toast.show({ icon: 'check', text: `Created ${p?.name ?? name}.`, meta: 'SMART PLAYLIST · UPDATES ITSELF' })
+  return id
+}
+
+/** Save new rules (Undo puts the old ones back). */
+export function saveSmartRules(toast: Toast, playlistId: string, smart: SmartRules) {
+  const p = playlistsStore.get().byId.get(playlistId)
+  if (!p?.smart) return
+  const old = p.smart
+  if (JSON.stringify(old) === JSON.stringify(smart)) return
+  playlistsStore.setSmart(playlistId, smart)
+  toast.show({ icon: 'check', text: `Updated the rules of ${p.name}.`, action: { label: 'Undo', onClick: () => playlistsStore.setSmart(playlistId, old) } })
 }
 
 export function removeFromPlaylist(toast: Toast, playlistId: string, entryIds: string[]) {

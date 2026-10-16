@@ -182,6 +182,44 @@
 .dlg-edit-fields { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 .dlg-field { display: flex; flex-direction: column; gap: 8px; }
 
+/* ── Smart playlist dialog (step 20) ──────────────── */
+.dlg.is-wide:has(.sm) { width: 640px; }
+.sm { gap: 20px; }
+.sm-presets { display: flex; flex-wrap: wrap; gap: 8px; }
+.sm-preset {
+  height: 32px; padding: 0 13px; border-radius: 16px; border: 1px solid rgba(255, 255, 255, .12); background: none;
+  font: inherit; font-size: 13px; color: var(--ink-secondary); cursor: pointer; transition: color .2s, border-color .2s, background .2s;
+}
+.sm-preset:hover { color: var(--ink-primary); border-color: rgba(255, 255, 255, .25); }
+.sm-preset.is-on { color: var(--bg-1); background: var(--ink-primary); border-color: var(--ink-primary); }
+.sm-name { font-size: 20px; font-weight: 500; color: var(--ink-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sm-count { color: var(--ink-secondary); }
+.sm-block { display: flex; flex-direction: column; gap: 10px; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, .07); }
+.sm-match { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.sm-rules { display: flex; flex-direction: column; gap: 8px; }
+.sm-rule { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 8px 8px 8px 10px; border-radius: 12px; background: rgba(255, 255, 255, .03); }
+.sm-none { font-size: 13px; color: var(--ink-tertiary); padding: 4px 2px; }
+.sm-select { position: relative; display: inline-flex; align-items: center; }
+.sm-select select {
+  appearance: none; -webkit-appearance: none; height: 36px; padding: 0 30px 0 12px; border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, .12); background: #1b1b1e; color: var(--ink-primary); font: inherit; font-size: 13.5px; cursor: pointer; max-width: 100%;
+}
+.sm-select select:focus { outline: none; border-color: rgba(255, 255, 255, .4); }
+.sm-select select option { background: #1b1b1e; color: var(--ink-primary); }
+.sm-select > svg { position: absolute; right: 9px; font-size: 14px; color: var(--ink-tertiary); pointer-events: none; }
+.sm .dlg-input.sm-num { width: 74px; height: 36px; padding: 0 10px; font-size: 13.5px; border-radius: 10px; }
+.sm .dlg-input.sm-text { flex: 1; min-width: 120px; height: 36px; padding: 0 12px; font-size: 13.5px; border-radius: 10px; }
+.sm-num:disabled { opacity: .4; }
+.sm-word { font-size: 13.5px; color: var(--ink-secondary); }
+.sm-x { margin-left: auto; width: 32px; height: 32px; flex: none; border: 0; border-radius: 8px; background: none; color: var(--ink-tertiary); font-size: 16px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+.sm-x:hover { color: var(--ink-primary); background: rgba(255, 255, 255, .06); }
+.sm-add { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; padding-left: 2px; }
+.sm-add svg { font-size: 15px; }
+.sm-order { flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 20px; }
+.sm-sort, .sm-limit { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.sm-limit input[type='checkbox'] { width: 16px; height: 16px; margin: 0; accent-color: var(--ink-primary); cursor: pointer; }
+.sm .dlg-new-cover.is-empty { display: flex; align-items: center; justify-content: center; font-size: 30px; color: var(--ink-tertiary); }
+
 @media (max-width: 760px) {
   .dlg { padding: 22px; gap: 18px; top: calc(env(safe-area-inset-top) + 72px); transform: translate(-50%, 14px); }
   .dlg.is-on { transform: translate(-50%, 0); }
@@ -190,4 +228,10 @@
   .dlg-edit-cover { flex-direction: row; justify-content: flex-start; gap: 16px; }
   .dlg-edit-img { width: 96px; height: 96px; }
   .dlg-edit-cover-btns { align-items: flex-start; }
+  .sm-rule { padding: 8px; }
+  .sm-rule > * { order: 2; }
+  .sm-rule > .sm-select:first-child { order: 0; flex: 1 1 calc(100% - 48px); }
+  .sm-rule > .sm-select:first-child select { width: 100%; }
+  .sm-rule > .sm-x { order: 1; margin-left: 0; }
+  .sm-order { flex-direction: column; align-items: flex-start; }
 }

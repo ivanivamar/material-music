@@ -99,6 +99,7 @@
 }
 .sb-plus:hover:not(:disabled) { color: var(--ink-primary); }
 .sb-plus:disabled { cursor: default; }
+.sb-heads { display: inline-flex; align-items: center; gap: 12px; }
 
 .sb-pl {
   position: relative;

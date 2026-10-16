@@ -22,6 +22,7 @@
 import { useSyncExternalStore } from 'react'
 import { isNative, PelagicDownloads, type NativeDownloadItem, type NativeDownloadProgress, type NativeDownloadState } from '../native/bridge'
 import { libraryStore, tracksByAlbum, type Catalogue, type Track } from './library'
+import { historyStore } from './history'
 import { playlistsStore, type Playlist } from './playlists'
 import { playlistInfo } from './playlistViews'
 import { artistInfos, sortAlbums } from './views'
@@ -274,11 +275,20 @@ let pushWaiting = false
 /** the phone's state couldn't be read: push anyway, without kept copies */
 let nativeUnknown = false
 
+const smartPinned = () => state.prefs.pins.some((p) => p.kind === 'playlist' && !!playlistsStore.get().byId.get(p.id)?.smart)
+const historyReady = () => {
+  const h = historyStore.get()
+  return h.loaded && h.syncedAt !== null
+}
+
 /** Recompute the plan and send it to the phone (debounced). Never without a catalogue: that would empty the phone. */
 function schedulePush(delay = 300) {
   if (!isNative || !catalogue) return
   // same for playlist pins before the playlists' local copy is read
   if (state.prefs.pins.some((p) => p.kind === 'playlist') && !playlistsStore.get().loaded) return
+  // smart playlists depend on the play history: not before it was read from Drive at least once
+  // (an empty history would make "Never played" the whole library for a moment)
+  if (smartPinned() && !historyReady()) return
   // and not before the phone's stored list is known: an in-progress quality switch would lose its old copies
   if (!state.native && !nativeUnknown) {
     pushWaiting = true
@@ -347,7 +357,14 @@ function start() {
     const now = playlistsStore.get().byId
     if (now === lists) return
     lists = now
-    if (state.prefs.pins.some((p) => p.kind === 'playlist')) schedulePush(1000)
+    // smart ones change after plays too (playlistsStore republishes then): wait a little longer
+    if (state.prefs.pins.some((p) => p.kind === 'playlist')) schedulePush(smartPinned() ? 5000 : 1000)
+  })
+  let historyWasReady = historyReady()
+  historyStore.subscribe(() => {
+    const ready = historyReady()
+    if (ready && !historyWasReady && smartPinned()) schedulePush(1000)
+    historyWasReady = ready
   })
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') void PelagicDownloads.state().then(applyNative).catch(() => {})

@@ -6,8 +6,10 @@
  * else the same artist + title. Entries that match nothing stay in the playlist as "not in your
  * library" rows (they come back if the track is imported again).
  */
+import { historyStore, type Play } from './history'
 import { tracksByAlbum, type Catalogue, type Track } from './library'
 import { liveEntries, type Entry, type Playlist } from './playlists'
+import { evaluateSmart } from './smart'
 
 export interface PlaylistRow {
   entry: Entry
@@ -15,6 +17,8 @@ export interface PlaylistRow {
   track: Track | null
   /** found by ISRC / title instead of its stored id */
   relinked: boolean
+  /** smart playlists: the value of the last column (plays / last played) */
+  stat?: string
 }
 
 export interface PlaylistInfo {
@@ -26,6 +30,8 @@ export interface PlaylistInfo {
   missing: number
   /** up to 4 different album cover file ids, in playlist order */
   covers: string[]
+  /** smart playlists: what the last column of the table shows (ADDED / PLAYS / LAST PLAYED) */
+  statLabel?: string
 }
 
 const fold = (s: string) =>
@@ -60,11 +66,19 @@ export function resolveEntry(c: Catalogue, e: Entry): { track: Track | null; rel
   return { track: t, relinked: !!t }
 }
 
-const memo = new WeakMap<Playlist, { c: Catalogue; info: PlaylistInfo }>()
+const memo = new WeakMap<Playlist, { c: Catalogue; plays: readonly Play[] | null; hour: number; info: PlaylistInfo }>()
 
 export function playlistInfo(c: Catalogue, p: Playlist): PlaylistInfo {
+  // smart playlists also depend on the play history and the time (recomputed at most once an hour)
+  const plays = p.smart ? historyStore.get().plays : null
+  const hour = p.smart ? Math.floor(Date.now() / 3_600_000) : 0
   const hit = memo.get(p)
-  if (hit && hit.c === c) return hit.info
+  if (hit && hit.c === c && hit.plays === plays && hit.hour === hour) return hit.info
+  if (p.smart) {
+    const info = smartInfo(c, p, plays ?? [])
+    memo.set(p, { c, plays, hour, info })
+    return info
+  }
   const rows: PlaylistRow[] = []
   const ids: string[] = []
   const covers: string[] = []
@@ -89,14 +103,37 @@ export function playlistInfo(c: Catalogue, p: Playlist): PlaylistInfo {
     }
   }
   const info = { rows, ids, seconds, bytes, missing, covers }
-  memo.set(p, { c, info })
+  memo.set(p, { c, plays, hour, info })
   return info
+}
+
+function smartInfo(c: Catalogue, p: Playlist, plays: readonly Play[]): PlaylistInfo {
+  const res = evaluateSmart(c, plays, p.smart!)
+  const rows: PlaylistRow[] = []
+  const covers: string[] = []
+  const seenAlbums = new Set<string>()
+  let seconds = 0
+  let bytes = 0
+  res.ids.forEach((id, i) => {
+    const track = c.tracks[id]
+    // a stand-in entry: rows are keyed and labelled by it; ADDED shows when the song joined the library
+    const entry: Entry = { entryId: `smart-${id}`, trackId: id, isrc: track.isrc, title: track.title, artist: track.artist, addedAt: track.addedAt, pos: i, movedAt: 0 }
+    rows.push({ entry, track, relinked: false, stat: res.stat(id) })
+    seconds += track.duration ?? 0
+    bytes += track.flac?.size ?? 0
+    if (covers.length < 4 && !seenAlbums.has(track.albumId)) {
+      seenAlbums.add(track.albumId)
+      const cover = c.albums[track.albumId]?.cover
+      if (cover) covers.push(cover)
+    }
+  })
+  return { rows, ids: res.ids, seconds, bytes, missing: 0, covers, statLabel: res.statLabel }
 }
 
 /** Which of these playlists already hold this track (by resolved track id). */
 export function playlistsWith(c: Catalogue, list: Playlist[], trackId: string): Set<string> {
   const out = new Set<string>()
-  for (const p of list) if (playlistInfo(c, p).ids.includes(trackId)) out.add(p.id)
+  for (const p of list) if (!p.smart && playlistInfo(c, p).ids.includes(trackId)) out.add(p.id)
   return out
 }
 

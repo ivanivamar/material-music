@@ -500,6 +500,8 @@ html[data-phone] .toast-meta { display: none; }
 .shell.is-phone .pl-hero-text { gap: 10px; flex-basis: auto; }
 .shell.is-phone .pl-title { font-size: min(var(--hs, 72px), 8.6vw); letter-spacing: -0.025em; line-height: 1; }
 .shell.is-phone .pl-desc { font-size: 14px; }
+.shell.is-phone .pl-rules { font-size: 12.5px; max-width: 100%; }
+.shell.is-phone .pl-rules-edit { display: none; }
 .shell.is-phone .pl-hero .hero-stats { font-size: var(--fs-mono-xs); }
 .shell.is-phone .pl-buttons { gap: 10px; flex-basis: auto; }
 .shell.is-phone .pl-buttons .btn { flex: 1; min-width: 0; height: 48px; padding: 0 14px; }

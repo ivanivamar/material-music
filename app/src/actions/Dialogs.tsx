@@ -19,7 +19,7 @@ import { createPlaylist, removeFromLibraryOp } from './ops'
 import { planRemoval, type RemoveTarget } from '../state/removal'
 import { fmtBytes, plural } from '../state/views'
 
-function Shell({ label, children, onClose, wide }: { label: string; children: React.ReactNode; onClose: () => void; wide?: boolean }) {
+export function Shell({ label, children, onClose, wide }: { label: string; children: React.ReactNode; onClose: () => void; wide?: boolean }) {
   const [on, setOn] = useState(false)
   useEffect(() => {
     const r = requestAnimationFrame(() => setOn(true))

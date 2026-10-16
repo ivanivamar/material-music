@@ -22,6 +22,7 @@ import { useLibrary, type Catalogue } from '../../state/library'
 import { playerStore } from '../../state/player'
 import { fmtAgo, playlistInfo, type PlaylistRow } from '../../state/playlistViews'
 import { playlistsStore, usePlaylists, type Playlist } from '../../state/playlists'
+import { describeSmart, describeSort } from '../../state/smart'
 import { isTouch, useIsPhone } from '../../state/viewport'
 import { fmtTotal, plural } from '../../state/views'
 import { Crumbs } from '../library/common'
@@ -78,7 +79,8 @@ function PlaylistView({ c, p }: { c: Catalogue; p: Playlist }) {
     playerStore.playQueue(info.ids, start, context)
   }
 
-  const meta = ['PLAYLIST', 'BY YOU', `UPDATED ${fmtAgo(p.updatedAt)}`].join(' · ')
+  const smart = p.smart ?? null
+  const meta = (smart ? ['SMART PLAYLIST', 'UPDATES ITSELF'] : ['PLAYLIST', 'BY YOU', `UPDATED ${fmtAgo(p.updatedAt)}`]).join(' · ')
   const stats = [plural(info.ids.length, 'TRACK'), info.seconds ? fmtTotal(info.seconds) : null, off && off.done ? `${off.done} OFFLINE` : null, info.missing ? `${info.missing} NOT IN LIBRARY` : null]
     .filter(Boolean)
     .join(' · ')
@@ -97,6 +99,20 @@ function PlaylistView({ c, p }: { c: Catalogue; p: Playlist }) {
             {p.name}
           </h1>
           {p.description && <div className="pl-desc">{p.description}</div>}
+          {smart && (
+            <button type="button" className="pl-rules" onClick={() => actions.smartPlaylist(p.id)} title="Edit rules">
+              <Icon name="smart" />
+              <span className="pl-rules-t">
+                {describeSmart(smart)}
+                <span className="pl-rules-sort">
+                  {' · '}
+                  {describeSort(smart.sort)}
+                  {smart.limit ? ` · first ${smart.limit}` : ''}
+                </span>
+              </span>
+              <span className="pl-rules-edit">Edit rules</span>
+            </button>
+          )}
           <div className="hero-stats">{stats}</div>
         </div>
         <div className="pl-buttons">
@@ -113,7 +129,21 @@ function PlaylistView({ c, p }: { c: Catalogue; p: Playlist }) {
         </div>
       </header>
 
-      {info.rows.length === 0 ? (
+      {info.rows.length === 0 && smart ? (
+        <div className="pl-empty">
+          <div className="pl-empty-k">SMART PLAYLIST · NO TRACKS RIGHT NOW</div>
+          <EmptyState
+            icon="smart"
+            title="Nothing matches yet."
+            body="The list fills itself as you add music and listen. Loosen the rules to see more now."
+            actions={
+              <Button icon="smart" onClick={() => actions.smartPlaylist(p.id)}>
+                Edit rules
+              </Button>
+            }
+          />
+        </div>
+      ) : info.rows.length === 0 ? (
         <div className="pl-empty">
           <div className="pl-empty-k">PLAYLIST · NO TRACKS</div>
           <EmptyState
@@ -132,6 +162,7 @@ function PlaylistView({ c, p }: { c: Catalogue; p: Playlist }) {
           c={c}
           p={p}
           rows={info.rows}
+          statLabel={info.statLabel ?? 'ADDED'}
           nowId={now.id}
           playing={now.playing}
           dl={dl.available ? (r) => (r.track ? trackDownload(dl, r.track, dlNow) : undefined) : null}
@@ -157,6 +188,7 @@ function Table({
   c,
   p,
   rows,
+  statLabel,
   nowId,
   playing,
   dl,
@@ -167,6 +199,7 @@ function Table({
   c: Catalogue
   p: Playlist
   rows: PlaylistRow[]
+  statLabel: string
   nowId: string | null
   playing: boolean
   dl: ((r: PlaylistRow) => ReturnType<typeof trackDownload>) | null
@@ -276,7 +309,7 @@ function Table({
           <span>TITLE</span>
           <span>ALBUM</span>
           <span>QUALITY</span>
-          <span>ADDED</span>
+          <span>{statLabel}</span>
           <span className="pl-h-r">
             <Icon name="clock" />
           </span>
@@ -300,7 +333,12 @@ function Table({
           onPlay={() => onPlay(r, i)}
           onRemove={() => onRemove(r)}
           dragProps={
-            phone
+            p.smart
+              ? // smart rows can't be reordered; they still drag onto a sidebar playlist
+                phone
+                ? null
+                : { draggable: true, onDragStart: onDragStart(r, i), onDragOver: () => {}, onDragEnd }
+              : phone
               ? null
               : { draggable: true, onDragStart: onDragStart(r, i), onDragOver: onDragOver(i), onDragEnd }
           }
@@ -347,8 +385,8 @@ function Row({
   const t = r.track
   const album = t ? c.albums[t.albumId] : undefined
   const [ref, cover] = useLazyCover<HTMLDivElement>(album?.cover)
-  const target = t ? ({ kind: 'track', trackId: t.id, playlistId: p.id, entryId: r.entry.entryId } as const) : null
-  const added = useMemo(() => fmtAgo(r.entry.addedAt), [r.entry.addedAt])
+  const target = t ? (p.smart ? ({ kind: 'track', trackId: t.id } as const) : ({ kind: 'track', trackId: t.id, playlistId: p.id, entryId: r.entry.entryId } as const)) : null
+  const added = useMemo(() => r.stat || fmtAgo(r.entry.addedAt), [r.stat, r.entry.addedAt])
   const missing = !t
 
   return (
@@ -418,7 +456,7 @@ function Row({
             <Icon name="more" />
           </button>
         )}
-        {phone && (
+        {phone && !p.smart && (
           <span className="pl-grip" aria-label="Drag to reorder" role="button" tabIndex={-1} onPointerDown={onGripDown}>
             <Icon name="drag" />
           </span>

@@ -35,9 +35,14 @@ export function PlaylistsView({ c }: { c: Catalogue }) {
           title="No playlists yet."
           body={phone ? 'Make one here, or long-press any song and choose Add to playlist.' : 'Make one here, or right-click any song or album and choose Add to playlist.'}
           actions={
-            <Button icon="plus" onClick={create}>
-              New playlist
-            </Button>
+            <>
+              <Button icon="plus" onClick={create}>
+                New playlist
+              </Button>
+              <Button variant="secondary" icon="smart" onClick={() => actions.smartPlaylist()}>
+                Smart playlist
+              </Button>
+            </>
           }
         />
       </div>
@@ -51,6 +56,15 @@ export function PlaylistsView({ c }: { c: Catalogue }) {
             <Icon name="plus" />
           </span>
           <span className="pls-name">New playlist</span>
+        </button>
+        <button type="button" className="pls-row pls-new" onClick={() => actions.smartPlaylist()}>
+          <span className="pls-new-box">
+            <Icon name="smart" />
+          </span>
+          <span className="pls-text">
+            <span className="pls-name">New smart playlist</span>
+            <span className="pls-meta">FILLS ITSELF FROM RULES</span>
+          </span>
         </button>
         {list.map((pl) => (
           <PhoneRow key={pl.id} c={c} pl={pl} playing={playingId === pl.id} />
@@ -74,6 +88,17 @@ export function PlaylistsView({ c }: { c: Catalogue }) {
             <span className="acard-text">
               <span className="acard-title">New playlist</span>
               <span className="acard-sub">Start empty, add songs later</span>
+            </span>
+          </span>
+        </button>
+        <button type="button" className="acard pls-new-card" onClick={() => actions.smartPlaylist()}>
+          <span className="acard-cover pls-new-tile">
+            <Icon name="smart" />
+          </span>
+          <span className="acard-meta">
+            <span className="acard-text">
+              <span className="acard-title">New smart playlist</span>
+              <span className="acard-sub">Fills itself from rules</span>
             </span>
           </span>
         </button>
@@ -129,7 +154,7 @@ export function PlaylistCard({ c, pl, playing, title, onOpen }: { c: Catalogue; 
       <div className="acard-meta">
         <div className="acard-text">
           <div className="acard-title">{title ?? pl.name}</div>
-          <div className="acard-sub">{plural(info.ids.length, 'track', 'tracks')}</div>
+          <div className="acard-sub">{pl.smart ? `Smart · ${plural(info.ids.length, 'track', 'tracks')}` : plural(info.ids.length, 'track', 'tracks')}</div>
         </div>
       </div>
     </div>
@@ -140,7 +165,7 @@ function PhoneRow({ c, pl, playing }: { c: Catalogue; pl: Playlist; playing: boo
   const info = playlistInfo(c, pl)
   const dl = useDownloads()
   const off = dl.available ? playlistOffline(dl, c, pl) : null
-  const meta = [plural(info.ids.length, 'TRACK'), off?.done ? `${off.done} OFFLINE` : null].filter(Boolean).join(' · ')
+  const meta = [pl.smart ? 'SMART' : null, plural(info.ids.length, 'TRACK'), off?.done ? `${off.done} OFFLINE` : null].filter(Boolean).join(' · ')
   return (
     <a
       className={`pls-row ${playing ? 'is-playing' : ''}`}

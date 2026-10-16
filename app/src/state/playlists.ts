@@ -24,8 +24,10 @@ import { DRIVE_ROOT, PLAYLISTS_DIR } from '../config'
 import { AuthError, download, driveFetch, findChild, FOLDER_MIME, getMeta } from '../lib/drive'
 import { idbGet, idbSet } from '../lib/idb'
 import { folder, putFile } from '../upload/driveWrite'
+import { historyStore } from './history'
 import { libraryStore, type Track } from './library'
 import { onAccountReset, sessionStore } from './session'
+import { normaliseSmart, type SmartRules } from './smart'
 
 /* ── Types ──────────────────────────────────────────── */
 
@@ -52,6 +54,8 @@ export interface Stamps {
   description: number
   cover: number
   deleted: number
+  /** smart playlists: the rules (step 20) */
+  smart: number
 }
 
 export interface Playlist {
@@ -66,7 +70,14 @@ export interface Playlist {
   /** ms of the last change of each field (latest wins on merge) */
   stamps: Stamps
   entries: Entry[]
+  /**
+   * Smart playlist (step 20): its songs come from these rules (state/smart.ts), worked out on each
+   * device from the catalogue + play history; `entries` stays empty. null / missing = a normal playlist.
+   */
+  smart?: SmartRules | null
 }
+
+export const isSmart = (p: Playlist | undefined | null): boolean => !!p?.smart
 
 /** playlists/<id>.json on Drive */
 interface PlaylistFile extends Playlist {
@@ -123,7 +134,7 @@ export const liveEntries = (p: Playlist): Entry[] => p.entries.filter((e) => !e.
 
 function normalise(raw: Partial<PlaylistFile>, id: string): Playlist {
   const t = now()
-  const stamps: Stamps = { name: 0, description: 0, cover: 0, deleted: 0, ...(raw.stamps ?? {}) }
+  const stamps: Stamps = { name: 0, description: 0, cover: 0, deleted: 0, smart: 0, ...(raw.stamps ?? {}) }
   return {
     id: raw.id || id,
     name: typeof raw.name === 'string' && raw.name.trim() ? raw.name : 'Untitled playlist',
@@ -133,6 +144,7 @@ function normalise(raw: Partial<PlaylistFile>, id: string): Playlist {
     updatedAt: raw.updatedAt || raw.createdAt || iso(t),
     deleted: !!raw.deleted,
     stamps,
+    smart: normaliseSmart(raw.smart),
     entries: (Array.isArray(raw.entries) ? raw.entries : [])
       .filter((e): e is Entry => !!e && typeof e.entryId === 'string' && typeof e.trackId === 'string')
       .map((e) => ({ ...e, pos: Number.isFinite(e.pos) ? e.pos : 0, movedAt: e.movedAt || 0 })),
@@ -146,6 +158,7 @@ export function mergePlaylists(a: Playlist, b: Playlist): Playlist {
   const d = pick('description')
   const c = pick('cover')
   const del = pick('deleted')
+  const sm = pick('smart')
   const entries = new Map<string, Entry>()
   for (const e of a.entries) entries.set(e.entryId, e)
   for (const e of b.entries) {
@@ -166,8 +179,9 @@ export function mergePlaylists(a: Playlist, b: Playlist): Playlist {
     deleted: del.deleted,
     createdAt: a.createdAt < b.createdAt ? a.createdAt : b.createdAt,
     updatedAt: a.updatedAt > b.updatedAt ? a.updatedAt : b.updatedAt,
-    stamps: { name: n.stamps.name, description: d.stamps.description, cover: c.stamps.cover, deleted: del.stamps.deleted },
+    stamps: { name: n.stamps.name, description: d.stamps.description, cover: c.stamps.cover, deleted: del.stamps.deleted, smart: sm.stamps.smart },
     entries: [...entries.values()],
+    smart: sm.smart ?? null,
   }
 }
 
@@ -439,7 +453,7 @@ export const playlistsStore = {
   /* ── Edits ── */
 
   /** New playlist (optionally starting with tracks). Returns its id. */
-  create(name: string, trackIds: string[] = [], description = ''): string {
+  create(name: string, trackIds: string[] = [], description = '', smart: SmartRules | null = null): string {
     const t = now()
     const id = `pl-${rid(10)}`
     const doc: Playlist = {
@@ -450,12 +464,13 @@ export const playlistsStore = {
       createdAt: iso(t),
       updatedAt: iso(t),
       deleted: false,
-      stamps: { name: t, description: t, cover: t, deleted: t },
+      stamps: { name: t, description: t, cover: t, deleted: t, smart: smart ? t : 0 },
       entries: [],
+      smart: smart ?? null,
     }
     recs.set(id, { doc, fileId: null, version: null, dirty: true })
     revs.set(id, 1)
-    if (trackIds.length) playlistsStore.addTracks(id, trackIds)
+    if (trackIds.length && !smart) playlistsStore.addTracks(id, trackIds)
     else {
       publish()
       persist()
@@ -485,6 +500,11 @@ export const playlistsStore = {
     edit(id, (p, t) => ({ ...p, cover: up.id, stamps: { ...p.stamps, cover: t } }))
   },
 
+  /** Change a smart playlist's rules (Undo: call again with the old ones). */
+  setSmart(id: string, smart: SmartRules) {
+    edit(id, (p, t) => (!p.smart || JSON.stringify(p.smart) === JSON.stringify(smart) ? null : { ...p, smart, stamps: { ...p.stamps, smart: t } }))
+  },
+
   /** Delete (Undo: `restore`). */
   remove(id: string) {
     edit(id, (p, t) => (p.deleted ? null : { ...p, deleted: true, stamps: { ...p.stamps, deleted: t } }))
@@ -499,7 +519,7 @@ export const playlistsStore = {
     const added: string[] = []
     edit(id, (p, t) => {
       const tracks = trackIds.map((tid) => c?.tracks[tid]).filter((x): x is Track => !!x)
-      if (!tracks.length) return null
+      if (!tracks.length || p.smart) return null
       const pos = tailPositions(p, tracks.length)
       const entries = tracks.map((tr, i): Entry => {
         const entryId = rid(10)
@@ -525,6 +545,7 @@ export const playlistsStore = {
   /** Move one entry so it ends up at index `to` of the live order. */
   moveEntry(id: string, entryId: string, to: number) {
     edit(id, (p, t) => {
+      if (p.smart) return null
       const live = liveEntries(p)
       const from = live.findIndex((e) => e.entryId === entryId)
       if (from < 0 || from === to || to < 0 || to >= live.length) return null
@@ -575,6 +596,18 @@ export const playlistsStore = {
     })
     if (sessionStore.get().status === 'signed-in') scheduleSync(1_500)
     window.addEventListener('online', () => void playlistsStore.sync())
+    // smart playlists depend on the play history and the clock: hand out a fresh list (same docs)
+    // so every view works them out again — after a play, and once an hour
+    let plays = historyStore.get().plays
+    historyStore.subscribe(() => {
+      const next = historyStore.get().plays
+      if (next === plays) return
+      plays = next
+      if (state.list.some((p) => p.smart)) publish()
+    })
+    window.setInterval(() => {
+      if (state.list.some((p) => p.smart)) publish()
+    }, 3_600_000)
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'hidden') {
         if (state.pending) void playlistsStore.sync()
