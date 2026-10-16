@@ -274,6 +274,13 @@ export const playerStore = {
       engine?.seek(0)
     } else go(state.index - 1, state.playing)
   },
+  /** Straight to the previous queue row (phone cover swipe) — unlike prev(), never just restarts. */
+  back() {
+    const { index, queue, repeat } = state
+    if (index < 0) return
+    if (index > 0) go(index - 1, state.playing)
+    else if (repeat === 'all' && queue.length > 1) go(queue.length - 1, state.playing)
+  },
   seek(seconds: number) {
     set({ position: seconds })
     engine?.seek(seconds)

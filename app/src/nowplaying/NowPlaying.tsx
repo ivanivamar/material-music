@@ -3,7 +3,7 @@
  *
  * Fixed overlay over the whole app, album-art tinted scene + atmosphere. Two views that cross-fade
  * (opacity + 28/36px rise, 0.9s default ease; instant with reduced motion):
- *   np      500px cover · badges · hero title · artist · album · waveform seek · transport ·
+ *   np      500px cover (phone: drag it sideways to switch songs, CoverSwipe.tsx) · badges · hero title · artist · album · waveform seek · transport ·
  *           Lyrics / Queue · volume · "NEXT —— title" bottom right
  *   lyrics  420px column (272px cover, thin seek, compact transport, buttons) + synced lyrics
  * Opened from the player bar (cover / expand / lyrics). Esc or Back closes (AppShell + history).
@@ -24,6 +24,7 @@ import { albumHref, artistHref } from '../shell/routes'
 import { Marquee } from '../components/Marquee'
 import { HeroSub, HeroTitle } from './HeroTitle'
 import { Lyrics } from './Lyrics'
+import { CoverSwipe } from './CoverSwipe'
 import { useSwipeDown } from './swipe'
 import { NpLink, Transport, ViewButtons, contextLine, useCurrent } from './parts'
 import { actions } from '../actions/actions'
@@ -139,7 +140,9 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
           {/* ── Now playing view ── */}
           <section className="np-main pg-anim" aria-hidden={ly} inert={ly}>
             <div className="np-cover-wrap">
-              {cover ? (
+              {phone ? (
+                <CoverSwipe cover={cover} glow={glow} />
+              ) : cover ? (
                 <img className="np-cover" src={cover} alt="" style={{ boxShadow: `0 0 0 1px rgba(255,255,255,0.08), 0 60px 120px -40px ${glow}` }} />
               ) : (
                 <span className="np-cover np-cover-empty" aria-hidden />
