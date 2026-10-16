@@ -23,7 +23,7 @@ import { nativeUpdates, useNativeUpdates } from '../native/updates'
 import { Sidebar } from './Sidebar'
 import { ActionHost } from '../actions/ActionHost'
 import { albumHref, go, href, navKeyOf, type Route } from './routes'
-import { albumOffline, downloadsStore } from '../state/downloads'
+import { albumOffline, downloadsStore, qualityOf, trackOffline } from '../state/downloads'
 import { fmtBytes, plural } from '../state/views'
 import { onAlbumAdded, runSummary, useUpload } from '../state/upload'
 import { onReleasesEvent, releasesStore, useReleases } from '../state/releases'
@@ -77,6 +77,24 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
           text: `${album.title} is stored offline.`,
           meta: `${fmtBytes(off.bytesDone)} · ${s.prefs.quality === 'flac' ? 'FLAC' : 'OPUS 160'}`,
           action: { label: 'View', onClick: () => go(albumHref(albumId)) },
+        })
+      }),
+    [toast],
+  )
+
+  // Android: a song downloaded on its own (track menu → Download) finished.
+  useEffect(
+    () =>
+      downloadsStore.onTrackDone((trackId) => {
+        const s = downloadsStore.get()
+        const t = libraryStore.get().data?.tracks[trackId]
+        if (!t) return
+        const off = trackOffline(s, t)
+        toast.show({
+          icon: 'check',
+          text: `${t.title} is stored offline.`,
+          meta: `${fmtBytes(off.bytes)} · ${qualityOf(s.prefs, t.albumId) === 'flac' || !t.mobile?.id ? 'FLAC' : 'OPUS 160'}`,
+          action: { label: 'View', onClick: () => go(albumHref(t.albumId)) },
         })
       }),
     [toast],

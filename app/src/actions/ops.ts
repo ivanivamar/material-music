@@ -6,13 +6,14 @@ import type { useToast } from '../components/ui'
 import { playList } from '../pages/library/playback'
 import { albumHref, artistHref, go, playlistHref, libraryHref } from '../shell/routes'
 import { AuthError } from '../lib/drive'
+import { downloadsStore, trackOffline } from '../state/downloads'
 import { removeFromLibrary, undoRemoval, type RemoveTarget } from '../state/removal'
 import { libraryStore } from '../state/library'
 import { nowPlayingStore } from '../state/nowPlaying'
 import { playerStore } from '../state/player'
 import { alreadyIn, playlistInfo } from '../state/playlistViews'
 import { playlistsStore } from '../state/playlists'
-import { plural } from '../state/views'
+import { fmtBytes, plural } from '../state/views'
 
 type Toast = ReturnType<typeof useToast>
 
@@ -115,6 +116,36 @@ export function queueTracks(toast: Toast, trackIds: string[], next: boolean) {
   if (next) playerStore.playNext(trackIds)
   else playerStore.addToQueue(trackIds)
   toast.show({ icon: next ? 'next' : 'queue', text: next ? `${what(trackIds)} plays next.` : `Added ${what(trackIds)} to the queue.` })
+}
+
+/** Keep one song on the phone (Android app; the track menu's Download), like an album's Download. */
+export function downloadTrack(toast: Toast, trackId: string) {
+  const t = libraryStore.get().data?.tracks[trackId]
+  if (!t) return
+  const before = downloadsStore.get().prefs
+  downloadsStore.pin('track', trackId)
+  const s = downloadsStore.get()
+  const off = trackOffline(s, t)
+  toast.show({
+    icon: off.stored ? 'check' : 'download',
+    text: off.stored ? `${t.title} is stored offline.` : `Downloading ${t.title}.`,
+    meta: off.stored ? undefined : [off.bytes ? fmtBytes(off.bytes) : null, s.prefs.wifiOnly ? 'WI-FI ONLY' : 'ANY NETWORK'].filter(Boolean).join(' · '),
+    action: { label: 'Undo', onClick: () => downloadsStore.restore(before) },
+  })
+}
+
+/** Stop keeping a song pinned on its own (it stays if a playlist download wants it). */
+export function removeTrackDownload(toast: Toast, trackId: string) {
+  const t = libraryStore.get().data?.tracks[trackId]
+  if (!t) return
+  const before = downloadsStore.get().prefs
+  downloadsStore.removeTrack(trackId)
+  toast.show({
+    icon: 'x',
+    mutedIcon: true,
+    text: `Removed ${t.title} from this phone.`,
+    action: { label: 'Undo', onClick: () => downloadsStore.restore(before) },
+  })
 }
 
 /** Name for toasts: the song / album / artist title. */

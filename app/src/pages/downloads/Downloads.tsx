@@ -5,7 +5,8 @@
  * a wide screen, a settings card on the phone layout. Storage bar (Pelagic / other / free).
  * IN PROGRESS: albums still downloading, with a progress line, "TRACK 7 OF 12 · 58% · 2.4 MB/S" or why
  * it waits (Wi-Fi, connection, paused, storage), pause / resume and remove.
- * ON THIS DEVICE: complete albums with track count, quality and size, remove (Undo in a toast).
+ * ON THIS DEVICE: complete albums with track count, quality and size, remove (Undo in a toast). A single
+ * song downloaded on its own (track menu, no album / playlist download around it) shows as that song.
  * Then "Download everything" / "Remove all downloads".
  *
  * In the browser there are no downloads (PC plays FLAC from the linked folder): an explainer instead.
@@ -123,7 +124,7 @@ export function Downloads() {
           <EmptyState
             icon="download"
             title="No music stored offline"
-            body="Download an album, playlist or artist to play it without a connection."
+            body="Download an album, playlist, artist or song to play it without a connection."
             actions={
               <>
                 <Button variant="secondary" icon="library" onClick={() => go(libraryHref('albums'))}>
@@ -197,15 +198,23 @@ function StorageBar({ s, phone }: { s: DownloadsState; phone: boolean }) {
   )
 }
 
-function useRemove(c: Catalogue, albumId: string, bytes: number) {
+/** Row title / subtitle: the album, or the song when just one song of it is kept (a song download). */
+function rowName(c: Catalogue, ap: AlbumPlan): { title: string; sub: string } {
+  const album = c.albums[ap.albumId]
+  const only = ap.partial && ap.trackFiles.size === 1 ? c.tracks[[...ap.trackFiles.keys()][0]] : undefined
+  if (only) return { title: only.title, sub: [only.artist, album?.title].filter(Boolean).join(' · ') }
+  return { title: album?.title ?? ap.albumId, sub: album?.artist ?? '' }
+}
+
+function useRemove(c: Catalogue, ap: AlbumPlan, bytes: number) {
   const toast = useToast()
   return () => {
     const before = downloadsStore.get().prefs
-    downloadsStore.removeAlbum(albumId)
+    downloadsStore.removeAlbum(ap.albumId)
     toast.show({
       icon: 'x',
       mutedIcon: true,
-      text: `Removed ${c.albums[albumId]?.title ?? 'album'} from this phone.`,
+      text: `Removed ${rowName(c, ap).title} from this phone.`,
       meta: bytes ? `${fmtBytes(bytes)} FREED` : undefined,
       action: { label: 'Undo', onClick: () => downloadsStore.restore(before) },
     })
@@ -235,10 +244,11 @@ function useSpeed(active: boolean, bytes: number): number | null {
 
 function BusyRow({ c, ap, s, first }: { c: Catalogue; ap: AlbumPlan; s: DownloadsState; first: boolean }) {
   const album = c.albums[ap.albumId]
+  const name = rowName(c, ap)
   const cover = useCover(album?.cover)
   const cur = useDownloadProgress()
   const off = albumOffline(s, ap.albumId)
-  const remove = useRemove(c, ap.albumId, off.bytesDone)
+  const remove = useRemove(c, ap, off.bytesDone)
   const mine = cur && ap.files.some((f) => f.id === cur.id) && !s.stored.has(cur.id) ? cur : null
   const bytes = off.bytesDone + (mine && [...ap.trackFiles.values()].includes(mine.id) ? mine.bytes : 0)
   const speed = useSpeed(!!mine, bytes)
@@ -255,12 +265,12 @@ function BusyRow({ c, ap, s, first }: { c: Catalogue; ap: AlbumPlan; s: Download
 
   return (
     <div className={`dl-row dl-busy ${mine ? 'is-active' : ''}`}>
-      <button type="button" className="dl-cover" onClick={() => go(albumHref(ap.albumId))} aria-label={`Open ${album?.title}`}>
+      <button type="button" className="dl-cover" onClick={() => go(albumHref(ap.albumId))} aria-label={`Open ${album?.title ?? ''}`}>
         {cover ? <img src={cover} alt="" /> : <span />}
       </button>
       <div className="dl-text">
-        <a className="dl-title" href={albumHref(ap.albumId)}>{album?.title ?? ap.albumId}</a>
-        <div className="dl-sub">{album?.artist}</div>
+        <a className="dl-title" href={albumHref(ap.albumId)}>{name.title}</a>
+        <div className="dl-sub">{name.sub}</div>
       </div>
       <div className="dl-prog">
         <div className="dl-line">
@@ -277,7 +287,7 @@ function BusyRow({ c, ap, s, first }: { c: Catalogue; ap: AlbumPlan; s: Download
             onClick={() => downloadsStore.setPaused(!paused)}
           />
         )}
-        <IconButton icon="x" label={`Cancel ${album?.title ?? ''}`} shape="square" className="dl-x" onClick={remove} />
+        <IconButton icon="x" label={`Cancel ${name.title}`} shape="square" className="dl-x" onClick={remove} />
       </div>
     </div>
   )
@@ -285,20 +295,21 @@ function BusyRow({ c, ap, s, first }: { c: Catalogue; ap: AlbumPlan; s: Download
 
 function DoneRow({ c, ap, count, bytes, quality }: { c: Catalogue; ap: AlbumPlan; count: number; bytes: number; quality: DownloadQuality }) {
   const album = c.albums[ap.albumId]
+  const name = rowName(c, ap)
   const cover = useCover(album?.cover)
-  const remove = useRemove(c, ap.albumId, bytes)
+  const remove = useRemove(c, ap, bytes)
   const first = c.tracks[[...ap.trackFiles.keys()][0]]
   const flac = quality === 'flac' || !first?.mobile?.id
   const label = flac ? `FLAC ${first?.flac?.bitDepth ?? 16}/${((first?.flac?.sampleRate ?? 44100) / 1000).toString().replace(/\.0$/, '')}` : 'OPUS 160'
   return (
     <div className="dl-row dl-done">
-      <button type="button" className="dl-cover" onClick={() => go(albumHref(ap.albumId))} aria-label={`Open ${album?.title}`}>
+      <button type="button" className="dl-cover" onClick={() => go(albumHref(ap.albumId))} aria-label={`Open ${album?.title ?? ''}`}>
         {cover ? <img src={cover} alt="" /> : <span />}
       </button>
       <div className="dl-text">
-        <a className="dl-title" href={albumHref(ap.albumId)}>{album?.title ?? ap.albumId}</a>
+        <a className="dl-title" href={albumHref(ap.albumId)}>{name.title}</a>
         <div className="dl-sub">
-          {album?.artist}
+          {name.sub}
           <span className="dl-sub-phone"> · {plural(count, 'TRACK')}</span>
         </div>
       </div>
@@ -307,7 +318,7 @@ function DoneRow({ c, ap, count, bytes, quality }: { c: Catalogue; ap: AlbumPlan
         <QualityBadge kind={flac ? qualityKind('flac', first?.flac?.bitDepth, first?.flac?.sampleRate) : 'opus'}>{label}</QualityBadge>
       </div>
       <div className="dl-size">{fmtBytes(bytes)}</div>
-      <IconButton icon="x" label={`Remove ${album?.title ?? ''} from this phone`} shape="square" bare className="dl-x" onClick={remove} />
+      <IconButton icon="x" label={`Remove ${name.title} from this phone`} shape="square" bare className="dl-x" onClick={remove} />
     </div>
   )
 }

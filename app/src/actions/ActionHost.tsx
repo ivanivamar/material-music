@@ -17,15 +17,15 @@ import { registerBack } from '../native/backButton'
 import { albumTrackIds, artistTrackIds } from '../pages/library/playback'
 import { PlaylistCover } from '../pages/playlists/PlaylistCover'
 import { albumHref, artistHref } from '../shell/routes'
-import { downloadsStore, playlistOffline, useDownloads } from '../state/downloads'
+import { downloadsStore, playlistOffline, trackOffline, useDownloads } from '../state/downloads'
 import { useLibrary, type Catalogue } from '../state/library'
 import { downloadM3u, playlistInfo, playlistsWith } from '../state/playlistViews'
 import { usePlaylists, type Playlist } from '../state/playlists'
 import { useIsPhone } from '../state/viewport'
-import { artistInfos, fmtTotal, plural } from '../state/views'
+import { artistInfos, fmtBytes, fmtTotal, plural } from '../state/views'
 import { actions, useActions, type ActionTarget } from './actions'
 import { EditPlaylistDialog, NewPlaylistDialog, RemoveDialog } from './Dialogs'
-import { addToPlaylist, createPlaylist, deletePlaylist, goTo, playPlaylist, queueTracks, removeFromPlaylist } from './ops'
+import { addToPlaylist, createPlaylist, deletePlaylist, downloadTrack, goTo, playPlaylist, queueTracks, removeFromPlaylist, removeTrackDownload } from './ops'
 import { playList } from '../pages/library/playback'
 import './actions.css'
 
@@ -68,11 +68,20 @@ function describe(t: ActionTarget, c: Catalogue, toast: Toast, lists: Map<string
       { icon: 'next', label: 'Play next', run: () => queueTracks(toast, ids(), true) },
       { icon: 'queue', label: 'Add to queue', run: () => queueTracks(toast, ids(), false) },
       { icon: 'playlist', label: 'Add to playlist', picker: true },
+    ]
+    // Android app: keep this one song offline, like an album's Download. Nothing to offer when its
+    // whole album (or artist / library) is downloaded anyway — that's removed from the album page.
+    if (dl.available) {
+      const off = trackOffline(dl, tr)
+      if (off.pinned) rows.push({ icon: 'x', label: 'Remove download', danger: true, run: () => removeTrackDownload(toast, tr.id) })
+      else if (!off.viaAlbum) rows.push({ icon: 'download', label: 'Download', hint: off.bytes ? fmtBytes(off.bytes) : undefined, run: () => downloadTrack(toast, tr.id) })
+    }
+    rows.push(
       div,
       { icon: 'library', label: 'Go to album', run: () => goTo(albumHref(tr.albumId)) },
       { icon: 'library', label: 'Go to artist', run: () => goTo(artistHref(album?.artistId ?? tr.artistId)) },
-    ]
-    rows.push(div)
+      div,
+    )
     if (pl && t.entryId) rows.push({ icon: 'x', label: `Remove from ${pl.name}`, danger: true, run: () => removeFromPlaylist(toast, pl.id, [t.entryId!]) })
     rows.push({ icon: 'x', label: 'Remove from library…', danger: true, run: () => actions.confirmRemove({ kind: 'track', trackIds: [tr.id] }) })
     return {

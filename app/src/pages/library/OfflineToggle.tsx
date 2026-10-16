@@ -31,7 +31,11 @@ export function AlbumOfflineToggle({ c, albumId, name }: { c: Catalogue; albumId
   // tracks that play offline in any quality (during a quality switch: the old copies)
   const playable = tracks.filter((t) => storedFileOf(dl, t)).length
   let status: string
-  if (!on) status = off.partial && off.done ? `${pad2(off.done)}/${pad2(tracks.length)} · FROM PLAYLISTS` : `NOT ON THIS PHONE · ${fmtBytes(size[hasOpus ? q : 'flac'])}`
+  // only some songs wanted: through playlist downloads, or songs downloaded on their own (track menu)
+  const viaPlaylist = dl.prefs.pins.some((p) => p.kind === 'playlist')
+  const viaSongs = tracks.some((t) => dl.prefs.pins.some((p) => p.kind === 'track' && p.id === t.id))
+  const from = viaSongs && !viaPlaylist ? 'SONGS ONLY' : viaSongs ? 'SONGS · PLAYLISTS' : 'FROM PLAYLISTS'
+  if (!on) status = off.partial && off.done ? `${pad2(off.done)}/${pad2(tracks.length)} · ${from}` : `NOT ON THIS PHONE · ${fmtBytes(size[hasOpus ? q : 'flac'])}`
   else if (off.complete) status = `${pad2(off.count)}/${pad2(off.count)} · STORED · ${fmtBytes(off.bytesDone)}`
   else {
     const why = waitingReason(dl)
