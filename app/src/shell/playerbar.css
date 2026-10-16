@@ -84,3 +84,7 @@
 /* far-right arrow: opens the full-screen player */
 .pb-right .ibtn.pb-open { width: 32px; height: 32px; font-size: 20px; margin-left: -4px; border-radius: var(--r-icon-button); color: var(--ink-primary); }
 .pb-right .ibtn.pb-open:hover:not(:disabled) { background: rgba(255, 255, 255, .08); color: #fff; }
+
+/* long titles scroll (components/Marquee.tsx) */
+.pb-title.pb-link { display: block; text-overflow: clip; }
+.pb-link:hover .mq-item { text-decoration: underline; text-underline-offset: 3px; text-decoration-color: rgba(255, 255, 255, .35); }

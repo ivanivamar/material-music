@@ -242,12 +242,16 @@ html[data-phone][data-qp] .toasts.toasts-shell { right: 0; }
   display: flex; flex-direction: column; justify-content: flex-start; gap: clamp(16px, 3.4vh, 30px);
   overflow-y: auto; overscroll-behavior: contain;
 }
-.shell.is-phone .np { --np-cover: min(364px, calc(100vw - 48px), calc(100vh - 470px - var(--np-sat))); }
+.shell.is-phone .np { --np-cover: max(180px, min(364px, calc(100vw - 48px), calc(100vh - 470px - var(--np-sat) - var(--np-title-room, 0px)))); }
+.shell.is-phone .np-cover { transition: width .5s var(--ease), height .5s var(--ease); }
 .shell.is-phone .np-cover-wrap { align-self: center; }
 .shell.is-phone .np-info { gap: clamp(16px, 3.4vh, 30px); max-width: none; flex: 1; }
 .shell.is-phone .np-text { gap: 8px; }
 .shell.is-phone .np-badges { order: 3; gap: 10px; font-size: var(--fs-mono-xs); }
-.shell.is-phone .np-title { font-size: clamp(26px, 8.3vw, 34px) !important; line-height: 1.05; letter-spacing: -0.02em; }
+.shell.is-phone .np-title { font-size: clamp(26px, 8.3vw, 34px); letter-spacing: -0.02em; }
+.shell.is-phone .np-titles { gap: 8px; }
+.shell.is-phone .np-title-x { font-size: var(--fs-mono-sm); gap: 10px; }
+.shell.is-phone .np-title-x-line { width: 14px; }
 .shell.is-phone .np-sub { font-size: 16px; }
 .shell.is-phone .np-artist { color: #bdbdbd; }
 .shell.is-phone .np-seek { gap: 10px; max-width: none; }

@@ -21,17 +21,13 @@ import { nowPlayingStore, useNowPlayingUi } from '../state/nowPlaying'
 import { playerStore } from '../state/player'
 import { isTouch, useIsPhone } from '../state/viewport'
 import { albumHref, artistHref } from '../shell/routes'
+import { Marquee } from '../components/Marquee'
+import { HeroTitle } from './HeroTitle'
 import { Lyrics } from './Lyrics'
 import { useSwipeDown } from './swipe'
 import { NpLink, Transport, ViewButtons, contextLine, useCurrent } from './parts'
 import { actions } from '../actions/actions'
 import './nowplaying.css'
-
-/** Hero title steps down with length (≤ 2 lines at 1440 wide), and with the viewport. */
-const titleSize = (t: string) => {
-  const px = t.length <= 12 ? 84 : t.length <= 20 ? 72 : t.length <= 32 ? 60 : t.length <= 48 ? 48 : 40
-  return `min(${px}px, ${(px / 14.4).toFixed(2)}vw)`
-}
 
 const pad2 = (n: number) => String(n).padStart(2, '0')
 const closeNp = () => nowPlayingStore.close()
@@ -92,7 +88,10 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
   const duration = track?.duration ?? 0
   const frac = duration > 0 ? Math.min(1, p.position / duration) : 0
   const glow = tint ? rgba(tint.glow, 0.9) : 'rgba(255,255,255,0.12)'
-  const scene: CSSProperties = { background: tint ? sceneBackground(tint) : '#0B0B0C' }
+  // phone: a tall title takes its extra height from the cover, so the transport stays on screen
+  const [titleRoom, setTitleRoom] = useState(0)
+  const onTitleLines = (lines: number, hasExtra: boolean) => setTitleRoom(Math.max(0, lines - 2) * 34 + (hasExtra ? 24 : 0))
+  const scene = { background: tint ? sceneBackground(tint) : '#0B0B0C', '--np-title-room': `${titleRoom}px` } as CSSProperties
 
   const nextIdx = p.index + 1 < p.queue.length ? p.index + 1 : p.repeat === 'all' && p.queue.length > 1 ? 0 : -1
   const next = nextIdx >= 0 ? data?.tracks[p.queue[nextIdx]] : undefined
@@ -156,9 +155,7 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
                   {source}
                   {trackNo && <span>{trackNo}</span>}
                 </div>
-                <h1 className="np-title" style={{ fontSize: titleSize(track.title) }} title={track.title}>
-                  {track.title}
-                </h1>
+                <HeroTitle title={track.title} phone={phone} onLines={onTitleLines} />
                 <div className="np-sub">
                   <NpLink href={artistHref(track.artistId)} className="np-artist">
                     {track.artist}
@@ -213,7 +210,7 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
               <div className="npp-strip">
                 {cover ? <img className="npp-strip-cover" src={cover} alt="" /> : <span className="npp-strip-cover np-cover-empty" aria-hidden />}
                 <div className="npp-strip-text">
-                  <div className="npp-strip-title">{track.title}</div>
+                  <Marquee className="npp-strip-title" text={track.title} />
                   <div className="npp-strip-sub">{track.artist}</div>
                 </div>
               </div>

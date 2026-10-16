@@ -6,6 +6,7 @@
  * the bottom. Tapping it anywhere except its buttons opens the full-screen player.
  */
 import { Icon } from '../design/icons'
+import { Marquee } from '../components/Marquee'
 import { useCover } from '../lib/covers'
 import { useLibrary } from '../state/library'
 import { nowPlayingStore } from '../state/nowPlaying'
@@ -67,7 +68,7 @@ export function MiniPlayer() {
     >
       {cover ? <img className="mini-cover" src={cover} alt="" /> : <span className="mini-cover mini-cover-empty" aria-hidden />}
       <div className="mini-text">
-        <div className="mini-title">{track.title}</div>
+        <Marquee className="mini-title" text={track.title} />
         <div className="mini-sub">{track.artist}</div>
       </div>
       <button type="button" className="mini-btn" aria-label="Lyrics" onClick={() => nowPlayingStore.open('lyrics')}>

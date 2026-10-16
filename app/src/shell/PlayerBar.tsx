@@ -8,6 +8,7 @@ import { useLibrary, type Track } from '../state/library'
 import { nowPlayingStore, useNowPlayingUi } from '../state/nowPlaying'
 import { playerStore, usePlayer } from '../state/player'
 import { Icon } from '../design/icons'
+import { Marquee } from '../components/Marquee'
 import { isNative } from '../native/bridge'
 import { albumHref, artistHref } from './routes'
 import './playerbar.css'
@@ -62,7 +63,7 @@ export function PlayerBar() {
             </button>
             <div className="pb-text">
               <a className="pb-title pb-link" href={albumHref(track.albumId)} title={album ? `${track.title} — ${album.title}` : track.title}>
-                {track.title}
+                <Marquee text={track.title} />
               </a>
               <a className="pb-sub pb-link" href={artistHref(track.artistId)} title={track.artist}>
                 {track.artist}
