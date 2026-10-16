@@ -1,20 +1,21 @@
 /**
- * Phone full-screen player: drag the cover left / right to switch songs.
+ * Phone full-screen player: the queue as a horizontal row of covers (native scroll + scroll snap).
  *
- * The cover sits on a track with the previous and next queue rows' covers parked one cover-width
- * (+ GAP) either side, just off screen; they only become visible while a drag is on. The track
- * follows the finger. On release past COMMIT of the cover width (or on a flick) it slides the
- * neighbour into place and then moves the player there — left = next, right = previous track
- * (`back()`, which never just restarts the song like the ⏮ button). No neighbour that way
- * (start / end of the queue without repeat-all): the drag rubber-bands and springs back.
+ * One slot per queue row, each as wide as the scroller, the cover centred in it. The browser does
+ * the dragging, flinging and snapping (`scroll-snap-stop: always`: one song per swipe). Nothing in
+ * the player changes while the row moves; only when the scroll has settled on another slot does
+ * the player switch (next / back / jump), and with it the title, tint and the rest of the screen.
  *
- * The slid-over transform is held until the track id actually changes and cleared in a layout
- * effect, so the frame in between never shows the old cover centred again.
+ * Slots are keyed by queue position and never move, so a song change never re-positions or swaps
+ * an <img>: the row only scrolls. When the song changes from elsewhere (buttons, the track ending,
+ * lock screen, queue edits) the row scrolls to it — smoothly for a neighbour, instantly for a jump —
+ * once the index has been stable for a moment and no finger is on the row (a brief back-and-forth
+ * of the store can't drag the row around).
  *
- * Touch events, like swipe.ts: the gesture is taken only once it is clearly horizontal, so a
- * vertical drag on the cover still scrolls / swipes the player down to close.
+ * Only slots near what's on screen / playing get an image; the rest are empty boxes.
+ * No wrap-around at the ends of the queue (repeat-all still wraps with the buttons).
  */
-import { useEffect, useLayoutEffect, useRef } from 'react'
+import { memo, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useCover } from '../lib/covers'
 import { useArtTint } from '../design/tint'
 import { useLibrary } from '../state/library'
@@ -22,197 +23,152 @@ import { useMotion } from '../state/motion'
 import { playerStore } from '../state/player'
 import { useCurrent } from './parts'
 
-const GAP = 24 // px between covers; matches the phone player's side padding
-const COMMIT = 0.28 // share of the cover width
-const FLICK = 0.45 // px per ms
-const RUBBER = 0.28
-const SLIDE_MS = 240
+const NEAR = 2 // slots either side that get their cover
+const SETTLE_MS = 140 // no scroll events for this long = settled (fallback when there's no scrollend)
+const SYNC_MS = 180 // the store index must hold this long before the row follows it
 
-export function CoverSwipe({ cover, glow }: { cover: string | null; glow: string }) {
-  const { p, id } = useCurrent()
-  const { data } = useLibrary()
+export function CoverSwipe({ glow }: { cover: string | null; glow: string }) {
+  const { p } = useCurrent()
   const motion = useMotion()
+  const n = p.queue.length
+  const scRef = useRef<HTMLDivElement>(null)
+  /** slot under the centre of the scroller (follows the finger), drives which covers load */
+  const [shown, setShown] = useState(p.index)
+  const live = useRef({ motion, index: p.index })
+  live.current = { motion, index: p.index }
 
-  const len = p.queue.length
-  const prevIdx = p.index > 0 ? p.index - 1 : p.repeat === 'all' && len > 1 ? len - 1 : -1
-  const nextIdx = p.index >= 0 && p.index + 1 < len ? p.index + 1 : p.repeat === 'all' && len > 1 ? 0 : -1
-  const prevT = prevIdx >= 0 ? data?.tracks[p.queue[prevIdx]] : undefined
-  const nextT = nextIdx >= 0 ? data?.tracks[p.queue[nextIdx]] : undefined
-  const prevCover = useCover(prevT ? data?.albums[prevT.albumId]?.cover : null)
-  const nextCover = useCover(nextT ? data?.albums[nextT.albumId]?.cover : null)
-  // work out the neighbours' tints now, so the scene colour is ready the moment the song switches
-  // (otherwise the background drops to neutral for a beat, then pops to the new tint)
-  useArtTint(prevCover)
-  useArtTint(nextCover)
+  const touching = useRef(false)
+  /** a finger moved the row since the last settle: only then does settling switch songs */
+  const gesture = useRef(false)
 
-  const rootRef = useRef<HTMLDivElement>(null)
-  const trackRef = useRef<HTMLDivElement>(null)
-  // latest values for the (mounted-once) touch handlers
-  const live = useRef({ hasPrev: false, hasNext: false, motion: true })
+  const slotWidth = () => scRef.current?.clientWidth || 1
+  const scrollTo = (i: number, smooth: boolean) => {
+    const sc = scRef.current
+    if (!sc) return
+    const left = i * slotWidth()
+    if (Math.abs(sc.scrollLeft - left) < 1) return
+    sc.scrollTo({ left, behavior: smooth ? 'smooth' : 'auto' })
+  }
+
+  // first paint: already on the current song
   useLayoutEffect(() => {
-    live.current = { hasPrev: !!prevT, hasNext: !!nextT, motion }
-  })
-  /** set while the slide-over waits for the player to move to the neighbour */
-  const pending = useRef<{ timer: number } | null>(null)
+    const sc = scRef.current
+    if (sc) sc.scrollLeft = live.current.index * slotWidth()
+  }, [])
 
-  // the song changed (our swipe, a button, or the track ending): put the track back, instantly
-  useLayoutEffect(() => {
-    const root = rootRef.current
-    const track = trackRef.current
-    if (!root || !track) return
-    if (pending.current) window.clearTimeout(pending.current.timer)
-    pending.current = null
-    track.style.transition = 'none'
-    track.style.transform = ''
-    delete root.dataset.drag
-  }, [id, p.index])
+  // keep the slot in place when the width changes (rotation, window resize)
+  useEffect(() => {
+    const sc = scRef.current
+    if (!sc || typeof ResizeObserver === 'undefined') return
+    const ro = new ResizeObserver(() => {
+      if (!touching.current) sc.scrollLeft = live.current.index * slotWidth()
+    })
+    ro.observe(sc)
+    return () => ro.disconnect()
+  }, [])
+
+  // the song changed elsewhere: follow once it holds still (and not under a finger)
+  const queueRef = useRef(p.queue)
+  useEffect(() => {
+    const sc = scRef.current
+    if (!sc || p.index < 0) return
+    const queueChanged = queueRef.current !== p.queue
+    queueRef.current = p.queue
+    const t = window.setTimeout(
+      () => {
+        if (touching.current) return
+        const at = Math.round(sc.scrollLeft / slotWidth())
+        if (at === p.index) return
+        scrollTo(p.index, live.current.motion && !queueChanged && Math.abs(at - p.index) === 1)
+      },
+      queueChanged ? 0 : SYNC_MS,
+    )
+    return () => window.clearTimeout(t)
+  }, [p.index, p.queue])
 
   useEffect(() => {
-    const root = rootRef.current
-    const track = trackRef.current
-    if (!root || !track) return
-
-    let armed = false
-    let decided = false
-    let dragging = false
-    let startX = 0
-    let startY = 0
-    let dx = 0
-    let lastX = 0
-    let lastT = 0
-    let velocity = 0
-    let width = 0
+    const sc = scRef.current
+    if (!sc) return
     let settleTimer = 0
 
-    const place = (x: number, ms: number) => {
-      track.style.transition = ms > 0 ? `transform ${ms}ms cubic-bezier(.2, .7, .2, 1)` : 'none'
-      track.style.transform = x ? `translate3d(${x}px, 0, 0)` : ''
-    }
-
-    const springBack = () => {
-      const ms = live.current.motion ? 300 : 0
-      place(0, ms)
+    const settle = () => {
       window.clearTimeout(settleTimer)
-      settleTimer = window.setTimeout(() => {
-        if (!pending.current) delete root.dataset.drag
-      }, ms)
+      if (touching.current) return
+      const k = Math.round(sc.scrollLeft / slotWidth())
+      setShown(k)
+      if (!gesture.current) return
+      gesture.current = false
+      const s = playerStore.get()
+      if (k === s.index || k < 0 || k >= s.queue.length) return
+      if (k === s.index + 1) playerStore.next()
+      else if (k === s.index - 1) playerStore.back()
+      else playerStore.jump(k)
     }
-
-    const onStart = (e: TouchEvent) => {
-      armed = decided = dragging = false
-      if (e.touches.length !== 1 || pending.current) return
-      armed = true
-      startX = lastX = e.touches[0].clientX
-      startY = e.touches[0].clientY
-      lastT = e.timeStamp
-      dx = velocity = 0
+    const onScroll = () => {
+      setShown(Math.round(sc.scrollLeft / slotWidth()))
+      window.clearTimeout(settleTimer)
+      settleTimer = window.setTimeout(settle, SETTLE_MS)
     }
-
-    const onMove = (e: TouchEvent) => {
-      if (!armed) return
-      const x = e.touches[0].clientX
-      const y = e.touches[0].clientY
-      if (!decided) {
-        const ddx = x - startX
-        const ddy = y - startY
-        if (Math.abs(ddx) < 8 && Math.abs(ddy) < 8) return
-        decided = true
-        // only a mostly-horizontal drag; vertical ones stay with scrolling / swipe-down-to-close
-        if (Math.abs(ddx) < Math.abs(ddy) * 1.2) {
-          armed = false
-          return
-        }
-        dragging = true
-        width = root.offsetWidth
-        window.clearTimeout(settleTimer)
-        root.dataset.drag = ''
-        // start from where the finger is now, so the cover doesn't jump by the 8px dead zone
-        startX = x
-      }
-      if (!dragging) return
-      if (e.cancelable) e.preventDefault()
-      const raw = x - startX
-      const blocked = (raw > 0 && !live.current.hasPrev) || (raw < 0 && !live.current.hasNext)
-      dx = blocked ? raw * RUBBER : raw
-      const dt = e.timeStamp - lastT
-      if (dt > 0) velocity = 0.8 * ((x - lastX) / dt) + 0.2 * velocity
-      lastX = x
-      lastT = e.timeStamp
-      place(dx, 0)
+    const onStart = () => {
+      touching.current = true
+      gesture.current = true
     }
-
-    const onEnd = () => {
-      if (!dragging) {
-        armed = false
-        return
-      }
-      armed = dragging = false
-      const dir = dx < 0 ? 1 : -1 // 1 = next, -1 = previous
-      const can = dir === 1 ? live.current.hasNext : live.current.hasPrev
-      const far = Math.abs(dx) > width * COMMIT
-      const flick = Math.abs(velocity) > FLICK && Math.sign(velocity) === Math.sign(dx) && Math.abs(dx) > 24
-      if (!can || !(far || flick)) return springBack()
-
-      const ms = live.current.motion ? SLIDE_MS : 0
-      place(-dir * (width + GAP), ms)
-      const go = () => {
-        // the id change resets the track (layout effect above); if the player didn't move, spring back
-        const timer = window.setTimeout(() => {
-          if (!pending.current) return
-          pending.current = null
-          springBack()
-        }, 500)
-        pending.current = { timer }
-        if (dir === 1) playerStore.next()
-        else playerStore.back()
-      }
-      if (ms) {
-        pending.current = { timer: 0 }
-        settleTimer = window.setTimeout(go, ms)
-      } else go()
+    const onEnd = (e: TouchEvent) => {
+      if (e.touches.length) return
+      touching.current = false
+      // no scroll after the finger lifted (or it never moved): settle now / soon
+      window.clearTimeout(settleTimer)
+      settleTimer = window.setTimeout(settle, SETTLE_MS)
     }
-
-    root.addEventListener('touchstart', onStart, { passive: true })
-    root.addEventListener('touchmove', onMove, { passive: false })
-    root.addEventListener('touchend', onEnd)
-    root.addEventListener('touchcancel', onEnd)
+    const hasScrollEnd = 'onscrollend' in window
+    sc.addEventListener('scroll', onScroll, { passive: true })
+    if (hasScrollEnd) sc.addEventListener('scrollend', settle)
+    sc.addEventListener('touchstart', onStart, { passive: true })
+    sc.addEventListener('touchend', onEnd, { passive: true })
+    sc.addEventListener('touchcancel', onEnd, { passive: true })
     return () => {
       window.clearTimeout(settleTimer)
-      if (pending.current) window.clearTimeout(pending.current.timer)
-      pending.current = null
-      root.removeEventListener('touchstart', onStart)
-      root.removeEventListener('touchmove', onMove)
-      root.removeEventListener('touchend', onEnd)
-      root.removeEventListener('touchcancel', onEnd)
+      sc.removeEventListener('scroll', onScroll)
+      if (hasScrollEnd) sc.removeEventListener('scrollend', settle)
+      sc.removeEventListener('touchstart', onStart)
+      sc.removeEventListener('touchend', onEnd)
+      sc.removeEventListener('touchcancel', onEnd)
     }
   }, [])
 
-  // Keyed by queue row, not by slot: after a swipe the neighbour's <img> element itself becomes the
-  // main cover (only its class / position change). Swapping the src on a fixed element instead made
-  // the browser re-decode it and show a blank / stale frame — the flicker on every swipe.
-  const img = (key: string, src: string | null, cls: string, main = false) =>
-    src ? (
-      <img
-        key={key}
-        className={`np-cover ${cls}`}
-        src={src}
-        alt=""
-        draggable={false}
-        decoding="sync"
-        style={main ? { boxShadow: `0 0 0 1px rgba(255,255,255,0.08), 0 60px 120px -40px ${glow}` } : undefined}
-      />
-    ) : (
-      <span key={key} className={`np-cover np-cover-empty ${cls}`} aria-hidden />
-    )
+  const slots = []
+  for (let i = 0; i < n; i++) {
+    const near = Math.abs(i - shown) <= NEAR || Math.abs(i - p.index) <= NEAR
+    slots.push(<Slot key={i} trackId={near ? p.queue[i] : null} glow={i === p.index ? glow : null} />)
+  }
 
   return (
-    <div ref={rootRef} className="npc">
-      <div ref={trackRef} className="npc-track">
-        {/* queue of two with repeat-all: previous and next are the same row */}
-        {prevT && img(prevIdx === nextIdx ? `q${prevIdx}p` : `q${prevIdx}`, prevCover, 'npc-side is-prev')}
-        {img(`q${p.index}`, cover, 'npc-main', true)}
-        {nextT && img(`q${nextIdx}`, nextCover, 'npc-side is-next')}
-      </div>
+    <div ref={scRef} className="npc" data-motion={motion ? undefined : 'off'}>
+      <div className="npc-track">{slots}</div>
     </div>
   )
 }
+
+const Slot = memo(function Slot({ trackId, glow }: { trackId: string | null; glow: string | null }) {
+  const { data } = useLibrary()
+  const t = trackId ? data?.tracks[trackId] : undefined
+  const src = useCover(t ? data?.albums[t.albumId]?.cover : null)
+  // warm the tint cache, so the scene colour is ready the moment the song switches
+  useArtTint(src)
+  return (
+    <div className="npc-slot">
+      {src ? (
+        <img
+          className="np-cover"
+          src={src}
+          alt=""
+          draggable={false}
+          decoding="async"
+          style={glow ? { boxShadow: `0 0 0 1px rgba(255,255,255,0.08), 0 60px 120px -40px ${glow}` } : undefined}
+        />
+      ) : (
+        <span className="np-cover np-cover-empty" aria-hidden />
+      )}
+    </div>
+  )
+})

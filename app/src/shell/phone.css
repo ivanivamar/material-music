@@ -245,16 +245,24 @@ html[data-phone][data-qp] .toasts.toasts-shell { right: 0; }
   overflow-y: auto; overscroll-behavior: contain;
 }
 .shell.is-phone .np { --np-cover: max(180px, min(364px, calc(100vw - 48px), calc(100vh - 470px - var(--np-sat)))); }
-.shell.is-phone .np-cover-wrap { align-self: center; }
-/* cover swipe (CoverSwipe.tsx): neighbours parked one cover + 24px either side, shown only while dragging */
+/* cover row (CoverSwipe.tsx): the queue's covers in a native horizontal scroller, one full-width
+   slot per song, snapping one song per swipe. Full bleed (out of .np-main's 24px padding) so the
+   neighbours slide in from the screen edge. Bottom padding keeps the cover glow from being clipped
+   by the scroller; the negative margin gives that room back to the layout. */
 .shell.is-phone .np-main { overflow-x: hidden; }
-.npc { position: relative; width: var(--np-cover); height: var(--np-cover); touch-action: pan-y; -webkit-touch-callout: none; user-select: none; }
-.npc-track { position: absolute; inset: 0; }
-.npc .np-cover { position: absolute; top: 0; left: 0; }
-.npc .is-prev { left: calc(-100% - 24px); }
-.npc .is-next { left: calc(100% + 24px); }
-.npc-side { box-shadow: 0 0 0 1px rgba(255, 255, 255, .08); }
-.npc:not([data-drag]) .npc-side { visibility: hidden; }
+.shell.is-phone .np-cover-wrap { align-self: stretch; margin: 0 -24px; }
+.npc {
+  width: 100%; height: calc(var(--np-cover) + 72px); margin-bottom: -72px;
+  overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory; scrollbar-width: none;
+  -webkit-touch-callout: none; user-select: none;
+}
+.npc::-webkit-scrollbar { display: none; }
+.npc-track { display: flex; height: 100%; }
+.npc-slot {
+  flex: 0 0 100%; display: flex; justify-content: center; align-items: flex-start;
+  scroll-snap-align: center; scroll-snap-stop: always;
+}
 .shell.is-phone .np-info { gap: clamp(16px, 3.4vh, 30px); max-width: none; flex: 1; }
 .shell.is-phone .np-text { gap: 8px; }
 .shell.is-phone .np-badges { order: 3; gap: 10px; font-size: var(--fs-mono-xs); }
