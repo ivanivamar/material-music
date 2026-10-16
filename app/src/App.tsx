@@ -20,6 +20,7 @@ import { Library } from './pages/library/Library'
 import { Search } from './pages/search/Search'
 import { Downloads } from './pages/downloads/Downloads'
 import { Upload } from './pages/upload/Upload'
+import { Stats } from './pages/stats/Stats'
 import { NewReleases } from './pages/releases/NewReleases'
 import { PlaylistPage } from './pages/playlists/PlaylistPage'
 import { playlistsStore } from './state/playlists'
@@ -84,6 +85,8 @@ function Page({ route }: { route: Extract<Route, { kind: 'app' }> }) {
       return <Upload />
     case 'downloads':
       return <Downloads />
+    case 'stats':
+      return <Stats period={route.period} />
   }
 }
 

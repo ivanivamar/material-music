@@ -142,6 +142,18 @@ in 90 days (a week if nothing was found): 2 requests per artist through the shar
 devices share it. "Edit genre…" in the album and artist ⋯ menus (`actions/GenreDialog.tsx`); album /
 artist page headers, smart playlist genre rules and their suggestions all use the resolved genres.
 
+## Listening stats + yearly recap (step 21)
+
+Top artists, albums and songs, hours listened, plays, the first play of the period and a listening chart, per calendar year or month — computed on each device from the catalogue + `history.json` (nothing new is stored in Drive).
+
+| File | What |
+|---|---|
+| `src/state/stats.ts` | `periodStats(c, plays, {year, month})` (memoised per period; reset when history / catalogue change), `periodIndex` (years / months with plays), `recapYear(now)` (Dec 18–31 → this year, January → last year, else null), formatting. Time listened = plays × track length (an estimate: rows only store when a play started). Artists = album artists |
+| `src/pages/stats/Stats.tsx` | `#/stats` (latest year; in January the previous one), `#/stats/2026`, `#/stats/2026-10`. Year chips + month row (months without plays disabled; changing period replaces the history entry). Counters (hours, plays, songs, albums, artists, days), bars by month (click → that month) or by day, peak, first play (play button), top artists (#1 feature + 2–10, show 50), top albums (cards, show 50), top songs (Play top N / Shuffle, track menu, drag). Empty states |
+| `src/pages/stats/RecapShelf.tsx` | Home: "YOUR 2026 IN MUSIC" shelf on top, only Dec 18 – Jan 31 and when that year has plays: wide recap card (hours, plays, top artist / song, first play → `#/stats/<year>`) + the year's top albums |
+| `src/pages/stats/stats.css` | Desktop styles; phone rules in `src/shell/phone.css` |
+| `src/pages/AccountMenu.tsx` | "Listening stats" item (desktop avatar menu + phone account sheet), any time of year |
+
 ## New releases (step 11)
 
 | File | What |

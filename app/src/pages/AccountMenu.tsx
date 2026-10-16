@@ -1,5 +1,5 @@
 /**
- * Account menu: refresh library, local FLAC folder, switch account, sign out.
+ * Account menu: refresh library, listening stats, local FLAC folder, switch account, sign out.
  * Desktop: avatar button in the top bar with a dropdown. Phone: the avatar is the last tab of the
  * bottom bar and opens the same items as a bottom sheet (same look as the action sheets).
  */
@@ -19,7 +19,7 @@ import { releasesStore } from '../state/releases'
 import { playlistsStore } from '../state/playlists'
 import { libraryStore, useLibrary } from '../state/library'
 import { sessionStore, useSession } from '../state/session'
-import { go, href } from '../shell/routes'
+import { go, href, statsHref } from '../shell/routes'
 
 const time = (ms: number | null) =>
   ms ? new Date(ms).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '—'
@@ -79,6 +79,7 @@ function useAccountMenu() {
         void genresStore.sync().then(() => genresStore.fill())
       },
     })
+  rows.push({ icon: 'clock', label: 'Listening stats', run: () => go(statsHref()) })
   if (isNative) rows.push({ icon: 'download', label: 'Downloads', run: () => go(href('downloads')) })
   if (localFolder.supported) rows.push({ icon: 'library', label: linked ? 'Change local music folder…' : 'Play FLAC from a local folder…', disabled: !lib.data, run: () => void linkFolder() })
   if (linked) rows.push({ icon: 'x', label: 'Stop using the local folder', run: () => void localFolder.unlink() })

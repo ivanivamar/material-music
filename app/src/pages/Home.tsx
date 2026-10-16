@@ -5,6 +5,7 @@
  *
  * Desktop: each shelf is one row (as many cards as fit). Phone: rows scroll sideways.
  * Shelves that need history stay hidden until the first play is counted.
+ * Late December and January: a "Your <year> in music" recap shelf on top (step 21, pages/stats).
  */
 import { useEffect, useState, type ReactNode } from 'react'
 import { libraryStats, useLibrary, type Album, type Catalogue } from '../state/library'
@@ -16,6 +17,7 @@ import { libraryHref } from '../shell/routes'
 import { LibAlbumCard } from './library/common'
 import { usePlayingAlbumId } from './library/playback'
 import { PageHeader } from './PageHeader'
+import { RecapShelf } from './stats/RecapShelf'
 
 function useMinuteClock() {
   const [now, setNow] = useState(() => new Date())
@@ -80,6 +82,9 @@ export function Home() {
         title={first ? `${greeting(now.getHours())}, ${first}` : greeting(now.getHours())}
       />
       <div className="shelves">
+        {/* once a year: Dec 18 – Jan 31 (step 21) */}
+        <RecapShelf c={data} plays={history.plays} now={now} playing={playing} />
+
         {shelves.listened.length > 0 && (
           <Shelf label="RECENTLY LISTENED" sub={shelves.playsThisWeek ? `${plural(shelves.playsThisWeek, 'PLAY')} · LAST 7 DAYS` : 'NOTHING THIS WEEK'}>
             {shelves.listened.map(({ album }) => (

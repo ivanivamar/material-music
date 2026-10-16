@@ -524,3 +524,42 @@ html[data-phone] .toast-meta { display: none; }
 .shell.is-phone .pl-row.is-missing .pl-act { gap: 0; }
 .shell.is-phone .pl-empty { min-height: 380px; padding: 48px 8px 24px; }
 .shell.is-phone .pl-empty .empty { padding: 20px 8px; }
+
+/* ── Listening stats (step 21) ── */
+.shell.is-phone .st .ph { margin-bottom: 18px; }
+.shell.is-phone .st-periods { gap: 10px; margin-bottom: 30px; }
+.shell.is-phone .st-years,
+.shell.is-phone .st-months {
+  flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; overscroll-behavior-x: contain;
+  margin: 0 -20px; padding: 0 20px;
+}
+.shell.is-phone .st-years::-webkit-scrollbar,
+.shell.is-phone .st-months::-webkit-scrollbar { display: none; }
+.shell.is-phone .st-years > *, .shell.is-phone .st-month { flex: none; }
+.shell.is-phone .st-month { height: 34px; }
+.shell.is-phone .st-counters { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px 12px; padding-bottom: 26px; margin-bottom: 30px; }
+.shell.is-phone .st-counter-hero { grid-column: 1 / -1; }
+.shell.is-phone .st-counter-hero .st-num { font-size: 56px; }
+.shell.is-phone .st-num { font-size: 26px; }
+.shell.is-phone .st-cap { font-size: var(--fs-mono-xs); }
+.shell.is-phone .st-split { grid-template-columns: minmax(0, 1fr); gap: 32px; margin-bottom: 40px; }
+.shell.is-phone .st-chart { height: 130px; gap: 5px; }
+.shell.is-phone .st-chart.is-month { gap: 2px; }
+.shell.is-phone .st-first-cover { width: 84px; height: 84px; }
+.shell.is-phone .st-first-play { opacity: 1; background: rgba(5, 5, 5, .3); font-size: 22px; }
+.shell.is-phone .st-first-title { font-size: 18px; }
+.shell.is-phone .st-section { gap: 18px; margin-bottom: 40px; }
+.shell.is-phone .st-artists { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+.shell.is-phone .st-artist-top { flex-direction: row; align-items: center; gap: 16px; }
+.shell.is-phone .st-artist-top .avatar-art { width: 96px !important; height: 96px !important; }
+.shell.is-phone .st-artist-top-name { font-size: 24px; }
+.shell.is-phone .st-artist-list { grid-template-columns: minmax(0, 1fr); }
+.shell.is-phone .st-artist-row { padding: 0 4px; gap: 12px; height: 56px; }
+.shell.is-phone .trow.trow-stats { grid-template-columns: 28px minmax(0, 1fr) 64px; }
+.shell.is-phone .trow.trow-stats .trow-dur { display: none; }
+.shell.is-phone .st-songs-tools .btn { flex: 1; }
+
+/* Home recap shelf: a 288px card leading the sideways row */
+.shell.is-phone .shelf-one > .recap-card { width: 288px; flex: none; scroll-snap-align: start; min-height: 220px; }
+.shell.is-phone .recap-num { font-size: 46px; }
+.shell.is-phone .recap-count { display: none; }
