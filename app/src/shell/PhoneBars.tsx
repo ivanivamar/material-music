@@ -69,7 +69,7 @@ export function MiniPlayer() {
       {cover ? <img className="mini-cover" src={cover} alt="" /> : <span className="mini-cover mini-cover-empty" aria-hidden />}
       <div className="mini-text">
         <Marquee className="mini-title" text={track.title} />
-        <div className="mini-sub">{track.artist}</div>
+        <Marquee className="mini-sub" text={track.artist} />
       </div>
       <button type="button" className="mini-btn" aria-label="Lyrics" onClick={() => nowPlayingStore.open('lyrics')}>
         <Icon name="lyrics" />

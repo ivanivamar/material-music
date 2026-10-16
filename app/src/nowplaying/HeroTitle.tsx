@@ -8,7 +8,7 @@
  *    size clamped to 3 lines. Re-fits whenever the column width changes.
  * 3. Still too long → the last line ends in "…" and a tap/click expands the full title in place.
  */
-import { useLayoutEffect, useRef, useState, type KeyboardEvent, type RefObject } from 'react'
+import { useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode, type RefObject } from 'react'
 
 const QUALIFIER =
   /\b(remaster(ed)?|live|version|ver\.|mix|remix|edit|mono|stereo|demo|acoustic|instrumental|feat\.?|ft\.|featuring|radio|extended|original|bonus|session|reprise|deluxe|anniversary|unplugged|bootleg|outtake|alternate|alt\.|from|soundtrack|ost|interlude|intro|outro|re-?recorded|taylor'?s|vip|rework|sped up|slowed)(?!\w)/i
@@ -176,5 +176,70 @@ export function HeroTitle({ title, phone, onLines }: { title: string; phone: boo
         </div>
       )}
     </div>
+  )
+}
+
+/**
+ * "Artist · Album" under the hero title. One line while it fits; when it doesn't (long names,
+ * several artists) it stacks: artists on up to two balanced lines, the album on its own line
+ * below, each ellipsised on its own instead of the album silently vanishing off the end.
+ */
+export function HeroSub({ artist, album, text }: { artist: ReactNode; album?: ReactNode; /** re-measure when this changes */ text: string }) {
+  const ref = useRef<HTMLDivElement>(null)
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const run = () => {
+      el.classList.remove('is-stacked')
+      if (el.scrollWidth > el.clientWidth + 1) el.classList.add('is-stacked')
+    }
+    run()
+    let width = el.clientWidth
+    const ro = new ResizeObserver(() => {
+      if (el.clientWidth === width) return
+      width = el.clientWidth
+      run()
+    })
+    ro.observe(el)
+    let alive = true
+    document.fonts?.ready.then(() => alive && run()).catch(() => {})
+    return () => {
+      alive = false
+      ro.disconnect()
+    }
+  }, [text])
+  return (
+    <div ref={ref} className="np-sub">
+      {artist}
+      {album && (
+        <>
+          <span className="np-sub-dot" aria-hidden>
+            {' · '}
+          </span>
+          {album}
+        </>
+      )}
+    </div>
+  )
+}
+
+/**
+ * "Major Lazer & DJ Snake feat. MØ" with each name kept whole, so a wrapped list breaks between
+ * artists ("Major Lazer & / DJ Snake feat. MØ") rather than inside one. Text is unchanged.
+ */
+export function ArtistNames({ names }: { names: string }) {
+  const parts = names.split(/(\s*(?:,|;|\/|&|\+|\s(?:x|×|feat\.?|ft\.|featuring|with|vs\.?)\s)\s*)/i)
+  return (
+    <>
+      {parts.map((part, i) =>
+        i % 2 === 1 || part.length > 34 ? (
+          part
+        ) : (
+          <span key={i} className="np-name">
+            {part}
+          </span>
+        ),
+      )}
+    </>
   )
 }

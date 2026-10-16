@@ -66,7 +66,7 @@ export function PlayerBar() {
                 <Marquee text={track.title} />
               </a>
               <a className="pb-sub pb-link" href={artistHref(track.artistId)} title={track.artist}>
-                {track.artist}
+                <Marquee text={track.artist} />
               </a>
             </div>
           </>

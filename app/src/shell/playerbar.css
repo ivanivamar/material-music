@@ -86,5 +86,5 @@
 .pb-right .ibtn.pb-open:hover:not(:disabled) { background: rgba(255, 255, 255, .08); color: #fff; }
 
 /* long titles scroll (components/Marquee.tsx) */
-.pb-title.pb-link { display: block; text-overflow: clip; }
+.pb-title.pb-link, .pb-sub.pb-link { display: block; text-overflow: clip; }
 .pb-link:hover .mq-item { text-decoration: underline; text-underline-offset: 3px; text-decoration-color: rgba(255, 255, 255, .35); }

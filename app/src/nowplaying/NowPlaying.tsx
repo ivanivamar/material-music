@@ -22,7 +22,7 @@ import { playerStore } from '../state/player'
 import { isTouch, useIsPhone } from '../state/viewport'
 import { albumHref, artistHref } from '../shell/routes'
 import { Marquee } from '../components/Marquee'
-import { HeroTitle } from './HeroTitle'
+import { ArtistNames, HeroSub, HeroTitle } from './HeroTitle'
 import { Lyrics } from './Lyrics'
 import { useSwipeDown } from './swipe'
 import { NpLink, Transport, ViewButtons, contextLine, useCurrent } from './parts'
@@ -156,19 +156,21 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
                   {trackNo && <span>{trackNo}</span>}
                 </div>
                 <HeroTitle title={track.title} phone={phone} onLines={onTitleLines} />
-                <div className="np-sub">
-                  <NpLink href={artistHref(track.artistId)} className="np-artist">
-                    {track.artist}
-                  </NpLink>
-                  {album && (
-                    <>
-                      {' · '}
-                      <NpLink href={albumHref(album.id)} className="np-album">
+                <HeroSub
+                  text={`${track.artist}\n${album?.title ?? ''}`}
+                  artist={
+                    <NpLink href={artistHref(track.artistId)} className="np-artist" title={track.artist}>
+                      <ArtistNames names={track.artist} />
+                    </NpLink>
+                  }
+                  album={
+                    album && (
+                      <NpLink href={albumHref(album.id)} className="np-album" title={album.title}>
                         {album.title}
                       </NpLink>
-                    </>
-                  )}
-                </div>
+                    )
+                  }
+                />
               </div>
               <div className="np-seek">
                 <Waveform progress={frac} seed={seedFrom(track.id)} onSeek={(f) => playerStore.seek(f * duration)} />
@@ -211,7 +213,7 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
                 {cover ? <img className="npp-strip-cover" src={cover} alt="" /> : <span className="npp-strip-cover np-cover-empty" aria-hidden />}
                 <div className="npp-strip-text">
                   <Marquee className="npp-strip-title" text={track.title} />
-                  <div className="npp-strip-sub">{track.artist}</div>
+                  <Marquee className="npp-strip-sub" text={track.artist} />
                 </div>
               </div>
             ) : (
