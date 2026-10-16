@@ -71,6 +71,27 @@ function lyricsText(common) {
   return undefined;
 }
 
+/** Split artist values on ";" (one artist per part), drop empties and case-insensitive repeats. */
+export function splitArtists(values) {
+  const out = [];
+  for (const v of values) {
+    for (const part of String(v ?? '').split(';')) {
+      const s = clean(part);
+      if (s && !out.some((o) => o.toLowerCase() === s.toLowerCase())) out.push(s);
+    }
+  }
+  return out;
+}
+
+/** Every value of the given Vorbis comment keys (all repeats, in file order), split into artists. */
+function vorbisList(native, ...ids) {
+  const vals = [];
+  for (const tags of Object.values(native ?? {})) {
+    for (const t of tags) if (ids.includes(String(t.id).toUpperCase()) && typeof t.value === 'string') vals.push(t.value);
+  }
+  return splitArtists(vals);
+}
+
 export async function readMeta(file) {
   const { common, format, native } = await parseFile(file.path, { duration: true, skipCovers: true });
   const fb = fromFilename(file.rel);
@@ -86,10 +107,16 @@ export async function readMeta(file) {
   }
   lyrics ??= lyricsText(common);
 
-  const albumArtist = clean(common.albumartist) ?? clean(common.artist) ?? fb.artist ?? 'Unknown Artist';
+  // Several artists can come as repeated tags or as one "A; B" value. The album artist (→ artist
+  // page, ids, Drive folder) is the first one only, so a "feat." track stays on its album.
+  let artists = vorbisList(native, 'ARTIST');
+  if (!artists.length) artists = splitArtists([common.artist]);
+  let albumArtists = vorbisList(native, 'ALBUMARTIST', 'ALBUM ARTIST');
+  if (!albumArtists.length) albumArtists = splitArtists([common.albumartist]);
+  const albumArtist = albumArtists[0] ?? artists[0] ?? fb.artist ?? 'Unknown Artist';
   return {
     title: clean(common.title) ?? fb.title,
-    artist: clean(common.artist) ?? albumArtist,
+    artist: artists.length ? artists.join(', ') : albumArtist,
     albumArtist,
     album: clean(common.album) ?? fb.album ?? 'Unknown Album',
     track: num(common.track?.no) ?? fb.track,

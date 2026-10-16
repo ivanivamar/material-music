@@ -156,6 +156,18 @@ function fromFilename(rel: string) {
   }
 }
 
+/** Split artist values on ";" (one artist per part), drop empties and case-insensitive repeats. */
+export function splitArtists(values: (string | undefined)[]): string[] {
+  const out: string[] = []
+  for (const v of values) {
+    for (const part of (v ?? '').split(';')) {
+      const s = clean(part)
+      if (s && !out.some((o) => o.toLowerCase() === s.toLowerCase())) out.push(s)
+    }
+  }
+  return out
+}
+
 export function toMeta(info: FlacInfo, rel: string): TrackMeta {
   const first = (...keys: string[]) => {
     for (const k of keys) {
@@ -170,10 +182,16 @@ export function toMeta(info: FlacInfo, rel: string): TrackMeta {
   const year = num(date?.match(/^\d{4}/)?.[0]) ?? num(first('YEAR'))
   // the raw LYRICS tag keeps its LRC timestamps
   const lyrics = clean(first('LYRICS', 'UNSYNCEDLYRICS', 'UNSYNCED LYRICS'))
-  const albumArtist = clean(first('ALBUMARTIST', 'ALBUM ARTIST')) ?? clean(first('ARTIST')) ?? fb.artist ?? 'Unknown Artist'
+  // Several artists can come as repeated tags or as one "A; B" value. The album artist (→ artist
+  // page, ids, Drive folder) is the first one only, so a "feat." track stays on its album.
+  // Same rule as readMeta() in tools/import.
+  const all = (...keys: string[]) => info.comments.filter(([ck]) => keys.includes(ck)).map(([, cv]) => cv)
+  const artists = splitArtists(all('ARTIST'))
+  const albumArtists = splitArtists(all('ALBUMARTIST', 'ALBUM ARTIST'))
+  const albumArtist = albumArtists[0] ?? artists[0] ?? fb.artist ?? 'Unknown Artist'
   return {
     title: clean(first('TITLE')) ?? fb.title,
-    artist: clean(first('ARTIST')) ?? albumArtist,
+    artist: artists.length ? artists.join(', ') : albumArtist,
     albumArtist,
     album: clean(first('ALBUM')) ?? fb.album ?? 'Unknown Album',
     track: trackNo ?? fb.track,
