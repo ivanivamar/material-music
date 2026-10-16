@@ -58,6 +58,15 @@ export function createNativeEngine(): PlayerEngine {
   /** a load() waiting to be flushed (wins over a plain queue sync) */
   let loadReq: { autoplay: boolean; position?: number } | null = null
   let flushQueued = false
+  /**
+   * After a load() (Next, Previous, cover swipe, tapping a row) the store is already on the new
+   * track, but the native player keeps reporting the old one until it has processed setQueue. Those
+   * late events must not count as "native moved by itself" — engineMoved() would jump the store back
+   * to the old track for a beat (the cover / title flicker on swipe). Ignore events until one shows
+   * the track we asked for; give up after EXPECT_MS (e.g. native skipped a broken track).
+   */
+  let expect: { id: string; until: number } | null = null
+  const EXPECT_MS = 4000
 
   /* ── launch: adopt what the native player is already doing ── */
   const ready: Promise<void> = PelagicPlayer.getState()
@@ -121,6 +130,10 @@ export function createNativeEngine(): PlayerEngine {
   /* ── native → store ── */
   function apply(st: NativePlayerState) {
     if (st.count === 0) return
+    if (expect) {
+      if (st.mediaId === expect.id || performance.now() > expect.until) expect = null
+      else return // still the track from before our load(): stale
+    }
     const s = playerStore.get()
     // moved by itself (auto-advance, lock screen): follow, but only if the row really matches
     if (st.index >= 0 && st.index !== s.index && s.queue[st.index] === st.mediaId) playerStore.engineMoved(st.index)
@@ -177,6 +190,7 @@ export function createNativeEngine(): PlayerEngine {
   const engine: PlayerEngine = {
     load(_id, { autoplay, position }) {
       loadReq = { autoplay, position }
+      expect = { id: _id, until: performance.now() + EXPECT_MS }
       if (autoplay) playerStore.report({ playing: true, buffering: true, source: isStored(_id) ? 'local' : 'drive' })
       flush()
     },
