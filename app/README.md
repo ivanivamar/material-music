@@ -130,6 +130,18 @@ Not played in a year, Most played this month, Genre, Decade, Custom.
 - Android download of a smart playlist follows it (files come and go with the rules); it waits until
   the history was read from Drive once so "Never played" never briefly means the whole library.
 
+## Genres (step 20b)
+
+Most albums have no GENRE tag, so `src/state/genres.ts` fills the gaps. An album's genres, first that
+has any: set on the album in the app → its GENRE tag → set on its artist in the app → MusicBrainz
+release group → MusicBrainz artist genres. Stored in Drive `Pelagic/genres.json` (`albums` / `artists`
+entries with `mb` + `user` values, each stamped; `checked` per artist) — never in the FLAC tags or
+library.json. A MusicBrainz pass runs ~20 s after launch for artists with untagged albums not checked
+in 90 days (a week if nothing was found): 2 requests per artist through the shared 1/s queue
+(`artistGenres`, `browseReleaseGroupGenres` in `lib/musicbrainz.ts`), synced before and after so
+devices share it. "Edit genre…" in the album and artist ⋯ menus (`actions/GenreDialog.tsx`); album /
+artist page headers, smart playlist genre rules and their suggestions all use the resolved genres.
+
 ## New releases (step 11)
 
 | File | What |

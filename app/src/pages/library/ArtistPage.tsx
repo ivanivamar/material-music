@@ -8,6 +8,7 @@ import { useState, type CSSProperties } from 'react'
 import { Button, EmptyState, IconButton, TrackRow, formatTime } from '../../components/ui'
 import { actions, trackDrag } from '../../actions/actions'
 import { useCover } from '../../lib/covers'
+import { artistGenresOf, useGenres } from '../../state/genres'
 import { useLibrary } from '../../state/library'
 import { playerStore } from '../../state/player'
 import { libraryHref } from '../../shell/routes'
@@ -30,6 +31,7 @@ export function ArtistPage({ id }: { id: string }) {
   const [allSongs, setAllSongs] = useState(false)
   const dl = useDownloads()
   const dlNow = useDownloadProgress()
+  const { doc: genreDoc } = useGenres()
   const info = data ? artistInfos(data).get(id) : undefined
   const artist = info?.artist
   // banner: artist_background, else the photo blurred (not the generated mosaic)
@@ -55,7 +57,7 @@ export function ArtistPage({ id }: { id: string }) {
   const ids = songs.map((t) => t.id)
   const context = { kind: 'artist' as const, id: artist.id, label: artist.name }
   const shown = allSongs ? songs : songs.slice(0, SONGS_COLLAPSED)
-  const meta = ['ARTIST', ...info.genres.slice(0, 2).map((g) => g.toUpperCase())].join(' · ')
+  const meta = ['ARTIST', ...artistGenresOf(genreDoc, data, artist.id).genres.slice(0, 2).map((g) => g.toUpperCase())].join(' · ')
 
   const onPlay = () => {
     if (ctx.active) playerStore.toggle()

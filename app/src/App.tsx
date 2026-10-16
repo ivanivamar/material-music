@@ -27,6 +27,7 @@ import { downloadsStore } from './state/downloads'
 import { libraryStore, useLibrary } from './state/library'
 import { useMotionAttribute } from './state/motion'
 import { playerStore } from './state/player'
+import { genresStore } from './state/genres'
 import { historyStore } from './state/history'
 import './state/removal'
 import { releasesStore } from './state/releases'
@@ -60,6 +61,8 @@ downloadsStore.init()
 releasesStore.init()
 // Playlists (step 9): one Drive file per playlist, edited offline-first and merged entry by entry.
 playlistsStore.init()
+// Genres (step 20b): tags, else set in the app, else MusicBrainz — synced through Drive genres.json.
+genresStore.init()
 
 function Page({ route }: { route: Extract<Route, { kind: 'app' }> }) {
   switch (route.key) {

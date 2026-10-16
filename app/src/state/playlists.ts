@@ -24,6 +24,7 @@ import { DRIVE_ROOT, PLAYLISTS_DIR } from '../config'
 import { AuthError, download, driveFetch, findChild, FOLDER_MIME, getMeta } from '../lib/drive'
 import { idbGet, idbSet } from '../lib/idb'
 import { folder, putFile } from '../upload/driveWrite'
+import { genresStore } from './genres'
 import { historyStore } from './history'
 import { libraryStore, type Track } from './library'
 import { onAccountReset, sessionStore } from './session'
@@ -604,6 +605,13 @@ export const playlistsStore = {
       if (next === plays) return
       plays = next
       if (state.list.some((p) => p.smart)) publish()
+    })
+    let gdoc = genresStore.get().doc
+    genresStore.subscribe(() => {
+      const next = genresStore.get().doc
+      if (next === gdoc) return
+      gdoc = next
+      if (state.list.some((p) => p.smart?.rules.some((r) => r.field === 'genre'))) publish()
     })
     window.setInterval(() => {
       if (state.list.some((p) => p.smart)) publish()

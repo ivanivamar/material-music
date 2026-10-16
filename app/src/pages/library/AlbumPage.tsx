@@ -10,6 +10,7 @@ import { actions, trackDrag } from '../../actions/actions'
 import { rgba, sceneBackground, useArtTint } from '../../design/tint'
 import { useCover } from '../../lib/covers'
 import { playerStore } from '../../state/player'
+import { albumGenresOf, useGenres } from '../../state/genres'
 import { useLibrary, type Track } from '../../state/library'
 import { artistHref, libraryHref } from '../../shell/routes'
 import { RELEASE_LABEL, albumInfos, artistInfos, fmtAdded, fmtBytes, fmtTotal, plural } from '../../state/views'
@@ -43,6 +44,8 @@ export function AlbumPage({ id }: { id: string }) {
   const playingAlbum = usePlayingAlbumId(data)
   const dl = useDownloads()
   const dlNow = useDownloadProgress()
+  const { doc: genreDoc } = useGenres()
+  const genres = albumGenresOf(genreDoc, album).genres
 
   if (!data) return null
   if (!info || !album) {
@@ -99,7 +102,7 @@ export function AlbumPage({ id }: { id: string }) {
           <div className="hero-cover hero-cover-empty" />
         )}
         <div className="hero-text">
-          <div className="hero-meta">{[kind, album.year, album.genre?.toUpperCase()].filter(Boolean).join(' · ')}</div>
+          <div className="hero-meta">{[kind, album.year, genres.slice(0, 2).join(' / ').toUpperCase() || null].filter(Boolean).join(' · ')}</div>
           <h1 className="hero-title" style={{ '--hs': `${size}px` } as CSSProperties} title={album.title}>
             {album.title}
           </h1>

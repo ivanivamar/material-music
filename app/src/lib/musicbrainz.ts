@@ -143,6 +143,32 @@ export async function browseReleaseGroups(mbid: string, maxPages = 5): Promise<M
   return out
 }
 
+/* ── Genres (step 20b: albums without a GENRE tag) ── */
+
+export interface MbGenre {
+  name: string
+  count?: number
+}
+
+/** The artist's genres (with vote counts). */
+export async function artistGenres(mbid: string): Promise<MbGenre[]> {
+  const r = await mbGet<{ genres?: MbGenre[] }>(`artist/${mbid}?inc=genres`)
+  return r.genres ?? []
+}
+
+/** Every release group of the artist with its genres (paged, up to `maxPages` × 100). */
+export async function browseReleaseGroupGenres(mbid: string, maxPages = 3): Promise<{ id: string; title: string; genres?: MbGenre[] }[]> {
+  const out: { id: string; title: string; genres?: MbGenre[] }[] = []
+  for (let page = 0; page < maxPages; page++) {
+    const r = await mbGet<{ 'release-group-count': number; 'release-groups': { id: string; title: string; genres?: MbGenre[] }[] }>(
+      `release-group?artist=${mbid}&inc=genres&limit=100&offset=${page * 100}`,
+    )
+    out.push(...(r['release-groups'] ?? []))
+    if (out.length >= (r['release-group-count'] ?? 0) || !(r['release-groups'] ?? []).length) break
+  }
+  return out
+}
+
 /* ── Artist lookup (artists the importer couldn't identify) ── */
 
 export const foldTitle = (s: string) =>

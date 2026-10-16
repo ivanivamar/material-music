@@ -13,6 +13,7 @@ import { APP_VERSION, appUpdate, usePwa } from '../lib/pwa'
 import { isNative } from '../native/bridge'
 import { registerBack } from '../native/backButton'
 import { nativeUpdates, useNativeUpdates } from '../native/updates'
+import { genresStore } from '../state/genres'
 import { historyStore } from '../state/history'
 import { releasesStore } from '../state/releases'
 import { playlistsStore } from '../state/playlists'
@@ -75,6 +76,7 @@ function useAccountMenu() {
         void historyStore.sync()
         void releasesStore.sync()
         void playlistsStore.sync()
+        void genresStore.sync().then(() => genresStore.fill())
       },
     })
   if (isNative) rows.push({ icon: 'download', label: 'Downloads', run: () => go(href('downloads')) })

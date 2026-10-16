@@ -6,6 +6,7 @@
  * else the same artist + title. Entries that match nothing stay in the playlist as "not in your
  * library" rows (they come back if the track is imported again).
  */
+import { genresStore, type GenresDoc } from './genres'
 import { historyStore, type Play } from './history'
 import { tracksByAlbum, type Catalogue, type Track } from './library'
 import { liveEntries, type Entry, type Playlist } from './playlists'
@@ -66,17 +67,18 @@ export function resolveEntry(c: Catalogue, e: Entry): { track: Track | null; rel
   return { track: t, relinked: !!t }
 }
 
-const memo = new WeakMap<Playlist, { c: Catalogue; plays: readonly Play[] | null; hour: number; info: PlaylistInfo }>()
+const memo = new WeakMap<Playlist, { c: Catalogue; plays: readonly Play[] | null; genres: GenresDoc | null; hour: number; info: PlaylistInfo }>()
 
 export function playlistInfo(c: Catalogue, p: Playlist): PlaylistInfo {
   // smart playlists also depend on the play history and the time (recomputed at most once an hour)
   const plays = p.smart ? historyStore.get().plays : null
+  const genres = p.smart ? genresStore.get().doc : null
   const hour = p.smart ? Math.floor(Date.now() / 3_600_000) : 0
   const hit = memo.get(p)
-  if (hit && hit.c === c && hit.plays === plays && hit.hour === hour) return hit.info
+  if (hit && hit.c === c && hit.plays === plays && hit.genres === genres && hit.hour === hour) return hit.info
   if (p.smart) {
-    const info = smartInfo(c, p, plays ?? [])
-    memo.set(p, { c, plays, hour, info })
+    const info = smartInfo(c, p, plays ?? [], genres!)
+    memo.set(p, { c, plays, genres, hour, info })
     return info
   }
   const rows: PlaylistRow[] = []
@@ -103,12 +105,12 @@ export function playlistInfo(c: Catalogue, p: Playlist): PlaylistInfo {
     }
   }
   const info = { rows, ids, seconds, bytes, missing, covers }
-  memo.set(p, { c, plays, hour, info })
+  memo.set(p, { c, plays, genres, hour, info })
   return info
 }
 
-function smartInfo(c: Catalogue, p: Playlist, plays: readonly Play[]): PlaylistInfo {
-  const res = evaluateSmart(c, plays, p.smart!)
+function smartInfo(c: Catalogue, p: Playlist, plays: readonly Play[], genres: GenresDoc): PlaylistInfo {
+  const res = evaluateSmart(c, plays, genres, p.smart!)
   const rows: PlaylistRow[] = []
   const covers: string[] = []
   const seenAlbums = new Set<string>()

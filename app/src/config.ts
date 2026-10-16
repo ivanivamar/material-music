@@ -15,5 +15,7 @@ export const CATALOGUE_NAME = 'library.json'
 export const HISTORY_NAME = 'history.json'
 /** New Releases feed + marks (step 11, state/releases.ts). */
 export const RELEASES_NAME = 'releases.json'
+/** Genres filled in from MusicBrainz / set in the app (step 20b, state/genres.ts). */
+export const GENRES_NAME = 'genres.json'
 /** One JSON file per playlist (+ optional <id>.jpg cover) in Pelagic/playlists/ (step 9, state/playlists.ts). */
 export const PLAYLISTS_DIR = 'playlists'

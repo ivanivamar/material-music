@@ -182,6 +182,23 @@
 .dlg-edit-fields { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 .dlg-field { display: flex; flex-direction: column; gap: 8px; }
 
+/* ── Edit genre (step 20b) ─────────────────────────── */
+.gd { gap: 18px; }
+.gd-chips {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-height: 48px; box-sizing: border-box; padding: 7px 8px;
+  border-radius: 12px; border: 1.5px solid rgba(255, 255, 255, .22); background: #0E0E10;
+}
+.gd-chips:focus-within { border-color: rgba(255, 255, 255, .4); }
+.gd-chip { display: inline-flex; align-items: center; gap: 4px; height: 30px; padding: 0 4px 0 12px; border-radius: 15px; background: rgba(255, 255, 255, .1); font-size: 14px; color: var(--ink-primary); }
+.gd-chip button { width: 24px; height: 24px; border: 0; border-radius: 12px; background: none; color: var(--ink-secondary); display: inline-flex; align-items: center; justify-content: center; font-size: 13px; cursor: pointer; }
+.gd-chip button:hover { color: var(--ink-primary); background: rgba(255, 255, 255, .1); }
+.gd-input { flex: 1; min-width: 120px; height: 30px; border: 0; background: none; outline: none; color: var(--ink-primary); font: inherit; font-size: 15px; padding: 0 6px; }
+.gd-input::-webkit-calendar-picker-indicator, .sm-text::-webkit-calendar-picker-indicator { display: none !important; }
+.gd-info { display: flex; flex-direction: column; gap: 6px; }
+.gd-info .dlg-hint { white-space: normal; }
+.gd-note { margin: 4px 0 0; font-size: 13px; line-height: 1.5; color: var(--ink-tertiary); }
+.gd-auto { margin-right: auto; }
+
 /* ── Smart playlist dialog (step 20) ──────────────── */
 .dlg.is-wide:has(.sm) { width: 640px; }
 .sm { gap: 20px; }

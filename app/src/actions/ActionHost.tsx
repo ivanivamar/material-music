@@ -25,6 +25,7 @@ import { useIsPhone } from '../state/viewport'
 import { artistInfos, fmtBytes, fmtTotal, plural } from '../state/views'
 import { actions, useActions, type ActionTarget } from './actions'
 import { EditPlaylistDialog, NewPlaylistDialog, RemoveDialog } from './Dialogs'
+import { GenreDialog } from './GenreDialog'
 import { SmartDialog } from './SmartDialog'
 import { addToPlaylist, createPlaylist, deletePlaylist, downloadTrack, goTo, playPlaylist, queueTracks, removeFromPlaylist, removeTrackDownload } from './ops'
 import { playList } from '../pages/library/playback'
@@ -116,6 +117,7 @@ function describe(t: ActionTarget, c: Catalogue, toast: Toast, lists: Map<string
         { icon: 'playlist', label: 'Add to playlist', picker: true },
         div,
         { icon: 'library', label: 'Go to artist', run: () => goTo(artistHref(album.artistId)) },
+        { icon: 'gear', label: 'Edit genre…', run: () => actions.editGenre('album', album.id) },
         div,
         { icon: 'x', label: 'Remove from library…', danger: true, run: () => actions.confirmRemove({ kind: 'album', albumId: album.id }) },
       ],
@@ -139,6 +141,8 @@ function describe(t: ActionTarget, c: Catalogue, toast: Toast, lists: Map<string
         { icon: 'next', label: 'Play next', run: () => queueTracks(toast, ids(), true) },
         { icon: 'queue', label: 'Add to queue', run: () => queueTracks(toast, ids(), false) },
         { icon: 'playlist', label: 'Add to playlist', picker: true },
+        div,
+        { icon: 'gear', label: 'Edit genre…', run: () => actions.editGenre('artist', t.artistId) },
         div,
         { icon: 'x', label: 'Remove from library…', danger: true, run: () => actions.confirmRemove({ kind: 'artist', artistId: t.artistId }) },
       ],
@@ -238,6 +242,7 @@ export function ActionHost() {
       {dialog?.kind === 'new' && <NewPlaylistDialog trackIds={dialog.trackIds} hint={dialog.hint} open={!!dialog.open} name={dialog.name} />}
       {dialog?.kind === 'edit' && <EditPlaylistDialog playlistId={dialog.playlistId} />}
       {dialog?.kind === 'remove' && <RemoveDialog target={dialog.target} />}
+      {dialog?.kind === 'genre' && <GenreDialog key={dialog.id} target={dialog.target} id={dialog.id} />}
       {dialog?.kind === 'smart' && <SmartDialog key={dialog.playlistId ?? 'new'} playlistId={dialog.playlistId} />}
     </>
   )

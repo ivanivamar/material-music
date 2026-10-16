@@ -16,8 +16,9 @@ import { Segmented, useToast } from '../components/ui'
 import { Icon } from '../design/icons'
 import { useCover } from '../lib/covers'
 import { MosaicTiles } from '../pages/playlists/PlaylistCover'
+import { useGenres } from '../state/genres'
 import { useHistory } from '../state/history'
-import { useLibrary, type Catalogue } from '../state/library'
+import { useLibrary } from '../state/library'
 import { usePlaylists } from '../state/playlists'
 import {
   COUNT_OPS,
@@ -29,10 +30,10 @@ import {
   TIME_OPS,
   UNITS,
   YEAR_OPS,
-  decadesOf,
   defaultRule,
   evaluateSmart,
-  genresOf,
+  libraryFacets,
+  type Facets,
   presetName,
   type Field,
   type Rule,
@@ -56,9 +57,11 @@ export function SmartDialog({ playlistId }: { playlistId?: string }) {
   const toast = useToast()
   const { data } = useLibrary()
   const { plays } = useHistory()
+  const { doc: genreDoc, pass } = useGenres()
+  const facets = useMemo(() => (data ? libraryFacets(data, genreDoc) : null), [data, genreDoc])
   const { byId } = usePlaylists()
   const editing = playlistId ? byId.get(playlistId) : undefined
-  const [draft, setDraft] = useState<SmartRules>(() => editing?.smart ?? PRESETS[0].make(data))
+  const [draft, setDraft] = useState<SmartRules>(() => editing?.smart ?? PRESETS[0].make(data ? libraryFacets(data, genreDoc) : null))
   const [preset, setPreset] = useState<string | null>(editing ? null : PRESETS[0].key)
   const [typed, setName] = useState(editing?.name ?? '')
   /** the name still follows the chosen starting point (until typed over) */
@@ -66,7 +69,7 @@ export function SmartDialog({ playlistId }: { playlistId?: string }) {
   // a genre / decade starting point names the playlist after the value picked
   const name = autoName && preset ? presetName(preset, draft) : typed
 
-  const result = useMemo(() => (data ? evaluateSmart(data, plays, draft) : null), [data, plays, draft])
+  const result = useMemo(() => (data ? evaluateSmart(data, plays, genreDoc, draft) : null), [data, plays, genreDoc, draft])
   const seconds = useMemo(() => (data && result ? result.ids.reduce((s, id) => s + (data.tracks[id]?.duration ?? 0), 0) : 0), [data, result])
   const covers = useMemo(() => {
     const out: string[] = []
@@ -86,12 +89,12 @@ export function SmartDialog({ playlistId }: { playlistId?: string }) {
 
   const setRule = (id: string, r: Rule) => setDraft((d) => ({ ...d, rules: d.rules.map((x) => (x.id === id ? r : x)) }))
   const dropRule = (id: string) => setDraft((d) => ({ ...d, rules: d.rules.filter((x) => x.id !== id) }))
-  const addRule = () => setDraft((d) => ({ ...d, rules: [...d.rules, defaultRule(d.rules.some((r) => r.field === 'genre') ? 'decade' : 'genre', data)] }))
+  const addRule = () => setDraft((d) => ({ ...d, rules: [...d.rules, defaultRule(d.rules.some((r) => r.field === 'genre') ? 'decade' : 'genre', facets)] }))
   const pickPreset = (key: string) => {
     const p = PRESETS.find((x) => x.key === key)
     if (!p) return
     setPreset(key)
-    setDraft(p.make(data))
+    setDraft(p.make(facets))
   }
 
   const ok = !!name.trim()
@@ -129,7 +132,7 @@ export function SmartDialog({ playlistId }: { playlistId?: string }) {
               className={`sm-preset ${preset === null ? 'is-on' : ''}`}
               onClick={() => {
                 setPreset(null)
-                setDraft({ ...BLANK, rules: [defaultRule('genre', data)] })
+                setDraft({ ...BLANK, rules: [defaultRule('genre', facets)] })
                 if (autoName) setName('')
                 setAutoName(false)
               }}
@@ -181,10 +184,15 @@ export function SmartDialog({ playlistId }: { playlistId?: string }) {
           </div>
           <div className="sm-rules">
             {draft.rules.map((r) => (
-              <RuleRow key={r.id} r={r} c={data} onChange={(x) => setRule(r.id, x)} onRemove={() => dropRule(r.id)} />
+              <RuleRow key={r.id} r={r} f={facets} onChange={(x) => setRule(r.id, x)} onRemove={() => dropRule(r.id)} />
             ))}
             {!draft.rules.length && <div className="sm-none">No rules: every song in your library.</div>}
           </div>
+          {pass && draft.rules.some((r) => r.field === 'genre') && (
+            <div className="dlg-hint">
+              FILLING IN GENRES FROM MUSICBRAINZ · {pass.done}/{pass.total} ARTISTS
+            </div>
+          )}
           <button type="button" className="dlg-link sm-add" onClick={addRule}>
             <Icon name="plus" /> Add rule
           </button>
@@ -281,9 +289,9 @@ function Period({ amount, unit, onChange }: { amount: number; unit: Unit; onChan
   )
 }
 
-function RuleRow({ r, c, onChange, onRemove }: { r: Rule; c: Catalogue | null; onChange: (r: Rule) => void; onRemove: () => void }) {
-  const genres = useMemo(() => (c ? genresOf(c) : []), [c])
-  const decades = useMemo(() => (c ? decadesOf(c) : []), [c])
+function RuleRow({ r, f, onChange, onRemove }: { r: Rule; f: Facets | null; onChange: (r: Rule) => void; onRemove: () => void }) {
+  const genres = f?.genres ?? []
+  const decades = f?.decades ?? []
   const listId = `sm-genres-${r.id}`
 
   let rest: React.ReactNode = null
@@ -365,8 +373,8 @@ function RuleRow({ r, c, onChange, onRemove }: { r: Rule; c: Catalogue | null; o
         value={r.field}
         options={FIELDS}
         label="Field"
-        onChange={(f: Field) => {
-          if (f !== r.field) onChange({ ...defaultRule(f, c), id: r.id })
+        onChange={(field: Field) => {
+          if (field !== r.field) onChange({ ...defaultRule(field, f), id: r.id })
         }}
       />
       {rest}

@@ -33,6 +33,8 @@ export type Dialog =
   | { kind: 'edit'; playlistId: string }
   /** New smart playlist (no id) or Edit rules of one (step 20) */
   | { kind: 'smart'; playlistId?: string }
+  /** Edit an album's / artist's genres (step 20b) */
+  | { kind: 'genre'; target: 'album' | 'artist'; id: string }
   /** "Remove from library" confirmation */
   | { kind: 'remove'; target: RemoveTarget }
 
@@ -91,6 +93,9 @@ export const actions = {
   /** New smart playlist, or edit the rules of one. */
   smartPlaylist(playlistId?: string) {
     set({ menu: null, dialog: { kind: 'smart', playlistId } })
+  },
+  editGenre(target: 'album' | 'artist', id: string) {
+    set({ menu: null, dialog: { kind: 'genre', target, id } })
   },
   editPlaylist(playlistId: string) {
     set({ menu: null, dialog: { kind: 'edit', playlistId } })

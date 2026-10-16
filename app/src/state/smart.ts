@@ -14,6 +14,7 @@
  */
 import type { Album, Catalogue, Track } from './library'
 import type { Play } from './history'
+import { genreResolver, type GenresDoc } from './genres'
 
 /* ── Types ──────────────────────────────────────────── */
 
@@ -122,7 +123,13 @@ export const ruleId = () => Math.random().toString(36).slice(2, 10)
 
 /* ── Defaults / presets ─────────────────────────────── */
 
-export function defaultRule(field: Field, c?: Catalogue | null): Rule {
+/** What the library has: genres (most songs first) and decades (newest first). */
+export interface Facets {
+  genres: string[]
+  decades: number[]
+}
+
+export function defaultRule(field: Field, f?: Facets | null): Rule {
   const id = ruleId()
   switch (field) {
     case 'added':
@@ -134,9 +141,9 @@ export function defaultRule(field: Field, c?: Catalogue | null): Rule {
     case 'playsIn':
       return { id, field, op: 'gte', value: 1, amount: 1, unit: 'months' }
     case 'genre':
-      return { id, field, op: 'is', value: (c && genresOf(c)[0]) || '' }
+      return { id, field, op: 'is', value: f?.genres[0] ?? '' }
     case 'decade':
-      return { id, field, op: 'is', value: (c && decadesOf(c)[0]) || 2020 }
+      return { id, field, op: 'is', value: f?.decades[0] ?? 2020 }
     case 'year':
       return { id, field, op: 'is', value: new Date().getFullYear() }
     default:
@@ -148,7 +155,7 @@ export interface Preset {
   key: string
   name: string
   description: string
-  make: (c: Catalogue | null) => SmartRules
+  make: (f: Facets | null) => SmartRules
 }
 
 export const PRESETS: Preset[] = [
@@ -185,13 +192,13 @@ export const PRESETS: Preset[] = [
     key: 'genre',
     name: 'Genre',
     description: 'One genre, newest first.',
-    make: (c) => ({ match: 'all', rules: [defaultRule('genre', c)], sort: { by: 'added' }, limit: null }),
+    make: (f) => ({ match: 'all', rules: [defaultRule('genre', f)], sort: { by: 'added' }, limit: null }),
   },
   {
     key: 'decade',
     name: 'Decade',
     description: 'Releases from one decade.',
-    make: (c) => ({ match: 'all', rules: [defaultRule('decade', c)], sort: { by: 'random' }, limit: null }),
+    make: (f) => ({ match: 'all', rules: [defaultRule('decade', f)], sort: { by: 'random' }, limit: null }),
   },
 ]
 
@@ -256,14 +263,18 @@ export function normaliseSmart(raw: unknown): SmartRules | null {
 
 /* ── Library facets (for the editor) ────────────────── */
 
-const facetMemo = new WeakMap<Catalogue, { genres: string[]; decades: number[] }>()
-function facets(c: Catalogue) {
-  let f = facetMemo.get(c)
+const facetMemo = new WeakMap<GenresDoc, WeakMap<Catalogue, Facets>>()
+/** Genres (tags + MusicBrainz + set in the app) and decades in the library. */
+export function libraryFacets(c: Catalogue, doc: GenresDoc): Facets {
+  let byCat = facetMemo.get(doc)
+  if (!byCat) facetMemo.set(doc, (byCat = new WeakMap()))
+  let f = byCat.get(c)
   if (!f) {
+    const genreOf = genreResolver(doc, c)
     const counts = new Map<string, { name: string; n: number }>()
     const decades = new Set<number>()
     for (const a of Object.values(c.albums)) {
-      for (const g of splitGenres(a.genre)) {
+      for (const g of genreOf(a.id)) {
         const k = fold(g)
         const cur = counts.get(k)
         if (cur) cur.n += a.trackCount ?? 1
@@ -276,14 +287,10 @@ function facets(c: Catalogue) {
       genres: [...counts.values()].sort((a, b) => b.n - a.n || a.name.localeCompare(b.name)).map((g) => g.name),
       decades: [...decades].sort((a, b) => b - a),
     }
-    facetMemo.set(c, f)
+    byCat.set(c, f)
   }
   return f
 }
-/** Genres in the library, most songs first. */
-export const genresOf = (c: Catalogue) => facets(c).genres
-/** Decades in the library, newest first. */
-export const decadesOf = (c: Catalogue) => facets(c).decades
 
 /* ── Evaluating ─────────────────────────────────────── */
 
@@ -296,7 +303,6 @@ export const fold = (s: string) =>
     .replace(/\s+/g, ' ')
     .trim()
 
-const splitGenres = (g?: string) => (g ?? '').split(/[;/,|]/).map((x) => x.trim()).filter(Boolean)
 
 function yearOf(a: Album | undefined): number | null {
   if (!a) return null
@@ -357,10 +363,10 @@ function playsSince(plays: readonly Play[], since: number): Map<string, number> 
 
 const cmpCount = (op: CountOp, n: number, v: number) => (op === 'eq' ? n === v : op === 'gte' ? n >= v : n <= v)
 
-function textTest(op: TextOp, field: TextField, value: string, t: Track, a: Album | undefined): boolean {
+function textTest(op: TextOp, field: TextField, value: string, t: Track, a: Album | undefined, genreOf: (albumId: string) => string[]): boolean {
   const v = fold(value)
   if (field === 'genre') {
-    const gs = splitGenres(a?.genre).map(fold)
+    const gs = genreOf(t.albumId).map(fold)
     const hit = op === 'is' || op === 'isNot' ? gs.includes(v) : !!v && gs.some((g) => g.includes(v))
     return op === 'is' || op === 'contains' ? hit : !hit
   }
@@ -375,7 +381,7 @@ function textTest(op: TextOp, field: TextField, value: string, t: Track, a: Albu
 }
 
 /** Does one rule match one track? */
-function test(r: Rule, t: Track, c: Catalogue, plays: readonly Play[], stats: PlayStats, nowMs: number): boolean {
+function test(r: Rule, t: Track, c: Catalogue, plays: readonly Play[], stats: PlayStats, nowMs: number, genreOf: (albumId: string) => string[]): boolean {
   const a = c.albums[t.albumId]
   switch (r.field) {
     case 'added': {
@@ -397,7 +403,7 @@ function test(r: Rule, t: Track, c: Catalogue, plays: readonly Play[], stats: Pl
     case 'artist':
     case 'album':
     case 'title':
-      return textTest(r.op, r.field, r.value, t, a)
+      return textTest(r.op, r.field, r.value, t, a, genreOf)
     case 'decade':
     case 'year': {
       const y = yearOf(a)
@@ -444,12 +450,13 @@ function fmtWhen(sec: number | undefined, nowMs: number): string {
 }
 
 /** The songs of a smart playlist, now. */
-export function evaluateSmart(c: Catalogue, plays: readonly Play[], s: SmartRules, nowMs = Date.now()): SmartResult {
+export function evaluateSmart(c: Catalogue, plays: readonly Play[], genres: GenresDoc, s: SmartRules, nowMs = Date.now()): SmartResult {
   const stats = playStats(plays)
+  const genreOf = genreResolver(genres, c)
   const tracks = Object.values(c.tracks)
   const hits = !s.rules.length
     ? tracks
-    : tracks.filter((t) => (s.match === 'all' ? s.rules.every((r) => test(r, t, c, plays, stats, nowMs)) : s.rules.some((r) => test(r, t, c, plays, stats, nowMs))))
+    : tracks.filter((t) => (s.match === 'all' ? s.rules.every((r) => test(r, t, c, plays, stats, nowMs, genreOf)) : s.rules.some((r) => test(r, t, c, plays, stats, nowMs, genreOf))))
 
   const albumOrder = (a: Track, b: Track) => {
     const x = c.albums[a.albumId]
