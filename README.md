@@ -45,6 +45,7 @@ Everything above is built and tested on the real setup (real Drive library, PC a
 | `tools/import/` | Node script that syncs the local library to Drive. See its [README](tools/import/README.md) |
 | `app/` | The Pelagic app: Vite + React + TypeScript, plus the Capacitor Android project in `app/android/`. See its [README](app/README.md) |
 | `.github/workflows/android.yml` | Builds, signs and publishes the Android APK as a GitHub Release |
+| `.github/workflows/firebase.yml`, `firebase.json`, `firebase/functions/` | Backup copy of the web app on Firebase Hosting + the `/api` function |
 | `design_handoff_pelagic/` | Design reference (tokens, screens, motion) |
 | `secrets/` | Google OAuth client and the Android signing key. Git-ignored, never committed |
 
@@ -62,6 +63,7 @@ Pelagic/
 ## Distribution
 
 - **Web / PC:** Cloudflare Pages is linked to this repo and builds `app/` on every push to `main` (root `app`, command `npm run build`, output `dist`; `app/functions/` deploys as Pages Functions). Set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` (the Pelagic Web client's id and secret, the secret encrypted) under Settings → Variables and secrets, then redeploy — that turns on stay-signed-in. Paste both values with no leading or trailing spaces: a stray space in the client id makes the sign-in popup finish but leaves the app signed out. To check, open `<site>/api/auth/status`; it should answer `{"configured":true,...}`. Because the app is unverified, Google shows a "Google hasn't verified this app" warning at sign-in; choose Continue and tick the Drive box. Install it from Chrome or Edge with the install icon or the account menu. The installed app shows "A new version of Pelagic is ready · Reload" after each deploy.
+- **Web / PC, backup address (Firebase Hosting):** the same build also goes to Firebase Hosting (`<project>.web.app`), so the app stays reachable when Spanish ISPs block Cloudflare IPs during LaLiga matches. `firebase.json` serves `app/dist` and sends `/api/**` to one Cloud Function, `api` (`firebase/functions`, europe-west1), which bundles the same `app/functions/api` handlers (esbuild) — no second copy of the code. Firebase Hosting only forwards a cookie named `__session`, so the function renames the refresh-token cookie on the way in and out. The **Firebase Hosting** workflow deploys Hosting on every push to `main` that touches `app/` (secret `FIREBASE_SERVICE_ACCOUNT`); the function is deployed from the PC with `firebase deploy --only functions` (needs the Blaze plan; secrets `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` via `firebase functions:secrets:set`). The Firebase address must be in the Pelagic Web client's JavaScript origins. It is a separate origin: install it as its own PWA, sign in once and link the music folder again (Drive data is shared).
 - **Android:** every push to `main` that touches `app/` runs the **Android APK** workflow. It builds the web app, syncs it into the Capacitor project, builds a signed APK and publishes it as a GitHub Release (`android-<run number>`, asset `pelagic.apk`). The first time, install it from the Releases page. After that, the app checks Releases on launch and offers "Install" for newer builds.
   - Repository secrets: `PELAGIC_KEYSTORE_BASE64` (the release keystore, base64) and `PELAGIC_KEYSTORE_PASSWORD`.
   - Every build is signed with the same release key so updates install over the old app. Keep the key in `secrets/` and backed up; losing it means uninstalling the app to update.
@@ -70,7 +72,7 @@ Pelagic/
 
 1. Google Cloud project with the **Drive API** enabled, the OAuth consent screen published ("In production", unverified is fine for personal use), and three OAuth clients:
    - **Pelagic Import** (Desktop): JSON saved as `secrets/client_desktop.json`
-   - **Pelagic Web** (Web application): JavaScript origins `http://localhost:5173` and the Cloudflare Pages address
+   - **Pelagic Web** (Web application): JavaScript origins `http://localhost:5173`, the Cloudflare Pages address and the Firebase Hosting address (`https://<project>.web.app`)
    - **Pelagic Android** (Android): package `com.ivan.pelagic` + the SHA-1 of the release signing key
 2. Install **Node.js 22+**.
 3. Import the library:
@@ -91,4 +93,4 @@ Pelagic/
 
 ## Tech
 
-Vite · React · TypeScript · Capacitor (Android) · Media3 / ExoPlayer · Google Drive API · Google Identity Services / Play services auth · service worker (Drive streaming + offline shell) · music-metadata · ffmpeg (Opus encoding) · MusicBrainz API · GitHub Actions · Cloudflare Pages
+Vite · React · TypeScript · Capacitor (Android) · Media3 / ExoPlayer · Google Drive API · Google Identity Services / Play services auth · service worker (Drive streaming + offline shell) · music-metadata · ffmpeg (Opus encoding) · MusicBrainz API · GitHub Actions · Cloudflare Pages · Firebase Hosting + Cloud Functions

@@ -1,0 +1,45 @@
+# Web app → Firebase Hosting (backup address next to Cloudflare Pages, e.g. for LaLiga match days
+# when Spanish ISPs block Cloudflare IPs). Same build as Cloudflare: app/ → npm run build → app/dist.
+# Deploys Hosting only; the /api function (firebase/functions) is deployed from the PC with
+# `firebase deploy --only functions` when app/functions or firebase/functions change.
+#
+# Secret (repo → Settings → Secrets and variables → Actions):
+#   FIREBASE_SERVICE_ACCOUNT   JSON key of a service account with: Firebase Hosting Admin,
+#                              Cloud Run Viewer, Cloud Functions Viewer, API Keys Viewer
+# The Firebase project id comes from .firebaserc.
+name: Firebase Hosting
+
+on:
+  push:
+    branches: [main]
+    paths: ['app/**', 'firebase.json', '.firebaserc', '.github/workflows/firebase.yml']
+  workflow_dispatch:
+
+concurrency:
+  group: firebase-hosting
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Build the web app
+        working-directory: app
+        run: |
+          npm ci
+          npm run build
+
+      - name: Deploy to Firebase Hosting
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          channelId: live
