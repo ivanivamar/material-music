@@ -14,6 +14,11 @@
  * visible and dragging it moves the row (pointer events, auto-scroll near the list edges).
  *
  * Long queues (a whole library from Songs) are windowed: only rows near the viewport mount.
+ *
+ * Phone (bottom sheet): Played, now playing and Next up are ONE scroller (no separate Played
+ * list), opened scrolled to the current track and following it until the list is touched. The
+ * whole header (handle, title, buttons) drags the sheet; a press on a button only becomes a drag
+ * after 8px of travel, so taps still work.
  */
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type DragEvent, type KeyboardEvent, type PointerEvent } from 'react'
 import { Eq, formatTime, useToast } from '../components/ui'
@@ -59,6 +64,48 @@ function useListWindow(ref: React.RefObject<HTMLDivElement | null>, count: numbe
   return range
 }
 
+/** Scroll offset + visible height of a scroller (rAF-throttled), for the phone's one-list layout. */
+function useScrollBox(ref: React.RefObject<HTMLDivElement | null>, active: boolean) {
+  const [box, setBox] = useState<[number, number]>([0, 800])
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!el || !active) return
+    let raf = 0
+    const update = () => {
+      raf = 0
+      const st = el.scrollTop
+      const h = el.clientHeight
+      setBox((b) => (b[0] === st && b[1] === h ? b : [st, h]))
+    }
+    const onScroll = () => {
+      if (!raf) raf = requestAnimationFrame(update)
+    }
+    update()
+    el.addEventListener('scroll', onScroll, { passive: true })
+    const ro = new ResizeObserver(onScroll)
+    ro.observe(el)
+    return () => {
+      cancelAnimationFrame(raf)
+      el.removeEventListener('scroll', onScroll)
+      ro.disconnect()
+    }
+  }, [ref, active])
+  return box
+}
+
+/* Phone one-list layout (px): PLAYED rule · played rows · now playing · NEXT UP rule · upcoming rows */
+const RULE_H = 32
+const NOW_H = 60
+const NOW_GAP = 8
+const EMPTY_H = 260
+
+/** Rows [from, to) of a run of ROW-high rows starting at `y0` that overlap the viewport (+ overscan). */
+const rowRange = (y0: number, n: number, st: number, h: number): [number, number] => {
+  const from = Math.max(0, Math.floor((st - y0) / ROW) - OVERSCAN)
+  const to = Math.min(n, Math.ceil((st + h - y0) / ROW) + OVERSCAN)
+  return [Math.min(from, n), Math.max(from, to)]
+}
+
 function Cover({ c, albumId, size }: { c: Catalogue; albumId: string; size: number }) {
   const url = useCover(c.albums[albumId]?.cover)
   return url ? <img className="qp-cover" src={url} alt="" width={size} height={size} draggable={false} /> : <span className="qp-cover qp-cover-empty" aria-hidden />
@@ -89,6 +136,94 @@ function DropLine({ dnd, abs }: { dnd: Dnd; abs: number }) {
   const d = dnd.drag
   if (!d || d.over !== abs || d.from === abs) return null
   return <span className={`qp-drop ${d.after ? 'qp-drop-bot' : 'qp-drop-top'}`} />
+}
+
+/** One queue row (played or upcoming), absolutely positioned at `top` inside a windowed list. */
+function QueueRow({ c, id, abs, top, played, dnd, base, onKey }: { c: Catalogue; id: string; abs: number; top: number; played: boolean; dnd: Dnd; base: number; onKey: (abs: number) => (e: KeyboardEvent) => void }) {
+  const t = c.tracks[id]
+  return (
+    <div
+      data-abs={abs}
+      className={`qp-row ${played ? 'is-played' : ''} ${dnd.drag?.from === abs ? 'is-drag' : ''}`}
+      style={{ top }}
+      draggable={dnd.enabled}
+      tabIndex={0}
+      role="button"
+      aria-label={
+        t
+          ? played
+            ? `Played: ${t.title} by ${t.artist}. Enter to play again, Alt+arrows to move, Delete to remove.`
+            : `${t.title} by ${t.artist}. Enter to play, Alt+arrows to move, Delete to remove.`
+          : 'Missing track'
+      }
+      onDragStart={dnd.start(abs)}
+      onDragOver={dnd.over(abs)}
+      onDragEnd={dnd.end}
+      onClick={() => playerStore.jump(abs)}
+      onContextMenu={(e) => t && actions.menu({ kind: 'track', trackId: t.id }, e)}
+      onKeyDown={onKey(abs)}
+    >
+      <DropLine dnd={dnd} abs={abs} />
+      {played ? (
+        <span className="qp-handle qp-grip" aria-hidden {...dnd.grip(abs)}>
+          <span className="qp-played-n t-mono">{String(abs + 1).padStart(2, '0')}</span>
+          <span className="qp-grip-ic">
+            <Icon name="drag" />
+          </span>
+        </span>
+      ) : (
+        <span className="qp-handle qp-grip" aria-hidden {...dnd.grip(abs)}>
+          <Icon name="drag" />
+        </span>
+      )}
+      {t ? <Cover c={c} albumId={t.albumId} size={40} /> : <span className="qp-cover qp-cover-empty" />}
+      <div className="qp-text">
+        <div className="qp-t">{t?.title ?? 'Missing track'}</div>
+        <div className="qp-a">{t?.artist ?? 'No longer in your library'}</div>
+      </div>
+      <span className="qp-d t-mono">{t?.duration ? formatTime(t.duration) : '--:--'}</span>
+      {played ? (
+        <button
+          type="button"
+          className="qp-act"
+          title="Play again"
+          aria-label="Play again"
+          onClick={(e) => {
+            e.stopPropagation()
+            playerStore.jump(abs)
+          }}
+        >
+          <Icon name="playF" />
+        </button>
+      ) : (
+        <button
+          type="button"
+          className="qp-act"
+          title="Play next"
+          aria-label="Play next"
+          disabled={abs === base}
+          onClick={(e) => {
+            e.stopPropagation()
+            playerStore.move(abs, base)
+          }}
+        >
+          <Icon name="chevU" />
+        </button>
+      )}
+      <button
+        type="button"
+        className="qp-act qp-act-x"
+        title="Remove"
+        aria-label="Remove from queue"
+        onClick={(e) => {
+          e.stopPropagation()
+          playerStore.remove(abs)
+        }}
+      >
+        <Icon name="x" />
+      </button>
+    </div>
+  )
 }
 
 const PLAYED_KEY = 'pelagic.queue.played.v1'
@@ -185,63 +320,7 @@ function PlayedSection({ c, ids, active, dnd, last }: { c: Catalogue; ids: strin
           <div className="qp-list-in" style={{ height: ids.length * ROW }}>
             {ids.slice(from, to).map((id, k) => {
               const i = from + k
-              const t = c.tracks[id]
-              return (
-                <div
-                  key={`${i}:${id}`}
-                  data-abs={i}
-                  className={`qp-row is-played ${dnd.drag?.from === i ? 'is-drag' : ''}`}
-                  style={{ top: i * ROW }}
-                  draggable={dnd.enabled}
-                  tabIndex={0}
-                  role="button"
-                  aria-label={t ? `Played: ${t.title} by ${t.artist}. Enter to play again, Alt+arrows to move, Delete to remove.` : 'Missing track'}
-                  onDragStart={dnd.start(i)}
-                  onDragOver={dnd.over(i)}
-                  onDragEnd={dnd.end}
-                  onClick={() => playerStore.jump(i)}
-                  onContextMenu={(e) => t && actions.menu({ kind: 'track', trackId: t.id }, e)}
-                  onKeyDown={onKey(i)}
-                >
-                  <DropLine dnd={dnd} abs={i} />
-                  <span className="qp-handle qp-grip" aria-hidden {...dnd.grip(i)}>
-                    <span className="qp-played-n t-mono">{String(i + 1).padStart(2, '0')}</span>
-                    <span className="qp-grip-ic">
-                      <Icon name="drag" />
-                    </span>
-                  </span>
-                  {t ? <Cover c={c} albumId={t.albumId} size={40} /> : <span className="qp-cover qp-cover-empty" />}
-                  <div className="qp-text">
-                    <div className="qp-t">{t?.title ?? 'Missing track'}</div>
-                    <div className="qp-a">{t?.artist ?? 'No longer in your library'}</div>
-                  </div>
-                  <span className="qp-d t-mono">{t?.duration ? formatTime(t.duration) : '--:--'}</span>
-                  <button
-                    type="button"
-                    className="qp-act"
-                    title="Play again"
-                    aria-label="Play again"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      playerStore.jump(i)
-                    }}
-                  >
-                    <Icon name="playF" />
-                  </button>
-                  <button
-                    type="button"
-                    className="qp-act qp-act-x"
-                    title="Remove"
-                    aria-label="Remove from queue"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      playerStore.remove(i)
-                    }}
-                  >
-                    <Icon name="x" />
-                  </button>
-                </div>
-              )
+              return <QueueRow key={`${i}:${id}`} c={c} id={id} abs={i} top={i * ROW} played dnd={dnd} base={last + 1} onKey={onKey} />
             })}
           </div>
         </div>
@@ -267,8 +346,37 @@ export function QueuePanel() {
   const upcoming = useMemo(() => (p.index >= 0 ? p.queue.slice(p.index + 1) : []), [p.queue, p.index])
   const played = useMemo(() => (p.index > 0 ? p.queue.slice(0, p.index) : []), [p.queue, p.index])
   const total = useMemo(() => upcoming.reduce((s, id) => s + (data?.tracks[id]?.duration ?? 0), 0), [upcoming, data])
-  const [from, to] = useListWindow(listRef, upcoming.length, open)
+  const playedTotal = useMemo(() => played.reduce((s, id) => s + (data?.tracks[id]?.duration ?? 0), 0), [played, data])
+  const [from, to] = useListWindow(listRef, upcoming.length, open && !phone)
   const ctx = contextLine(p.context)
+
+  /* Phone: played, now playing and next up share ONE scroller, opened scrolled to the current
+   * track. While the user hasn't touched the list it keeps following the current track. */
+  const [st, boxH] = useScrollBox(listRef, open && phone)
+  const playedTop = played.length ? RULE_H : 0
+  const nowTop = played.length ? playedTop + played.length * ROW + NOW_GAP - 2 : 0
+  const nextRuleTop = nowTop + NOW_H + NOW_GAP
+  const upTop = nextRuleTop + RULE_H + 2
+  // tall enough that the current track can always sit at the top of the list
+  const oneH = Math.max(upTop + (upcoming.length ? upcoming.length * ROW : EMPTY_H), nowTop + boxH)
+  const [pFrom, pTo] = rowRange(playedTop, played.length, st, boxH)
+  const [uFrom, uTo] = rowRange(upTop, upcoming.length, st, boxH)
+  const follow = useRef(true)
+  const scrollToNow = () => {
+    const el = listRef.current
+    if (el) el.scrollTop = Math.max(0, nowTop - 6)
+  }
+  useLayoutEffect(() => {
+    if (!phone || !open) return
+    follow.current = true
+    scrollToNow()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, phone])
+  useLayoutEffect(() => {
+    if (phone && open && follow.current && !drag) scrollToNow()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [p.index])
+  const stopFollowing = () => (follow.current = false)
   const cleared = playerStore.clearedUpcoming()
 
   const close = () => nowPlayingStore.closeQueue()
@@ -278,16 +386,24 @@ export function QueuePanel() {
    * toggle full height. The sheet follows the finger; the scrim fades while pulling down. */
   const [expanded, setExpanded] = useState(false)
   const [grabDy, setGrabDy] = useState<number | null>(null)
-  const grab = useRef({ y0: 0, y: 0, t: 0, v: 0, moved: false, onHandle: false })
+  const grab = useRef({ y0: 0, y: 0, t: 0, v: 0, moved: false, onHandle: false, fromBtn: false })
   if (!open && expanded) setExpanded(false)
   const sheetRef = useRef<HTMLElement>(null)
   // how far the full-height sheet is pushed down at half height (CSS --qp-rest: 50vh − status bar)
   const normalTop = () => window.innerHeight * 0.5 - (sheetRef.current?.offsetTop ?? 0)
 
+  /* The whole header is the grab area, its buttons included: a press on a button stays a tap
+   * (the button gets its click) until the finger travels BTN_SLOP, then the zone captures the
+   * pointer and it becomes a sheet drag (and the click is swallowed). */
+  const BTN_SLOP = 8
+  const swallowClick = useRef(false)
   const onGrabDown = (e: PointerEvent<HTMLDivElement>) => {
-    if (!phone || (e.target as HTMLElement).closest('button')) return
-    e.currentTarget.setPointerCapture(e.pointerId)
-    grab.current = { y0: e.clientY, y: e.clientY, t: performance.now(), v: 0, moved: false, onHandle: !!(e.target as HTMLElement).closest('.qp-grab') }
+    if (!phone || !e.isPrimary) return
+    const target = e.target as HTMLElement
+    const fromBtn = !!target.closest('button')
+    if (!fromBtn) e.currentTarget.setPointerCapture(e.pointerId)
+    swallowClick.current = false
+    grab.current = { y0: e.clientY, y: e.clientY, t: performance.now(), v: 0, moved: false, onHandle: !!target.closest('.qp-grab'), fromBtn }
     setGrabDy(0)
   }
   const onGrabMove = (e: PointerEvent<HTMLDivElement>) => {
@@ -298,15 +414,35 @@ export function QueuePanel() {
     g.y = e.clientY
     g.t = now
     const dy = e.clientY - g.y0
-    if (Math.abs(dy) > 4) g.moved = true
+    if (!g.moved) {
+      if (Math.abs(dy) <= (g.fromBtn ? BTN_SLOP : 4)) return
+      g.moved = true
+      if (g.fromBtn) {
+        // the button press turns into a drag: take the pointer so the button never gets a click
+        swallowClick.current = true
+        try {
+          e.currentTarget.setPointerCapture(e.pointerId)
+        } catch {
+          /* pointer already gone */
+        }
+      }
+    }
     // expanded: can't go higher; normal: up to full height
     setGrabDy(expanded ? Math.max(0, dy) : Math.max(-normalTop(), dy))
+  }
+  const onGrabClickCapture = (e: React.MouseEvent) => {
+    if (!swallowClick.current) return
+    swallowClick.current = false
+    e.preventDefault()
+    e.stopPropagation()
   }
   const onGrabUp = () => {
     if (grabDy === null) return
     const { v, moved, onHandle } = grab.current
     const dy = grabDy
     setGrabDy(null)
+    // a click from this gesture (if any) fires right after pointerup; drop the flag after it
+    if (swallowClick.current) window.setTimeout(() => (swallowClick.current = false), 350)
     if (!moved) {
       // a tap on the handle itself toggles full height
       if (onHandle) setExpanded((x) => !x)
@@ -486,6 +622,53 @@ export function QueuePanel() {
       }
     })
 
+  const nowRow = (cls = '', style?: CSSProperties) =>
+    current && data ? (
+      <div className={`qp-now ${cls}`} style={style} data-abs={p.index} onDragOver={onDragOver(p.index)} onContextMenu={(e) => actions.menu({ kind: 'track', trackId: current.id }, e)}>
+            <DropLine dnd={dnd} abs={p.index} />
+            <span className="qp-handle">
+              <Eq playing={p.playing} />
+            </span>
+            <Cover c={data} albumId={current.albumId} size={42} />
+            <div className="qp-text">
+              <div className="qp-t is-now">{current.title}</div>
+              <div className="qp-a">{current.artist}</div>
+            </div>
+            <span className="qp-d t-mono">{formatTime(p.position)}</span>
+          </div>
+    ) : null
+  const nextRule = (style?: CSSProperties) => (
+    <div className="qp-rule" style={style}>
+      <span className="qp-rule-l t-mono">NEXT UP</span>
+      <span className="qp-rule-line" />
+      <span className="qp-rule-r t-mono">
+        {String(upcoming.length).padStart(2, '0')} · {fmtTotal(total) || '00:00'}
+      </span>
+    </div>
+  )
+  const emptyBlock = (
+          <div className="qp-empty">
+            <div className="qp-empty-mark" aria-hidden>
+              <span />
+              <span />
+              <span />
+            </div>
+            <div className="qp-empty-t">Still water after this one.</div>
+            <div className="qp-empty-b">
+              {p.repeat === 'one'
+                ? `Nothing is queued. Repeat one keeps “${current?.title ?? 'this track'}” going.`
+                : p.repeat === 'all'
+                  ? `Nothing is queued. With repeat on, “${current?.title ?? 'this track'}” plays again.`
+                  : `Nothing is queued. Playback stops when “${current?.title ?? 'this track'}” ends.`}
+            </div>
+            {cleared?.length ? (
+              <button type="button" className="qp-restore" onClick={() => playerStore.restoreUpcoming()}>
+                Restore queue
+              </button>
+            ) : null}
+          </div>
+  )
+
   return (
     <>
       <div className={`qp-scrim pg-anim ${overNp ? 'is-over-np' : ''} ${open ? 'is-open' : ''} ${grabDy !== null ? 'is-grabbing' : ''}`} style={scrimStyle} onClick={close} aria-hidden />
@@ -499,7 +682,7 @@ export function QueuePanel() {
         onDragOver={(e) => drag && e.preventDefault()}
         onDrop={onDrop}
       >
-        <div className="qp-grab-zone" onPointerDown={onGrabDown} onPointerMove={onGrabMove} onPointerUp={onGrabUp} onPointerCancel={() => setGrabDy(null)}>
+        <div className="qp-grab-zone" onPointerDown={onGrabDown} onPointerMove={onGrabMove} onPointerUp={onGrabUp} onPointerCancel={() => setGrabDy(null)} onClickCapture={onGrabClickCapture}>
           {phone && (
             <div className="qp-grab" role="presentation" title={expanded ? 'Drag down to shrink or close' : 'Drag up to expand, down to close'}>
               <span />
@@ -543,117 +726,58 @@ export function QueuePanel() {
         </div>
         </div>
 
+        {phone ? (
+          data && current ? (
+            <div className="qp-list qp-one" ref={listRef} onTouchStart={stopFollowing} onWheel={stopFollowing}>
+              <div className="qp-list-in" style={{ height: oneH }}>
+                {played.length > 0 && (
+                  <div className="qp-rule qp-one-abs" style={{ top: 0, height: RULE_H }}>
+                    <span className="qp-rule-l t-mono qp-one-played">PLAYED</span>
+                    <span className="qp-rule-line" />
+                    <span className="qp-rule-r t-mono">
+                      {String(played.length).padStart(2, '0')} · {fmtTotal(playedTotal)}
+                    </span>
+                  </div>
+                )}
+                {played.slice(pFrom, pTo).map((id, k) => {
+                  const abs = pFrom + k
+                  return <QueueRow key={`${abs}:${id}`} c={data} id={id} abs={abs} top={playedTop + abs * ROW} played dnd={dnd} base={base} onKey={onRowKey} />
+                })}
+                {nowRow('qp-one-abs', { top: nowTop })}
+                {nextRule({ position: 'absolute', left: 0, right: 0, top: nextRuleTop, height: RULE_H })}
+                {upcoming.length > 0
+                  ? upcoming.slice(uFrom, uTo).map((id, k) => {
+                      const abs = base + uFrom + k
+                      return <QueueRow key={`${abs}:${id}`} c={data} id={id} abs={abs} top={upTop + (uFrom + k) * ROW} played={false} dnd={dnd} base={base} onKey={onRowKey} />
+                    })
+                  : <div className="qp-one-abs qp-one-empty" style={{ top: upTop, height: EMPTY_H }}>{emptyBlock}</div>}
+              </div>
+            </div>
+          ) : (
+            emptyBlock
+          )
+        ) : (
+          <>
         {played.length > 0 && data && <PlayedSection c={data} ids={played} active={open} dnd={dnd} last={p.queue.length - 1} />}
 
-        {current && data && (
-          <div className="qp-now" data-abs={p.index} onDragOver={onDragOver(p.index)} onContextMenu={(e) => actions.menu({ kind: 'track', trackId: current.id }, e)}>
-            <DropLine dnd={dnd} abs={p.index} />
-            <span className="qp-handle">
-              <Eq playing={p.playing} />
-            </span>
-            <Cover c={data} albumId={current.albumId} size={42} />
-            <div className="qp-text">
-              <div className="qp-t is-now">{current.title}</div>
-              <div className="qp-a">{current.artist}</div>
-            </div>
-            <span className="qp-d t-mono">{formatTime(p.position)}</span>
-          </div>
-        )}
+        {nowRow()}
 
-        <div className="qp-rule">
-          <span className="qp-rule-l t-mono">NEXT UP</span>
-          <span className="qp-rule-line" />
-          <span className="qp-rule-r t-mono">
-            {String(upcoming.length).padStart(2, '0')} · {fmtTotal(total) || '00:00'}
-          </span>
-        </div>
+        {nextRule()}
 
         {upcoming.length > 0 && data ? (
           <div className="qp-list" ref={listRef}>
             <div className="qp-list-in" style={{ height: upcoming.length * ROW }}>
               {upcoming.slice(from, to).map((id, k) => {
-                const i = from + k
-                const abs = base + i
-                const t = data.tracks[id]
-                const isDrag = drag?.from === abs
-                return (
-                  <div
-                    key={`${abs}:${id}`}
-                    data-abs={abs}
-                    className={`qp-row ${isDrag ? 'is-drag' : ''}`}
-                    style={{ top: i * ROW }}
-                    draggable={!phone}
-                    tabIndex={0}
-                    role="button"
-                    aria-label={t ? `${t.title} by ${t.artist}. Enter to play, Alt+arrows to move, Delete to remove.` : 'Missing track'}
-                    onDragStart={onDragStart(abs)}
-                    onDragOver={onDragOver(abs)}
-                    onDragEnd={() => setDrag(null)}
-                    onClick={() => playerStore.jump(abs)}
-                    onContextMenu={(e) => t && actions.menu({ kind: 'track', trackId: t.id }, e)}
-                    onKeyDown={onRowKey(abs)}
-                  >
-                    <DropLine dnd={dnd} abs={abs} />
-                    <span className="qp-handle qp-grip" aria-hidden {...dnd.grip(abs)}>
-                      <Icon name="drag" />
-                    </span>
-                    {t ? <Cover c={data} albumId={t.albumId} size={40} /> : <span className="qp-cover qp-cover-empty" />}
-                    <div className="qp-text">
-                      <div className="qp-t">{t?.title ?? 'Missing track'}</div>
-                      <div className="qp-a">{t?.artist ?? 'No longer in your library'}</div>
-                    </div>
-                    <span className="qp-d t-mono">{t?.duration ? formatTime(t.duration) : '--:--'}</span>
-                    <button
-                      type="button"
-                      className="qp-act"
-                      title="Play next"
-                      aria-label="Play next"
-                      disabled={abs === base}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        playerStore.move(abs, base)
-                      }}
-                    >
-                      <Icon name="chevU" />
-                    </button>
-                    <button
-                      type="button"
-                      className="qp-act qp-act-x"
-                      title="Remove"
-                      aria-label="Remove from queue"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        playerStore.remove(abs)
-                      }}
-                    >
-                      <Icon name="x" />
-                    </button>
-                  </div>
-                )
+                const abs = base + from + k
+                return <QueueRow key={`${abs}:${id}`} c={data} id={id} abs={abs} top={(from + k) * ROW} played={false} dnd={dnd} base={base} onKey={onRowKey} />
               })}
             </div>
           </div>
         ) : (
-          <div className="qp-empty">
-            <div className="qp-empty-mark" aria-hidden>
-              <span />
-              <span />
-              <span />
-            </div>
-            <div className="qp-empty-t">Still water after this one.</div>
-            <div className="qp-empty-b">
-              {p.repeat === 'one'
-                ? `Nothing is queued. Repeat one keeps “${current?.title ?? 'this track'}” going.`
-                : p.repeat === 'all'
-                  ? `Nothing is queued. With repeat on, “${current?.title ?? 'this track'}” plays again.`
-                  : `Nothing is queued. Playback stops when “${current?.title ?? 'this track'}” ends.`}
-            </div>
-            {cleared?.length ? (
-              <button type="button" className="qp-restore" onClick={() => playerStore.restoreUpcoming()}>
-                Restore queue
-              </button>
-            ) : null}
-          </div>
+          emptyBlock
+        )}
+
+          </>
         )}
 
         <div className="qp-foot t-mono">{phone ? 'HOLD ⠿ TO REORDER · ↑ PLAY NEXT · × REMOVE' : 'DRAG TO REORDER · ↑ PLAY NEXT · × REMOVE'}</div>

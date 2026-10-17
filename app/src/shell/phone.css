@@ -358,6 +358,12 @@ html[data-phone][data-qp] .toasts.toasts-shell { right: 0; }
 .shell.is-phone .qp-row.is-drag { opacity: .4; background: var(--surface-2); }
 .shell.is-phone .qp-act { width: 36px; height: 44px; }
 .shell.is-phone .qp-list { margin-right: -6px; padding-right: 6px; }
+/* one scroller: PLAYED rule · played rows · now playing · NEXT UP rule · upcoming (all absolutely placed) */
+.shell.is-phone .qp-one .qp-one-abs { position: absolute; left: 0; right: 0; }
+.shell.is-phone .qp-one .qp-rule { padding: 0 2px; }
+.shell.is-phone .qp-one-played { color: var(--ink-secondary); }
+.shell.is-phone .qp-one-empty { display: flex; }
+.shell.is-phone .qp-one-empty .qp-empty { padding: 24px 0; }
 
 /* toasts: full width, one line of text + action (the mono meta is dropped) */
 html[data-phone] .toast { width: calc(100% - 16px); }
