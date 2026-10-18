@@ -20,6 +20,9 @@ export const quality = {
 } as const
 export type QualityKind = keyof typeof quality
 
+/** Warn colour (r,g,b) for "needs you" states (Batch Upload). Same hue as --danger. */
+export const warn = [230, 150, 140] as const
+
 /** Marine-snow particle counts for the Atmosphere setting. */
 export const particleCounts = { off: 0, few: 6, default: 15, more: 32 } as const
 export type ParticleSetting = keyof typeof particleCounts

@@ -25,7 +25,8 @@ import { ActionHost } from '../actions/ActionHost'
 import { albumHref, go, href, navKeyOf, type Route } from './routes'
 import { albumOffline, downloadsStore, qualityOf, trackOffline } from '../state/downloads'
 import { fmtBytes, plural } from '../state/views'
-import { onAlbumAdded, runSummary, useUpload } from '../state/upload'
+import { onAlbumAdded, useUpload } from '../state/upload'
+import { uploadSummary } from '../state/uploadViews'
 import { onReleasesEvent, releasesStore, useReleases } from '../state/releases'
 import { buildFeed, fmtClock } from '../state/releaseViews'
 import { historyStore, useHistory } from '../state/history'
@@ -100,14 +101,15 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
     [toast],
   )
 
-  // Upload (step 10): progress toast while away from the Upload page, "added" toast per album.
+  // Upload (steps 10, 24): progress toast while away from the Upload page, "added" toast per release,
+  // nav badge "4 !" while releases need you (else "n/m" while uploading).
   const up = useUpload()
-  const upRun = runSummary(up)
+  const upRun = uploadSummary(up, lib.data)
   const onUploadPage = route.kind === 'app' && route.key === 'upload'
   const upToast = useRef<number | null>(null)
   const upAlbum = upRun.active
   useEffect(() => {
-    if (!up.running || onUploadPage || !upAlbum) {
+    if (!upRun.running || onUploadPage || !upAlbum) {
       if (upToast.current !== null) toast.dismiss(upToast.current)
       upToast.current = null
       return
@@ -122,7 +124,7 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
     }
     if (upToast.current === null) upToast.current = toast.show(t)
     else toast.update(upToast.current, t)
-  }, [up.running, onUploadPage, upAlbum, upRun.done, upRun.total, upRun.ratio, toast])
+  }, [upRun.running, onUploadPage, upAlbum, upRun.done, upRun.total, upRun.ratio, toast])
   useEffect(
     () =>
       onAlbumAdded((r) => {
@@ -356,7 +358,7 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
             active={navKeyOf(route)}
             activePlaylist={route.kind === 'app' && route.key === 'playlist' ? route.id : null}
             badges={{
-              ...(up.running && upRun.total ? { upload: `${upRun.done}/${upRun.total}` } : {}),
+              ...(upRun.badge ? { upload: upRun.badge } : {}),
               ...(newReleases ? { new: String(newReleases) } : {}),
             }}
           />

@@ -30,6 +30,17 @@
   --danger-border: rgba(230, 150, 140, 0.38);
   --danger-bg: rgba(230, 150, 140, 0.04);
 
+  /* Warn (same hue as danger): "needs you" states — Batch Upload handoff */
+  --warn-rgb: 230, 150, 140;
+  --warn: rgb(var(--warn-rgb));
+  --warn-border: rgba(var(--warn-rgb), 0.35);
+  --warn-bg: rgba(var(--warn-rgb), 0.06);
+  --warn-glow: 0 0 8px rgba(var(--warn-rgb), 0.6);
+
+  /* extra line steps (separators .08, dashed drop zones .22) */
+  --hairline-mid: rgba(255, 255, 255, 0.08);
+  --border-dash: rgba(255, 255, 255, 0.22);
+
   /* Quality badges: text rgb(c), border rgba(c,.5), bg rgba(c,.08) */
   --q-flac16: 143, 199, 230;
   --q-flac24: 198, 180, 242;
@@ -79,6 +90,12 @@
   --bw-control: 1.5px;
   --bw-separator: 1px;
 
+  --r-check: 5px;             /* checkboxes */
+  --r-thumb: 6px;             /* 44px list covers, quality badges */
+  --r-cell: 7px;              /* file-number cells */
+  --r-card: 14px;             /* issue cards, compact drop strip */
+  --r-card-lg: 18px;          /* inspector card */
+  --r-drop: 22px;             /* drop zones / overlay */
   --r-button: 12px;
   --r-icon-button: 10px;
   --r-menu-item: 9px;

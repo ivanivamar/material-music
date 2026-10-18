@@ -60,14 +60,27 @@ export interface PutOptions {
   data: Blob
   onProgress?: (sent: number, total: number) => void
   signal?: AbortSignal
+  /** a resumable session URL from an earlier, interrupted call (Pause → Resume): continue it */
+  resume?: string | null
+  /** gets the session URL as soon as it exists, so a paused upload can be resumed */
+  onSession?: (url: string) => void
 }
 
 /** Create or replace Pelagic/<parts>/<name>. Resumable, so a dropped connection picks up where it stopped. */
 export async function putFile(o: PutOptions): Promise<Uploaded> {
+  if (o.resume) {
+    try {
+      return await sendResumable(o.resume, o, true)
+    } catch (e) {
+      // the session is gone (expired, or Drive forgot it): start a new one below
+      if (!(e instanceof DriveError && (e.status === 404 || e.status === 410))) throw e
+    }
+  }
   const parentId = await folder(o.parts)
   const existing = await findChild(o.name, parentId, false)
   const session = await startSession(o, parentId, existing?.id ?? null)
   // no readable Location header (shouldn't happen: Drive exposes it to CORS) → one multipart request
+  if (session) o.onSession?.(session)
   return session ? sendResumable(session, o) : sendMultipart(o, parentId, existing?.id ?? null)
 }
 
@@ -147,9 +160,17 @@ function xhrSend(method: string, url: string, auth: string, body: Blob | null, h
   })
 }
 
-async function sendResumable(url: string, o: PutOptions): Promise<Uploaded> {
+async function sendResumable(url: string, o: PutOptions, resuming = false): Promise<Uploaded> {
   const total = o.data.size
   let offset = 0
+  if (resuming) {
+    const q = await queryOffset(url, total, o.signal, true)
+    if (typeof q !== 'number') {
+      o.onProgress?.(total, total)
+      return q
+    }
+    offset = q
+  }
   for (let attempt = 1; ; attempt++) {
     o.signal?.throwIfAborted()
     const chunk = offset ? o.data.slice(offset) : o.data
@@ -180,16 +201,31 @@ async function sendResumable(url: string, o: PutOptions): Promise<Uploaded> {
     }
     if (attempt >= 6) throw new DriveError(r.status, r.status ? `Drive answered ${r.status}` : 'Lost the connection to Drive')
     await sleep(Math.min(30_000, 1000 * 2 ** (attempt - 1)) + Math.random() * 500)
-    offset = await queryOffset(url, total, o.signal)
+    offset = (await queryOffset(url, total, o.signal)) as number
   }
 }
 
-/** Ask the session how much arrived (308 + Range: bytes=0-N). Unknown → start over. */
-async function queryOffset(url: string, total: number, signal?: AbortSignal): Promise<number> {
+/**
+ * Ask the session how much arrived (308 + Range: bytes=0-N). Unknown → start over.
+ * `strict` (resuming a paused upload): a finished session returns the file, a dead one throws 404/410.
+ */
+async function queryOffset(url: string, total: number, signal?: AbortSignal, strict = false): Promise<number | Uploaded> {
   const r = await xhrPut(url, await token(), null, { 'Content-Range': `bytes */${total}` }, null, signal)
   if (r.status === 308) {
     const m = r.range?.match(/bytes=0-(\d+)/)
     return m ? Number(m[1]) + 1 : 0
+  }
+  if (strict && (r.status === 200 || r.status === 201)) {
+    const j = JSON.parse(r.body) as { id: string; size?: string }
+    return { id: j.id, size: Number(j.size ?? total) }
+  }
+  if (strict && (r.status === 404 || r.status === 410)) throw new DriveError(r.status, 'The upload session expired')
+  if (strict && r.status === 401) {
+    if (!(await sessionStore.refresh())) {
+      sessionStore.expire()
+      throw new AuthError()
+    }
+    return queryOffset(url, total, signal, strict)
   }
   return 0
 }

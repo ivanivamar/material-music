@@ -1,17 +1,25 @@
 /**
- * Upload (step 10): add FLAC albums to the library from the app, without the importer.
+ * Upload — Batch (step 24; replaces the step-10 album-by-album flow).
  *
- * Drop → read: each FLAC's header (tags, STREAMINFO, cover) is read in the browser and the files are
- * grouped into albums with the importer's ids; tracks already in the catalogue are marked and skipped.
- * Review: the matched-album panel shows what was found; album-level tags can be edited.
- * Add to library: per track, an Opus 160 copy is encoded in the browser (WebCodecs), then the FLAC
- * and the Opus go to Pelagic/library/… and Pelagic/mobile/… (same names as the importer). The cover
- * goes to covers/<albumId>.jpg if the album has none yet. The artist's photo/banner come from
- * artist.jpg / artist_background.jpg in the dropped artist folder, else Deezer (upload/artistImages.ts). When an album's tracks are through,
- * library.json is read fresh, merged and written back, and the app adopts the new catalogue.
+ * Everything dropped joins one batch. Each FLAC's header (tags, STREAMINFO, cover) is read in the browser
+ * and the files are grouped into releases by album artist + album (the importer's album id; with no
+ * ALBUM tag the folder name is used, as before). Nothing uploads until Upload is pressed. Then two
+ * releases upload at a time, in list order, one track after the other: an Opus 160 copy is encoded here
+ * (WebCodecs), then the FLAC and the Opus go to Pelagic/library/… and Pelagic/mobile/… (same names as the
+ * importer). The cover goes to covers/<albumId>.jpg if the album has none yet.
  *
- * State lives in this module, so uploads keep going while browsing other pages (toast + sidebar
- * badge in the shell). Leaving the page while uploading asks first.
+ * A release whose files are all up and that has no issue is added to the library at once (library.json
+ * read fresh, merged, written back; the app adopts the new catalogue). Issues (see uploadViews.ts):
+ * - missing tracks: keeps uploading, waits for "Add missing file" / "Add without it" before it's added;
+ * - already in the library: waits *before* uploading (uploading first would overwrite the library's
+ *   Drive files in place), until Replace / Keep both / Skip;
+ * - failed tracks: Retry / Add without them.
+ *
+ * Pause all aborts the transfers but keeps each track's resumable session URL and its encoded Opus, so
+ * Resume carries on from what Drive already has.
+ *
+ * State lives in this module, so uploads keep going while browsing other pages (toast + sidebar badge
+ * in the shell). Leaving the page while uploading asks first.
  */
 import { useSyncExternalStore } from 'react'
 import { AuthError } from '../lib/drive'
@@ -22,9 +30,9 @@ import { prepareArtist, type ArtistPatch, type ArtistSources } from '../upload/a
 import { putFile, resetFolders, updateCatalogue, type Uploaded } from '../upload/driveWrite'
 import { libraryStore, type Album, type Catalogue, type Track } from './library'
 import { onAccountReset } from './session'
+import { canCommit, hasHeldDup, releaseQuality, uploadable } from './uploadViews'
 
-export type ItemState = 'reading' | 'ready' | 'dup' | 'invalid' | 'queued' | 'encoding' | 'uploading' | 'uploaded' | 'done' | 'error'
-export type AlbumState = 'review' | 'running' | 'done' | 'error'
+export type ItemState = 'reading' | 'ready' | 'dup' | 'encoding' | 'uploading' | 'uploaded' | 'done' | 'error'
 
 export interface UploadItem {
   id: number
@@ -37,13 +45,20 @@ export interface UploadItem {
   /** 0..1 over encode + both uploads */
   progress: number
   info: FlacInfo | null
-  /** tags as read (album edits are applied on top, see effective()) */
+  /** tags as read (album edits are applied on top, see effective()); `forced` already applied */
   meta: TrackMeta | null
   trackId: string | null
-  dup?: 'library' | 'batch'
+  /** same track twice in this batch (the later copy is left out) */
+  dup?: 'batch'
+  /** this track id is already in the catalogue */
+  inLibrary?: boolean
+  /** picked through "Add missing file": album artist / album taken from the release, not the file */
+  forced?: { albumArtist: string; album: string }
   error?: string
   flac?: Uploaded
   mobile?: Uploaded
+  /** what survives a pause: resumable session URLs and the encoded Opus */
+  resume?: { flacUrl?: string; mobileUrl?: string; opus?: Blob }
 }
 
 export interface AlbumEdits {
@@ -53,8 +68,13 @@ export interface AlbumEdits {
   genre?: string | null
 }
 
+export type ReleasePhase = 'pending' | 'adding' | 'added'
+
+/** One release of the batch (an album, EP or single: whatever shares album artist + album). */
 export interface UploadAlbum {
   key: string
+  /** album id from the files' own tags (later drops of the same album join this release) */
+  srcAlbumId: string
   /** after edits */
   albumId: string
   artistId: string
@@ -62,8 +82,6 @@ export interface UploadAlbum {
   artist: string
   year?: number
   genre?: string
-  trackTotal?: number
-  discTotal?: number
   cover: Blob | null
   coverUrl: string | null
   /** artist.jpg / artist_background.jpg found in the artist's folder of the drop */
@@ -72,26 +90,43 @@ export interface UploadAlbum {
   /** catalogue already has this album (adding tracks to it) */
   inLibrary: boolean
   edits: AlbumEdits
-  state: AlbumState
   itemIds: number[]
+  skipped: boolean
+  /** answers given on the issue card */
+  resolved: { missing?: boolean; dup?: 'replace' | 'skip'; failed?: boolean }
+  phase: ReleasePhase
+  /** list position: the smallest item id (files are numbered in path order as they're dropped) */
+  ord: number
 }
+
+export type UploadFilter = 'all' | 'need' | 'prog' | 'added'
 
 export interface UploadState {
   albums: UploadAlbum[]
   items: Record<number, UploadItem>
-  selected: string | null
+  /** inspector: focused release; checked rows (2+ → multi-select inspector) */
+  focus: string | null
+  checked: string[]
+  filter: UploadFilter
   /** files still being read */
   reading: number
   /** dropped files that aren't FLAC (images used as covers aren't counted) */
   skipped: number
-  running: boolean
+  /** .flac files that couldn't be read */
+  unreadable: number
+  /** Upload pressed (until the batch has nothing left to send) */
+  started: boolean
+  paused: boolean
+  /** paused because the Google session expired */
+  authError: boolean
   /** browser can make the Opus copies (null = not checked yet) */
   opus: boolean | null
-  /** this run: bytes (FLAC + Opus estimate) to send and sent, upload speed (bytes/s) */
-  run: { total: number; sent: number; speed: number | null; started: number } | null
+  /** upload speed, bytes/s (FLAC + Opus estimate) */
+  speed: number | null
 }
 
-let state: UploadState = { albums: [], items: {}, selected: null, reading: 0, skipped: 0, running: false, opus: null, run: null }
+const INITIAL: UploadState = { albums: [], items: {}, focus: null, checked: [], filter: 'all', reading: 0, skipped: 0, unreadable: 0, started: false, paused: false, authError: false, opus: null, speed: null }
+let state: UploadState = INITIAL
 const listeners = new Set<() => void>()
 let notifyTimer = 0
 function emit() {
@@ -112,6 +147,7 @@ function patchItem(id: number, p: Partial<UploadItem>, throttle = false) {
 function patchAlbum(key: string, p: Partial<UploadAlbum>) {
   set({ albums: state.albums.map((a) => (a.key === key ? { ...a, ...p } : a)) })
 }
+const albumOf = (key: string) => state.albums.find((a) => a.key === key)
 
 let seq = 0
 void canEncodeOpus().then((opus) => set({ opus }))
@@ -136,6 +172,10 @@ export function effective(a: UploadAlbum, m: TrackMeta): TrackMeta {
 function opusComments(a: UploadAlbum, it: UploadItem): [string, string][] {
   const e = a.edits
   const over: Record<string, string | null | undefined> = {}
+  if (it.forced) {
+    over.ALBUMARTIST = it.forced.albumArtist
+    over.ALBUM = it.forced.album
+  }
   if (e.albumArtist !== undefined) over.ALBUMARTIST = e.albumArtist
   if (e.album !== undefined) over.ALBUM = e.album
   if (e.year !== undefined) over.DATE = e.year ? String(e.year) : null
@@ -167,8 +207,11 @@ function artistFor(map: Map<string, ArtistSources>, rel: string): ArtistSources 
   return null
 }
 
-/** Files picked or dropped (folders already walked). */
-export async function addFiles(dropped: DroppedFile[]) {
+/**
+ * Files picked or dropped (folders already walked). `target`: put every FLAC into this release
+ * ("Add missing file"), whatever its album tags say. Resolves to how many FLACs joined the batch.
+ */
+export async function addFiles(dropped: DroppedFile[], target?: string): Promise<{ added: number; ignored: number }> {
   const flacs = dropped.filter((d) => /\.flac$/i.test(d.file.name))
   const images = new Map<string, File>() // folder → cover image
   for (const d of dropped) if (COVER_NAME.test(d.file.name) && !images.has(dirOf(d.rel))) images.set(dirOf(d.rel), d.file)
@@ -184,13 +227,12 @@ export async function addFiles(dropped: DroppedFile[]) {
   }
   const others = dropped.filter((d) => !/\.flac$/i.test(d.file.name) && !/\.(jpe?g|png|webp|gif|bmp|txt|log|cue|m3u8?|nfo|lrc|ini|db|ds_store)$/i.test(d.file.name)).length
 
-  // skip files already in the list (same path + size), e.g. a folder dropped twice
+  // skip files already in the batch (same path + size), e.g. a folder dropped twice
   const have = new Set(Object.values(state.items).map((i) => `${i.rel}|${i.size}`))
-  const fresh = flacs.filter((d) => !have.has(`${d.rel}|${d.file.size}`))
-  if (!fresh.length) {
-    if (others) set({ skipped: state.skipped + others })
-    return
-  }
+  // path order, so item ids (and the release order derived from them) follow the folders
+  const fresh = flacs.filter((d) => !have.has(`${d.rel}|${d.file.size}`)).sort((a, b) => a.rel.localeCompare(b.rel, undefined, { numeric: true }))
+  if (others) set({ skipped: state.skipped + others })
+  if (!fresh.length) return { added: 0, ignored: others }
 
   const created: UploadItem[] = fresh.map((d) => ({
     id: ++seq,
@@ -204,9 +246,10 @@ export async function addFiles(dropped: DroppedFile[]) {
     meta: null,
     trackId: null,
   }))
-  set({ items: { ...state.items, ...Object.fromEntries(created.map((i) => [i.id, i])) }, reading: state.reading + created.length, skipped: state.skipped + others })
+  set({ items: { ...state.items, ...Object.fromEntries(created.map((i) => [i.id, i])) }, reading: state.reading + created.length })
 
   // read headers, 4 at a time, in path order
+  let added = 0
   const queue = [...created].sort((a, b) => a.rel.localeCompare(b.rel, undefined, { numeric: true }))
   await Promise.all(
     Array.from({ length: 4 }, async () => {
@@ -214,53 +257,68 @@ export async function addFiles(dropped: DroppedFile[]) {
         try {
           const info = await readFlac(it.file)
           const meta = toMeta(info, it.rel)
-          await place(it.id, info, meta, images.get(dirOf(it.rel)) ?? null, artistFor(artistImgs, it.rel))
-        } catch (e) {
-          patchItem(it.id, { state: 'invalid', error: (e as Error).message || 'Couldn’t read this file' })
-          // keep unreadable files visible under an "Unreadable" group
-          attach(it.id, null)
+          await place(it.id, info, meta, images.get(dirOf(it.rel)) ?? null, artistFor(artistImgs, it.rel), target)
+          added++
+        } catch {
+          const items = { ...state.items }
+          delete items[it.id]
+          set({ items, unreadable: state.unreadable + 1 })
         } finally {
           set({ reading: state.reading - 1 })
         }
       }
     }),
   )
+  kick()
+  finishIfIdle()
+  return { added, ignored: others + (fresh.length - added) }
 }
 
-/** Put a read item into its album group (new group per album id, unless one is still in review). */
-async function place(id: number, info: FlacInfo, meta: TrackMeta, folderCover: File | null, artistImgs: ArtistSources | null) {
+/** Put a read item into its release (an open one with the same album id, else a new one at the end). */
+async function place(id: number, info: FlacInfo, meta: TrackMeta, folderCover: File | null, artistImgs: ArtistSources | null, target?: string) {
+  let album = target ? state.albums.find((a) => a.key === target && a.phase === 'pending') : undefined
+  let forced: UploadItem['forced']
+  if (album) {
+    forced = { albumArtist: album.artist, album: album.title }
+    // edits are applied on top by effective(); keep the raw values here so "use file tags" still works
+    const first = album.itemIds.map((i) => state.items[i]).find((i) => i?.meta)?.meta
+    if (first) forced = { albumArtist: first.albumArtist, album: first.album }
+    meta = { ...meta, ...forced }
+  }
   const { albumId, artistId } = await idsFor(meta)
-  let album = state.albums.find((a) => a.albumId === albumId && a.state === 'review' && !a.key.startsWith('!'))
+  album ??= state.albums.find((a) => a.phase === 'pending' && (a.srcAlbumId === albumId || a.albumId === albumId))
   if (!album) {
     const cat = libraryStore.get().data
     album = {
       key: `${albumId}#${++seq}`,
+      srcAlbumId: albumId,
       albumId,
       artistId,
       title: meta.album,
       artist: meta.albumArtist,
       year: meta.year,
       genre: meta.genre,
-      trackTotal: meta.trackTotal,
-      discTotal: meta.discTotal,
       cover: null,
       coverUrl: null,
       inLibrary: !!cat?.albums[albumId],
       edits: {},
-      state: 'review',
       itemIds: [],
+      skipped: false,
+      resolved: {},
+      phase: 'pending',
+      ord: id,
     }
-    set({ albums: [...state.albums, album], selected: state.selected ?? album.key })
+    // files are read 4 at a time: keep the list in path order, not in the order reads finish
+    const albums = [...state.albums, album].sort((x, y) => x.ord - y.ord)
+    set({ albums })
   }
-  patchItem(id, { info, meta, state: 'ready' })
+  patchItem(id, { info, meta, state: 'ready', forced })
   attach(id, album.key)
-  const a = state.albums.find((x) => x.key === album.key)!
+  const a = albumOf(album.key)!
   // album fields: first non-empty wins; cover: embedded front cover, else cover.jpg in the folder
   const p: Partial<UploadAlbum> = {}
   if (!a.year && meta.year) p.year = meta.year
   if (!a.genre && meta.genre) p.genre = meta.genre
-  if (!a.trackTotal && meta.trackTotal) p.trackTotal = meta.trackTotal
-  if (!a.discTotal && meta.discTotal) p.discTotal = meta.discTotal
   if (!a.cover && (info.picture || folderCover)) {
     const img = info.picture?.data ?? folderCover!
     p.cover = img
@@ -272,53 +330,48 @@ async function place(id: number, info: FlacInfo, meta: TrackMeta, folderCover: F
   await refreshIds(a.key)
 }
 
-function attach(id: number, key: string | null) {
-  if (key === null) {
-    let bad = state.albums.find((a) => a.key === '!unreadable')
-    if (!bad) {
-      bad = { key: '!unreadable', albumId: '', artistId: '', title: 'Unreadable files', artist: 'Not FLAC, or damaged', cover: null, coverUrl: null, inLibrary: false, edits: {}, state: 'error', itemIds: [] }
-      set({ albums: [...state.albums, bad] })
-    }
-    key = bad.key
-  }
+function attach(id: number, key: string) {
   set({
     albums: state.albums.map((a) =>
-      a.key === key ? { ...a, itemIds: [...a.itemIds, id].sort((x, y) => order(state.items[x]) - order(state.items[y]) || state.items[x].rel.localeCompare(state.items[y].rel, undefined, { numeric: true })) } : a,
+      a.key === key ? { ...a, ord: Math.min(a.ord, id), itemIds: [...a.itemIds, id].sort((x, y) => order(state.items[x]) - order(state.items[y]) || state.items[x].rel.localeCompare(state.items[y].rel, undefined, { numeric: true })) } : a,
     ),
   })
 }
 const order = (it: UploadItem) => (it.meta ? it.meta.disc * 1000 + (it.meta.track ?? 999) : 1e6)
 
-/** Recompute album / track ids after tags were read or edited, and mark duplicates. */
+/** Recompute album / track ids after tags were read or edited; mark batch duplicates and tracks already in the library. */
 async function refreshIds(key: string) {
-  const a = state.albums.find((x) => x.key === key)
+  const a = albumOf(key)
   if (!a) return
   const cat = libraryStore.get().data
-  const first = a.itemIds.map((i) => state.items[i]).find((i) => i.meta)
+  const first = a.itemIds.map((i) => state.items[i]).find((i) => i?.meta)
   if (!first?.meta) return
   const eff0 = effective(a, first.meta)
   const { albumId, artistId } = await idsFor(eff0)
-  const ids = await Promise.all(a.itemIds.map(async (i) => {
-    const it = state.items[i]
-    return it.meta ? [i, (await idsFor(effective(a, it.meta))).trackId] as const : [i, null] as const
-  }))
-  // other pending tracks (other groups) claim their ids first
+  const ids = await Promise.all(
+    a.itemIds.map(async (i) => {
+      const it = state.items[i]
+      return it?.meta ? ([i, (await idsFor(effective(a, it.meta))).trackId] as const) : ([i, null] as const)
+    }),
+  )
+  // other releases' tracks claim their ids first
   const elsewhere = new Set(
     Object.values(state.items)
-      .filter((it) => it.trackId && !a.itemIds.includes(it.id) && it.state !== 'dup' && it.state !== 'invalid')
+      .filter((it) => it.trackId && !a.itemIds.includes(it.id) && it.state !== 'dup')
       .map((it) => it.trackId),
   )
   const seen = new Set<string>()
   const items = { ...state.items }
   for (const [i, trackId] of ids) {
     const it = items[i]
-    if (!trackId || !['ready', 'dup'].includes(it.state)) {
-      if (trackId) items[i] = { ...it, trackId }
+    if (!it || !trackId) continue
+    if (!['ready', 'dup'].includes(it.state)) {
+      items[i] = { ...it, trackId }
       continue
     }
-    const dup: UploadItem['dup'] = cat?.tracks[trackId] ? 'library' : seen.has(trackId) || elsewhere.has(trackId) ? 'batch' : undefined
+    const batchDup = seen.has(trackId) || elsewhere.has(trackId)
     seen.add(trackId)
-    items[i] = { ...it, trackId, state: dup ? 'dup' : 'ready', dup }
+    items[i] = { ...it, trackId, state: batchDup ? 'dup' : 'ready', dup: batchDup ? 'batch' : undefined, inLibrary: !!cat?.tracks[trackId] }
   }
   set({
     items,
@@ -326,12 +379,29 @@ async function refreshIds(key: string) {
   })
 }
 
-/* ── Review ─────────────────────────────────────────── */
+/* ── Inspector: selection, edits, issue answers ─────── */
+
+export function setFocus(key: string) {
+  set({ focus: key, checked: [] })
+}
+export function toggleChecked(key: string) {
+  set({ checked: state.checked.includes(key) ? state.checked.filter((k) => k !== key) : [...state.checked, key] })
+}
+export function setChecked(keys: string[]) {
+  set({ checked: keys })
+}
+export function setFilter(filter: UploadFilter) {
+  set({ filter })
+}
+
+/** Tags can change until the first of the release's tracks has started uploading (paths and ids depend on them). */
+export const editable = (a: UploadAlbum, s: UploadState = state) =>
+  a.phase === 'pending' && a.itemIds.every((i) => !s.items[i] || (['reading', 'ready', 'dup'].includes(s.items[i].state) && !s.items[i].resume && !s.items[i].flac))
 
 export async function editAlbum(key: string, edits: AlbumEdits) {
-  const a = state.albums.find((x) => x.key === key)
-  if (!a || a.state !== 'review') return
-  const first = a.itemIds.map((i) => state.items[i]).find((i) => i.meta)?.meta
+  const a = albumOf(key)
+  if (!a || !editable(a)) return
+  const first = a.itemIds.map((i) => state.items[i]).find((i) => i?.meta)?.meta
   // drop edits that equal the tags
   const clean: AlbumEdits = {}
   if (edits.albumArtist !== undefined && edits.albumArtist.trim() && edits.albumArtist.trim() !== first?.albumArtist) clean.albumArtist = edits.albumArtist.trim()
@@ -344,33 +414,93 @@ export async function editAlbum(key: string, edits: AlbumEdits) {
     genre: clean.genre !== undefined ? (clean.genre ?? undefined) : first?.genre,
   })
   await refreshIds(key)
+  kick()
 }
 
-export function select(key: string) {
-  set({ selected: key })
+/**
+ * Multi-select "Edit shared tags": only the fields given are changed, on top of each release's own edits
+ * (album titles stay per release). Releases that already started uploading are left alone.
+ */
+export async function editShared(keys: string[], edits: Omit<AlbumEdits, 'album'>) {
+  for (const key of keys) {
+    const a = albumOf(key)
+    if (!a || !editable(a)) continue
+    await editAlbum(key, { albumArtist: a.artist, album: a.title, year: a.year ?? null, genre: a.genre ?? null, ...edits })
+  }
 }
 
-export function removeAlbum(key: string) {
-  const a = state.albums.find((x) => x.key === key)
-  if (!a || a.state === 'running') return
-  if (a.coverUrl) URL.revokeObjectURL(a.coverUrl)
+export function setSkipped(keys: string[], skipped: boolean) {
+  const ks = new Set(keys)
+  set({ albums: state.albums.map((a) => (ks.has(a.key) && a.phase === 'pending' ? { ...a, skipped } : a)) })
+  if (skipped) for (const a of state.albums) if (ks.has(a.key)) for (const i of a.itemIds) ctrls.get(i)?.abort()
+  if (!skipped) {
+    kick()
+    for (const k of keys) maybeCommit(k)
+  }
+  finishIfIdle()
+}
+
+/** "Add without it": add the release with the tracks it has. */
+export function addWithoutMissing(key: string) {
+  const a = albumOf(key)
+  if (!a) return
+  patchAlbum(key, { resolved: { ...a.resolved, missing: true } })
+  maybeCommit(key)
+}
+
+/** Answer to "Already in your library". */
+export async function resolveDup(key: string, how: 'replace' | 'both' | 'skip') {
+  const a = albumOf(key)
+  if (!a) return
+  if (how === 'both') {
+    // a separate album: same title + the format, so it gets its own album id (and Drive folder)
+    const q = releaseQuality(a, state)
+    await editAlbum(key, { albumArtist: a.artist, album: `${a.title} (${q.label})`, year: a.year ?? null, genre: a.genre ?? null })
+    return
+  }
+  patchAlbum(key, { resolved: { ...a.resolved, dup: how } })
+  if (how === 'skip') {
+    // nothing new left → the whole release is skipped
+    const left = uploadable(albumOf(key)!, state)
+    if (!left.length) patchAlbum(key, { skipped: true })
+  }
+  kick()
+  maybeCommit(key)
+  finishIfIdle()
+}
+
+/** Failed tracks: try them again (tracks fully on Drive only need the library write). */
+export function retryFailed(key: string) {
+  const a = albumOf(key)
+  if (!a) return
   const items = { ...state.items }
-  for (const i of a.itemIds) delete items[i]
-  const albums = state.albums.filter((x) => x.key !== key)
-  set({ albums, items, selected: state.selected === key ? (albums.find((x) => x.state === 'review')?.key ?? albums[0]?.key ?? null) : state.selected })
+  for (const i of a.itemIds) {
+    const it = items[i]
+    if (it?.state !== 'error') continue
+    const onDrive = !!it.flac && (!!it.mobile || !state.opus)
+    items[i] = { ...it, state: onDrive ? 'uploaded' : 'ready', error: undefined, progress: onDrive ? 1 : 0 }
+  }
+  set({ items, authError: false })
+  patchAlbum(key, { resolved: { ...a.resolved, failed: false } })
+  if (!state.started && a.itemIds.some((i) => items[i]?.state === 'ready')) start()
+  else kick()
+  maybeCommit(key)
 }
-
-/** Drop finished albums (and the unreadable group) from the list. */
-export function clearFinished() {
-  for (const a of [...state.albums]) if (a.state === 'done' || a.key === '!unreadable') removeAlbum(a.key)
-  set({ skipped: 0 })
+/** Failed tracks: add the release without them. */
+export function addWithoutFailed(key: string) {
+  const a = albumOf(key)
+  if (!a) return
+  patchAlbum(key, { resolved: { ...a.resolved, failed: true } })
+  maybeCommit(key)
 }
 
 /* ── Running ────────────────────────────────────────── */
 
-let controller: AbortController | null = null
+const claimed = new Set<string>() // releases a worker is on
+const ctrls = new Map<number, AbortController>() // item → its transfer
+let workers = 0
+const prepared = new Map<string, Promise<string | null>>() // release key → cover file id
 let commits: Promise<void> = Promise.resolve()
-const prepared = new Map<string, Promise<string | null>>() // album key → cover file id
 const settle = new Set<(r: AlbumResult) => void>()
 
 export interface AlbumResult {
@@ -380,7 +510,7 @@ export interface AlbumResult {
   added: number
   failed: number
 }
-/** An album's tracks went through and the catalogue was written (for the "added" toast). */
+/** A release's tracks went through and the catalogue was written (for the "added" toast). */
 export function onAlbumAdded(l: (r: AlbumResult) => void) {
   settle.add(l)
   return () => {
@@ -388,138 +518,193 @@ export function onAlbumAdded(l: (r: AlbumResult) => void) {
   }
 }
 
-/** Queue every reviewed album (or just `key`) and start. */
-export function start(key?: string) {
-  const albums = state.albums.filter((a) => (key ? a.key === key : true) && (a.state === 'review' || a.state === 'error') && a.key !== '!unreadable')
-  const items = { ...state.items }
-  let n = 0
-  for (const a of albums)
-    for (const i of a.itemIds)
-      if (items[i].state === 'ready' || items[i].state === 'error') {
-        items[i] = { ...items[i], state: 'queued', progress: 0, error: undefined }
-        n++
-      }
-  if (!n) return
-  set({ items, albums: state.albums.map((a) => (albums.includes(a) && a.itemIds.some((i) => items[i].state === 'queued') ? { ...a, state: 'running' } : a)) })
-  void run()
+/** Upload: start the batch. */
+export function start() {
+  set({ started: true, paused: false, authError: false })
+  resetSpeed()
+  kick()
+  finishIfIdle()
 }
 
-/** Stop: tracks not finished go back to review; finished ones are still added. */
-export function cancel() {
-  controller?.abort()
+/** Pause all: stop every transfer, keeping what Drive already has. */
+export function pause() {
+  if (!state.started) return
+  set({ paused: true, speed: null })
+  for (const c of ctrls.values()) c.abort()
+}
+/** Resume after Pause all. */
+export function resume() {
+  set({ paused: false, authError: false })
+  resetSpeed()
+  kick()
+  finishIfIdle()
 }
 
-const OPUS_RATIO = 0.08 // Opus 160 ≈ 8% of a 16/44.1 FLAC, for the progress estimate
+/** The next track of a release to send (list order: disc, track). */
+function nextItem(a: UploadAlbum): UploadItem | undefined {
+  return uploadable(a, state).find((it) => it.state === 'ready')
+}
+function eligible(a: UploadAlbum) {
+  return !a.skipped && a.phase === 'pending' && !claimed.has(a.key) && !hasHeldDup(a, state) && !!nextItem(a)
+}
+const going = () => state.started && !state.paused
 
-async function run() {
-  if (state.running) return
-  controller = new AbortController()
-  const signal = controller.signal
-  const pending = () => Object.values(state.items).filter((i) => i.state === 'queued')
-  const total = () => Object.values(state.items).filter((i) => ['queued', 'encoding', 'uploading', 'uploaded'].includes(i.state) || (i.state === 'done' && runDone.has(i.id))).reduce((s, i) => s + i.size * (1 + OPUS_RATIO), 0)
-  const runDone = new Set<number>()
-  set({ running: true, run: { total: total(), sent: 0, speed: null, started: Date.now() } })
-
-  // upload speed from the bytes reported by all transfers
-  let lastT = performance.now()
-  let lastSent = 0
-  let sentBase = 0
-  const live = new Map<number, number>()
-  const report = () => {
-    const sent = sentBase + [...live.values()].reduce((s, n) => s + n, 0)
-    const now = performance.now()
-    let speed = state.run?.speed ?? null
-    if (now - lastT > 1500) {
-      const v = ((sent - lastSent) / (now - lastT)) * 1000
-      speed = speed == null ? v : speed * 0.6 + v * 0.4
-      lastT = now
-      lastSent = sent
-    }
-    set({ run: { total: total(), sent, speed, started: state.run?.started ?? Date.now() } }, true)
+/** Fill the two release slots. */
+function kick() {
+  while (going() && workers < 2 && state.albums.some(eligible)) {
+    workers++
+    void worker().finally(() => {
+      workers--
+      finishIfIdle()
+    })
   }
+}
 
-  const worker = async () => {
-    for (;;) {
-      if (signal.aborted) return
-      // album order, then track order
-      const next = state.albums.flatMap((a) => a.itemIds).map((i) => state.items[i]).find((i) => i?.state === 'queued')
-      if (!next) return
-      const album = state.albums.find((a) => a.itemIds.includes(next.id))!
-      patchItem(next.id, { state: state.opus ? 'encoding' : 'uploading', progress: 0 })
-      try {
-        await one(next.id, album.key, signal, (bytes) => {
-          live.set(next.id, bytes)
-          report()
-        })
-        runDone.add(next.id)
-      } catch (e) {
-        const aborted = signal.aborted || (e as Error).name === 'AbortError'
-        patchItem(next.id, aborted ? { state: 'ready', progress: 0 } : { state: 'error', progress: 0, error: errorText(e) })
-        if (e instanceof AuthError) controller?.abort()
-      } finally {
-        sentBase += live.get(next.id) ?? 0
-        live.delete(next.id)
-        report()
+async function worker() {
+  for (;;) {
+    if (!going()) return
+    const a = state.albums.find(eligible)
+    if (!a) return
+    claimed.add(a.key)
+    try {
+      for (;;) {
+        const cur = albumOf(a.key)
+        if (!going() || !cur || cur.skipped || hasHeldDup(cur, state)) break
+        const it = nextItem(cur)
+        if (!it) break
+        await runItem(it.id, cur.key)
       }
-      if (!state.albums.find((a) => a.key === album.key)?.itemIds.some((i) => ['queued', 'encoding', 'uploading'].includes(state.items[i].state))) {
-        void finishAlbum(album.key)
-      }
+    } finally {
+      claimed.delete(a.key)
     }
+    maybeCommit(a.key)
   }
-  await Promise.all([worker(), worker()])
-  // cancelled: what was still queued goes back to review
-  for (const it of pending()) patchItem(it.id, { state: 'ready', progress: 0 })
-  // albums the workers didn't get to the end of (cancelled): add what went up, the rest back to review
-  for (const a of state.albums) if (a.state === 'running') void finishAlbum(a.key)
-  await commits
-  controller = null
-  set({ running: false, run: null })
-  // more was queued while we were finishing (e.g. Add on a second album)
-  if (pending().length) void run()
+}
+
+/** Nothing left to send (and nothing being read): the batch is through, the button goes back to Upload. */
+function finishIfIdle() {
+  if (!state.started || workers > 0 || state.reading > 0) return
+  if (state.paused) return
+  if (state.albums.some(eligible)) return
+  set({ started: false, speed: null })
+}
+
+async function runItem(id: number, key: string) {
+  const ctrl = new AbortController()
+  ctrls.set(id, ctrl)
+  patchItem(id, { state: state.opus && !state.items[id]?.resume?.opus ? 'encoding' : 'uploading', error: undefined })
+  try {
+    await one(id, key, ctrl.signal)
+  } catch (e) {
+    const aborted = ctrl.signal.aborted || (e as Error).name === 'AbortError'
+    if (aborted) patchItem(id, { state: 'ready' }) // keeps progress + resume handles
+    else if (e instanceof AuthError) {
+      patchItem(id, { state: 'ready' })
+      set({ paused: true, authError: true, speed: null })
+      for (const c of ctrls.values()) c.abort()
+    } else patchItem(id, { state: 'error', progress: 0, error: errorText(e), resume: undefined })
+  } finally {
+    ctrls.delete(id)
+  }
 }
 
 const errorText = (e: unknown) => (e instanceof AuthError ? 'Google session expired — sign in, then retry' : (e as Error).message || 'Upload failed')
 
-/** Encode + upload one track. `onBytes` = bytes sent so far for this track. */
-async function one(id: number, key: string, signal: AbortSignal, onBytes: (n: number) => void) {
+export const OPUS_RATIO = 0.08 // Opus 160 ≈ 8% of a 16/44.1 FLAC, for the progress estimate
+
+/** Encode + upload one track (picking up a paused one where it stopped). */
+async function one(id: number, key: string, signal: AbortSignal) {
   const it = state.items[id]
-  const a = state.albums.find((x) => x.key === key)!
+  const a = albumOf(key)!
   const m = effective(a, it.meta!)
   await prepareAlbum(key)
+  signal.throwIfAborted()
   const artistDir = safeName(m.albumArtist)
   const albumDir = safeName(m.album)
   const base = it.name.replace(/\.flac$/i, '')
-  const est = it.size * (1 + OPUS_RATIO)
+  const res = { ...it.resume }
 
-  let opus: Blob | null = null
-  if (state.opus) {
+  let opus: Blob | null = res.opus ?? null
+  if (state.opus && !opus && !it.mobile) {
     opus = await flacToOpus(it.file, {
       comments: opusComments(a, it),
       inputRate: it.info?.sampleRate,
       signal,
-      onProgress: (r) => patchItem(id, { progress: r * 0.12 }, true),
+      onProgress: (r) => {
+        patchItem(id, { progress: r * 0.12 }, true)
+        sample()
+      },
     })
+    res.opus = opus
+    patchItem(id, { resume: { ...res } })
   }
   signal.throwIfAborted()
-  patchItem(id, { state: 'uploading', progress: 0.12 })
+  patchItem(id, { state: 'uploading', progress: Math.max(0.12, state.items[id].progress) })
   const both = it.size + (opus?.size ?? 0)
   const prog = (sent: number) => {
     patchItem(id, { progress: 0.12 + 0.88 * (sent / both) }, true)
-    onBytes((sent / both) * est)
+    sample()
   }
-  const flac = await putFile({ name: `${base}.flac`, parts: ['library', artistDir, albumDir], mime: 'audio/flac', data: it.file, signal, onProgress: (n) => prog(n) })
-  let mobile: Uploaded | undefined
-  if (opus) mobile = await putFile({ name: `${base}.opus`, parts: ['mobile', artistDir, albumDir], mime: 'audio/ogg', data: opus, signal, onProgress: (n) => prog(it.size + n) })
-  patchItem(id, { state: 'uploaded', progress: 1, flac, mobile })
-  onBytes(est)
+  let flac = it.flac
+  if (!flac) {
+    flac = await putFile({
+      name: `${base}.flac`,
+      parts: ['library', artistDir, albumDir],
+      mime: 'audio/flac',
+      data: it.file,
+      signal,
+      resume: res.flacUrl,
+      onSession: (url) => patchItem(id, { resume: { ...(state.items[id].resume ?? {}), flacUrl: url } }),
+      onProgress: (n) => prog(n),
+    })
+    patchItem(id, { flac })
+  }
+  let mobile = it.mobile
+  if (opus && !mobile) {
+    mobile = await putFile({
+      name: `${base}.opus`,
+      parts: ['mobile', artistDir, albumDir],
+      mime: 'audio/ogg',
+      data: opus,
+      signal,
+      resume: res.mobileUrl,
+      onSession: (url) => patchItem(id, { resume: { ...(state.items[id].resume ?? {}), mobileUrl: url } }),
+      onProgress: (n) => prog(it.size + n),
+    })
+  }
+  patchItem(id, { state: 'uploaded', progress: 1, flac, mobile, resume: undefined })
 }
 
-/** Once per album: upload the cover if the catalogue album has none. */
+/* speed (bytes/s) from the progress of every track, smoothed */
+let lastT = 0
+let lastSent = 0
+function resetSpeed() {
+  lastT = 0
+  lastSent = 0
+}
+export function sentBytes(s: UploadState) {
+  let n = 0
+  for (const it of Object.values(s.items)) if (it.state !== 'dup') n += it.size * (1 + OPUS_RATIO) * (it.state === 'done' || it.state === 'uploaded' ? 1 : it.progress)
+  return n
+}
+function sample() {
+  const now = performance.now()
+  if (lastT && now - lastT < 1500) return
+  const sent = sentBytes(state)
+  if (lastT) {
+    const v = ((sent - lastSent) / (now - lastT)) * 1000
+    if (v >= 0) set({ speed: state.speed == null ? v : state.speed * 0.6 + v * 0.4 }, true)
+  }
+  lastT = now
+  lastSent = sent
+}
+
+/** Once per release: upload the cover if the catalogue album has none. */
 function prepareAlbum(key: string): Promise<string | null> {
   let p = prepared.get(key)
   if (!p) {
     p = (async () => {
-      const a = state.albums.find((x) => x.key === key)!
+      const a = albumOf(key)!
       const existing = libraryStore.get().data?.albums[a.albumId]
       if (existing?.cover || !a.cover) return existing?.cover ?? null
       try {
@@ -552,13 +737,22 @@ async function squareJpeg(img: Blob, size: number): Promise<Blob> {
   return canvas.convertToBlob({ type: 'image/jpeg', quality: 0.9 })
 }
 
-/** Write the album's uploaded tracks into library.json (serialised with other albums). */
+/** Add the release to the library if it's ready: all files up and no open issue. */
+function maybeCommit(key: string) {
+  const a = albumOf(key)
+  if (!a || !canCommit(a, state, libraryStore.get().data)) return
+  patchAlbum(key, { phase: 'adding' })
+  void finishAlbum(key)
+}
+
+/** Write the release's uploaded tracks into library.json (serialised with other releases). */
 function finishAlbum(key: string): Promise<void> {
   commits = commits.then(async () => {
-    const a = state.albums.find((x) => x.key === key)
+    const a = albumOf(key)
     if (!a) return
-    const ready = a.itemIds.map((i) => state.items[i]).filter((i) => i.state === 'uploaded')
-    const failed = a.itemIds.filter((i) => state.items[i].state === 'error').length
+    const ready = uploadable(a, state).filter((i) => i.state === 'uploaded')
+    const failed = uploadable(a, state).filter((i) => i.state === 'error').length
+    let ok = false
     if (ready.length) {
       let coverId: string | null = null
       try {
@@ -578,16 +772,19 @@ function finishAlbum(key: string): Promise<void> {
         const w = await updateCatalogue((c) => merge(c, a, ready, coverId, artistPatch), { data: lib.data, version: lib.fileVersion })
         libraryStore.adopt(w.data, w.fileId, w.version)
         for (const it of ready) patchItem(it.id, { state: 'done' })
+        ok = true
       } catch (e) {
         for (const it of ready) patchItem(it.id, { state: 'error', error: `Uploaded, but library.json wasn’t updated: ${errorText(e)}` })
       }
     }
-    const items = a.itemIds.map((i) => state.items[i])
-    const st: AlbumState = items.some((i) => i.state === 'error') ? 'error' : items.some((i) => i.state === 'ready') ? 'review' : 'done'
-    patchAlbum(key, { state: st, inLibrary: !!libraryStore.get().data?.albums[a.albumId] })
+    const cur = albumOf(key)!
+    // tracks joined meanwhile ("Add missing file") → back to pending; else added
+    const left = uploadable(cur, state).filter((i) => i.state !== 'done' && !(i.state === 'error' && cur.resolved.failed))
+    patchAlbum(key, { phase: ok && !left.length ? 'added' : 'pending', inLibrary: !!libraryStore.get().data?.albums[cur.albumId], resolved: ok ? { ...cur.resolved, failed: false } : cur.resolved })
     prepared.delete(key)
-    const added = items.filter((i) => i.state === 'done' && ready.includes(i)).length
-    if (added) settle.forEach((l) => l({ key, albumId: a.albumId, title: a.title, added, failed }))
+    if (ok) settle.forEach((l) => l({ key, albumId: a.albumId, title: a.title, added: ready.length, failed }))
+    kick()
+    finishIfIdle()
   })
   return commits
 }
@@ -600,7 +797,7 @@ function artistImages(a: UploadAlbum, m: TrackMeta): Promise<ArtistPatch | null>
   return prepareArtist(data?.artists[a.artistId], a.artistId, m.albumArtist, [...titles], { photo: a.artistPhoto, bg: a.artistBg })
 }
 
-/** Same entries as tools/import/src/import.js. */
+/** Same entries as tools/import/src/import.js. A replaced track keeps its id (plays, likes, playlists) and addedAt. */
 function merge(c: Catalogue, a: UploadAlbum, ready: UploadItem[], coverId: string | null, artistPatch: ArtistPatch | null = null) {
   const now = new Date().toISOString()
   const first = effective(a, ready[0].meta!)
@@ -631,7 +828,7 @@ function merge(c: Catalogue, a: UploadAlbum, ready: UploadItem[], coverId: strin
       flac: { id: it.flac!.id, size: it.flac!.size, sampleRate: m.sampleRate, bitDepth: m.bitDepth },
       ...(it.mobile ? { mobile: { id: it.mobile.id, size: it.mobile.size, codec: 'opus' as const, bitrate: '160k' } } : {}),
       source: { path: sourcePath(it, m), size: it.size, mtime: it.file.lastModified },
-      addedAt: now,
+      addedAt: c.tracks[it.trackId!]?.addedAt ?? now,
     }
     c.tracks[t.id] = JSON.parse(JSON.stringify(t)) as Track // drop undefined fields like the importer's JSON
   }
@@ -670,32 +867,19 @@ export function useUpload(): UploadState {
   return useSyncExternalStore(uploadStore.subscribe, uploadStore.get, uploadStore.get)
 }
 
-/** Progress of the current run for the toast / sidebar: tracks done of total, and 0..1. */
-export function runSummary(s: UploadState) {
-  const inRun = Object.values(s.items).filter((i) => ['queued', 'encoding', 'uploading', 'uploaded'].includes(i.state) || (i.state === 'done' && s.running))
-  const active = s.albums.find((a) => a.itemIds.some((i) => ['encoding', 'uploading'].includes(s.items[i]?.state)))
-  const albums = s.albums.filter((a) => a.state === 'running')
-  const tracks = albums.flatMap((a) => a.itemIds.map((i) => s.items[i])).filter((i) => i.state !== 'dup' && i.state !== 'ready' && i.state !== 'invalid')
-  const done = tracks.filter((i) => i.state === 'uploaded' || i.state === 'done' || i.state === 'error').length
-  return {
-    active: active ?? albums[0] ?? null,
-    done,
-    total: tracks.length,
-    ratio: s.run && s.run.total ? Math.min(1, s.run.sent / s.run.total) : 0,
-    any: inRun.length > 0,
-  }
-}
+const busy = (s: UploadState) => Object.values(s.items).some((i) => i.state === 'encoding' || i.state === 'uploading')
 
-// Leaving or reloading the page mid-upload loses the run: ask first.
+// Leaving or reloading the page mid-upload loses the batch: ask first.
 window.addEventListener('beforeunload', (e) => {
-  if (state.running) e.preventDefault()
+  if (busy(state) || (state.started && !state.paused)) e.preventDefault()
 })
 
 onAccountReset(() => {
-  controller?.abort()
+  for (const c of ctrls.values()) c.abort()
   for (const a of state.albums) if (a.coverUrl) URL.revokeObjectURL(a.coverUrl)
   prepared.clear()
+  claimed.clear()
   resetFolders()
-  state = { ...state, albums: [], items: {}, selected: null, reading: 0, skipped: 0 }
+  state = { ...INITIAL, opus: state.opus }
   emit()
 })
