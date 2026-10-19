@@ -238,7 +238,6 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
                 songTrack && (
                   <>
                     <div className="np-text">
-                      <div className="np-badges t-mono">{badges}</div>
                       <HeroTitle title={songTrack.title} phone={phone} />
                       <HeroSub
                         text={`${songTrack.artist}\n${songAlbum?.title ?? ''}`}
@@ -283,7 +282,6 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
                   className="np-vol"
                 />
               </div>
-              {phone && <div className="np-dj-hint">{dj.on ? 'TAP DJ TO SKIP THIS SESSION · HOLD FOR THE DJ PANEL' : 'TAP DJ TO START'}</div>}
             </div>
           </section>
           {nextTitle && (
