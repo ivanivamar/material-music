@@ -52,7 +52,8 @@ export function DjButton({ variant, className }: { variant: Variant; className?:
     setPressed(false)
   }
 
-  const counter = on ? (view.intro ? 'INTRO' : `${view.songIndex + 1}/${view.songCount}`) : null
+  // no "3/7": how long a session is stays a surprise
+  const counter = on && view.intro ? 'INTRO' : null
   const labelled = variant !== 'bar'
   const tip = variant === 'phone' ? null : on ? ['Skip this session', 'RIGHT-CLICK · DJ PANEL'] : variant === 'bar' ? ['DJ', 'ENDLESS SESSIONS FROM YOUR LIBRARY'] : null
 

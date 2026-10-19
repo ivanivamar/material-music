@@ -57,7 +57,7 @@ export function MiniPlayer() {
   const frac = intro ? introProgress.frac : track?.duration ? Math.min(1, p.position / track.duration) : 0
   const state = p.buffering ? 'buffering' : p.playing ? 'playing' : 'paused'
   const title = intro ? (dj.session?.title ?? 'DJ') : track!.title
-  const chip = dj.on ? <span className="mini-dj">{intro ? 'DJ · INTRO' : `DJ · ${dj.songIndex + 1}/${dj.songCount}`}</span> : null
+  const chip = dj.on ? <span className="mini-dj">{intro ? 'DJ · INTRO' : 'DJ'}</span> : null
 
   return (
     <div
@@ -88,7 +88,7 @@ export function MiniPlayer() {
         <Marquee className="mini-title" text={title} />
         {intro && id && dj.session ? (
           <span className="mini-sub-row">
-            <IntroSub item={id} count={dj.songCount} withCount={false} />
+            <IntroSub item={id} />
             {chip}
           </span>
         ) : dj.on ? (

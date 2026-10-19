@@ -32,7 +32,7 @@ import { useDjUi, useDjView, djUi } from '../state/djUi'
 import { isIntroId } from '../state/player'
 import { djIntroInfo } from '../state/dj'
 import { useIntroAudio } from '../dj/voice'
-import { DjIcon, Segments } from '../dj/DjMark'
+import { DjIcon } from '../dj/DjMark'
 import { DjIntroInfo, DjIntroLyrics, LiveMark } from '../dj/DjIntro'
 import { DjStart } from '../dj/DjStart'
 import { useIntroLive } from '../dj/live'
@@ -137,7 +137,8 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
 
   const nextIdx = p.index + 1 < p.queue.length ? p.index + 1 : p.repeat === 'all' && p.queue.length > 1 ? 0 : -1
   const nextItem = nextIdx >= 0 ? p.queue[nextIdx] : null
-  const nextTitle = nextItem ? (isIntroId(nextItem) ? `DJ · ${djIntroInfo(nextItem)?.title ?? 'Next session'}` : data?.tracks[nextItem]?.title) : undefined
+  // while the DJ plays there's no NEXT line: it would give away when a session ends
+  const nextTitle = dj.on ? undefined : nextItem ? (isIntroId(nextItem) ? `DJ · ${djIntroInfo(nextItem)?.title ?? 'Next session'}` : data?.tracks[nextItem]?.title) : undefined
 
   const quality = songTrack ? (
     <QualityBadge kind={qualityKind('flac', songTrack.flac?.bitDepth, songTrack.flac?.sampleRate)}>{qualityLabel('flac', { bitDepth: songTrack.flac?.bitDepth, sampleRate: songTrack.flac?.sampleRate })}</QualityBadge>
@@ -159,7 +160,6 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
     <>
       {quality}
       {dj.addedByUser && <span className="dj-mine">ADDED BY YOU</span>}
-      <Segments count={dj.songCount} index={dj.songIndex} />
     </>
   ) : (
     <>
@@ -171,7 +171,6 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
   const kicker = startView ? 'DJ' : dj.on ? (dj.addedByUser ? 'PLAYING FROM DJ · ADDED BY YOU' : 'PLAYING FROM DJ') : ctx.kicker
   const fromLabel = startView ? 'Choose how to start' : ctx.label
   const backToNp = startView && hasSomething
-  const sessionCount = `${dj.songCount} ${dj.songCount === 1 ? 'SONG' : 'SONGS'}`
 
   return (
     <div
@@ -302,7 +301,7 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
                 {intro && item ? <LiveMark item={item} size={40} active={ly} /> : cover ? <img className="npp-strip-cover" src={cover} alt="" /> : <span className="npp-strip-cover np-cover-empty" aria-hidden />}
                 <div className="npp-strip-text">
                   <Marquee className="npp-strip-title" text={intro ? (dj.session?.title ?? 'DJ') : (songTrack?.title ?? '')} />
-                  <Marquee className="npp-strip-sub" text={intro ? `Spoken intro · ${sessionCount.toLowerCase()}` : (songTrack?.artist ?? '')} />
+                  <Marquee className="npp-strip-sub" text={intro ? 'Spoken intro' : (songTrack?.artist ?? '')} />
                 </div>
               </div>
             ) : (
@@ -318,7 +317,7 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
                   <span className="np-ly-cover np-cover-empty" aria-hidden />
                 )}
                 <div className="np-ly-text">
-                  {dj.on && <div className="np-ly-meta t-mono">{intro ? `DJ · INTRO · ${sessionCount}` : dj.addedByUser ? 'DJ · ADDED BY YOU' : 'PLAYING FROM DJ'}</div>}
+                  {dj.on && <div className="np-ly-meta t-mono">{intro ? 'DJ · INTRO' : dj.addedByUser ? 'DJ · ADDED BY YOU' : 'PLAYING FROM DJ'}</div>}
                   {intro ? (
                     <>
                       <div className="np-ly-title" title={dj.session?.title}>

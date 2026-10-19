@@ -161,7 +161,7 @@ export function DjStart({ phone, onBack }: { phone: boolean; onBack?: () => void
             <div className="djs-title">DJ</div>
           </div>
         </div>
-        <p className="djs-body">Endless sessions of 6–9 songs from your library, each with a short spoken intro. The queue waits until you stop.</p>
+        <p className="djs-body">Endless themed sessions from your library, each with a short spoken intro. The queue waits until you stop.</p>
         {banner}
         <button type="button" className="djs-go" disabled={starting} onClick={() => void start()}>
           <DjIcon dark />
@@ -178,7 +178,7 @@ export function DjStart({ phone, onBack }: { phone: boolean; onBack?: () => void
     <section className="djs pg-anim">
       <div className="djs-left">
         <DjMark size={420} idle fluid />
-        <div className="djs-mono is-dim">SESSIONS OF 6–9 SONGS · A SHORT SPOKEN INTRO BEFORE EACH</div>
+        <div className="djs-mono is-dim">THEMED SESSIONS · A SHORT SPOKEN INTRO BEFORE EACH</div>
       </div>
       <div className="djs-right">
         <div className="djs-head">

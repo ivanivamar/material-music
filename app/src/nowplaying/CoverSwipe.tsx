@@ -264,7 +264,9 @@ export function CoverSwipe({ glow }: { cover: string | null; glow: string }) {
   const slots = []
   for (let i = 0; i < n; i++) {
     const near = Math.abs(i - shown) <= NEAR || Math.abs(i - p.index) <= NEAR
-    slots.push(<Slot key={i} trackId={near ? p.queue[i] : null} glow={i === p.index ? glow : null} />)
+    // DJ: upcoming rows stay blank, so swiping ahead can't show where a session ends
+    const hidden = p.context?.kind === 'dj' && i > p.index
+    slots.push(<Slot key={i} trackId={near && !hidden ? p.queue[i] : null} glow={i === p.index ? glow : null} />)
   }
 
   return (

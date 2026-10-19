@@ -68,20 +68,17 @@ function VoiceRow({ live, playing, phone }: { live: IntroLive; playing: boolean;
   )
 }
 
-/** Right column during the intro: DJ chip · INTRO · SESSION n (· SKIPPED · …), title, "7 songs", the line, the voice. */
+/** Right column during the intro: DJ chip · INTRO · SESSION n (· SKIPPED · …), title, type, the line, the voice. No song counts anywhere. */
 export function DjIntroInfo({ item, view, playing, phone }: { item: string; view: DjView; playing: boolean; phone: boolean }) {
   const live = useIntroLive(item, true)
   const s = view.session
   if (!s) return null
-  const n = `${view.songCount} ${view.songCount === 1 ? 'song' : 'songs'}`
   return (
     <div className="dji">
       {phone ? (
         <div className="dji-head">
           <div className="dji-title is-phone">{s.title}</div>
-          <div className="dji-mono t-mono">
-            {n} · {TYPE_UPPER[s.kind]}
-          </div>
+          <div className="dji-mono t-mono">{TYPE_UPPER[s.kind]}</div>
         </div>
       ) : (
         <div className="dji-head">
@@ -93,7 +90,6 @@ export function DjIntroInfo({ item, view, playing, phone }: { item: string; view
           </div>
           <div className="dji-title">{s.title}</div>
           <div className="dji-count-row">
-            <span className="dji-n">{n}</span>
             <span className="t-mono">{TYPE_UPPER[s.kind]}</span>
           </div>
         </div>
@@ -145,14 +141,14 @@ export function LiveMark({ item, size, radius, shadow, fluid, active = true }: {
   return <DjMark size={size} speaking={live.kind !== 'silent' && !!live.kind && live.speaking} level={live.level} radius={radius} shadow={shadow} fluid={fluid} />
 }
 
-/** Player bar / mini-player sub line during the intro: 10 level bars + "DJ is speaking · 7 songs". */
-export function IntroSub({ item, count, withCount }: { item: string; count: number; withCount: boolean }) {
+/** Player bar / mini-player sub line during the intro: 10 level bars + "DJ is speaking". */
+export function IntroSub({ item }: { item: string }) {
   const live = useIntroLive(item, true)
   const text = live.kind === 'silent' ? 'Text intro' : 'DJ is speaking'
   return (
     <span className="dj-introsub">
       {live.kind !== 'silent' && <LevelBars n={10} height={10} level={live.level} speaking={live.speaking} t={live.t} className="is-mini" />}
-      <span className="dj-introsub-t">{withCount ? `${text} · ${count} ${count === 1 ? 'song' : 'songs'}` : text}</span>
+      <span className="dj-introsub-t">{text}</span>
     </span>
   )
 }

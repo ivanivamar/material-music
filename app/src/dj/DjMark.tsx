@@ -141,14 +141,3 @@ export function LevelBars({ n, height, level, speaking, t, className }: { n: num
     </span>
   )
 }
-
-/** Session progress: one 12×1.5px segment per song (played · current · upcoming). */
-export function Segments({ count, index, fluid }: { count: number; index: number; fluid?: boolean }) {
-  return (
-    <span className={`dj-segs ${fluid ? 'is-fluid' : ''}`} aria-label={index >= 0 ? `Song ${index + 1} of ${count}` : `${count} songs`}>
-      {Array.from({ length: count }, (_, i) => (
-        <span key={i} className={i < index ? 'is-done' : i === index ? 'is-now' : ''} />
-      ))}
-    </span>
-  )
-}

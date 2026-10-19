@@ -33,7 +33,7 @@ export function PlayerBar() {
   const introAudio = useIntroAudio(intro && id ? djIntroInfo(id)?.sessionId : null)
   const duration = intro ? (introAudio?.duration ?? 0) : (track?.duration ?? 0)
   const empty = !track && !intro
-  const djChip = dj.on ? <span className="dj-chip">{intro ? 'DJ · INTRO' : `DJ · ${dj.songIndex + 1}/${dj.songCount}`}</span> : null
+  const djChip = dj.on ? <span className="dj-chip">{intro ? 'DJ · INTRO' : 'DJ'}</span> : null
 
   const onPlay = () => {
     if (!playerStore.hasEngine()) {
@@ -77,7 +77,7 @@ export function PlayerBar() {
                 {djChip}
               </div>
               <div className="pb-sub">
-                <IntroSub item={id} count={dj.songCount} withCount />
+                <IntroSub item={id} />
               </div>
             </div>
           </>

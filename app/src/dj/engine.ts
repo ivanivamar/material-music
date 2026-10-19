@@ -603,9 +603,7 @@ function pick<T>(xs: T[], rng: Rng): T {
 }
 
 function describe(theme: Theme, songs: DjTrack[], lib: DjLibrary, mode: Mode, ctx: BuildContext, rng: Rng, shortage: { have: number; kind: ThemeKind } | null): { title: string; line: string; note: string | null } {
-  const n = songs.length
-  const N = cap(numWord(n))
-  const nw = numWord(n)
+  // never say how many songs a session has (Ivan doesn't want to know)
   const first = songs[0]?.artist ?? ''
   const gname = (k: string) => lib.genreByKey.get(k)?.name ?? k
   const decade = theme.decade ?? dominant(songs.map((t) => decadeOf(t.year)).filter((d): d is number => !!d), 0.6)
@@ -621,9 +619,9 @@ function describe(theme: Theme, songs: DjTrack[], lib: DjLibrary, mode: Mode, ct
       title = flavour ? `Never played · ${flavour}` : 'Never played'
       line = pick(
         [
-          `${N} songs you've never played${flavour ? `. Mostly ${flavour}` : ''}. ${start}`,
-          `Next up, ${nw} songs you own and haven't played yet${flavour ? `, mostly ${flavour}` : ''}. ${start}`,
-          `Here are ${nw} you've never pressed play on. ${start}`,
+          `Songs you've never played${flavour ? `. Mostly ${flavour}` : ''}. ${start}`,
+          `Next up, songs you own and haven't played yet${flavour ? `, mostly ${flavour}` : ''}. ${start}`,
+          `Here are some you've never pressed play on. ${start}`,
         ],
         rng,
       )
@@ -631,17 +629,17 @@ function describe(theme: Theme, songs: DjTrack[], lib: DjLibrary, mode: Mode, ct
     }
     case 'forgotten': {
       const lasts = songs.map((t) => t.last).filter(Boolean).sort((a, b) => a - b)
-      if (lasts.length >= Math.ceil(n / 2)) {
+      if (lasts.length >= Math.ceil(songs.length / 2)) {
         const d = new Date(lasts[Math.floor(lasts.length / 2)])
         const when = `${SEASON[d.getMonth()]} ${d.getMonth() === 11 ? d.getFullYear() + 1 : d.getFullYear()}`
         title = `Forgotten · ${when}`
-        line = pick([`You played these back in ${when}, then stopped. ${N} songs from back then. ${start}`, `${N} songs you haven't heard since ${when}. ${start}`], rng)
+        line = pick([`You played these back in ${when}, then stopped. ${start}`, `Songs you haven't heard since ${when}. ${start}`], rng)
       } else if (lasts.length) {
         title = flavour ? `Forgotten · ${flavour}` : 'Forgotten'
-        line = `${N} songs you haven't played in a long while. ${start}`
+        line = `Songs you haven't played in a long while. ${start}`
       } else {
         title = flavour ? `Forgotten · ${flavour}` : 'Forgotten'
-        line = `Nothing has been gone long enough to be forgotten yet, so here are ${nw} you've never played. ${start}`
+        line = `Nothing has been gone long enough to be forgotten yet, so here are some you've never played. ${start}`
       }
       break
     }
@@ -652,7 +650,7 @@ function describe(theme: Theme, songs: DjTrack[], lib: DjLibrary, mode: Mode, ct
       )
       title = 'New arrivals'
       line = pick(
-        [`Fresh in the library: ${nw} new arrivals${artists ? `, and most of them are ${artists}` : ''}. ${start}`, `${N} songs you added recently${artists ? `, mostly ${artists}` : ''}. ${start}`],
+        [`Fresh in the library: new arrivals${artists ? `, and most of them are ${artists}` : ''}. ${start}`, `Songs you added recently${artists ? `, mostly ${artists}` : ''}. ${start}`],
         rng,
       )
       break
@@ -663,45 +661,44 @@ function describe(theme: Theme, songs: DjTrack[], lib: DjLibrary, mode: Mode, ct
       const era = theme.decade ? ` from the ${decadeName(theme.decade)}` : ''
       const learned = score(ctx.scores, `genre:${theme.genres?.[0]}`) > 1.5
       line = mode.genres.length
-        ? `You asked for ${list(names)}. ${N} songs${era}${names.length > 1 ? ', taking turns' : ''}. ${start}`
+        ? `You asked for ${list(names)}${era ? `. Here it is${era}` : ''}${names.length > 1 ? ', taking turns' : ''}. ${start}`
         : learned
-          ? `You kept the last ${names[0]} sets going, so here's more of that${era}. ${N} songs. ${start}`
-          : pick([`Some ${list(names)} now${era}. ${N} songs. ${start}`, `${cap(list(names))} for the next ${nw}${era}. ${start}`], rng)
+          ? `You kept the last ${names[0]} sets going, so here's more of that${era}. ${start}`
+          : pick([`Some ${list(names)} now${era}. ${start}`, `${cap(list(names))} for a while${era}. ${start}`], rng)
       break
     }
     case 'favourites':
       title = flavour ? `Favourites · ${flavour}` : 'Favourites'
-      line = pick([`${N} you keep coming back to. ${start}`, `Some of your most played, ${nw} of them. ${start}`], rng)
+      line = pick([`Songs you keep coming back to. ${start}`, `Some of your most played. ${start}`], rng)
       break
     case 'decade':
       title = `The ${decadeName(theme.decade ?? 2000)}`
-      line = pick([`Back to the ${decadeName(theme.decade ?? 2000)}. ${N} songs. ${start}`, `${N} songs from the ${decadeName(theme.decade ?? 2000)}. ${start}`], rng)
+      line = pick([`Back to the ${decadeName(theme.decade ?? 2000)}. ${start}`, `Songs from the ${decadeName(theme.decade ?? 2000)}. ${start}`], rng)
       break
     case 'artist': {
       const a = songs.find((t) => t.artistId === theme.artistId)?.artist ?? first
       title = `${a} and friends`
-      line = `A set built around ${a}, with a few neighbours in between. ${N} songs. ${start}`
+      line = `A set built around ${a}, with a few neighbours in between. ${start}`
       break
     }
     case 'wild':
       title = 'Wildcard'
-      line = `No theme this time. ${N} songs from anywhere in the library. ${start}`
+      line = `No theme this time, just songs from anywhere in the library. ${start}`
       break
   }
 
   if (shortage) {
-    const have = shortage.have
-    const H = numWord(have)
-    const what: Partial<Record<ThemeKind, [string, string, string]>> = {
-      never: [`never-played songs`, `forgotten ones`, `Only ${H} of these left that you've never played, so I've filled the rest with ones you've forgotten.`],
-      forgotten: [`forgotten songs`, `never-played ones`, `Only ${H} forgotten songs so far, so I've filled the rest with ones you've never played.`],
-      new: [`new arrivals`, `older songs`, `Only ${H} new arrivals, so the rest are older songs.`],
-      genre: [`${(theme.genres ?? []).map(gname).join(' and ')} songs`, `neighbouring genres`, `Only ${H} of those left, so I've mixed in some neighbours.`],
+    // no numbers: they would hint at how long the session is
+    const what: Partial<Record<ThemeKind, [string, string]>> = {
+      never: [`Running low on never-played songs, mixing in forgotten ones.`, `Running low on songs you've never played, so I've mixed in some you've forgotten.`],
+      forgotten: [`Few forgotten songs so far, mixing in never-played ones.`, `Not much is forgotten yet, so I've mixed in some you've never played.`],
+      new: [`Few new arrivals, mixing in older songs.`, `Not many new arrivals, so there are some older songs in here too.`],
+      genre: [`Running low on ${(theme.genres ?? []).map(gname).join(' and ')}, mixing in neighbouring genres.`, `Running low on those, so I've mixed in some neighbours.`],
     }
     const w = what[shortage.kind]
-    if (w && have > 0) {
-      note = `Only ${have} ${w[0]} left, mixing in ${w[1]}.`
-      line = `${w[2]} ${N} songs in all. ${start}`
+    if (w && shortage.have > 0) {
+      note = w[0]
+      line = `${w[1]} ${start}`
     }
   }
   if (ctx.lastSkipped) line = `${pick(['Fair enough, moving on.', 'Something else, then.', 'Right, changing it up.'], rng)} ${line}`

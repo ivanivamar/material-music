@@ -119,7 +119,7 @@ export function createHtmlAudioEngine(): PlayerEngine {
     if (!ms) return
     if (isIntroId(id)) {
       const info = djIntroInfo(id)
-      const meta = { title: info?.title ?? 'DJ', artist: `Pelagic DJ · intro${info ? ` · ${info.songs} songs` : ''}`, album: 'Pelagic DJ' }
+      const meta = { title: info?.title ?? 'DJ', artist: 'Pelagic DJ · intro', album: 'Pelagic DJ' }
       ms.metadata = new MediaMetadata(meta)
       void markPng().then((src) => {
         if (src && trackId === id) ms.metadata = new MediaMetadata({ ...meta, artwork: [{ src, sizes: '512x512', type: 'image/png' }] })

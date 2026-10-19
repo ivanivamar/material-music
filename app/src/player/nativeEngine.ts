@@ -54,7 +54,7 @@ function toItem(id: string, dj: boolean): NativeQueueItem {
       id,
       uri: introFiles.get(id) ?? 'https://www.googleapis.com/drive/v3/files/missing?alt=media',
       title: info?.title ?? 'DJ',
-      artist: `Pelagic DJ · intro${info ? ` · ${info.songs} songs` : ''}`,
+      artist: 'Pelagic DJ · intro',
       album: 'Pelagic DJ',
       artworkUri: markArt ?? undefined,
       dj: true,

@@ -3,7 +3,7 @@
  * Desktop: 400px popover 12px above the button (Esc / click outside closes). Phone: bottom sheet.
  *
  *   header      40px mark (speaking during the intro) · DJ · ON · SESSION 2 · INTRO
- *   NOW         session title, TYPE · n songs, segments
+ *   NOW         session title, type (no song counts, no progress segments)
  *   UP NEXT     the prepared next session (updates live when the types change)
  *   SESSION TYPES  multi-select, at least one on, from the next session
  *   Voice intros   toggle + voice volume
@@ -18,7 +18,6 @@ import { djLearned, djStore, useDj } from '../state/dj'
 import { djUi, useDjUi, useDjView } from '../state/djUi'
 import { isNative } from '../native/bridge'
 import { usePlayer } from '../state/player'
-import { Segments } from './DjMark'
 import { DJ_TYPES, TYPE_LABEL, TYPE_UPPER, type DjType } from './engine'
 import { LiveMark } from './DjIntro'
 
@@ -107,21 +106,14 @@ function PanelBody({ sheet }: { sheet: boolean }) {
       <div className="djp-sec">
         <div className="djp-k t-mono">NOW</div>
         <div className="djp-now">{s.title}</div>
-        <div className="djp-now-row">
-          {!sheet && (
-            <span className="djp-mono t-mono">
-              {TYPE_UPPER[s.kind]} · {view.songCount} SONGS
-            </span>
-          )}
-          <Segments count={view.songCount} index={view.songIndex} fluid />
-        </div>
+        <div className="djp-mono t-mono">{TYPE_UPPER[s.kind]}</div>
       </div>
       {view.next && (
         <div className="djp-sec is-tight">
           <div className="djp-k t-mono">UP NEXT</div>
           <div className="djp-next">{view.next.title}</div>
           <div className="djp-mono t-mono">
-            {TYPE_UPPER[view.next.kind]} · {view.next.songs.length + view.next.added.length} SONGS
+            {TYPE_UPPER[view.next.kind]}
           </div>
         </div>
       )}
@@ -265,7 +257,7 @@ export function DjPanelHost() {
         className={`djp pg-anim ${sheet ? 'is-sheet' : 'is-pop'}`}
         role="dialog"
         aria-label="DJ"
-        style={shown.kind === 'popover' ? { left: shown.left, bottom: shown.bottom } : undefined}
+        style={shown.kind === 'popover' ? { left: shown.left, bottom: shown.bottom, maxHeight: `calc(100dvh - ${shown.bottom + 16}px)` } : undefined}
         onContextMenu={(e) => e.preventDefault()}
       >
         {sheet && (
