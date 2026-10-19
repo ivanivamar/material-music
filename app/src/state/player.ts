@@ -345,6 +345,14 @@ export const playerStore = {
     const queue = state.queue.filter((_, k) => k !== i)
     set({ queue, index: i < state.index ? state.index - 1 : state.index })
   },
+  /** Put a track back at row `i` (Undo after a queue row was removed). */
+  insert(i: number, id: string) {
+    if (state.index < 0) return
+    const at = Math.max(0, Math.min(i, state.queue.length))
+    const queue = [...state.queue]
+    queue.splice(at, 0, id)
+    set({ queue, index: at <= state.index ? state.index + 1 : state.index })
+  },
   /** Drop everything after the current track. Returns what was removed (for "Restore queue"). */
   clearUpcoming(): string[] {
     if (state.index < 0) return []
