@@ -10,7 +10,7 @@
  */
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { Atmosphere } from '../components/Atmosphere'
-import { IconButton, SeekBar, Slider, Waveform, formatTime, seedFrom } from '../components/ui'
+import { IconButton, SeekBar, Slider, Waveform, formatTime } from '../components/ui'
 import { Icon } from '../design/icons'
 import { rgba, sceneBackground, useArtTint } from '../design/tint'
 import { useCover } from '../lib/covers'
@@ -231,7 +231,7 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
                       />
                     </div>
                     <div className="np-seek">
-                      <Waveform progress={frac} seed={seedFrom(songTrack.id)} onSeek={(f) => playerStore.seek(f * duration)} />
+                      <Waveform progress={frac} duration={duration} onSeek={(f) => playerStore.seek(f * duration)} />
                       <div className="np-times t-mono">
                         <span className="is-now">{formatTime(p.position)}</span>
                         <span>−{formatTime(Math.max(0, duration - p.position))}</span>

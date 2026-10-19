@@ -135,6 +135,26 @@
 }
 .slider-volume .slider-fill { background: var(--ink-primary); }
 .slider:focus-visible .slider-knob { outline: 1.5px solid #fff; outline-offset: 3px; }
+/* ── Tide-bar seek (full-screen player, Waveform.tsx) ─── */
+.tide { position: relative; width: 100%; touch-action: none; outline: none; }
+.tide-bar {
+  position: absolute; top: 50%; width: 2.5px; border-radius: 2px; transform: translateY(-50%);
+  background: rgba(255, 255, 255, .18);
+  transition: height .35s var(--ease), background-color .35s var(--ease), box-shadow .35s var(--ease);
+}
+.tide.is-drag .tide-bar { transition-duration: .12s; }
+.tide-tip {
+  position: absolute; top: -6px; transform: translate(-50%, -4px);
+  font-family: var(--font-mono); font-size: var(--fs-mono-sm); letter-spacing: .08em; font-variant-numeric: tabular-nums;
+  color: var(--ink-primary); white-space: nowrap; pointer-events: none;
+  opacity: 0; transition: opacity .2s var(--ease), transform .2s var(--ease);
+}
+.tide-tip.is-on { opacity: 1; transform: translate(-50%, 0); }
+.tide:focus-visible { outline: 1.5px solid rgba(255, 255, 255, .5); outline-offset: 6px; border-radius: 4px; }
+@media (prefers-reduced-motion: reduce) {
+  html:not([data-motion='full']) .tide-bar, html:not([data-motion='full']) .tide-tip { transition: none; }
+}
+html[data-motion='reduced'] .tide-bar, html[data-motion='reduced'] .tide-tip { transition: none; }
 .seekrow { display: flex; align-items: center; gap: 14px; width: 100%; }
 .seekrow-sm { gap: 12px; }
 .time { font-family: var(--font-mono); font-size: var(--fs-mono); color: var(--ink-secondary); font-variant-numeric: tabular-nums; flex: none; }
