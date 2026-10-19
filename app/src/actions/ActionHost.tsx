@@ -27,6 +27,7 @@ import { actions, useActions, type ActionTarget } from './actions'
 import { EditPlaylistDialog, NewPlaylistDialog, RemoveDialog } from './Dialogs'
 import { GenreDialog } from './GenreDialog'
 import { SmartDialog } from './SmartDialog'
+import { useDjView } from '../state/djUi'
 import { addToPlaylist, createPlaylist, deletePlaylist, downloadTrack, goTo, playPlaylist, queueTracks, removeFromPlaylist, removeTrackDownload } from './ops'
 import { playList } from '../pages/library/playback'
 import './actions.css'
@@ -37,6 +38,8 @@ interface Item {
   icon: IconName
   label: string
   hint?: string
+  /** gold mono line under the label while the DJ plays (where the songs go) */
+  djHint?: string
   danger?: boolean
   /** opens the Add to playlist list */
   picker?: boolean
@@ -253,7 +256,14 @@ function useDescribed(target: ActionTarget): Described | null {
   const toast = useToast()
   const { byId } = usePlaylists()
   const dl = useDownloads()
-  return useMemo(() => (data ? describe(target, data, toast, byId, dl) : null), [data, target, toast, byId, dl])
+  const djOn = useDjView().on
+  return useMemo(() => {
+    const d = data ? describe(target, data, toast, byId, dl) : null
+    if (!d || !djOn) return d
+    // DJ playing: Play next / Add to queue join the session
+    const hint = (r: Row): Row => (r === 'div' ? r : r.label === 'Play next' ? { ...r, djHint: 'INSIDE THIS DJ SESSION' } : r.label === 'Add to queue' ? { ...r, djHint: 'END OF THIS DJ SESSION' } : r)
+    return { ...d, rows: d.rows.map(hint) }
+  }, [data, target, toast, byId, dl, djOn])
 }
 
 function HeadCover({ d, size }: { d: Described; size: number }) {
@@ -406,7 +416,14 @@ function Menu({ target, at, picker }: { target: ActionTarget; at: { x: number; y
               <span className="am-ic">
                 <Icon name={r.icon} />
               </span>
-              <span className="am-label">{r.label}</span>
+              {r.djHint ? (
+                <span className="am-label-col">
+                  <span className="am-label">{r.label}</span>
+                  <span className="am-dj">{r.djHint}</span>
+                </span>
+              ) : (
+                <span className="am-label">{r.label}</span>
+              )}
               {r.hint && <span className="am-hint">{r.hint}</span>}
               {r.picker && (
                 <span className="am-chev">
@@ -545,7 +562,14 @@ function Sheet({ target, picker }: { target: ActionTarget; picker: boolean }) {
                     <span className="as-ic">
                       <Icon name={r.icon} />
                     </span>
-                    <span className="as-label">{r.label}</span>
+                    {r.djHint ? (
+                      <span className="as-label-col">
+                        <span className="as-label">{r.label}</span>
+                        <span className="as-dj">{r.djHint}</span>
+                      </span>
+                    ) : (
+                      <span className="as-label">{r.label}</span>
+                    )}
                     {r.picker && (
                       <span className="as-chev">
                         <Icon name="chevR" />

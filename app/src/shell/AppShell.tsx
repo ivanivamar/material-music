@@ -22,6 +22,8 @@ import { nativeUpdates, useNativeUpdates } from '../native/updates'
 
 import { Sidebar } from './Sidebar'
 import { ActionHost } from '../actions/ActionHost'
+import { DjPanelHost } from '../dj/DjPanel'
+import { djStore } from '../state/dj'
 import { albumHref, go, href, navKeyOf, type Route } from './routes'
 import { albumOffline, downloadsStore, qualityOf, trackOffline } from '../state/downloads'
 import { fmtBytes, plural } from '../state/views'
@@ -260,6 +262,28 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
     [toast],
   )
 
+  // DJ stopped (step 22): by Stop DJ, or because something else was played
+  useEffect(
+    () =>
+      djStore.onNotice((n) => {
+        if (n.reason === 'user')
+          toast.show({
+            icon: 'dj',
+            tone: 'dj',
+            text: n.label ? `DJ stopped. Back to ${n.label}, where you left off.` : 'DJ stopped.',
+            action: { label: 'Start again', onClick: () => void djStore.start() },
+          })
+        else if (n.reason === 'replaced')
+          toast.show({
+            icon: 'dj',
+            tone: 'dj',
+            text: n.label ? `DJ stopped because you played ${n.label}.` : 'DJ stopped.',
+            action: { label: 'Resume DJ', onClick: () => void djStore.start(n.mode ?? {}) },
+          })
+      }),
+    [toast],
+  )
+
   // Space toggles playback (unless typing or a control has focus)
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -399,6 +423,7 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
       <NowPlaying />
       <QueuePanel />
       <ActionHost />
+      <DjPanelHost />
     </div>
   )
 }

@@ -24,7 +24,8 @@ import { useCover } from '../lib/covers'
 import { useArtTint } from '../design/tint'
 import { useLibrary } from '../state/library'
 import { useMotion } from '../state/motion'
-import { playerStore } from '../state/player'
+import { isIntroId, playerStore } from '../state/player'
+import { LiveMark } from '../dj/DjIntro'
 import { useCurrent } from './parts'
 
 const NEAR = 2 // slots either side that get their cover
@@ -276,6 +277,22 @@ export function CoverSwipe({ glow }: { cover: string | null; glow: string }) {
 }
 
 const Slot = memo(function Slot({ trackId, glow }: { trackId: string | null; glow: string | null }) {
+  if (isIntroId(trackId)) return <IntroSlot item={trackId} current={!!glow} />
+  return <CoverSlot trackId={trackId} glow={glow} />
+})
+
+/** DJ intro row: the mark stands in for a cover (speaking while it is the current row). */
+function IntroSlot({ item, current }: { item: string; current: boolean }) {
+  return (
+    <div className="npc-slot">
+      <div className="np-cover">
+        <LiveMark item={item} size={364} fluid active={current} />
+      </div>
+    </div>
+  )
+}
+
+const CoverSlot = memo(function CoverSlot({ trackId, glow }: { trackId: string | null; glow: string | null }) {
   const { data } = useLibrary()
   const t = trackId ? data?.tracks[trackId] : undefined
   const src = useCover(t ? data?.albums[t.albumId]?.cover : null)

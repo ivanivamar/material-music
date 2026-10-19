@@ -3,6 +3,7 @@ package com.ivan.pelagic;
 import android.app.PendingIntent;
 import android.content.Intent;
 import android.net.Uri;
+import android.os.Bundle;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -20,8 +21,14 @@ import androidx.media3.datasource.HttpDataSource;
 import androidx.media3.datasource.ResolvingDataSource;
 import androidx.media3.exoplayer.ExoPlayer;
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory;
+import androidx.media3.session.CommandButton;
 import androidx.media3.session.MediaSession;
 import androidx.media3.session.MediaSessionService;
+import androidx.media3.session.SessionCommand;
+import androidx.media3.session.SessionCommands;
+import androidx.media3.session.SessionResult;
+
+import com.google.common.collect.ImmutableList;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -50,6 +57,16 @@ import java.util.concurrent.Executors;
 public class PelagicPlaybackService extends MediaSessionService {
 
     private static final int MAX_SKIPS = 3;
+
+    /* DJ (step 22): media item extras set by PelagicPlayerPlugin.toItem */
+    static final String EXTRA_DJ = "pelagic.dj";
+    static final String EXTRA_INTRO = "pelagic.intro";
+    static final String EXTRA_VOLUME = "pelagic.volume";
+    /** "Skip session": the notification / lock-screen action while the DJ plays */
+    static final String ACTION_SKIP_SESSION = "com.ivan.pelagic.SKIP_SESSION";
+    private static final SessionCommand SKIP_SESSION = new SessionCommand(ACTION_SKIP_SESSION, Bundle.EMPTY);
+    private CommandButton skipButton;
+    private boolean djShown = false;
 
     private ExoPlayer player;
     private MediaSession session;
@@ -106,6 +123,16 @@ public class PelagicPlaybackService extends MediaSessionService {
                     skips = 0;
                 }
             }
+
+            @Override
+            public void onMediaItemTransition(@Nullable MediaItem mediaItem, int reason) {
+                updateDj();
+            }
+
+            @Override
+            public void onTimelineChanged(@NonNull androidx.media3.common.Timeline timeline, int reason) {
+                updateDj();
+            }
         });
 
         // tapping the media notification / lock-screen player brings the app to the front
@@ -120,6 +147,26 @@ public class PelagicPlaybackService extends MediaSessionService {
         session = new MediaSession.Builder(this, player)
             .setSessionActivity(openApp)
             .setCallback(new MediaSession.Callback() {
+                // every controller (notification, lock screen, Bluetooth) may send "Skip session"
+                @NonNull
+                @Override
+                public MediaSession.ConnectionResult onConnect(@NonNull MediaSession s, @NonNull MediaSession.ControllerInfo c) {
+                    MediaSession.ConnectionResult r = MediaSession.Callback.super.onConnect(s, c);
+                    if (!r.isAccepted) return r;
+                    SessionCommands cmds = r.availableSessionCommands.buildUpon().add(SKIP_SESSION).build();
+                    return MediaSession.ConnectionResult.accept(cmds, r.availablePlayerCommands);
+                }
+
+                @NonNull
+                @Override
+                public ListenableFuture<SessionResult> onCustomCommand(@NonNull MediaSession s, @NonNull MediaSession.ControllerInfo c, @NonNull SessionCommand command, @NonNull Bundle args) {
+                    if (ACTION_SKIP_SESSION.equals(command.customAction)) {
+                        skipSession();
+                        return Futures.immediateFuture(new SessionResult(SessionResult.RESULT_SUCCESS));
+                    }
+                    return MediaSession.Callback.super.onCustomCommand(s, c, command, args);
+                }
+
                 // Controllers can't send playable URIs across; the web app puts the Drive URL in
                 // requestMetadata.mediaUri and it is restored here.
                 @NonNull
@@ -137,6 +184,51 @@ public class PelagicPlaybackService extends MediaSessionService {
             .setBitmapLoader(new DataSourceBitmapLoader(
                 MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor()), drive))
             .build();
+    }
+
+    @SuppressWarnings("deprecation") // CommandButton.Builder() / setIconResId: still fine on Media3 1.5
+    private CommandButton skipButton() {
+        if (skipButton == null) {
+            skipButton = new CommandButton.Builder()
+                .setSessionCommand(SKIP_SESSION)
+                .setDisplayName("Skip session")
+                .setIconResId(R.drawable.ic_dj)
+                .build();
+        }
+        return skipButton;
+    }
+
+    @Nullable
+    private static Bundle extrasOf(@Nullable MediaItem item) {
+        return item == null ? null : item.mediaMetadata.extras;
+    }
+
+    /** DJ items: "Skip session" in the notification / lock screen, intros at the voice volume. */
+    private void updateDj() {
+        if (player == null || session == null) return;
+        Bundle x = extrasOf(player.getCurrentMediaItem());
+        boolean dj = x != null && x.getBoolean(EXTRA_DJ, false);
+        boolean intro = dj && x.getBoolean(EXTRA_INTRO, false);
+        player.setVolume(intro ? x.getFloat(EXTRA_VOLUME, 0.7f) : 1f);
+        if (dj != djShown) {
+            djShown = dj;
+            session.setCustomLayout(dj ? ImmutableList.of(skipButton()) : ImmutableList.of());
+        }
+    }
+
+    /** Straight to the next session's intro (like the DJ button in the app; no Undo). */
+    private void skipSession() {
+        if (player == null) return;
+        int n = player.getMediaItemCount();
+        for (int i = player.getCurrentMediaItemIndex() + 1; i < n; i++) {
+            Bundle x = extrasOf(player.getMediaItemAt(i));
+            if (x != null && x.getBoolean(EXTRA_INTRO, false)) {
+                player.seekTo(i, 0);
+                if (player.getPlaybackState() == Player.STATE_IDLE) player.prepare();
+                player.play();
+                return;
+            }
+        }
     }
 
     private void handleError(PlaybackException error) {

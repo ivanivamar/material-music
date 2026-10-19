@@ -287,7 +287,7 @@ export function QueuePanel() {
   const listRef = useRef<HTMLDivElement>(null)
   const [drag, setDrag] = useState<DragState | null>(null)
 
-  const open = ui.queue && p.index >= 0
+  const open = ui.queue && p.index >= 0 && p.context?.kind !== 'dj' // no queue panel while the DJ plays
   const overNp = ui.open
   const currentId = p.index >= 0 ? p.queue[p.index] : null
   const current = currentId ? data?.tracks[currentId] : undefined

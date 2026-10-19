@@ -33,6 +33,7 @@ A personal music player for my own FLAC library. The same library plays on PC an
 - [x] Upload new music from the app (artist photo and banner taken from the dropped artist folder, or the photo from Deezer)
 - [x] Search bar and account menu on every page on PC; on the phone the account sits in the bottom tab bar and opens as a bottom sheet
 - [x] New releases from my artists (MusicBrainz)
+- [x] DJ: endless themed sessions from the library with spoken intros (Google Cloud TTS, free allowance)
 
 ## Status
 

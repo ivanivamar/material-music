@@ -2,6 +2,7 @@
  * What the action menus do, with their toasts. Shared by the menus, the sidebar drop targets,
  * the playlist page and the dialogs.
  */
+import { djStore } from '../state/dj'
 import type { useToast } from '../components/ui'
 import { playList } from '../pages/library/playback'
 import { albumHref, artistHref, go, playlistHref, libraryHref } from '../shell/routes'
@@ -42,6 +43,7 @@ export function addToPlaylist(toast: Toast, playlistId: string, trackIds: string
     return
   }
   const unique = [...new Set(trackIds)]
+  djStore.noteSaved(unique) // DJ learning: a song kept from a session
   const dup = alreadyIn(c, p, unique)
   const fresh = unique.filter((id) => !dup.has(id))
   if (!fresh.length) {
@@ -137,6 +139,19 @@ export function playPlaylist(playlistId: string, opts: { shuffle?: boolean; star
 
 export function queueTracks(toast: Toast, trackIds: string[], next: boolean) {
   if (!trackIds.length) return
+  // DJ playing: the songs join the session (right after this song / at the end of the session)
+  if (djStore.active()) {
+    const undo = djStore.add(trackIds, next)
+    if (undo) {
+      toast.show({
+        icon: 'dj',
+        tone: 'dj',
+        text: next ? `${what(trackIds)} ${trackIds.length === 1 ? 'plays' : 'play'} next, inside this DJ session.` : `Added ${what(trackIds)} to the end of this DJ session.`,
+        action: { label: 'Undo', onClick: undo },
+      })
+      return
+    }
+  }
   if (next) playerStore.playNext(trackIds)
   else playerStore.addToQueue(trackIds)
   toast.show({ icon: next ? 'next' : 'queue', text: next ? `${what(trackIds)} plays next.` : `Added ${what(trackIds)} to the queue.` })

@@ -68,6 +68,8 @@ export const ICON_PATHS = {
   eye: ['M2.8 12S6.2 6 12 6s9.2 6 9.2 6-3.4 6-9.2 6-9.2-6-9.2-6z', ['circle', { cx: 12, cy: 12, r: 2.6 }]],
   gear: [['circle', { cx: 12, cy: 12, r: 2.8 }], 'M12 3.5v2.2M12 18.3v2.2M3.5 12h2.2M18.3 12h2.2M6 6l1.6 1.6M16.4 16.4 18 18M6 18l1.6-1.6M16.4 7.6 18 6'],
   alert: [['circle', { cx: 12, cy: 12, r: 8.5 }], 'M12 7.8v5', 'M12 16.2h.01'],
+  /** DJ (step 22): horizon, two arcs, the dot */
+  dj: [['path', { d: 'M2 16.5h20', strokeOpacity: 0.45 }], 'M7.5 16.5a4.5 4.5 0 0 1 9 0', 'M3.5 16.5a8.5 8.5 0 0 1 17 0', ['circle', { cx: 12, cy: 16.5, r: 1.7, fill: 'currentColor', stroke: 'none' }]],
 } satisfies Record<string, Shape[]>
 
 export type IconName = keyof typeof ICON_PATHS

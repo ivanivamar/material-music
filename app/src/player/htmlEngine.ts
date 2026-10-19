@@ -25,8 +25,11 @@ import { streamUrl } from '../lib/driveStream'
 import { localFolder } from '../lib/localFolder'
 import { isNative } from '../native/bridge'
 import { libraryStore, type Album, type Track } from '../state/library'
-import { playerStore, type PlaybackSource, type PlayerEngine } from '../state/player'
+import { isIntroId, playerStore, type PlaybackSource, type PlayerEngine } from '../state/player'
 import { sessionStore } from '../state/session'
+import { djIntroInfo } from '../state/dj'
+import { djVoice } from '../dj/voice'
+import { markPng } from '../dj/mark'
 
 class NeedsAuth extends Error {}
 
@@ -38,6 +41,8 @@ interface Loaded {
   source: PlaybackSource
   /** a local file failed to decode once: next try goes to Drive */
   triedLocal: boolean
+  /** DJ intro: the voice plays at the DJ's voice volume, relative to the music */
+  gain?: number
 }
 
 const SEEK_STEP = 10
@@ -51,6 +56,12 @@ export function createHtmlAudioEngine(): PlayerEngine {
   let volume = 1
   let muted = false
   const all = new Set<HTMLAudioElement>()
+  /** per element: its source's gain (DJ intros) */
+  const gains = new WeakMap<HTMLAudioElement, number>()
+  const applyGain = (el: HTMLAudioElement, l: Loaded | null) => {
+    gains.set(el, l?.gain ?? 1)
+    el.volume = volume * (l?.gain ?? 1)
+  }
   /** cleaned elements ready for reuse */
   const idle: HTMLAudioElement[] = []
 
@@ -106,6 +117,15 @@ export function createHtmlAudioEngine(): PlayerEngine {
 
   function setMetadata(id: string) {
     if (!ms) return
+    if (isIntroId(id)) {
+      const info = djIntroInfo(id)
+      const meta = { title: info?.title ?? 'DJ', artist: `Pelagic DJ · intro${info ? ` · ${info.songs} songs` : ''}`, album: 'Pelagic DJ' }
+      ms.metadata = new MediaMetadata(meta)
+      void markPng().then((src) => {
+        if (src && trackId === id) ms.metadata = new MediaMetadata({ ...meta, artwork: [{ src, sizes: '512x512', type: 'image/png' }] })
+      })
+      return
+    }
     const { track, album } = lookup(id)
     if (!track) return
     const meta = { title: track.title, artist: track.artist, album: album?.title ?? '' }
@@ -171,6 +191,14 @@ export function createHtmlAudioEngine(): PlayerEngine {
    * @param prompt  may ask for folder access (only true inside a user click); a preload never prompts
    */
   async function resolve(id: string, stale: () => boolean, allowLocal: boolean, prompt: boolean): Promise<Loaded | null> {
+    if (isIntroId(id)) {
+      // DJ intro: the prepared voice (or silence for a text intro), never a catalogue track
+      const info = djIntroInfo(id)
+      if (!info) return null
+      const { url } = await djVoice.url(info.sessionId, info.line)
+      if (stale()) return null
+      return { trackId: id, url, owned: false, source: 'local', triedLocal: true, gain: info.gain }
+    }
     const { track, album } = lookup(id)
     if (!track) return null
     // 1. linked local folder (prompting for access only inside a click)
@@ -220,6 +248,7 @@ export function createHtmlAudioEngine(): PlayerEngine {
         release()
         loaded = next
         playerStore.report({ source: next.source })
+        applyGain(audio, next)
         audio.src = next.url
         audio.load()
         if (wantPlay) await playNow()
@@ -307,6 +336,7 @@ export function createHtmlAudioEngine(): PlayerEngine {
       spare = el
       spareLoaded = next
       spareReady = false
+      applyGain(el, next)
       el.src = next.url
       el.load()
     } catch {
@@ -575,7 +605,7 @@ export function createHtmlAudioEngine(): PlayerEngine {
       volume = Math.max(0, Math.min(1, v * v))
       muted = m
       for (const a of all) {
-        a.volume = volume
+        a.volume = volume * (gains.get(a) ?? 1)
         a.muted = muted
       }
     },

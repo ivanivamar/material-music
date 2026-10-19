@@ -24,6 +24,11 @@ import com.google.common.util.concurrent.ListenableFuture;
 
 import org.json.JSONObject;
 
+import android.os.Bundle;
+import android.util.Base64;
+
+import java.io.File;
+import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -273,6 +278,38 @@ public class PelagicPlayerPlugin extends Plugin {
     }
 
     /**
+     * { name, base64 } → { uri }: a small file in the app's cache (DJ intro audio, the DJ mark for
+     * the lock screen), played / shown by the service from the phone (step 22).
+     */
+    @PluginMethod
+    public void putFile(PluginCall call) {
+        String name = call.getString("name", "");
+        String data = call.getString("base64", "");
+        if (name == null || data == null || !name.matches("[A-Za-z0-9._~-]{1,80}")) {
+            call.reject("Bad file name");
+            return;
+        }
+        try {
+            File dir = new File(getContext().getCacheDir(), "dj");
+            if (!dir.exists() && !dir.mkdirs()) throw new Exception("No cache folder");
+            File f = new File(dir, name);
+            try (FileOutputStream out = new FileOutputStream(f)) {
+                out.write(Base64.decode(data, Base64.DEFAULT));
+            }
+            // keep the folder small: intros older than two days go
+            File[] old = dir.listFiles();
+            long cutoff = System.currentTimeMillis() - 2L * 24 * 3600 * 1000;
+            if (old != null) for (File o : old) if (o.lastModified() < cutoff && !o.getName().equals(name)) //noinspection ResultOfMethodCallIgnored
+                o.delete();
+            JSObject out = new JSObject();
+            out.put("uri", Uri.fromFile(f).toString());
+            call.resolve(out);
+        } catch (Exception e) {
+            call.reject(e.getMessage() != null ? e.getMessage() : "Could not write the file", e);
+        }
+    }
+
+    /**
      * A number argument. Not call.getLong(): Capacitor's getLong only accepts values that arrive as
      * Java Longs, and anything below 2^31 (e.g. a seek to 95 000 ms) arrives as an Integer, so it
      * silently returned the default — every seek went to 0:00.
@@ -290,6 +327,14 @@ public class PelagicPlayerPlugin extends Plugin {
             .setIsPlayable(true);
         String art = o.optString("artworkUri", "");
         if (!art.isEmpty()) meta.setArtworkUri(Uri.parse(art));
+        // DJ (step 22): the service shows "Skip session" for DJ items and plays intros at the voice volume
+        if (o.optBoolean("dj", false)) {
+            Bundle extras = new Bundle();
+            extras.putBoolean(PelagicPlaybackService.EXTRA_DJ, true);
+            extras.putBoolean(PelagicPlaybackService.EXTRA_INTRO, o.optBoolean("intro", false));
+            extras.putFloat(PelagicPlaybackService.EXTRA_VOLUME, (float) Math.max(0, Math.min(1, o.optDouble("volume", 1.0))));
+            meta.setExtras(extras);
+        }
         return new MediaItem.Builder()
             .setMediaId(o.getString("id"))
             .setUri(uri)

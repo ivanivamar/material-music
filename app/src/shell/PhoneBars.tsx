@@ -13,6 +13,11 @@ import { nowPlayingStore } from '../state/nowPlaying'
 import { playerStore, usePlayer } from '../state/player'
 import { AccountTab } from '../pages/AccountMenu'
 import { href, type RouteKey } from './routes'
+import { isIntroId } from '../state/player'
+import { useDjView } from '../state/djUi'
+import { DjMark } from '../dj/DjMark'
+import { IntroSub, LiveMark } from '../dj/DjIntro'
+import { useIntroProgress } from '../dj/live'
 
 const TABS: { key: RouteKey; label: string; icon: 'home' | 'library' | 'search' | 'newr' }[] = [
   { key: 'home', label: 'HOME', icon: 'home' },
@@ -41,20 +46,25 @@ export function TabBar({ active, dots }: { active: RouteKey; dots?: Partial<Reco
 export function MiniPlayer() {
   const p = usePlayer()
   const { data } = useLibrary()
+  const dj = useDjView()
   const id = p.index >= 0 ? p.queue[p.index] : null
+  const intro = dj.on && isIntroId(id) && !!dj.session
   const track = (id && data?.tracks[id]) || null
   const album = track ? data?.albums[track.albumId] : undefined
   const cover = useCover(album?.cover)
-  if (!track) return null
-  const frac = track.duration ? Math.min(1, p.position / track.duration) : 0
+  const introProgress = useIntroProgress(intro ? id : null)
+  if (!track && !intro) return null
+  const frac = intro ? introProgress.frac : track?.duration ? Math.min(1, p.position / track.duration) : 0
   const state = p.buffering ? 'buffering' : p.playing ? 'playing' : 'paused'
+  const title = intro ? (dj.session?.title ?? 'DJ') : track!.title
+  const chip = dj.on ? <span className="mini-dj">{intro ? 'DJ · INTRO' : `DJ · ${dj.songIndex + 1}/${dj.songCount}`}</span> : null
 
   return (
     <div
       className="mini"
       role="button"
       tabIndex={0}
-      aria-label={`Now playing: ${track.title} by ${track.artist}. Open player.`}
+      aria-label={intro ? `DJ intro: ${title}. Open player.` : `Now playing: ${track!.title} by ${track!.artist}. Open player.`}
       onClick={(e) => {
         if ((e.target as HTMLElement).closest('button')) return
         nowPlayingStore.open('np')
@@ -66,10 +76,29 @@ export function MiniPlayer() {
         }
       }}
     >
-      {cover ? <img className="mini-cover" src={cover} alt="" /> : <span className="mini-cover mini-cover-empty" aria-hidden />}
+      <span className="mini-cover-wrap">
+        {intro && id ? <LiveMark item={id} size={46} /> : cover ? <img className="mini-cover" src={cover} alt="" /> : <span className="mini-cover mini-cover-empty" aria-hidden />}
+        {dj.on && !intro && (
+          <span className="mini-badge">
+            <DjMark size={18} />
+          </span>
+        )}
+      </span>
       <div className="mini-text">
-        <Marquee className="mini-title" text={track.title} />
-        <Marquee className="mini-sub" text={track.artist} />
+        <Marquee className="mini-title" text={title} />
+        {intro && id && dj.session ? (
+          <span className="mini-sub-row">
+            <IntroSub item={id} count={dj.songCount} withCount={false} />
+            {chip}
+          </span>
+        ) : dj.on ? (
+          <span className="mini-sub-row">
+            <Marquee className="mini-sub" text={track!.artist} />
+            {chip}
+          </span>
+        ) : (
+          <Marquee className="mini-sub" text={track!.artist} />
+        )}
       </div>
       <button type="button" className="mini-btn" aria-label="Lyrics" onClick={() => nowPlayingStore.open('lyrics')}>
         <Icon name="lyrics" />

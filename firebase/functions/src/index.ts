@@ -1,5 +1,5 @@
 /**
- * Pelagic on Firebase — the same `/api/auth/*` (sign-in helper) and `/api/deezer/*` (Deezer proxy)
+ * Pelagic on Firebase — the same `/api/auth/*` (sign-in helper), `/api/deezer/*` (Deezer proxy) and `/api/voice/*` (DJ voice)
  * as the Cloudflare Pages Functions, so the Firebase copy of the site works exactly like the
  * Cloudflare one. The handlers themselves are NOT copied: build.mjs bundles app/functions/api/…
  * into this function, and this file only adapts Firebase's request/response to the Web
@@ -14,19 +14,23 @@
  *
  * Secrets (once, from the repo root):  firebase functions:secrets:set GOOGLE_CLIENT_ID
  *                                       firebase functions:secrets:set GOOGLE_CLIENT_SECRET
+ *                                       firebase functions:secrets:set GOOGLE_TTS_API_KEY   (DJ voice)
  */
 import { onRequest } from 'firebase-functions/v2/https'
 import { defineSecret } from 'firebase-functions/params'
 import * as auth from '../../../app/functions/api/auth/[action].ts'
 import * as deezer from '../../../app/functions/api/deezer/[action].ts'
+import * as voice from '../../../app/functions/api/voice/[action].ts'
 
 const GOOGLE_CLIENT_ID = defineSecret('GOOGLE_CLIENT_ID')
 const GOOGLE_CLIENT_SECRET = defineSecret('GOOGLE_CLIENT_SECRET')
+/** DJ voice (step 22c): Google Cloud Text-to-Speech API key */
+const GOOGLE_TTS_API_KEY = defineSecret('GOOGLE_TTS_API_KEY')
 
 const APP_COOKIE = '__Host-pelagic_rt'
 const FB_COOKIE = '__session'
 
-const handlers = { auth, deezer } as const
+const handlers = { auth, deezer, voice } as const
 
 /** The site's own host (what the browser sees), not the function's. */
 function siteHost(headers: Record<string, string | string[] | undefined>): string {
@@ -49,14 +53,14 @@ function siteHost(headers: Record<string, string | string[] | undefined>): strin
 export const api = onRequest(
   {
     region: 'europe-west1',
-    secrets: [GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET],
+    secrets: [GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_TTS_API_KEY],
     memory: '256MiB',
     maxInstances: 3,
     invoker: 'public',
   },
   async (req, res) => {
     const url = new URL(req.originalUrl || req.url, `https://${siteHost(req.headers)}`)
-    const m = /^\/api\/(auth|deezer)\/([^/]+)\/?$/.exec(url.pathname)
+    const m = /^\/api\/(auth|deezer|voice)\/([^/]+)\/?$/.exec(url.pathname)
     if (!m) {
       res.status(404).set('cache-control', 'no-store').json({ error: 'not_found' })
       return
@@ -82,6 +86,7 @@ export const api = onRequest(
     const env = {
       GOOGLE_CLIENT_ID: GOOGLE_CLIENT_ID.value().trim() || undefined,
       GOOGLE_CLIENT_SECRET: GOOGLE_CLIENT_SECRET.value().trim() || undefined,
+      GOOGLE_TTS_API_KEY: GOOGLE_TTS_API_KEY.value().trim() || undefined,
     }
 
     const handler = handlers[m[1] as keyof typeof handlers]

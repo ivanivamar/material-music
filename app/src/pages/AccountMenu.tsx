@@ -20,6 +20,8 @@ import { playlistsStore } from '../state/playlists'
 import { libraryStore, useLibrary } from '../state/library'
 import { sessionStore, useSession } from '../state/session'
 import { go, href, statsHref } from '../shell/routes'
+import { djStore } from '../state/dj'
+import { djUi } from '../state/djUi'
 
 const time = (ms: number | null) =>
   ms ? new Date(ms).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '—'
@@ -80,6 +82,7 @@ function useAccountMenu() {
       },
     })
   rows.push({ icon: 'clock', label: 'Listening stats', run: () => go(statsHref()) })
+  rows.push({ icon: 'dj', label: djStore.get().run ? 'DJ panel' : 'Start the DJ', disabled: !lib.data, run: () => (djStore.get().run ? djUi.openPanel(null, isNative) : djUi.openStart()) })
   if (isNative) rows.push({ icon: 'download', label: 'Downloads', run: () => go(href('downloads')) })
   if (localFolder.supported) rows.push({ icon: 'library', label: linked ? 'Change local music folder…' : 'Play FLAC from a local folder…', disabled: !lib.data, run: () => void linkFolder() })
   if (linked) rows.push({ icon: 'x', label: 'Stop using the local folder', run: () => void localFolder.unlink() })

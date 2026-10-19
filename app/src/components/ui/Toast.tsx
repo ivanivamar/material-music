@@ -16,7 +16,7 @@ export interface ToastInput {
   mutedIcon?: boolean
   meta?: ReactNode
   action?: { label: string; onClick: () => void }
-  tone?: 'default' | 'danger'
+  tone?: 'default' | 'danger' | 'dj'
   /** 0..1 — thin glowing line along the bottom (uploads) */
   progress?: number
   /** ms; default 4500. 0 = stays until dismissed/updated */
@@ -114,7 +114,7 @@ export function ToastProvider({
       {children}
       <div className={`toasts ${fixed ? 'toasts-fixed' : ''} ${className ?? ''}`} style={bottom != null ? { bottom } : undefined} role="status" aria-live="polite">
         {items.map((t) => (
-          <div key={t.id} className={`toast ${t.tone === 'danger' ? 'toast-danger' : ''} ${t.leaving ? 'is-leaving' : ''}`}>
+          <div key={t.id} className={`toast ${t.tone === 'danger' ? 'toast-danger' : t.tone === 'dj' ? 'toast-dj' : ''} ${t.leaving ? 'is-leaving' : ''}`}>
             {t.icon && (
               <span className={`toast-ic ${t.mutedIcon ? 'is-muted' : ''}`}>
                 <Icon name={t.icon} />

@@ -29,6 +29,8 @@ import { libraryStore, useLibrary } from './state/library'
 import { useMotionAttribute } from './state/motion'
 import { playerStore } from './state/player'
 import { genresStore } from './state/genres'
+import { djStore } from './state/dj'
+import { initDjLive } from './dj/live'
 import { historyStore } from './state/history'
 import './state/removal'
 import { releasesStore } from './state/releases'
@@ -64,6 +66,9 @@ releasesStore.init()
 playlistsStore.init()
 // Genres (step 20b): tags, else set in the app, else MusicBrainz — synced through Drive genres.json.
 genresStore.init()
+// DJ (step 22): sessions in the player queue; what it has learned synced through Drive dj.json.
+djStore.init()
+initDjLive()
 
 function Page({ route }: { route: Extract<Route, { kind: 'app' }> }) {
   switch (route.key) {

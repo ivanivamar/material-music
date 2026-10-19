@@ -154,6 +154,22 @@ Top artists, albums and songs, hours listened, plays, the first play of the peri
 | `src/pages/stats/stats.css` | Desktop styles; phone rules in `src/shell/phone.css` |
 | `src/pages/AccountMenu.tsx` | "Listening stats" item (desktop avatar menu + phone account sheet), any time of year |
 
+## DJ (step 22)
+
+Handoff: `design_handoff_dj/`. An endless chain of **sessions** (6–9 songs around one theme), each opened by a short spoken **intro**. No crossfades; it lives inside the player.
+
+| File | What |
+|---|---|
+| `src/dj/engine.ts` | Pure: themes (Genre, Never played, Forgotten, New additions; Endless also Favourites, Decade, Artist sets, Wildcards), pools, picking (max 1 per album / 2 per artist, fresh first), flow order, titles + spoken lines, learning scores (session level, 60-day half-life) |
+| `src/state/dj.ts` | The run: sessions as queue rows (`dj:intro:<id>` + songs), next session built one ahead, skip / stop / Play next / Add to queue, outcomes + penalties + voice usage in Drive `Pelagic/dj.json` (IndexedDB `kv.dj`) |
+| `src/dj/voice.ts`, `src/dj/live.ts` | Intro audio: `/api/voice` (Google Cloud TTS) → loudness envelope + word times; PC system-voice fallback (male English allow-list); 5 s text intro otherwise. One live clock drives ripple, level bars, subtitle |
+| `src/dj/DjMark.tsx`, `DjButton.tsx`, `DjStart.tsx`, `DjIntro.tsx`, `DjPanel.tsx`, `dj.css` | Mark / icon / button / start view / intro / panel + sheet |
+| `functions/api/voice/[action].ts` | TTS proxy: `GET status`, `POST speak` (600-char lines, daily cap; optional KV `DJ_VOICE_KV`) |
+
+Intros are queue items both engines play like tracks (PC: blob URL at the voice volume; Android: a cached file with DJ extras, played at the voice volume, the mark as art, and a **Skip session** action in the notification / lock screen). The queue panel, shuffle and repeat are off while the DJ plays; playing an album / playlist / song ends it.
+
+Voice setup: Google Cloud → enable *Cloud Text-to-Speech API* → API key restricted to it → Cloudflare Pages variable `GOOGLE_TTS_API_KEY` (encrypted; optional `TTS_VOICE`, default `en-US-Chirp3-HD-Charon`) → redeploy. Firebase copy: `firebase functions:secrets:set GOOGLE_TTS_API_KEY` then `firebase deploy --only functions`. The Android app calls the Firebase address (`VITE_PELAGIC_API`, default `https://pelagic-sound.web.app/`). Set a €1 budget alert and lower the API quota. Without a key, intros are text.
+
 ## New releases (step 11)
 
 | File | What |

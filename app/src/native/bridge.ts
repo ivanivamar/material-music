@@ -43,8 +43,14 @@ export interface NativeQueueItem {
   title: string
   artist: string
   album: string
-  /** Drive alt=media URL of the album cover */
+  /** Drive alt=media URL of the album cover (DJ intro: the mark, a file on the phone) */
   artworkUri?: string
+  /** part of a DJ run: the notification / lock screen get "Skip session" (step 22) */
+  dj?: boolean
+  /** a DJ intro item ("Skip session" jumps to the next one) */
+  intro?: boolean
+  /** player volume while this item plays (DJ voice volume); default 1 */
+  volume?: number
 }
 
 export interface NativePlayerState {
@@ -78,6 +84,8 @@ interface PelagicPlayerPlugin {
   setVolume(opts: { volume: number }): Promise<void>
   stop(): Promise<void>
   getState(): Promise<NativePlayerState & { ids: string[] }>
+  /** Write a small file (DJ intro audio, the DJ mark) into the app's cache → its file:// URI. */
+  putFile(opts: { name: string; base64: string }): Promise<{ uri: string }>
   addListener(event: 'state', cb: (s: NativePlayerState) => void): Promise<PluginListenerHandle>
   addListener(event: 'error', cb: (e: NativePlayerError) => void): Promise<PluginListenerHandle>
 }

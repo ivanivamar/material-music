@@ -14,7 +14,7 @@ import { onAccountReset } from './session'
 export type RepeatMode = 'off' | 'all' | 'one'
 
 export interface PlayContext {
-  kind: 'album' | 'artist' | 'playlist' | 'library' | 'search' | 'queue'
+  kind: 'album' | 'artist' | 'playlist' | 'library' | 'search' | 'queue' | 'dj'
   id?: string
   /** "Playing from" label, e.g. the album title */
   label: string
@@ -64,6 +64,12 @@ export type PlayerNotice =
   | { kind: 'auth'; trackId: string } // Drive stream needs a fresh Google sign-in
   | { kind: 'error'; trackId: string; message: string; skipped: boolean }
   | { kind: 'missing'; trackId: string } // track no longer in the catalogue
+
+/** What the DJ keeps from before it started, to go back to on Stop DJ. */
+export type PlayerSnapshot = Pick<PlayerState, 'queue' | 'index' | 'context' | 'position' | 'shuffle' | 'unshuffled' | 'repeat'>
+
+/** DJ intro items in the queue (step 22): `dj:intro:<sessionId>`; never a catalogue track. */
+export const isIntroId = (id: string | null | undefined): id is string => !!id && id.startsWith('dj:intro:')
 
 const KEY = 'pelagic.player.v1'
 type Persisted = Pick<PlayerState, 'queue' | 'index' | 'context' | 'position' | 'volume' | 'muted' | 'shuffle' | 'unshuffled' | 'repeat'>
@@ -298,6 +304,7 @@ export const playerStore = {
    * upcoming) is shuffled after it. Shuffle off: the original order comes back (see unshuffledOrder).
    */
   toggleShuffle() {
+    if (state.context?.kind === 'dj') return // not used by the DJ
     if (!state.shuffle) {
       if (state.index < 0) return set({ shuffle: true, unshuffled: null })
       const cur = state.queue[state.index]
@@ -308,6 +315,7 @@ export const playerStore = {
     }
   },
   cycleRepeat() {
+    if (state.context?.kind === 'dj') return
     set({ repeat: state.repeat === 'off' ? 'all' : state.repeat === 'all' ? 'one' : 'off' })
   },
   clear() {
@@ -410,6 +418,52 @@ export const playerStore = {
     if (!ids.length) return
     if (state.index < 0) return playerStore.playQueue(ids, 0, { kind: 'queue', label: 'Queue' })
     set({ queue: [...state.queue, ...ids] })
+  },
+
+  /* ── DJ (step 22) ───────────────────────────────────── */
+
+  /** What's loaded now, to come back to later (Stop DJ). */
+  snapshot(): PlayerSnapshot | null {
+    if (state.index < 0) return null
+    const { queue, index, context, position, shuffle, unshuffled, repeat } = state
+    return { queue, index, context, position, shuffle, unshuffled, repeat }
+  },
+  /** Load a snapshot paused at its position (Stop DJ: "back to … where you left off"). */
+  restore(snap: PlayerSnapshot) {
+    engine?.pause()
+    lastCleared = null
+    holdPreload = true
+    try {
+      set({ ...snap, playing: false, buffering: false })
+    } finally {
+      holdPreload = false
+    }
+    const id = current()
+    if (id && engine) engine.load(id, { autoplay: false, position: snap.position })
+    syncPreload(true)
+  },
+  /** Start a DJ run: replaces the queue (shuffle and repeat off) and plays row 0. */
+  playDj(ids: string[], context: PlayContext) {
+    if (!ids.length) return
+    lastCleared = null
+    set({ queue: ids, context, shuffle: false, unshuffled: null, repeat: 'off' })
+    go(0, true)
+  },
+  setContext(context: PlayContext) {
+    set({ context })
+  },
+  /**
+   * Replace rows [start, end) with `ids`. The current row must not be inside the range; `index`
+   * shifts when the range is before it. (DJ: drop old sessions, swap the prepared next session.)
+   */
+  splice(start: number, end: number, ids: string[]) {
+    const n = state.queue.length
+    start = Math.max(0, Math.min(start, n))
+    end = Math.max(start, Math.min(end, n))
+    if (state.index >= start && state.index < end) return
+    if (start === end && !ids.length) return
+    const queue = [...state.queue.slice(0, start), ...ids, ...state.queue.slice(end)]
+    set({ queue, index: state.index >= end ? state.index + ids.length - (end - start) : state.index })
   },
 }
 

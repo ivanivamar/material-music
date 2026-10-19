@@ -20,13 +20,48 @@
 import { isNative, PelagicPlayer, type NativePlayerState, type NativeQueueItem } from '../native/bridge'
 import { downloadsStore, storedFileOf } from '../state/downloads'
 import { libraryStore } from '../state/library'
-import { playerStore, type PlayerEngine } from '../state/player'
+import { isIntroId, playerStore, type PlayerEngine } from '../state/player'
+import { djIntroInfo } from '../state/dj'
+import { djVoice } from '../dj/voice'
 import { onAccountReset, sessionStore } from '../state/session'
 
 const DRIVE = 'https://www.googleapis.com/drive/v3/files/'
 const media = (fileId: string) => `${DRIVE}${encodeURIComponent(fileId)}?alt=media`
 
-function toItem(id: string): NativeQueueItem {
+/** intro item → its prepared file on the phone (filled by prepIntros before a send) */
+const introFiles = new Map<string, string | null>()
+let markArt: string | null = null
+
+/** Write the DJ intros in the queue to the phone first (prepared one session ahead, so usually instant). */
+async function prepIntros(queue: readonly string[]) {
+  const todo = queue.filter((id) => isIntroId(id) && !introFiles.has(id))
+  if (!todo.length) return
+  markArt ??= await djVoice.nativeArt()
+  await Promise.all(
+    todo.map(async (id) => {
+      const info = djIntroInfo(id)
+      introFiles.set(id, info ? await djVoice.nativeFile(info.sessionId, info.line) : null)
+    }),
+  )
+  // forget files of intros that left the queue
+  for (const k of [...introFiles.keys()]) if (!queue.includes(k)) introFiles.delete(k)
+}
+
+function toItem(id: string, dj: boolean): NativeQueueItem {
+  if (isIntroId(id)) {
+    const info = djIntroInfo(id)
+    return {
+      id,
+      uri: introFiles.get(id) ?? 'https://www.googleapis.com/drive/v3/files/missing?alt=media',
+      title: info?.title ?? 'DJ',
+      artist: `Pelagic DJ · intro${info ? ` · ${info.songs} songs` : ''}`,
+      album: 'Pelagic DJ',
+      artworkUri: markArt ?? undefined,
+      dj: true,
+      intro: true,
+      volume: info?.gain ?? 0.7,
+    }
+  }
   const data = libraryStore.get().data
   const track = data?.tracks[id]
   const album = track ? data?.albums[track.albumId] : undefined
@@ -42,6 +77,7 @@ function toItem(id: string): NativeQueueItem {
     artist: track?.artist ?? '',
     album: album?.title ?? '',
     artworkUri: album?.cover ? media(album.cover) : undefined,
+    dj: dj || undefined,
   }
 }
 
@@ -108,7 +144,10 @@ export function createNativeEngine(): PlayerEngine {
     flushQueued = true
     queueMicrotask(() => {
       flushQueued = false
-      void ready.then(send)
+      void ready
+        .then(() => prepIntros(playerStore.get().queue))
+        .then(() => prepIntros(playerStore.get().queue)) // the queue may have grown meanwhile
+        .then(send)
     })
   }
 
@@ -131,7 +170,7 @@ export function createNativeEngine(): PlayerEngine {
     sentQueue = s.queue
     sentRepeat = s.repeat
     void PelagicPlayer.setQueue({
-      items: s.queue.map(toItem),
+      items: s.queue.map((id) => toItem(id, s.context?.kind === 'dj')),
       index: s.index,
       positionMs: req ? Math.round((req.position ?? 0) * 1000) : undefined,
       play: req?.autoplay ?? false,
