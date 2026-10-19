@@ -34,7 +34,7 @@ import { useIntroAudio } from '../dj/voice'
 import { DjIcon } from '../dj/DjMark'
 import { DjIntroInfo, DjIntroLyrics, LiveMark } from '../dj/DjIntro'
 import { DjStart } from '../dj/DjStart'
-import { useIntroLive } from '../dj/live'
+import { introLevel, onFrame } from '../dj/live'
 import { registerBack } from '../native/backButton'
 import '../dj/dj.css'
 import './nowplaying.css'
@@ -359,6 +359,13 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
 
 /** The gold light pool behind the mark, brighter with the voice. */
 function IntroPool({ item }: { item: string }) {
-  const live = useIntroLive(item, true)
-  return <span className="dj-pool pg-anim" style={{ opacity: 0.35 + live.level * 0.65 }} aria-hidden />
+  const ref = useRef<HTMLSpanElement>(null)
+  useEffect(
+    () =>
+      onFrame(() => {
+        if (ref.current) ref.current.style.opacity = String(0.35 + introLevel(item) * 0.65)
+      }),
+    [item],
+  )
+  return <span ref={ref} className="dj-pool pg-anim" style={{ opacity: 0.35 }} aria-hidden />
 }

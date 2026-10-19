@@ -16,6 +16,8 @@ import { djVoice, ENV_RATE, type IntroAudio } from './voice'
 /* ── Clock ──────────────────────────────────────────── */
 
 let anchor = { id: null as string | null, pos: 0, at: 0, playing: false }
+/** the last time handed out for `anchor.id` (the clock never runs backwards within an item) */
+let shown = { id: null as string | null, t: 0 }
 
 function syncAnchor() {
   const p = playerStore.get()
@@ -25,10 +27,20 @@ function syncAnchor() {
   }
 }
 
-/** Seconds into the current item, between position reports (never more than 1 s ahead). */
+/**
+ * Seconds into the current item, between position reports (never more than 1 s ahead).
+ *
+ * Monotonic: the Android player reports twice a second and each report arrives a little late, so
+ * the raw extrapolation stepped back a few tens of ms every 500 ms — the lit word, the level bars and
+ * the ripple jumped back and forth (the intro flicker on the phone). Small steps back (< 0.75 s) now
+ * just hold the clock until the reports catch up; real seeks (bigger jumps) still go through.
+ */
 export function liveTime(): number {
   const ahead = anchor.playing ? Math.min(1, (performance.now() - anchor.at) / 1000) : 0
-  return anchor.pos + ahead
+  const raw = anchor.pos + ahead
+  if (shown.id === anchor.id && raw < shown.t && shown.t - raw < 0.75) return shown.t
+  shown = { id: anchor.id, t: raw }
+  return raw
 }
 
 /* ── Frame ticker (only while something is watching) ── */
@@ -46,6 +58,16 @@ function tick(now: number) {
   lastEmit = now
   frame++
   frameListeners.forEach((l) => l())
+}
+
+/** Run `cb` on every live frame (~30 fps) while subscribed; nothing re-renders. */
+export function onFrame(cb: () => void): () => void {
+  const unwatch = watch()
+  frameListeners.add(cb)
+  return () => {
+    frameListeners.delete(cb)
+    unwatch()
+  }
 }
 
 function watch() {
@@ -197,4 +219,23 @@ const noopSub = () => () => {}
 export function useIntroProgress(item: string | null): { frac: number; t: number; duration: number } {
   const live = useIntroLive(item, !!item)
   return { frac: live.duration ? Math.min(1, live.t / live.duration) : 0, t: live.t, duration: live.duration }
+}
+
+/** Is the DJ talking right now (re-renders only when that flips, not every frame). */
+export function useIntroSpeaking(item: string | null, active: boolean): boolean {
+  const audio = useSyncExternalStore(djVoice.subscribe, () => (item ? djVoice.get(sessionIdOf(item)) : null), () => null)
+  useEffect(() => (active ? watch() : undefined), [active])
+  return useSyncExternalStore(
+    active ? subscribeFrame : noopSub,
+    () => {
+      const l = introLive(audio, item)
+      return l.kind !== 'silent' && !!l.kind && l.speaking
+    },
+    () => false,
+  )
+}
+
+/** The voice level now, for code that paints outside React (the mark, the light pool). */
+export function introLevel(item: string): number {
+  return introLive(djVoice.get(sessionIdOf(item)), item).level
 }

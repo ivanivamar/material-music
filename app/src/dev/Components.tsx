@@ -152,7 +152,7 @@ export function Components() {
               <SeekBar position={pos} duration={DUR} onSeek={setPos} />
               <div className="seekrow">
                 <span className="time">{fmt(pos)}</span>
-                <Waveform progress={pos / DUR} seed={5} height={28} onSeek={(f) => setPos(f * DUR)} />
+                <Waveform progress={pos / DUR} duration={DUR} height={28} onSeek={(f) => setPos(f * DUR)} />
                 <span className="time">{fmt(DUR)}</span>
               </div>
               <Rule left="Side A" right="06 tracks" />

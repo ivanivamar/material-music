@@ -3,12 +3,13 @@
  * speaks, the spoken line as lyric lines in the lyrics view, and the compact versions for the
  * player bar / mini-player. Everything reads the same live clock (dj/live.ts).
  */
+import { useCallback } from 'react'
 import { Icon } from '../design/icons'
 import { useMotion } from '../state/motion'
 import type { DjView } from '../state/dj'
 import { DjMark, LevelBars } from './DjMark'
 import { TYPE_UPPER } from './engine'
-import { useIntroLive, type IntroLive } from './live'
+import { useIntroLive, type IntroLive, useIntroSpeaking, introLevel } from './live'
 
 const words = (line: string) => line.split(/\s+/).filter(Boolean)
 
@@ -137,8 +138,10 @@ export function DjIntroLyrics({ item, line }: { item: string; line: string }) {
 
 /** The mark standing in for a cover, speaking with the live voice. */
 export function LiveMark({ item, size, radius, shadow, fluid, active = true }: { item: string; size: number; radius?: number; shadow?: string; fluid?: boolean; active?: boolean }) {
-  const live = useIntroLive(item, active)
-  return <DjMark size={size} speaking={live.kind !== 'silent' && !!live.kind && live.speaking} level={live.level} radius={radius} shadow={shadow} fluid={fluid} />
+  // re-renders only when the voice starts / stops; the level goes straight into a CSS variable
+  const speaking = useIntroSpeaking(item, active)
+  const getLevel = useCallback(() => introLevel(item), [item])
+  return <DjMark size={size} speaking={speaking} getLevel={getLevel} radius={radius} shadow={shadow} fluid={fluid} />
 }
 
 /** Player bar / mini-player sub line during the intro: 10 level bars + "DJ is speaking". */

@@ -264,7 +264,7 @@ html[data-motion='reduced'] .tide-bar, html[data-motion='reduced'] .tide-tip { t
 .toast.is-leaving { animation: pg-toast-out var(--dur-toast-out) ease both; }
 .toast-danger { border-color: rgba(230, 150, 140, .35); }
 .toast-danger .toast-ic { color: var(--danger); }
-.toast-dj .toast-ic { color: rgb(168, 120, 255); }
+.toast-dj .toast-ic { color: var(--dj, rgb(198, 180, 242)); }
 .toast-ic { font-size: 21px; display: inline-flex; flex: none; }
 .toast-ic.is-muted { color: var(--ink-secondary); }
 .toast-text { min-width: 0; }

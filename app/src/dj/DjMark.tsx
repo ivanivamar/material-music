@@ -7,7 +7,8 @@
  *             brighten with the voice level and the halo grows with it
  *   reduced   no sonar or breathing: one static ring + the SPEAKING label
  */
-import { useId, type CSSProperties } from 'react'
+import { useEffect, useId, useRef, type CSSProperties } from 'react'
+import { onFrame } from './live'
 import { CONTOUR_SMOOTH, GRAIN, STONE } from '../design/textures'
 import { useMotion } from '../state/motion'
 import { arcPath, ACCENT, ACCENT_LIGHT, MARK_TILE, markGeometry, markRadius } from './mark'
@@ -26,19 +27,49 @@ export interface DjMarkProps {
   fluid?: boolean
   /** DJ running, not speaking (Home's DJ tile): one slow ring every 6 s, a brighter halo */
   onAir?: boolean
+  /**
+   * Live voice level, read every frame and written straight into a CSS variable (`--lvl`), so the
+   * mark doesn't re-render 30 times a second. Wins over `level`.
+   */
+  getLevel?: () => number
 }
 
-export function DjMark({ size, speaking = false, level = 0, idle = false, radius, shadow, className, style, fluid, onAir = false }: DjMarkProps) {
+export function DjMark({ size, speaking = false, level = 0, idle = false, radius, shadow, className, style, fluid, onAir = false, getLevel }: DjMarkProps) {
   const motion = useMotion()
   const id = useId().replace(/[^a-zA-Z0-9]/g, '')
   const g = markGeometry(size)
   const lvl = speaking ? Math.max(0, Math.min(1, level)) : 0
   const r = radius ?? markRadius(size)
   const labelSize = Math.max(9, Math.round(size * 0.022))
+  const rootRef = useRef<HTMLDivElement>(null)
+  // live level → --lvl, outside React (Android WebView flickered when the SVG re-rendered every frame)
+  useEffect(() => {
+    const el = rootRef.current
+    if (!el || !getLevel || !speaking) return
+    let last = -1
+    const off = onFrame(() => {
+      const v = Math.round(Math.max(0, Math.min(1, getLevel())) * 50) / 50
+      if (v === last) return
+      last = v
+      el.style.setProperty('--lvl', String(v))
+    })
+    return () => {
+      off()
+      el.style.setProperty('--lvl', '0')
+    }
+  }, [getLevel, speaking])
+  // the soft glow around the dot: an HTML gradient scaled on the GPU instead of a blurred SVG circle
+  const haloR = g.big ? g.halo : (onAir || speaking) && !g.big ? 3.6 : g.halo
+  const haloD = g.big ? ((haloR + g.blur * 2) * 2) / 100 : (((haloR + g.blur * 2) * 2) / 24) * 0.76
+  const haloX = g.big ? g.cx / 100 : 0.12 + (0.76 * g.cx) / 24
+  const haloY = g.big ? g.cy / 100 : 0.12 + (0.76 * g.cy) / 24
+  const haloBase = 0.4 + (onAir && !speaking ? 0.15 : 0)
   return (
     <div
-      className={`djm ${className ?? ''}`}
+      ref={rootRef}
+      className={`djm ${speaking ? 'is-speaking' : ''} ${className ?? ''}`}
       style={{
+        ['--lvl' as string]: getLevel ? 0 : lvl,
         width: fluid ? '100%' : size,
         height: fluid ? '100%' : size,
         borderRadius: r,
@@ -55,6 +86,17 @@ export function DjMark({ size, speaking = false, level = 0, idle = false, radius
           <span className="djm-tex" style={{ backgroundImage: GRAIN, backgroundSize: '220px 220px', opacity: 0.07, mixBlendMode: 'screen' }} />
         </>
       )}
+      <span
+        className="djm-halo"
+        style={{
+          left: `${haloX * 100}%`,
+          top: `${haloY * 100}%`,
+          width: `${haloD * 100}%`,
+          height: `${haloD * 100}%`,
+          ['--halo-base' as string]: haloBase,
+          ['--halo-grow' as string]: g.big ? 0.5 : 0,
+        }}
+      />
       <svg viewBox={g.viewBox} className={g.big ? 'djm-svg' : 'djm-svg is-small'}>
         <defs>
           <linearGradient id={`${id}h`} x1="0" x2="1" y1="0" y2="0">
@@ -62,16 +104,15 @@ export function DjMark({ size, speaking = false, level = 0, idle = false, radius
             <stop offset="0.5" stopColor={ACCENT} stopOpacity="0.75" />
             <stop offset="1" stopColor={ACCENT} stopOpacity="0" />
           </linearGradient>
-          <filter id={`${id}b`} x="-100%" y="-100%" width="300%" height="300%">
-            <feGaussianBlur stdDeviation={g.blur} />
-          </filter>
         </defs>
         <line x1={g.horizon[0]} x2={g.horizon[1]} y1={g.cy} y2={g.cy} stroke={`url(#${id}h)`} strokeWidth={g.stroke} vectorEffect="non-scaling-stroke" />
         {g.arcs.map((a, i) => {
-          const op = speaking && i > 0 ? Math.min(1, a.op * (1 + lvl * 1.4)) : a.op
-          const breathe = idle && motion && g.big && i >= 3
+          const op = a.op
+          const breathe = idle && motion && g.big && i >= 3 && !speaking
+          // speaking: arcs 2–5 brighten with the voice (CSS reads --lvl, no re-render)
+          const live = speaking && i > 0 ? { strokeOpacity: `min(1, calc(${op} * (1 + var(--lvl, 0) * 1.4)))` } : undefined
           return (
-            <path key={a.r} d={arcPath(g.cx, g.cy, a.r, true)} fill="none" stroke={ACCENT} strokeOpacity={op} strokeWidth={g.stroke} strokeLinecap="round" vectorEffect="non-scaling-stroke" className="djm-arc">
+            <path key={a.r} d={arcPath(g.cx, g.cy, a.r, true)} fill="none" stroke={ACCENT} strokeOpacity={op} strokeWidth={g.stroke} strokeLinecap="round" vectorEffect="non-scaling-stroke" style={live}>
               {breathe && (
                 <animate attributeName="stroke-opacity" values={`${op};${Math.min(1, op * 2.4)};${op}`} dur="9s" begin={`${-i * 1.5}s`} repeatCount="indefinite" calcMode="spline" keyTimes="0;0.5;1" keySplines=".45 0 .55 1;.45 0 .55 1" />
               )}
@@ -97,7 +138,6 @@ export function DjMark({ size, speaking = false, level = 0, idle = false, radius
                   <animate attributeName="opacity" values="0.42;0" dur="6s" repeatCount="indefinite" calcMode="spline" keyTimes="0;1" keySplines=".15 .6 .35 1" />
                 </circle>
               )}
-        <circle cx={g.cx} cy={g.cy} r={g.big ? g.halo + lvl * 3 : (onAir || speaking) && !g.big ? 3.6 : g.halo} fill={ACCENT} opacity={0.4 + lvl * 0.3 + (onAir && !speaking ? 0.15 : 0)} filter={`url(#${id}b)`} className="djm-halo" />
         <circle cx={g.cx} cy={g.cy} r={g.dot} fill={ACCENT_LIGHT} />
       </svg>
       {size >= 200 && (
@@ -126,7 +166,7 @@ export function DjIcon({ on = false, alive = false, dark = false, size = '1em' }
       <path d="M3.5 16.5a8.5 8.5 0 0 1 17 0" strokeOpacity={on ? 1 : 0.55}>
         {alive && motion && <animate attributeName="stroke-opacity" values="0.35;1;0.35" dur="4.8s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.5;1" keySplines=".45 0 .55 1;.45 0 .55 1" />}
       </path>
-      <circle cx={12} cy={16.5} r={1.7} fill="currentColor" stroke="none" style={{ filter: on && !dark ? 'drop-shadow(0 0 3px rgba(168, 120, 255,0.95))' : 'none' }} />
+      <circle cx={12} cy={16.5} r={1.7} fill="currentColor" stroke="none" style={{ filter: on && !dark ? 'drop-shadow(0 0 3px rgba(var(--dj-rgb),0.95))' : 'none' }} />
     </svg>
   )
 }
@@ -143,7 +183,8 @@ export function LevelBars({ n, height, level, speaking, t, className }: { n: num
         ? 2 + height * bell * Math.min(1, (0.25 + 0.75 * level) * (0.35 + 0.65 * Math.abs(Math.sin(i * 0.83 + t * 6.1) * Math.cos(i * 0.29 - t * 3.7))))
         : 2 + height * 0.4 * bell * (0.6 + 0.4 * Math.abs(Math.sin(i * 1.7)))
     }
-    bars.push(<span key={i} style={{ height: Math.round(h), background: speaking ? 'rgba(168, 120, 255,0.9)' : 'rgba(168, 120, 255,0.3)' }} />)
+    // fixed-height bars scaled on the GPU (no layout, no transitions restarting every frame)
+    bars.push(<span key={i} className={speaking ? 'is-on' : ''} style={{ height: height + 2, transform: `scaleY(${(Math.round(h * 2) / 2 / (height + 2)).toFixed(3)})` }} />)
   }
   return (
     <span className={`dj-bars ${className ?? ''}`} style={{ height }} aria-hidden>

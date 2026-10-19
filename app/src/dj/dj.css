@@ -9,11 +9,17 @@
 }
 
 /* ── mark ── */
-.djm { position: relative; overflow: hidden; flex: none; box-sizing: border-box; }
+.djm { position: relative; overflow: hidden; flex: none; box-sizing: border-box; isolation: isolate; contain: paint; }
 .djm-tex { position: absolute; inset: 0; pointer-events: none; }
-.djm-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+/* the live SVG on its own layer: its repaints don't touch the blended texture layers under it */
+.djm-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; will-change: transform; }
+.djm-halo {
+  position: absolute; border-radius: 50%; pointer-events: none; will-change: transform, opacity;
+  background: radial-gradient(closest-side, rgba(var(--dj-rgb), 1) 0%, rgba(var(--dj-rgb), .55) 40%, rgba(var(--dj-rgb), 0) 100%);
+  opacity: calc(var(--halo-base, .4) + var(--lvl, 0) * .3);
+  transform: translate(-50%, -50%) scale(calc(1 + var(--lvl, 0) * var(--halo-grow, 0)));
+}
 .djm-svg.is-small { left: 12%; top: 12%; width: 76%; height: 76%; }
-.djm-arc { transition: stroke-opacity .2s; }
 .djm-label, .djm-speaking { position: absolute; bottom: 6%; font-family: var(--font-mono); line-height: 1; }
 .djm-label { left: 7%; letter-spacing: .42em; color: var(--ink-secondary); }
 .djm-speaking { right: 7%; letter-spacing: .16em; color: var(--dj); }
@@ -22,8 +28,8 @@
 .dj-bars { display: flex; align-items: center; gap: 4px; flex: 1; }
 .dj-bars.is-big { gap: 5px; }
 .dj-bars.is-mini { flex: none; gap: 2px; }
-.dj-bars > span { width: 2px; border-radius: 1px; flex: none; transition: height .12s linear; }
-html[data-motion='reduced'] .dj-bars > span { transition: none; }
+.dj-bars > span { width: 2px; border-radius: 1px; flex: none; background: rgba(var(--dj-rgb), .3); transform-origin: center; will-change: transform; }
+.dj-bars > span.is-on { background: rgba(var(--dj-rgb), .9); }
 .dj-segs { display: flex; gap: 3px; align-items: center; }
 .dj-segs > span { width: 12px; height: 1.5px; background: rgba(255, 255, 255, .14); flex: none; }
 .dj-segs.is-fluid { flex: 1; }
