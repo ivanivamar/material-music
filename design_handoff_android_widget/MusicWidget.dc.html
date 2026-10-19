@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://api.fontshare.com/v2/css?f[]=general-sans@300,400,500,600&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+JP:wght@300;400;500&amp;display=swap" rel="stylesheet">
+<style>
+@keyframes pg-eq{0%,100%{transform:scaleY(.3)}50%{transform:scaleY(1)}}
+@keyframes pg-breathe{0%,100%{opacity:.3}50%{opacity:1}}
+@media (prefers-reduced-motion: reduce){.pg-anim{animation:none !important}}
+</style>
+<script src="./pelagic-kit.js"></script>
+<script src="./home-kit.js"></script>
+</helmet>
+<div style="position:relative; width:{{ W }}px; height:{{ H }}px; border-radius:24px; overflow:hidden; background:{{ bg }}; box-shadow:inset 0 0 0 1px rgba(255,255,255,0.08), 0 18px 40px -18px rgba(0,0,0,0.7); font-family:'General Sans','Noto Sans JP',system-ui,sans-serif; color:#EDEDED; user-select:none; -webkit-user-select:none; transition:width .25s cubic-bezier(.16,1,.3,1), height .25s cubic-bezier(.16,1,.3,1);">
+  <sc-if value="{{ tinted }}">
+    <div style="position:absolute; inset:0; overflow:hidden; pointer-events:none;">
+      <img src="{{ art }}" alt="" style="position:absolute; left:-30%; top:-60%; width:110%; height:160%; object-fit:cover; filter:blur(48px) saturate(1.3); opacity:{{ lightOp }}; transition:opacity .6s ease;">
+      <div style="position:absolute; inset:0; background:radial-gradient(120% 110% at 100% 100%, #0B0B0C 25%, rgba(11,11,12,0.6) 60%, transparent 100%);"></div>
+      <div style="position:absolute; inset:0; background-image:{{ stone }}; background-size:900px 900px; opacity:0.09;"></div>
+      <div style="position:absolute; inset:0; background-image:{{ contour }}; background-size:1600px 1000px; background-position:{{ contourPos }}; opacity:0.075;"></div>
+      <div style="position:absolute; inset:0; background-image:{{ grain }}; background-size:220px 220px; opacity:0.035;"></div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ mTiny }}">
+    <img src="{{ art }}" alt="" style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:{{ artOp }};">
+    <div style="position:absolute; inset:0; background:linear-gradient(180deg, transparent 40%, rgba(5,5,5,0.55));"></div>
+    <sc-if value="{{ on }}"><div style="position:absolute; left:10px; top:10px; height:20px; padding:0 6px; border-radius:6px; background:rgba(5,5,5,0.8); display:flex; align-items:center;">{{ eq }}</div></sc-if>
+    <div onClick="{{ toggle }}" style="position:absolute; right:8px; bottom:8px; width:36px; height:36px; border-radius:50%; background:{{ btnBg }}; color:#0B0B0C; display:flex; align-items:center; justify-content:center; font-size:16px; cursor:pointer;">{{ playIc }}</div>
+  </sc-if>
+
+  <sc-if value="{{ mPill }}">
+    <div style="position:absolute; inset:0; padding:0 12px 0 16px; display:flex; align-items:center; gap:10px;">
+      <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:4px;">
+        <div style="display:flex; align-items:center; gap:6px; font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.14em; color:{{ labC }}; white-space:nowrap;">{{ eq }}<span style="overflow:hidden; text-overflow:ellipsis;">{{ labShort }}</span></div>
+        <div style="font-size:14px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ title }}</div>
+        <div style="font-size:12px; color:#8A8A8E; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ artist }}</div>
+      </div>
+      <div onClick="{{ toggle }}" style="width:44px; height:44px; flex:none; border-radius:50%; background:{{ btnBg }}; color:#0B0B0C; display:flex; align-items:center; justify-content:center; font-size:18px; cursor:pointer;">{{ playIc }}</div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ mSq }}">
+    <img src="{{ art }}" alt="" style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:{{ artOp }};">
+    <div style="position:absolute; inset:0; background:linear-gradient(180deg, rgba(5,5,5,0.35) 0%, transparent 30%, transparent 42%, rgba(8,8,10,0.92) 100%);"></div>
+    <div style="position:absolute; left:12px; top:12px; height:22px; padding:0 8px; border-radius:7px; background:rgba(5,5,5,0.72); display:flex; align-items:center; gap:6px; font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.14em; color:{{ labC }};">{{ eq }}{{ labShort }}</div>
+    <div style="position:absolute; left:14px; right:12px; bottom:14px; display:flex; align-items:flex-end; gap:10px;">
+      <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:3px;">
+        <div style="font-size:15px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ title }}</div>
+        <div style="font-size:12px; color:#BDBDBD; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ artist }}</div>
+      </div>
+      <div onClick="{{ toggle }}" style="width:44px; height:44px; flex:none; border-radius:50%; background:{{ btnBg }}; color:#0B0B0C; display:flex; align-items:center; justify-content:center; font-size:18px; cursor:pointer;">{{ playIc }}</div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ mBar }}">
+    <div style="position:absolute; inset:0; padding:0 10px 0 16px; display:flex; align-items:center; gap:12px;">
+      <img src="{{ art }}" alt="" style="width:48px; height:48px; flex:none; border-radius:10px; object-fit:cover; opacity:{{ artOp }}; box-shadow:0 0 0 1px rgba(255,255,255,0.08);">
+      <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:4px;">
+        <div style="display:flex; align-items:center; gap:8px; min-width:0;"><div style="font-size:15px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ title }}</div>{{ eq }}</div>
+        <div style="font-size:12px; color:#8A8A8E; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ artist }}</div>
+      </div>
+      <div style="display:flex; align-items:center; gap:2px; flex:none;">
+        <sc-if value="{{ showPrev }}"><div onClick="{{ prev }}" style="width:40px; height:44px; display:flex; align-items:center; justify-content:center; font-size:20px; cursor:pointer;">{{ ic.prev }}</div></sc-if>
+        <div onClick="{{ toggle }}" style="width:44px; height:44px; border-radius:50%; background:{{ btnBg }}; color:#0B0B0C; display:flex; align-items:center; justify-content:center; font-size:18px; cursor:pointer;">{{ playIc }}</div>
+        <div onClick="{{ next }}" style="width:40px; height:44px; display:flex; align-items:center; justify-content:center; font-size:20px; cursor:pointer;">{{ ic.next }}</div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ mWide }}">
+    <div style="position:absolute; inset:0; padding:16px; display:flex; gap:16px;">
+      <img src="{{ art }}" alt="" style="height:100%; aspect-ratio:1; flex:none; border-radius:14px; object-fit:cover; opacity:{{ artOp }}; box-shadow:0 0 0 1px rgba(255,255,255,0.08), 0 20px 40px -20px {{ glow }};">
+      <div style="flex:1; min-width:0; display:flex; flex-direction:column; justify-content:space-between;">
+        <div style="display:flex; flex-direction:column; gap:6px; min-width:0;">
+          <div style="display:flex; align-items:center; gap:6px; font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.14em; color:{{ labC }}; white-space:nowrap;">{{ eq }}<span style="overflow:hidden; text-overflow:ellipsis;">{{ labShort }}</span></div>
+          <div style="font-size:18px; font-weight:400; letter-spacing:-0.01em; line-height:1.15; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ title }}</div>
+          <div style="font-size:13px; color:#8A8A8E; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ artist }}</div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:6px;">
+          <div style="position:relative; height:9px;"><div style="position:absolute; left:0; right:0; top:4px; height:1px; background:rgba(255,255,255,0.18);"></div><div style="position:absolute; left:0; width:{{ pct }}; top:4px; height:1px; background:{{ acc }};"></div><div style="position:absolute; left:{{ pct }}; top:2px; width:5px; height:5px; margin-left:-2.5px; border-radius:50%; background:{{ acc }}; box-shadow:0 0 8px 2px {{ accGlow }};"></div></div>
+          <div style="display:flex; align-items:center; justify-content:space-between; margin:0 -8px;">
+            <div onClick="{{ like }}" style="width:40px; height:44px; display:flex; align-items:center; justify-content:center; font-size:19px; color:{{ likeC }}; cursor:pointer;">{{ likeIc }}</div>
+            <div style="display:flex; align-items:center; gap:2px;">
+              <div onClick="{{ prev }}" style="width:40px; height:44px; display:flex; align-items:center; justify-content:center; font-size:20px; cursor:pointer;">{{ ic.prev }}</div>
+              <div onClick="{{ toggle }}" style="width:44px; height:44px; border-radius:50%; background:{{ btnBg }}; color:#0B0B0C; display:flex; align-items:center; justify-content:center; font-size:18px; cursor:pointer;">{{ playIc }}</div>
+              <div onClick="{{ next }}" style="width:40px; height:44px; display:flex; align-items:center; justify-content:center; font-size:20px; cursor:pointer;">{{ ic.next }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ mTall }}">
+    <div style="position:absolute; inset:0; padding:16px; display:flex; flex-direction:column; gap:12px;">
+      <div style="display:flex; gap:14px; align-items:flex-end;">
+        <img src="{{ art }}" alt="" style="width:{{ tallArt }}px; height:{{ tallArt }}px; flex:none; border-radius:14px; object-fit:cover; opacity:{{ artOp }}; box-shadow:0 0 0 1px rgba(255,255,255,0.08), 0 24px 44px -20px {{ glow }};">
+        <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:6px; padding-bottom:2px;">
+          <div style="display:flex; align-items:center; gap:6px; font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.14em; color:{{ labC }}; white-space:nowrap;">{{ eq }}<span style="overflow:hidden; text-overflow:ellipsis;">{{ labLong }}</span></div>
+          <div style="font-size:22px; font-weight:400; letter-spacing:-0.015em; line-height:1.1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ title }}</div>
+          <div style="font-size:14px; color:#8A8A8E; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ artist }}</div>
+        </div>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:6px;">
+        <div style="position:relative; height:9px;"><div style="position:absolute; left:0; right:0; top:4px; height:1px; background:rgba(255,255,255,0.18);"></div><div style="position:absolute; left:0; width:{{ pct }}; top:4px; height:1px; background:{{ acc }};"></div><div style="position:absolute; left:{{ pct }}; top:2px; width:5px; height:5px; margin-left:-2.5px; border-radius:50%; background:{{ acc }}; box-shadow:0 0 8px 2px {{ accGlow }};"></div></div>
+        <div style="display:flex; justify-content:space-between; font-family:'IBM Plex Mono',monospace; font-size:10px; color:#8A8A8E;"><span>{{ posL }}</span><span>{{ durL }}</span></div>
+      </div>
+      <div style="display:flex; align-items:center; justify-content:space-between; margin:-4px -6px 0;">
+        <div onClick="{{ shuf }}" style="width:44px; height:44px; display:flex; align-items:center; justify-content:center; font-size:20px; color:{{ shufC }}; cursor:pointer;">{{ ic.shuffle }}</div>
+        <div onClick="{{ prev }}" style="width:44px; height:44px; display:flex; align-items:center; justify-content:center; font-size:22px; cursor:pointer;">{{ ic.prev }}</div>
+        <div onClick="{{ toggle }}" style="width:52px; height:52px; border-radius:50%; background:{{ btnBg }}; color:#0B0B0C; display:flex; align-items:center; justify-content:center; font-size:20px; cursor:pointer;">{{ playIc }}</div>
+        <div onClick="{{ next }}" style="width:44px; height:44px; display:flex; align-items:center; justify-content:center; font-size:22px; cursor:pointer;">{{ ic.next }}</div>
+        <div onClick="{{ like }}" style="width:44px; height:44px; display:flex; align-items:center; justify-content:center; font-size:20px; color:{{ likeC }}; cursor:pointer;">{{ likeIc }}</div>
+      </div>
+      <sc-if value="{{ hasUp }}">
+        <div style="display:flex; flex-direction:column; border-top:1px solid rgba(255,255,255,0.08); padding-top:4px;">
+          <sc-for list="{{ up }}" as="u" hint-placeholder-count="2">
+            <div onClick="{{ u.go }}" style="display:flex; align-items:center; gap:12px; height:44px; cursor:pointer;">
+              <img src="{{ u.img }}" alt="" style="width:32px; height:32px; border-radius:6px; object-fit:cover; flex:none;">
+              <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:1px;"><div style="font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ u.t }}</div><div style="font-size:11px; color:#8A8A8E; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ u.a }}</div></div>
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.14em; color:#55555A;">{{ u.n }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ iTiny }}">
+    <div onClick="{{ resume }}" style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; cursor:pointer;">
+      <div style="position:relative; width:28px; height:28px;"><div style="position:absolute; inset:0; border-radius:50%; border:1.5px solid rgba(255,255,255,0.9); box-sizing:border-box; clip-path:inset(0 0 50% 0);"></div><div style="position:absolute; inset:0; border-radius:50%; border:1.5px solid rgba(255,255,255,0.22); box-sizing:border-box; clip-path:inset(50% 0 0 0);"></div><div style="position:absolute; left:-7px; right:-7px; top:13.5px; height:1px; background:#FFFFFF; box-shadow:0 0 6px rgba(255,255,255,0.6);"></div></div>
+    </div>
+    <div style="position:absolute; left:0; right:0; bottom:10px; text-align:center; font-family:'IBM Plex Mono',monospace; font-size:8px; letter-spacing:0.16em; color:#8A8A8E; pointer-events:none;">PLAY</div>
+  </sc-if>
+
+  <sc-if value="{{ iPill }}">
+    <div style="position:absolute; inset:0; padding:0 12px 0 16px; display:flex; align-items:center; gap:10px;">
+      <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:4px;">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.14em; color:#8A8A8E; white-space:nowrap;">NOT PLAYING</div>
+        <div style="font-size:14px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Tsunami Sea</div>
+        <div style="font-size:12px; color:#8A8A8E; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Tap to resume</div>
+      </div>
+      <div onClick="{{ resume }}" style="width:44px; height:44px; flex:none; border-radius:50%; background:#EDEDED; color:#0B0B0C; display:flex; align-items:center; justify-content:center; font-size:18px; cursor:pointer;">{{ ic.playF }}</div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ iSq }}">
+    <div style="position:absolute; inset:0; padding:16px; display:flex; flex-direction:column; justify-content:space-between;">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <div style="position:relative; width:20px; height:20px; flex:none;"><div style="position:absolute; inset:0; border-radius:50%; border:1.5px solid rgba(255,255,255,0.9); box-sizing:border-box; clip-path:inset(0 0 50% 0);"></div><div style="position:absolute; inset:0; border-radius:50%; border:1.5px solid rgba(255,255,255,0.22); box-sizing:border-box; clip-path:inset(50% 0 0 0);"></div><div style="position:absolute; left:-5px; right:-5px; top:9.5px; height:1px; background:#FFFFFF;"></div></div>
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.16em; color:#8A8A8E;">NOTHING PLAYING</div>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <div style="display:flex; flex-direction:column; gap:3px; min-width:0;"><div style="font-size:17px; font-weight:400; letter-spacing:-0.01em;">Good evening</div><div style="font-size:12px; color:#8A8A8E; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Resume Tsunami Sea</div></div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <div onClick="{{ resume }}" style="width:44px; height:44px; flex:none; border-radius:50%; background:#EDEDED; color:#0B0B0C; display:flex; align-items:center; justify-content:center; font-size:18px; cursor:pointer;">{{ ic.playF }}</div>
+          <div onClick="{{ startDj }}" style="flex:1; height:44px; border-radius:22px; display:flex; align-items:center; justify-content:center; gap:8px; background:rgba(198,180,242,0.1); box-shadow:inset 0 0 0 1px rgba(198,180,242,0.4); color:rgb(198,180,242); font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.16em; cursor:pointer;"><span style="width:5px; height:5px; border-radius:50%; background:rgb(198,180,242); box-shadow:0 0 6px rgba(198,180,242,0.8);"></span>DJ</div>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ iBar }}">
+    <div style="position:absolute; inset:0; padding:0 10px 0 16px; display:flex; align-items:center; gap:12px;">
+      <div style="width:48px; height:48px; flex:none; border-radius:10px; box-shadow:inset 0 0 0 1px rgba(255,255,255,0.12); display:flex; align-items:center; justify-content:center;"><div style="position:relative; width:20px; height:20px;"><div style="position:absolute; inset:0; border-radius:50%; border:1.5px solid rgba(255,255,255,0.9); box-sizing:border-box; clip-path:inset(0 0 50% 0);"></div><div style="position:absolute; inset:0; border-radius:50%; border:1.5px solid rgba(255,255,255,0.22); box-sizing:border-box; clip-path:inset(50% 0 0 0);"></div><div style="position:absolute; left:-5px; right:-5px; top:9.5px; height:1px; background:#FFFFFF;"></div></div></div>
+      <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:4px;">
+        <div style="font-size:15px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Nothing playing</div>
+        <div style="font-size:12px; color:#8A8A8E; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Resume Tsunami Sea</div>
+      </div>
+      <div style="display:flex; align-items:center; gap:8px; flex:none;">
+        <sc-if value="{{ showPrev }}"><div onClick="{{ startDj }}" style="height:36px; padding:0 14px; border-radius:18px; display:flex; align-items:center; gap:7px; background:rgba(198,180,242,0.1); box-shadow:inset 0 0 0 1px rgba(198,180,242,0.4); color:rgb(198,180,242); font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.16em; cursor:pointer;"><span style="width:5px; height:5px; border-radius:50%; background:rgb(198,180,242); box-shadow:0 0 6px rgba(198,180,242,0.8);"></span>DJ</div></sc-if>
+        <div onClick="{{ resume }}" style="width:44px; height:44px; border-radius:50%; background:#EDEDED; color:#0B0B0C; display:flex; align-items:center; justify-content:center; font-size:18px; cursor:pointer;">{{ ic.playF }}</div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ iGrid }}">
+    <div style="position:absolute; inset:0; padding:16px; display:flex; flex-direction:column; justify-content:space-between; gap:10px;">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <div style="position:relative; width:20px; height:20px; flex:none;"><div style="position:absolute; inset:0; border-radius:50%; border:1.5px solid rgba(255,255,255,0.9); box-sizing:border-box; clip-path:inset(0 0 50% 0);"></div><div style="position:absolute; inset:0; border-radius:50%; border:1.5px solid rgba(255,255,255,0.22); box-sizing:border-box; clip-path:inset(50% 0 0 0);"></div><div style="position:absolute; left:-5px; right:-5px; top:9.5px; height:1px; background:#FFFFFF;"></div></div>
+        <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:2px;">
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.16em; color:#8A8A8E;">NOTHING PLAYING</div>
+          <sc-if value="{{ iTall }}"><div style="font-size:20px; font-weight:400; letter-spacing:-0.015em;">Good evening</div></sc-if>
+        </div>
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px;">
+        <sc-for list="{{ picks }}" as="p" hint-placeholder-count="3">
+          <div onClick="{{ p.go }}" style="position:relative; aspect-ratio:1; border-radius:14px; overflow:hidden; background:{{ p.bg }}; box-shadow:{{ p.ring }}; cursor:pointer;">
+            <sc-if value="{{ p.img }}"><img src="{{ p.img }}" alt="" style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover;"><div style="position:absolute; inset:0; background:linear-gradient(180deg, transparent 35%, rgba(8,8,10,0.9));"></div></sc-if>
+            <sc-if value="{{ p.dj }}"><div style="position:absolute; left:50%; top:38%; width:28px; height:28px; margin:-14px 0 0 -14px; border-radius:50%; box-shadow:inset 0 0 0 1px rgba(198,180,242,0.6), 0 0 18px rgba(198,180,242,0.45); display:flex; align-items:center; justify-content:center;"><div style="width:6px; height:6px; border-radius:50%; background:rgb(198,180,242);"></div></div></sc-if>
+            <div style="position:absolute; left:10px; right:8px; bottom:9px; display:flex; flex-direction:column; gap:2px;">
+              <div style="font-size:13px; font-weight:500; color:{{ p.fg }}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ p.t }}</div>
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:8px; letter-spacing:0.14em; color:{{ p.sc }}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ p.s }}</div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+      <sc-if value="{{ iTall }}">
+        <div onClick="{{ shufAll }}" style="height:44px; flex:none; border-radius:14px; padding:0 14px; display:flex; align-items:center; gap:12px; background:rgba(255,255,255,0.04); box-shadow:inset 0 0 0 1px rgba(255,255,255,0.08); cursor:pointer;">
+          <span style="font-size:18px; display:flex;">{{ ic.shuffle }}</span>
+          <span style="flex:1; font-size:14px;">Shuffle library</span>
+          <span style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.14em; color:#8A8A8E;">3,912 SONGS</span>
+        </div>
+      </sc-if>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ hairline }}">
+    <div style="position:absolute; left:0; right:0; bottom:0; height:1.5px; background:rgba(255,255,255,0.12);"><div style="width:{{ pct }}; height:1.5px; background:{{ acc }}; box-shadow:0 0 6px {{ accGlow }};"></div></div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:368,&quot;height&quot;:176},&quot;cols&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:4,&quot;min&quot;:1,&quot;max&quot;:4,&quot;tsType&quot;:&quot;number&quot;},&quot;rows&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:2,&quot;min&quot;:1,&quot;max&quot;:4,&quot;tsType&quot;:&quot;number&quot;},&quot;state&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;playing&quot;,&quot;paused&quot;,&quot;dj&quot;,&quot;idle&quot;],&quot;default&quot;:&quot;playing&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;tinted&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;tinted&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;track&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;tsunami&quot;,&quot;wing&quot;,&quot;zanmu&quot;,&quot;under&quot;,&quot;fear&quot;],&quot;default&quot;:&quot;tsunami&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;reduced&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;live&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;}}">
+const h = React.createElement;
+let PK = null, HK = null;
+const kits = () => { if (!PK && window.PelagicKit) PK = window.PelagicKit(h); if (!HK && PK && window.HomeKit) HK = window.HomeKit(h, PK); return PK && HK ? [PK, HK] : null; };
+const U = 80, G = 16, LIL = 'rgb(198,180,242)';
+const TR = {
+  tsunami: { k: 'spiritbox-tsunami-sea', t: 'Soft Spine', a: 'Spiritbox', from: 'TSUNAMI SEA', dur: 226, hue: 235 },
+  wing: { k: 'wing-dopamine', t: 'Evil', a: 'Interpol', from: 'INTERPOL RADIO', dur: 216, hue: 30 },
+  zanmu: { k: 'ado-zanmu', t: '唱 Show', a: 'Ado', from: 'ZANMU', dur: 189, hue: 15 },
+  under: { k: 'eve-under-blue', t: 'Kaikai Kitan', a: 'Eve', from: 'UNDER BLUE', dur: 221, hue: 220 },
+  fear: { k: 'spiritbox-fear-of-fear', t: 'Jaded', a: 'Spiritbox', from: 'THE FEAR OF FEAR', dur: 205, hue: 200 },
+};
+const ORDER = ['tsunami', 'wing', 'zanmu', 'under', 'fear'];
+const fmt = s => { s = Math.max(0, Math.floor(s)); return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); };
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+class Component extends DCLogic {
+  state = { on: undefined, ti: undefined, pos: null, liked: false, shuf: false };
+  componentDidMount() {
+    if (!kits()) this.kp = setInterval(() => { if (kits()) { clearInterval(this.kp); this.forceUpdate(); } }, 100);
+    this.tk = setInterval(() => { if (this.isOn() && this.props.live !== false) { const d = this.cur().dur; this.setState(s => { const p = (s.pos ?? d * 0.34) + 1; return p >= d ? { pos: 0, ti: (this.idx() + 1) % ORDER.length } : { pos: p }; }); } }, 1000);
+  }
+  componentWillUnmount() { clearInterval(this.kp); clearInterval(this.tk); }
+  idle() { return (this.props.state ?? 'playing') === 'idle' && !this.state.started; }
+  dj() { return this.state.dj ?? (this.props.state ?? 'playing') === 'dj'; }
+  isOn() { if (this.idle()) return false; return this.state.on !== undefined ? this.state.on : !['paused', 'idle'].includes(this.props.state ?? 'playing'); }
+  start(o) { this.setState(Object.assign({ started: true, on: true, pos: 0, dj: false }, o)); }
+  idx() { return this.state.ti !== undefined ? this.state.ti : Math.max(0, ORDER.indexOf(this.props.track ?? 'tsunami')); }
+  cur() { return TR[ORDER[this.idx()]]; }
+  step(d) { this.setState({ ti: (this.idx() + d + ORDER.length) % ORDER.length, pos: 0 }); }
+  renderVals() {
+    const P = this.props, c = clamp(P.cols ?? 4, 1, 4), r = clamp(P.rows ?? 2, 1, 4);
+    const W = c * U + (c - 1) * G, H = r * U + (r - 1) * G;
+    const tr = this.cur(), on = this.isOn(), dj = this.dj(), dark = (P.theme ?? 'tinted') === 'dark';
+    const pos = this.state.pos ?? tr.dur * 0.34, hue = dj ? 295 : tr.hue;
+    const acc = dj ? LIL : '#FFFFFF';
+    const idle = this.idle(), a = !idle;
+    const mTiny = a && c === 1, mPill = a && c === 2 && r === 1, mSq = a && c === 2 && r >= 2, mBar = a && c >= 3 && r === 1, mWide = a && c >= 3 && r === 2, mTall = a && c >= 3 && r >= 3;
+    const iTiny = idle && c === 1, iPill = idle && c === 2 && r === 1, iSq = idle && c === 2 && r >= 2, iBar = idle && c >= 3 && r === 1, iGrid = idle && c >= 3 && r >= 2, iTall = iGrid && r >= 3;
+    const PICKS = [['tsunami', 'Tsunami Sea', 'RESUME'], ['dj'], ['under', 'Daily Mix 1', 'MADE FOR YOU'], ['zanmu', 'Ado Radio', 'RADIO'], ['fear', 'Daily Mix 2', 'MADE FOR YOU'], ['wing', 'Rediscover', 'LAST PLAYED JUN']];
+    const picks = (iGrid ? PICKS.slice(0, r >= 4 ? 6 : 3) : []).map(p => p[0] === 'dj'
+      ? { dj: true, img: null, t: 'DJ', s: 'TAP TO START', fg: '#FFFFFF', sc: LIL, bg: 'radial-gradient(100% 100% at 50% 30%, rgba(198,180,242,0.18), rgba(198,180,242,0.04) 70%)', ring: 'inset 0 0 0 1px rgba(198,180,242,0.35)', go: () => this.start({ dj: true, ti: 1 }) }
+      : { dj: false, img: './art/' + TR[p[0]].k + '.jpg', t: p[1], s: p[2], fg: '#EDEDED', sc: '#BDBDBD', bg: '#141416', ring: 'inset 0 0 0 1px rgba(255,255,255,0.08)', go: () => this.start({ ti: ORDER.indexOf(p[0]) }) });
+    const tallArt = 88, nUp = mTall ? Math.max(0, Math.floor((H - 16 - tallArt - 12 - 30 - 12 - 48 - 16 - 8) / 44)) : 0;
+    const base = {
+      W, H, mTiny, mPill, mSq, mBar, mWide, mTall, iTiny, iPill, iSq, iBar, iGrid, iTall, picks, tallArt, showPrev: c >= 4, hairline: mPill || mSq || mBar || mTiny,
+      resume: () => this.start({ ti: 0 }), startDj: () => this.start({ dj: true, ti: 1 }), shufAll: () => this.start({ ti: 3, shuf: true }),
+      art: './art/' + tr.k + '.jpg', title: tr.t, artist: tr.a, artOp: on ? 1 : 0.62,
+      bg: dark ? '#141416' : '#0B0B0C', tinted: !dark, lightOp: idle ? 0 : on ? 0.42 : 0.22,
+      contourPos: `-${(ORDER.indexOf(P.track ?? 'tsunami') * 170 + c * 90 + r * 40) % 900}px -${(r * 120) % 500}px`,
+      glow: `oklch(0.34 0.06 ${hue} / 0.9)`, acc, accGlow: dj ? 'rgba(198,180,242,0.6)' : 'rgba(255,255,255,0.5)',
+      btnBg: dj ? LIL : '#EDEDED', labC: dj ? LIL : on ? '#BDBDBD' : '#8A8A8E',
+      labShort: dj ? 'DJ · ON AIR' : on ? 'PLAYING' : 'PAUSED',
+      labLong: dj ? 'DJ · ON AIR · 3/7' : (on ? 'PLAYING FROM ' : 'PAUSED · ') + tr.from,
+      pct: (pos / tr.dur * 100).toFixed(2) + '%', posL: fmt(pos), durL: fmt(tr.dur), on,
+      toggle: () => this.setState({ on: !on }), next: () => this.step(1), prev: () => this.step(-1),
+      like: () => this.setState(s => ({ liked: !s.liked })), shuf: () => this.setState(s => ({ shuf: !s.shuf })),
+      likeC: this.state.liked ? acc : '#8A8A8E', shufC: this.state.shuf ? acc : '#8A8A8E',
+      hasUp: nUp > 0, ic: {},
+    };
+    const k = kits(); if (!k) return base;
+    const [PKk, X] = k, IC = PKk.IC, m = (P.motion ?? 'full') !== 'reduced';
+    const up = [];
+    for (let i = 1; i <= nUp; i++) { const j = (this.idx() + i) % ORDER.length, t = TR[ORDER[j]]; up.push({ t: t.t, a: t.a, img: './art/' + t.k + '.jpg', n: i === 1 ? 'NEXT' : '+' + i, go: () => this.setState({ ti: j, pos: 0 }) }); }
+    return Object.assign(base, {
+      stone: PKk.STONE, contour: m ? PKk.CONTOUR_LIVE : PKk.CONTOUR_SMOOTH, grain: PKk.GRAIN,
+      ic: IC, playIc: on ? IC.pauseF : IC.playF, likeIc: this.state.liked ? IC.heartF : IC.heart,
+      eq: on ? X.eq(m, dj ? LIL : undefined) : null, up,
+    });
+  }
+}
+</script>
+</body>
+</html>
