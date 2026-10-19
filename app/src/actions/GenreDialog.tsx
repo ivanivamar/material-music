@@ -1,6 +1,6 @@
 /**
  * Edit genre (step 20b) — album or artist ⋯ menu. Chips + a field with suggestions from the
- * library. Saving an empty list (or "Use automatic") goes back to tags / MusicBrainz.
+ * library (GenreCombo dropdown). Saving an empty list (or "Use automatic") goes back to tags / MusicBrainz.
  *
  *   GENRE · RINGS OF SATURN                                ×
  *   [Metalcore ×] [Post-hardcore ×] [ Add a genre      ]
@@ -15,6 +15,7 @@ import { useLibrary } from '../state/library'
 import { libraryFacets } from '../state/smart'
 import { actions } from './actions'
 import { Shell } from './Dialogs'
+import { GenreCombo } from './GenreCombo'
 
 export function GenreDialog({ target, id }: { target: 'album' | 'artist'; id: string }) {
   const toast = useToast()
@@ -36,7 +37,9 @@ export function GenreDialog({ target, id }: { target: 'album' | 'artist'; id: st
 
   const [list, setList] = useState<string[]>(() => current?.genres ?? [])
   const [text, setText] = useState('')
-  const suggestions = useMemo(() => (data ? libraryFacets(data, doc).genres : []), [data, doc])
+  const facets = useMemo(() => (data ? libraryFacets(data, doc) : null), [data, doc])
+  const suggestions = facets?.genres ?? []
+  const counts = facets?.genreSongs
 
   if (!data || (!album && !artist)) return null
 
@@ -80,30 +83,30 @@ export function GenreDialog({ target, id }: { target: 'album' | 'artist'; id: st
               </button>
             </span>
           ))}
-          <input
-            className="gd-input"
+          <GenreCombo
+            className="gd-combo"
+            inputClassName="gd-input"
             value={text}
-            list="gd-suggest"
-            placeholder={list.length ? 'Add another' : 'Add a genre'}
-            autoFocus
-            enterKeyHint="done"
-            maxLength={60}
-            onChange={(e) => {
-              const v = e.target.value
+            genres={suggestions}
+            counts={counts}
+            exclude={list}
+            allowNew
+            onChange={(v) => {
               if (/[;,]$/.test(v)) add(v)
               else setText(v)
             }}
-            onKeyDown={(e) => {
-              if (e.key === 'Backspace' && !text && list.length) setList((l) => l.slice(0, -1))
+            onPick={(g) => add(g)}
+            inputProps={{
+              placeholder: list.length ? 'Add another' : 'Add a genre',
+              autoFocus: true,
+              enterKeyHint: 'done',
+              maxLength: 60,
+              'aria-label': 'Add a genre',
+              onKeyDown: (e) => {
+                if (e.key === 'Backspace' && !text && list.length) setList((l) => l.slice(0, -1))
+              },
             }}
           />
-          <datalist id="gd-suggest">
-            {suggestions
-              .filter((g) => !list.some((x) => x.toLowerCase() === g.toLowerCase()))
-              .map((g) => (
-                <option key={g} value={g} />
-              ))}
-          </datalist>
         </div>
         <div className="gd-info">
           <div className="dlg-hint">NOW · {current?.genres.length ? `${current.genres.join(' · ').toUpperCase()} · ${SOURCE_LABEL[current.source]}` : 'NONE'}</div>

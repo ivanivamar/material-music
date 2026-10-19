@@ -17,6 +17,7 @@ import { Icon } from '../design/icons'
 import { useCover } from '../lib/covers'
 import { MosaicTiles } from '../pages/playlists/PlaylistCover'
 import { useGenres } from '../state/genres'
+import { GenreCombo } from './GenreCombo'
 import { useHistory } from '../state/history'
 import { useLibrary } from '../state/library'
 import { usePlaylists } from '../state/playlists'
@@ -292,7 +293,6 @@ function Period({ amount, unit, onChange }: { amount: number; unit: Unit; onChan
 function RuleRow({ r, f, onChange, onRemove }: { r: Rule; f: Facets | null; onChange: (r: Rule) => void; onRemove: () => void }) {
   const genres = f?.genres ?? []
   const decades = f?.decades ?? []
-  const listId = `sm-genres-${r.id}`
 
   let rest: React.ReactNode = null
   switch (r.field) {
@@ -348,20 +348,26 @@ function RuleRow({ r, f, onChange, onRemove }: { r: Rule; f: Facets | null; onCh
       rest = (
         <>
           <Select value={r.op} options={TEXT_OPS} label="Condition" onChange={(op) => onChange({ ...r, op })} />
-          <input
-            className="dlg-input sm-text"
-            value={r.value}
-            aria-label="Value"
-            placeholder={r.field === 'genre' ? 'Genre' : r.field === 'artist' ? 'Artist name' : r.field === 'album' ? 'Album title' : 'Song title'}
-            list={r.field === 'genre' ? listId : undefined}
-            onChange={(e) => onChange({ ...r, value: e.target.value })}
-          />
-          {r.field === 'genre' && (
-            <datalist id={listId}>
-              {genres.map((g) => (
-                <option key={g} value={g} />
-              ))}
-            </datalist>
+          {r.field === 'genre' ? (
+            <GenreCombo
+              className="sm-combo"
+              inputClassName="dlg-input sm-text"
+              value={r.value}
+              genres={genres}
+              counts={f?.genreSongs}
+              closeOnPick
+              onChange={(value) => onChange({ ...r, value })}
+              onPick={(value) => onChange({ ...r, value })}
+              inputProps={{ 'aria-label': 'Genre', placeholder: 'Genre' }}
+            />
+          ) : (
+            <input
+              className="dlg-input sm-text"
+              value={r.value}
+              aria-label="Value"
+              placeholder={r.field === 'artist' ? 'Artist name' : r.field === 'album' ? 'Album title' : 'Song title'}
+              onChange={(e) => onChange({ ...r, value: e.target.value })}
+            />
           )}
         </>
       )

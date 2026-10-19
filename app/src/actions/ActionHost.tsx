@@ -218,6 +218,8 @@ export function ActionHost() {
     if (!menu && !dialog) return
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return
+      // an open genre dropdown closes first (GenreCombo handles its own Esc)
+      if ((e.target as Element | null)?.closest?.('.gc.is-open')) return
       e.preventDefault()
       e.stopPropagation()
       actions.closeTop()

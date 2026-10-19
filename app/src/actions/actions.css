@@ -256,3 +256,31 @@
 /* Start radio (step 26): mono hint under the label in the phone sheet; the menu hint brightens on hover */
 .as-sub { display: block; font-family: var(--font-mono); font-size: 9px; letter-spacing: .12em; color: #bdbdbd; margin-top: 2px; }
 .menu-item:hover .am-hint, .am-item:hover .am-hint { color: #bdbdbd; }
+
+/* Genre dropdown (GenreCombo): Edit genre + the smart playlist genre rule */
+.gc { position: relative; display: flex; align-items: center; min-width: 0; }
+.gc-input { width: 100%; }
+.gc-chev {
+  position: absolute; right: 4px; top: 50%; transform: translateY(-50%); width: 28px; height: 28px; border: 0; border-radius: 8px;
+  background: none; color: var(--ink-secondary); display: flex; align-items: center; justify-content: center; font-size: 15px; cursor: pointer; padding: 0;
+  transition: transform .2s var(--ease), color .2s;
+}
+.gc-chev:hover { color: var(--ink-primary); }
+.gc.is-open .gc-chev { transform: translateY(-50%) rotate(180deg); }
+.gc .gc-input { padding-right: 34px !important; }
+.gd-combo { flex: 1; min-width: 140px; }
+.sm-combo { flex: 1; min-width: 140px; }
+.sm-combo .sm-text { flex: 1; width: 100%; }
+.gc-list {
+  position: fixed; z-index: 90; overflow-y: auto; overscroll-behavior: contain; padding: 6px; box-sizing: border-box;
+  border-radius: 12px; background: var(--menu); border: 1px solid rgba(255, 255, 255, .09); box-shadow: var(--elevation);
+  animation: pg-menu-in var(--dur-menu-move) var(--ease) both; scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, .14) transparent;
+}
+.gc-opt { display: flex; align-items: center; gap: 10px; height: 38px; padding: 0 12px; border-radius: 9px; cursor: pointer; font-size: 14px; color: var(--ink-primary); }
+.gc-opt.is-active { background: var(--surface-2); }
+.gc-name { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gc-n { flex: none; font-family: var(--font-mono); font-size: 9px; letter-spacing: .12em; color: var(--ink-tertiary); }
+.gc-opt.is-active .gc-n { color: var(--ink-secondary); }
+.gc-plus { display: inline-flex; font-size: 16px; color: var(--ink-secondary); }
+.gc-empty { padding: 10px 12px; font-size: 13px; color: var(--ink-tertiary); }
+html[data-phone] .gc-opt { height: 44px; font-size: 15px; }

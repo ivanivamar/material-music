@@ -127,6 +127,8 @@ export const ruleId = () => Math.random().toString(36).slice(2, 10)
 export interface Facets {
   genres: string[]
   decades: number[]
+  /** songs per genre (display name → count), for the genre dropdown */
+  genreSongs?: Record<string, number>
 }
 
 export function defaultRule(field: Field, f?: Facets | null): Rule {
@@ -285,6 +287,7 @@ export function libraryFacets(c: Catalogue, doc: GenresDoc): Facets {
     }
     f = {
       genres: [...counts.values()].sort((a, b) => b.n - a.n || a.name.localeCompare(b.name)).map((g) => g.name),
+      genreSongs: Object.fromEntries([...counts.values()].map((g) => [g.name, g.n])),
       decades: [...decades].sort((a, b) => b - a),
     }
     byCat.set(c, f)
