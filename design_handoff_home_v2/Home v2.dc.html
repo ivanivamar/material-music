@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://api.fontshare.com/v2/css?f[]=general-sans@300,400,500,600&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+JP:wght@300;400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#030303;-webkit-font-smoothing:antialiased}
+a{color:#EDEDED;text-decoration:underline;text-underline-offset:3px}a:hover{color:#FFFFFF}
+@keyframes pg-eq{0%,100%{transform:scaleY(.3)}50%{transform:scaleY(1)}}
+@keyframes pg-shimmer{0%{background-position:150% 0}100%{background-position:-50% 0}}
+@keyframes pg-breathe{0%,100%{opacity:.3}50%{opacity:1}}
+@media (prefers-reduced-motion: reduce){.pg-anim{animation:none !important}.pg-snow{display:none !important}}
+</style>
+<script src="./pelagic-kit.js"></script>
+<script src="./home-kit.js"></script>
+</helmet>
+<div style="min-height:100vh; background:#030303; padding:96px; font-family:'General Sans','Noto Sans JP',system-ui,sans-serif; color:#EDEDED; display:flex; flex-direction:column; gap:120px;">
+
+<div style="display:flex; align-items:flex-end; justify-content:space-between; gap:64px; max-width:1900px;">
+  <div style="display:flex; flex-direction:column; gap:16px; max-width:940px;">
+    <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.16em; color:#8A8A8E;">PELAGIC / HOME V2 · MIXES AND RADIO</div>
+    <div style="font-size:52px; font-weight:400; letter-spacing:-0.025em; line-height:1.08;">A Home built from your own plays: jump back in, daily mixes, radio and your artists.</div>
+    <div style="font-size:17px; color:#8A8A8E; line-height:1.55; text-wrap:pretty;">Everything here comes from the library and its play history. New order: greeting → Jump back in → yearly recap (18 Dec – 31 Jan) → Made for you → Radio for you → Recently added → Your artists → Smart playlists → Rediscover. The DJ is back in the badge lilac rgb(198,180,242). Frames in 01 and 02 are clickable: hover and play tiles and cards, tap the DJ tile to start it.</div>
+  </div>
+  <div style="display:flex; flex-direction:column; gap:10px; align-items:flex-end;">
+    <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.16em; color:#55555A;">MOTION · APPLIES TO EVERY FRAME</div>
+    <div style="display:flex; padding:3px; border-radius:999px; border:1.5px solid rgba(255,255,255,0.12);">
+      <sc-for list="{{ motionSeg }}" as="o" hint-placeholder-count="2"><div onClick="{{ o.go }}" style="height:34px; padding:0 18px; border-radius:999px; display:flex; align-items:center; font-size:14px; cursor:pointer; background:{{ o.bg }}; color:{{ o.fg }}; box-shadow:{{ o.sh }};">{{ o.l }}</div></sc-for>
+    </div>
+  </div>
+</div>
+
+<!-- 01 -->
+<div style="display:flex; flex-direction:column; gap:20px;">
+  <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.16em; color:#55555A;">01 / HOME · DESKTOP</div>
+  <div style="display:flex; flex-wrap:wrap; gap:64px; align-items:flex-start;">
+    <div data-screen-label="01 Desktop Home 1440" style="display:flex; flex-direction:column; gap:12px;">
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.12em; color:#8A8A8E;">1440 × 900 · INTERACTIVE</div>
+      <dc-import name="DeskScreen" w="{{ 1440 }}" h="{{ 900 }}" live="{{ true }}" motion="{{ motion }}" hint-size="1440px,900px"></dc-import>
+    </div>
+    <div data-screen-label="01 Desktop Home 1180" style="display:flex; flex-direction:column; gap:12px;">
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.12em; color:#8A8A8E;">1180 × 760 · DJ ON AIR</div>
+      <dc-import name="DeskScreen" w="{{ 1180 }}" h="{{ 760 }}" dj="onair" live="{{ true }}" motion="{{ motion }}" hint-size="1180px,760px"></dc-import>
+    </div>
+  </div>
+  <div style="max-width:900px; font-size:14px; line-height:1.6; color:#8A8A8E; text-wrap:pretty;">Jump back in sits right under the greeting as eight compact tiles: the DJ first, then the last seven things played from, synced between PC and phone. Square 168px shelves follow, then the round artist row breaks the rhythm before smart playlists. Shelves keep the existing mono label + hairline header and are 44px apart; the last card in each row is cut off by the window edge to show the row scrolls.</div>
+</div>
+
+<!-- 02 -->
+<div style="display:flex; flex-direction:column; gap:20px;">
+  <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.16em; color:#55555A;">02 / HOME · ANDROID</div>
+  <div style="display:flex; flex-wrap:wrap; gap:56px; align-items:flex-start;">
+    <div data-screen-label="02 Phone Home 412" style="display:flex; flex-direction:column; gap:12px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.12em; color:#8A8A8E;">412 × 915 · TAP DJ · HOLD = PANEL</div><dc-import name="PhoneScreen" w="{{ 412 }}" h="{{ 915 }}" live="{{ true }}" motion="{{ motion }}" hint-size="412px,915px"></dc-import></div>
+    <div data-screen-label="02 Phone Home 360" style="display:flex; flex-direction:column; gap:12px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.12em; color:#8A8A8E;">360 × 740</div><dc-import name="PhoneScreen" w="{{ 360 }}" h="{{ 740 }}" motion="{{ motion }}" hint-size="360px,740px"></dc-import></div>
+    <div data-screen-label="02 Phone Home intro" style="display:flex; flex-direction:column; gap:12px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.12em; color:#8A8A8E;">412 × 915 · DJ INTRO SPEAKING</div><dc-import name="PhoneScreen" w="{{ 412 }}" h="{{ 915 }}" dj="intro" live="{{ true }}" motion="{{ motion }}" hint-size="412px,915px"></dc-import></div>
+  </div>
+</div>
+
+<!-- 03 -->
+<div style="display:flex; flex-direction:column; gap:20px;">
+  <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.16em; color:#55555A;">03 / OVERALL RHYTHM · SCROLLED TOP TO BOTTOM · 22 DEC, SO THE RECAP SHELF IS IN</div>
+  <div style="display:flex; flex-wrap:wrap; gap:64px; align-items:flex-start;">
+    <div data-screen-label="03 Desktop full scroll" style="display:flex; flex-direction:column; gap:12px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.12em; color:#8A8A8E;">DESKTOP 1440 · FULL LENGTH</div><dc-import name="DeskScreen" w="{{ 1440 }}" full="{{ true }}" recap="{{ true }}" motion="{{ motion }}" hint-size="1440px,2600px"></dc-import></div>
+    <div data-screen-label="03 Phone full scroll" style="display:flex; flex-direction:column; gap:12px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.12em; color:#8A8A8E;">ANDROID 412 · FULL LENGTH</div><dc-import name="PhoneScreen" w="{{ 412 }}" full="{{ true }}" recap="{{ true }}" motion="{{ motion }}" hint-size="412px,2700px"></dc-import></div>
+    <div style="width:420px; display:flex; flex-direction:column; gap:18px; font-size:14px; line-height:1.6; color:#8A8A8E;">
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.16em; color:#EDEDED;">SPACING</div>
+      <div style="text-wrap:pretty;">Three shapes, three densities. Compact tiles (72px desktop, 64px phone, 12px / 8px gaps) read as one block of quick actions. Square cards (168 / 140) carry the generated and album art. Round avatars (132 / 104) sit in a lighter row with mono play counts, so the eye gets a rest before the smart playlists.</div>
+      <div style="text-wrap:pretty;">Shelf to shelf: 44px desktop, 30px phone. Header to row: 16px / 14px. Card art to title: 12px / 10px. Card gap: 24px / 14px. Avatar gap: 28px / 18px.</div>
+      <div style="text-wrap:pretty;">The recap shelf is the existing one, untouched, and only appears from 18 Dec to 31 Jan, directly under Jump back in.</div>
+    </div>
+  </div>
+</div>
+
+<!-- 04 -->
+<div style="display:flex; flex-direction:column; gap:20px;">
+  <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.16em; color:#55555A;">04 / JUMP BACK IN · TILES</div>
+  <div data-screen-label="04 Tiles" style="width:1440px; border-radius:20px; background:#070708; border:1.5px solid rgba(255,255,255,0.07); padding:56px; box-sizing:border-box; display:flex; flex-direction:column; gap:48px;">
+    <div style="display:flex; flex-direction:column; gap:18px;">
+      <div style="display:flex; align-items:baseline; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:14px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.16em;">DJ TILE · ALWAYS FIRST · DESKTOP 265 WIDE</div><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.14em; color:#55555A;">TAP = FULL-SCREEN PLAYER (DJ START VIEW, OR INTO THE RUN) · RIGHT-CLICK / LONG-PRESS = DJ PANEL</div></div>
+      <div style="display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:16px;">
+        <sc-for list="{{ djStatesD }}" as="t" hint-placeholder-count="5">
+          <div style="display:flex; flex-direction:column; gap:12px; min-width:0;">
+            <div style="position:relative; height:72px; min-width:0; display:flex; align-items:center; gap:14px; padding:8px 12px 8px 8px; box-sizing:border-box; border-radius:12px; background:{{ t.bg }}; box-shadow:{{ t.sh }}; transform:scale({{ t.sc }});">
+              {{ t.alive }}{{ t.art }}
+              <div style="position:relative; flex:1; min-width:0; display:flex; flex-direction:column; gap:5px;"><div style="font-size:14px; font-weight:500; color:{{ t.fg }}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ t.name }}</div><div style="display:flex; align-items:center; gap:8px; min-width:0; font-family:{{ t.sf }}; font-size:{{ t.sfs }}px; letter-spacing:{{ t.sls }}; color:{{ t.sc2 }}; white-space:nowrap;">{{ t.eq }}<span style="overflow:hidden; text-overflow:ellipsis;">{{ t.sub }}</span></div></div>
+              <div style="position:relative; width:32px; height:32px; flex:none; border-radius:50%; display:flex; align-items:center; justify-content:center; background:{{ t.pbBg }}; color:#0B0B0C; font-size:14px; opacity:{{ t.pbOp }};">{{ t.pbIc }}</div>
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.14em; color:#EDEDED;">{{ t.cap }}</div>
+            <div style="font-size:13px; line-height:1.5; color:#8A8A8E; text-wrap:pretty;">{{ t.note }}</div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display:flex; gap:12px; align-items:center;">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.14em; color:#55555A; width:120px;">PHONE · 182 WIDE</div>
+        <sc-for list="{{ djStatesP }}" as="t" hint-placeholder-count="4">
+          <div style="width:182px; display:flex; flex-direction:column; gap:8px;">
+            <div style="position:relative; height:64px; min-width:0; display:flex; align-items:center; gap:10px; padding:8px 10px 8px 8px; box-sizing:border-box; border-radius:12px; background:{{ t.bg }}; box-shadow:{{ t.sh }}; transform:scale({{ t.sc }});">
+              {{ t.alive }}{{ t.art }}
+              <div style="position:relative; flex:1; min-width:0; display:flex; flex-direction:column; gap:4px;"><div style="font-size:13px; font-weight:500; color:{{ t.fg }}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ t.name }}</div><div style="display:flex; align-items:center; gap:6px; min-width:0; font-family:{{ t.sf }}; font-size:{{ t.sfsP }}px; letter-spacing:{{ t.sls }}; color:{{ t.sc2 }}; white-space:nowrap;">{{ t.eq }}<span style="overflow:hidden; text-overflow:ellipsis;">{{ t.subP }}</span></div></div>
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.14em; color:#8A8A8E;">{{ t.cap }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:18px;">
+      <div style="display:flex; align-items:baseline; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:14px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.16em;">EVERY KIND · DEFAULT, HOVER, NOW PLAYING</div><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.14em; color:#55555A;">56PX ART · 14/500 NAME · MONO 9 KIND</div></div>
+      <div style="display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:24px 12px;">
+        <sc-for list="{{ kindTiles }}" as="t" hint-placeholder-count="8">
+          <div style="display:flex; flex-direction:column; gap:10px; min-width:0;">
+            <div style="position:relative; height:72px; min-width:0; display:flex; align-items:center; gap:14px; padding:8px 12px 8px 8px; box-sizing:border-box; border-radius:12px; background:{{ t.bg }}; box-shadow:{{ t.sh }};">
+              {{ t.art }}
+              <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:5px;"><div style="font-size:14px; font-weight:500; color:{{ t.fg }}; text-shadow:{{ t.ts }}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ t.name }}</div><div style="display:flex; align-items:center; gap:8px; font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.16em; color:#8A8A8E; white-space:nowrap;">{{ t.eq }}<span>{{ t.sub }}</span></div></div>
+              <div style="width:32px; height:32px; flex:none; border-radius:50%; display:flex; align-items:center; justify-content:center; background:#EDEDED; color:#0B0B0C; font-size:14px; opacity:{{ t.pbOp }};">{{ t.pbIc }}</div>
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.14em; color:#8A8A8E;">{{ t.cap }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns:minmax(0,1fr) 400px; gap:56px;">
+      <div style="display:flex; flex-direction:column; gap:18px;">
+        <div style="border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:14px; font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.16em;">EARLY USE · 2–3 ITEMS · DESKTOP</div>
+        <sc-for list="{{ earlyRows }}" as="row" hint-placeholder-count="2">
+          <div style="display:flex; flex-direction:column; gap:10px;">
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.14em; color:#8A8A8E;">{{ row.cap }}</div>
+            <div style="display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px;">
+              <sc-for list="{{ row.tiles }}" as="t">
+                <div style="position:relative; height:72px; min-width:0; display:flex; align-items:center; gap:14px; padding:8px 12px 8px 8px; box-sizing:border-box; border-radius:12px; background:{{ t.bg }}; box-shadow:{{ t.sh }};">{{ t.art }}<div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:5px;"><div style="font-size:14px; font-weight:500; color:{{ t.fg }}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ t.name }}</div><div style="font-family:{{ t.sf }}; font-size:{{ t.sfs }}px; letter-spacing:{{ t.sls }}; color:{{ t.sc2 }}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ t.sub }}</div></div></div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-for>
+        <div style="font-size:13px; line-height:1.55; color:#8A8A8E; max-width:720px; text-wrap:pretty;">With fewer than seven items the grid keeps its 4-column track and simply ends early; no filler tiles. The shelf sub reads YOUR LAST PLAYS · PC AND PHONE until there are eight. With nothing played yet, only the DJ tile shows.</div>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:18px;">
+        <div style="border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:14px; font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.16em;">PHONE · 2 × N</div>
+        <div style="display:grid; grid-template-columns:repeat(2,182px); gap:8px;">
+          <sc-for list="{{ earlyPhone }}" as="t" hint-placeholder-count="3">
+            <div style="position:relative; height:64px; min-width:0; display:flex; align-items:center; gap:10px; padding:8px 10px 8px 8px; box-sizing:border-box; border-radius:12px; background:{{ t.bg }}; box-shadow:{{ t.sh }};">{{ t.art }}<div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:4px;"><div style="font-size:13px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ t.name }}</div><div style="font-family:{{ t.sf }}; font-size:{{ t.sfsP }}px; letter-spacing:{{ t.sls }}; color:{{ t.sc2 }}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ t.subP }}</div></div></div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 05 -->
+<div style="display:flex; flex-direction:column; gap:20px;">
+  <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.16em; color:#55555A;">05 / MADE FOR YOU · GENERATED COVERS</div>
+  <div data-screen-label="05 Mix covers" style="width:1640px; border-radius:20px; background:#070708; border:1.5px solid rgba(255,255,255,0.07); padding:56px; box-sizing:border-box; display:flex; flex-direction:column; gap:52px;">
+    <div style="display:flex; flex-direction:column; gap:18px;">
+      <div style="display:flex; align-items:baseline; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:14px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.16em;">HOW A COVER IS BUILT · NO DESIGNER PER MIX</div><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.14em; color:#55555A;">INPUT: 4 COVERS FROM THE MIX'S TOP ARTISTS + THE TOP GENRE'S HUE</div></div>
+      <div style="display:flex; gap:28px; align-items:flex-start;">
+        <sc-for list="{{ stages }}" as="s" hint-placeholder-count="5">
+          <div style="width:200px; display:flex; flex-direction:column; gap:12px;">{{ s.el }}<div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.14em; color:#EDEDED;">{{ s.cap }}</div><div style="font-size:13px; line-height:1.5; color:#8A8A8E; text-wrap:pretty;">{{ s.note }}</div></div>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:18px;">
+      <div style="display:flex; align-items:baseline; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:14px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.16em;">THE SET · 168 DESKTOP · 140 PHONE · 56 TILE</div><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.14em; color:#55555A;">DAILY MIX = MOSAIC + NUMERAL · DEEP CUTS = SUNK + DEPTH LINE · REDISCOVER = FADED + SURFACE LIGHT</div></div>
+      <sc-for list="{{ coverRows }}" as="row" hint-placeholder-count="3">
+        <div style="display:flex; gap:22px; align-items:flex-end;">
+          <div style="width:64px; flex:none; font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.14em; color:#55555A; padding-bottom:6px;">{{ row.cap }}</div>
+          <sc-for list="{{ row.cells }}" as="c"><div style="width:{{ row.w }}px; display:flex; flex-direction:column; gap:10px;">{{ c.el }}</div></sc-for>
+        </div>
+      </sc-for>
+      <div style="display:flex; gap:22px;"><div style="width:64px; flex:none;"></div><sc-for list="{{ coverNames }}" as="c"><div style="width:168px; display:flex; flex-direction:column; gap:3px;"><div style="font-size:14px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ c.t }}</div><div style="font-size:13px; color:#8A8A8E; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ c.s }}</div><div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.14em; color:#55555A; margin-top:4px;">{{ c.h }}</div></div></sc-for></div>
+    </div>
+
+    <div style="display:grid; grid-template-columns:minmax(0,1fr) 420px; gap:56px;">
+      <div style="display:flex; flex-direction:column; gap:18px;">
+        <div style="display:flex; align-items:baseline; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:14px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.16em;">STRESS TEST · VERY DARK AND VERY BRIGHT ART</div><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.14em; color:#55555A;">WHITE COVERS SIMULATED BY INVERTING THE SAMPLES</div></div>
+        <div style="display:flex; gap:22px; flex-wrap:wrap;">
+          <sc-for list="{{ stress }}" as="s" hint-placeholder-count="6"><div style="width:168px; display:flex; flex-direction:column; gap:10px;">{{ s.el }}<div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.14em; color:{{ s.c }}; line-height:1.6;">{{ s.cap }}</div></div></sc-for>
+        </div>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:18px;">
+        <div style="border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:14px; font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.16em;">CARD HOVER · PLAY + SHUFFLE</div>
+        <div style="display:flex; gap:24px;">
+          <div style="width:168px; display:flex; flex-direction:column; gap:12px;">
+            <div style="position:relative; width:168px; height:168px;">{{ hoverMix }}<div style="position:absolute; inset:0; border-radius:10px; background:linear-gradient(180deg, rgba(5,5,5,0) 45%, rgba(5,5,5,0.62));"></div><div style="position:absolute; right:10px; bottom:10px; display:flex; align-items:center; gap:8px;"><div style="width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:rgba(11,11,12,0.72); border:1.5px solid rgba(255,255,255,0.22); box-sizing:border-box; font-size:17px;">{{ ic.shuffle }}</div><div style="width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:#EDEDED; color:#0B0B0C; font-size:19px;">{{ ic.playF }}</div></div></div>
+            <div style="display:flex; flex-direction:column; gap:4px;"><div style="font-size:14px; font-weight:500;">Darkwave · Post-punk</div><div style="font-size:13px; color:#8A8A8E; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Molchat Doma, Interpol and more</div></div>
+          </div>
+          <div style="flex:1; font-size:13px; line-height:1.55; color:#8A8A8E; text-wrap:pretty;">Hover fades in a bottom scrim (0 → 0.62) and the two buttons rise 6px, 0.3s default ease. Shuffle 36px outline, play 44px filled. Clicking the art or title opens the mix page. Phone has no hover: tap opens, the mix page has play.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 06 -->
+<div style="display:flex; flex-direction:column; gap:20px;">
+  <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.16em; color:#55555A;">06 / RADIO · ARTISTS · SMART PLAYLISTS</div>
+  <div data-screen-label="06 Radio artists smart" style="width:1640px; border-radius:20px; background:#070708; border:1.5px solid rgba(255,255,255,0.07); padding:56px; box-sizing:border-box; display:flex; flex-direction:column; gap:52px;">
+    <div style="display:grid; grid-template-columns:minmax(0,1fr) 520px; gap:56px;">
+      <div style="display:flex; flex-direction:column; gap:18px;">
+        <div style="display:flex; align-items:baseline; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:14px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.16em;">RADIO CARDS</div><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.14em; color:#55555A;">ROUND = ARTIST SEED · SQUARE = SONG SEED · INITIALS WHEN NO PHOTO</div></div>
+        <div style="display:flex; gap:24px; align-items:flex-start;">
+          <sc-for list="{{ radioCards }}" as="c" hint-placeholder-count="4">
+            <div style="width:168px; display:flex; flex-direction:column; gap:12px;"><div style="position:relative; width:168px; height:168px;">{{ c.el }}<sc-if value="{{ c.hv }}"><div style="position:absolute; inset:0; border-radius:10px; background:linear-gradient(180deg, rgba(5,5,5,0) 45%, rgba(5,5,5,0.62));"></div><div style="position:absolute; right:10px; bottom:10px; width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:#EDEDED; color:#0B0B0C; font-size:19px;">{{ ic.playF }}</div></sc-if></div><div style="display:flex; flex-direction:column; gap:4px;"><div style="font-size:14px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ c.t }}</div><div style="font-size:13px; color:#8A8A8E; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ c.s }}</div></div><div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.14em; color:#55555A;">{{ c.cap }}</div></div>
+          </sc-for>
+        </div>
+        <div style="display:flex; gap:24px; align-items:flex-end;">
+          <sc-for list="{{ radioSmall }}" as="c" hint-placeholder-count="4"><div style="display:flex; flex-direction:column; gap:8px;">{{ c.el }}<div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.14em; color:#55555A;">{{ c.cap }}</div></div></sc-for>
+        </div>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:18px;">
+        <div style="border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:14px; font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.16em;">"KEEPS GOING" · RADIO ORBIT VS DJ RIPPLE</div>
+        <div style="display:flex; gap:20px;">
+          <sc-for list="{{ marks }}" as="c" hint-placeholder-count="3"><div style="width:150px; display:flex; flex-direction:column; gap:10px;">{{ c.el }}<div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.14em; color:{{ c.c }};">{{ c.cap }}</div></div></sc-for>
+        </div>
+        <div style="font-size:13px; line-height:1.6; color:#8A8A8E; text-wrap:pretty;">The DJ is a voice: lilac rings leave the dot and fade, twice every 3.2s while it speaks, once every 6s when on air. Radio is a station: three fixed white sonar rings around the seed and one satellite dot that circles the inner ring once every 36s, so it never stops and never pulses. Radio is never lilac. Reduced motion: the satellite parks at 1 o'clock.</div>
+        <div style="display:flex; align-items:center; gap:12px; font-size:13px; color:#8A8A8E;"><span style="font-size:20px; color:#EDEDED; display:flex;">{{ radioIc }}</span>Radio icon, 24 grid, 1.25 stroke: ring at 0.5, centre ring, filled satellite.</div>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:56px;">
+      <div style="display:flex; flex-direction:column; gap:18px;">
+        <div style="display:flex; align-items:baseline; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:14px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.16em;">YOUR ARTISTS · 132 DESKTOP</div><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.14em; color:#55555A;">DEFAULT · HOVER · NO PHOTO · PLAYING</div></div>
+        <div style="display:flex; gap:28px;">
+          <sc-for list="{{ artistCells }}" as="c" hint-placeholder-count="4">
+            <div style="width:132px; display:flex; flex-direction:column; align-items:center; gap:14px;"><div style="position:relative; width:132px; height:132px; border-radius:50%; box-shadow:{{ c.ring }};">{{ c.el }}<sc-if value="{{ c.hv }}"><div style="position:absolute; right:0; bottom:0; width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:#EDEDED; color:#0B0B0C; font-size:17px; box-shadow:0 0 0 3px #070708;">{{ ic.playF }}</div></sc-if></div><div style="display:flex; flex-direction:column; align-items:center; gap:6px;"><div style="font-size:14px; font-weight:500; color:{{ c.tc }};">{{ c.t }}</div><div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.14em; color:#8A8A8E;">{{ c.s }}</div></div></div>
+          </sc-for>
+        </div>
+        <div style="display:flex; gap:18px; align-items:flex-start;">
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.14em; color:#55555A; width:80px; padding-top:40px;">PHONE 104</div>
+          <sc-for list="{{ artistPhone }}" as="c" hint-placeholder-count="3"><div style="width:104px; display:flex; flex-direction:column; align-items:center; gap:10px;">{{ c.el }}<div style="display:flex; flex-direction:column; align-items:center; gap:5px;"><div style="font-size:13px; font-weight:500;">{{ c.t }}</div><div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.12em; color:#8A8A8E;">{{ c.s }}</div></div></div></sc-for>
+        </div>
+        <div style="font-size:13px; line-height:1.55; color:#8A8A8E; text-wrap:pretty;">No photo: a disc tinted from a hash of the artist name (L 0.30 → 0.16, C 0.035), faint contour lines and 1–2 initials in 300 weight. The same disc is used as the seed of an artist radio without a photo.</div>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:18px;">
+        <div style="display:flex; align-items:baseline; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:14px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.16em;">SMART PLAYLISTS</div><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.14em; color:#55555A;">EXISTING MOSAIC · ENDS IN NEW SMART PLAYLIST</div></div>
+        <div style="display:flex; gap:24px;">
+          <sc-for list="{{ smartCells }}" as="c" hint-placeholder-count="3"><div style="width:168px; display:flex; flex-direction:column; gap:12px;">{{ c.el }}<div style="display:flex; flex-direction:column; gap:4px;"><div style="font-size:14px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ c.t }}</div><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.12em; color:#8A8A8E; white-space:nowrap;">{{ c.s }}</div></div></div></sc-for>
+          <div style="width:168px; display:flex; flex-direction:column; gap:12px;"><div style="width:168px; height:168px; border-radius:10px; border:1.5px dashed rgba(255,255,255,0.22); box-sizing:border-box; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,0.02);"><div style="width:52px; height:52px; border-radius:14px; border:1.5px solid rgba(255,255,255,0.18); box-sizing:border-box; display:flex; align-items:center; justify-content:center; font-size:24px;">{{ sparkIc }}</div></div><div style="display:flex; flex-direction:column; gap:4px;"><div style="font-size:14px; font-weight:500;">New smart playlist</div><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.12em; color:#8A8A8E;">RULES · UPDATES ITSELF</div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 07 -->
+<div style="display:flex; flex-direction:column; gap:20px;">
+  <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.16em; color:#55555A;">07 / MIX PAGE · #/MIX/DAILY-1 · READ-ONLY</div>
+  <div style="display:flex; flex-wrap:wrap; gap:56px; align-items:flex-start;">
+    <div data-screen-label="07 Desktop Mix" style="display:flex; flex-direction:column; gap:12px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.12em; color:#8A8A8E;">DESKTOP · AFTER SAVE AS PLAYLIST (CLICK IT TO REPLAY)</div><dc-import name="DeskScreen" w="{{ 1440 }}" h="{{ 900 }}" page="mix" toast="{{ true }}" playing="d1" motion="{{ motion }}" hint-size="1440px,900px"></dc-import></div>
+    <div data-screen-label="07 Phone Mix" style="display:flex; flex-direction:column; gap:12px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.12em; color:#8A8A8E;">ANDROID</div><dc-import name="PhoneScreen" w="{{ 412 }}" h="{{ 915 }}" page="mix" motion="{{ motion }}" hint-size="412px,915px"></dc-import></div>
+    <div data-screen-label="07 Phone Mix offline" style="display:flex; flex-direction:column; gap:12px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.12em; color:#8A8A8E;">ANDROID · OFFLINE</div><dc-import name="PhoneScreen" w="{{ 412 }}" h="{{ 915 }}" page="mixOffline" motion="{{ motion }}" hint-size="412px,915px"></dc-import></div>
+    <div data-screen-label="07 Desktop Mix expired" style="display:flex; flex-direction:column; gap:12px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.12em; color:#8A8A8E;">DESKTOP · EXPIRED LINK</div><dc-import name="DeskScreen" w="{{ 1440 }}" h="{{ 900 }}" page="expired" motion="{{ motion }}" hint-size="1440px,900px"></dc-import></div>
+    <div data-screen-label="07 Phone Mix expired" style="display:flex; flex-direction:column; gap:12px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.12em; color:#8A8A8E;">ANDROID · EXPIRED LINK</div><dc-import name="PhoneScreen" w="{{ 412 }}" h="{{ 915 }}" page="expired" motion="{{ motion }}" hint-size="412px,915px"></dc-import></div>
+    <div style="width:420px; display:flex; flex-direction:column; gap:14px; font-size:14px; line-height:1.6; color:#8A8A8E;">
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.16em; color:#EDEDED;">BASED ON THE PLAYLIST PAGE</div>
+      <div style="text-wrap:pretty;">Same header and table as Playlist detail, washed with the mix's genre hue instead of a cover tint. Read-only: no reorder, no remove. The ADDED column becomes LAST PLAYED, and songs you've never played carry a neutral NEW TO YOU chip.</div>
+      <div style="text-wrap:pretty;">Save as playlist copies today's songs into a normal playlist named after the mix and the date. Toast: "Saved as 'Darkwave · Post-punk · 19 Oct'" with Open.</div>
+      <div style="text-wrap:pretty;">Offline: the count line reads 32 OF 50 OFFLINE, songs that aren't downloaded drop to 40% and greyscale with a cloud mark, and Play skips them.</div>
+      <div style="text-wrap:pretty;">An old #/mix link (mixes refresh daily at 06:00) lands on "This mix has been refreshed" with today's mixes under it.</div>
+    </div>
+  </div>
+</div>
+
+<!-- 08 -->
+<div style="display:flex; flex-direction:column; gap:20px;">
+  <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.16em; color:#55555A;">08 / START RADIO · MENUS, SHEETS, PLAYER</div>
+  <div data-screen-label="08 Desktop menus" style="width:1440px; border-radius:20px; background:#0B0B0C; border:1.5px solid rgba(255,255,255,0.07); padding:56px; box-sizing:border-box; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:48px; position:relative; overflow:hidden;">
+    <sc-for list="{{ menus }}" as="mn" hint-placeholder-count="3">
+      <div style="display:flex; flex-direction:column; gap:16px;">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.14em; color:#8A8A8E;">{{ mn.cap }}</div>
+        <div style="display:flex; align-items:center; gap:12px; height:60px; padding:0 12px; border-radius:12px; background:#121214;">{{ mn.anchor }}<div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:2px;"><div style="font-size:15px;">{{ mn.t }}</div><div style="font-size:13px; color:#8A8A8E;">{{ mn.s }}</div></div><div style="width:32px; height:32px; border-radius:9px; background:rgba(255,255,255,0.08); display:flex; align-items:center; justify-content:center; font-size:18px;">{{ ic.more }}</div></div>
+        <div style="width:300px; margin-left:auto; margin-top:-8px; background:#161618; border:1px solid rgba(255,255,255,0.09); border-radius:12px; box-shadow:0 28px 60px -18px rgba(0,0,0,0.85); padding:6px; display:flex; flex-direction:column; gap:2px;">
+          <sc-for list="{{ mn.items }}" as="it">
+            <sc-if value="{{ it.div }}"><div style="height:1px; background:rgba(255,255,255,0.06); margin:4px 6px;"></div></sc-if>
+            <sc-if value="{{ it.row }}"><div style="min-height:40px; padding:6px 10px; border-radius:9px; display:flex; align-items:center; gap:12px; background:{{ it.bg }};"><span style="font-size:18px; display:flex; color:{{ it.icC }};">{{ it.icon }}</span><span style="flex:1; font-size:14px; color:{{ it.fg }};">{{ it.l }}</span><span style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.12em; color:{{ it.hc }};">{{ it.hint }}</span><sc-if value="{{ it.sub }}"><span style="font-size:15px; color:#8A8A8E; display:flex;">{{ ic.chevR }}</span></sc-if></div></sc-if>
+          </sc-for>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+
+  <div data-screen-label="08 Desktop player radio" style="width:1440px; height:620px; border-radius:16px; overflow:hidden; position:relative; background:{{ radioScene }}; border:1.5px solid rgba(255,255,255,0.07);">
+    {{ texLayer }}
+    <div style="position:absolute; left:0; right:0; top:0; height:84px; display:grid; grid-template-columns:1fr auto 1fr; align-items:center; padding:0 36px;">
+      <div style="display:flex; align-items:center; gap:10px; font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.16em; color:#8A8A8E;"><span style="font-size:18px; display:flex;">{{ ic.chevD }}</span>CLOSE</div>
+      <div style="display:flex; flex-direction:column; align-items:center; gap:4px;"><div style="display:flex; align-items:center; gap:7px; font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.16em; color:#8A8A8E;"><span style="font-size:14px; display:flex; color:#EDEDED;">{{ radioIc }}</span>PLAYING FROM RADIO</div><div style="font-size:14px; font-weight:500;">Interpol</div></div>
+      <div style="display:flex; justify-content:flex-end;"><div style="width:40px; height:40px; border-radius:10px; background:rgba(255,255,255,0.1); display:flex; align-items:center; justify-content:center; font-size:20px;">{{ ic.more }}</div></div>
+    </div>
+    <div style="position:absolute; left:128px; top:120px; display:flex; gap:72px; align-items:center;">
+      <img src="./art/wing-dopamine.jpg" alt="" style="width:400px; height:400px; border-radius:10px; object-fit:cover; box-shadow:0 0 0 1px rgba(255,255,255,0.08), 0 60px 120px -40px rgba(0,0,0,0.9);">
+      <div style="display:flex; flex-direction:column; gap:16px; width:520px;">
+        <div style="display:flex; align-items:center; gap:12px;"><span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.12em; padding:4px 7px; border-radius:6px; border:1.5px solid rgba(198,180,242,0.5); background:rgba(198,180,242,0.08); color:rgb(198,180,242);">FLAC 24/48</span><span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.14em; color:#8A8A8E;">RADIO · KEEPS GOING · NEXT: MUNICH, EDITORS</span></div>
+        <div style="font-size:64px; font-weight:300; letter-spacing:-0.035em; line-height:0.95;">Evil</div>
+        <div style="font-size:22px; color:#BDBDBD;">Interpol · Antics</div>
+      </div>
+    </div>
+    <div style="position:absolute; right:36px; top:76px; width:300px; background:#161618; border:1px solid rgba(255,255,255,0.09); border-radius:12px; box-shadow:0 28px 60px -18px rgba(0,0,0,0.85); padding:6px; display:flex; flex-direction:column; gap:2px;">
+      <div style="padding:8px 10px 6px; font-size:13px; font-weight:500; color:#BDBDBD;">Evil</div>
+      <sc-for list="{{ playerMenu }}" as="it">
+        <sc-if value="{{ it.div }}"><div style="height:1px; background:rgba(255,255,255,0.06); margin:4px 6px;"></div></sc-if>
+        <sc-if value="{{ it.row }}"><div style="min-height:40px; padding:6px 10px; border-radius:9px; display:flex; align-items:center; gap:12px; background:{{ it.bg }};"><span style="font-size:18px; display:flex; color:{{ it.icC }};">{{ it.icon }}</span><span style="flex:1; font-size:14px; color:{{ it.fg }};">{{ it.l }}</span><span style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.12em; color:{{ it.hc }};">{{ it.hint }}</span><sc-if value="{{ it.sub }}"><span style="font-size:15px; color:#8A8A8E; display:flex;">{{ ic.chevR }}</span></sc-if></div></sc-if>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="display:flex; flex-wrap:wrap; gap:56px; align-items:flex-start;">
+    <div data-screen-label="08 Phone sheet" style="display:flex; flex-direction:column; gap:12px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.12em; color:#8A8A8E;">ANDROID · LONG-PRESS A SONG</div><dc-import name="PhoneScreen" w="{{ 412 }}" h="{{ 915 }}" page="sheet" motion="{{ motion }}" hint-size="412px,915px"></dc-import></div>
+    <div data-screen-label="08 Phone player radio" style="display:flex; flex-direction:column; gap:12px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.12em; color:#8A8A8E;">ANDROID · PLAYING FROM RADIO</div><dc-import name="PhoneScreen" w="{{ 412 }}" h="{{ 915 }}" page="player" motion="{{ motion }}" hint-size="412px,915px"></dc-import></div>
+    <div data-screen-label="08 Phone player menu" style="display:flex; flex-direction:column; gap:12px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.12em; color:#8A8A8E;">ANDROID · PLAYER ⋯</div><dc-import name="PhoneScreen" w="{{ 412 }}" h="{{ 915 }}" page="playerSheet" motion="{{ motion }}" hint-size="412px,915px"></dc-import></div>
+    <div style="width:420px; display:flex; flex-direction:column; gap:14px; font-size:14px; line-height:1.6; color:#8A8A8E;">
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.16em; color:#EDEDED;">START RADIO</div>
+      <div style="text-wrap:pretty;">Sits with the other playback actions, after Add to queue (songs) or after Play / Shuffle (albums, artists), with a mono hint saying what seeds it. Starting a radio replaces the queue the same way playing an album does, and stops the DJ if it's on.</div>
+      <div style="text-wrap:pretty;">Context line while it plays: PLAYING FROM RADIO over the seed name (Interpol, or the song title for a song seed). In one-line places, the queue panel and the notification, it reads PLAYING FROM RADIO · INTERPOL. Shuffle and repeat are ghosted, as with the DJ; the queue shows the next 10 picks and refills itself.</div>
+    </div>
+  </div>
+</div>
+
+<!-- 09 -->
+<div style="display:flex; flex-direction:column; gap:20px;">
+  <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.16em; color:#55555A;">09 / LOADING · EARLY HISTORY · NO SMART PLAYLISTS</div>
+  <div style="display:flex; flex-wrap:wrap; gap:56px; align-items:flex-start;">
+    <div data-screen-label="09 Desktop loading" style="display:flex; flex-direction:column; gap:12px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.12em; color:#8A8A8E;">DESKTOP · MIXES AND RADIO STILL COMPUTING</div><dc-import name="DeskScreen" w="{{ 1440 }}" full="{{ true }}" data="loading" motion="{{ motion }}" hint-size="1440px,2400px"></dc-import></div>
+    <div data-screen-label="09 Desktop early" style="display:flex; flex-direction:column; gap:12px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.12em; color:#8A8A8E;">DESKTOP · EARLY HISTORY</div><dc-import name="DeskScreen" w="{{ 1440 }}" full="{{ true }}" data="early" playing="al-zanmu" motion="{{ motion }}" hint-size="1440px,1900px"></dc-import></div>
+    <div data-screen-label="09 Phone loading" style="display:flex; flex-direction:column; gap:12px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.12em; color:#8A8A8E;">ANDROID · LOADING</div><dc-import name="PhoneScreen" w="{{ 412 }}" h="{{ 915 }}" data="loading" motion="{{ motion }}" hint-size="412px,915px"></dc-import></div>
+    <div data-screen-label="09 Phone early" style="display:flex; flex-direction:column; gap:12px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.12em; color:#8A8A8E;">ANDROID · EARLY HISTORY · FULL LENGTH</div><dc-import name="PhoneScreen" w="{{ 412 }}" full="{{ true }}" data="early" motion="{{ motion }}" hint-size="412px,2000px"></dc-import></div>
+    <div style="width:420px; display:flex; flex-direction:column; gap:14px; font-size:14px; line-height:1.6; color:#8A8A8E;">
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.16em; color:#EDEDED;">HOME FEELS INSTANT</div>
+      <div style="text-wrap:pretty;">Greeting, Jump back in, Recently added, Your artists, Smart playlists and Rediscover come straight from the local catalogue and paint at once. Only Made for you and Radio for you wait on computation: their shelves keep their place and height, with mosaic-shaped and ring-shaped shimmer cards and a mono sub (MIXING FROM 3,912 SONGS · TUNING IN). Real cards replace them in place with a 0.6s fade, no reflow.</div>
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.16em; color:#EDEDED; margin-top:8px;">FEW PLAYS</div>
+      <div style="text-wrap:pretty;">Fewer Daily Mixes (one per genre cluster with enough plays, here 2) plus Deep cuts; the shelf says MORE AS YOU LISTEN. Rediscover, the mix and the album shelf, is hidden until there is something to rediscover. Radio is seeded from the artists with the most albums, and Your artists sorts by albums with an N ALBUMS sub.</div>
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.16em; color:#EDEDED; margin-top:8px;">NO SMART PLAYLISTS</div>
+      <div style="text-wrap:pretty;">Designer's call: a single invite card in place of the row, not a hidden shelf. Smart playlists are easy to miss and the card is one line tall. Dismissed for good once the first smart playlist exists.</div>
+    </div>
+  </div>
+</div>
+
+<!-- 10 -->
+<div data-screen-label="10 Reduced motion" style="display:flex; flex-direction:column; gap:20px; max-width:1100px;">
+  <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.16em; color:#55555A;">10 / MOTION AND REDUCED MOTION</div>
+  <div style="display:grid; grid-template-columns:240px minmax(0,1fr) minmax(0,1fr); border-top:1px solid rgba(255,255,255,0.08);">
+    <div style="padding:12px 0; font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.14em; color:#55555A; border-bottom:1px solid rgba(255,255,255,0.06);">ELEMENT</div><div style="padding:12px 0; font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.14em; color:#55555A; border-bottom:1px solid rgba(255,255,255,0.06);">FULL</div><div style="padding:12px 0; font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.14em; color:#55555A; border-bottom:1px solid rgba(255,255,255,0.06);">REDUCED</div>
+    <sc-for list="{{ motionRows }}" as="r" hint-placeholder-count="8">
+      <div style="padding:14px 16px 14px 0; font-size:14px; border-bottom:1px solid rgba(255,255,255,0.06);">{{ r.a }}</div><div style="padding:14px 16px 14px 0; font-size:14px; color:#8A8A8E; border-bottom:1px solid rgba(255,255,255,0.06);">{{ r.b }}</div><div style="padding:14px 0; font-size:14px; color:#8A8A8E; border-bottom:1px solid rgba(255,255,255,0.06);">{{ r.c }}</div>
+    </sc-for>
+  </div>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const h = React.createElement;
+let PK = null, HK = null;
+const kits = () => { if (!PK && window.PelagicKit) PK = window.PelagicKit(h); if (!HK && PK && window.HomeKit) HK = window.HomeKit(h, PK); return PK && HK ? [PK, HK] : null; };
+const SESSION = 'Never played · 2010s post-punk';
+const GLOW = '0 0 0 1px rgba(255,255,255,0.5), 0 0 32px -6px rgba(255,255,255,0.35)';
+
+class Component extends DCLogic {
+  state = { motion: (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) ? 'reduced' : 'full' };
+  componentDidMount() { if (!kits()) this.kp = setInterval(() => { if (kits()) { clearInterval(this.kp); this.forceUpdate(); } }, 100); }
+  componentWillUnmount() { clearInterval(this.kp); }
+  dj(X, s, size, m) {
+    const LA = X.LA, on = s === 'intro' || s === 'onair', hv = s === 'hover', pr = s === 'pressed';
+    const fill = (a, b) => `linear-gradient(120deg, ${LA(a)}, ${LA(b)} 60%), rgba(20,20,22,0.6)`;
+    return { art: X.djMark(size, { speak: s === 'intro', onair: s === 'onair', lvl: 0.4, m }), alive: on ? X.alive(12, LA(0.55), m, 5.5) : null,
+      bg: pr ? fill(0.3, 0.1) : on ? fill(0.15, 0.05) : hv ? fill(0.14, 0.04) : fill(0.08, 0.02),
+      sh: pr ? `inset 0 0 0 1px ${LA(0.6)}, 0 0 14px -2px ${LA(0.7)}` : on ? `inset 0 0 0 1px ${LA(0.42)}, 0 0 24px -6px ${LA(0.5)}` : hv ? `inset 0 0 0 1px ${LA(0.42)}, 0 0 26px -8px ${LA(0.55)}` : `inset 0 0 0 1px ${LA(0.18)}`,
+      sc: pr ? 0.98 : 1, name: on ? SESSION : 'DJ', fg: on ? '#FFFFFF' : '#EDEDED',
+      sub: on ? (s === 'intro' ? 'ON AIR · DJ IS SPEAKING' : 'ON AIR · SONG 3 OF 7') : 'Endless · tap to start', subP: on ? (s === 'intro' ? 'ON AIR · SPEAKING' : 'ON AIR · 3/7') : 'Endless · tap to start',
+      sf: on ? X.MONO : 'inherit', sfs: on ? 9 : 12, sfsP: on ? 9 : 11, sls: on ? '0.16em' : '0', sc2: on ? X.LIL : '#8A8A8E', eq: s === 'onair' ? X.eq(m, X.LIL) : null,
+      pbBg: X.LIL, pbIc: PK.IC.playF, pbOp: hv ? 1 : 0 };
+  }
+  item(X, t, s, m, size) {
+    const isP = s === 'playing' || s === 'playHover', hv = s === 'hover' || s === 'playHover';
+    return { art: X.tileArt(t, size || 56, m), bg: hv ? 'rgba(255,255,255,0.075)' : isP ? 'rgba(255,255,255,0.055)' : 'rgba(255,255,255,0.035)', sh: isP ? GLOW : hv ? 'inset 0 0 0 1px rgba(255,255,255,0.1)' : 'inset 0 0 0 1px rgba(255,255,255,0.05)',
+      name: t.name, fg: isP ? '#FFFFFF' : '#EDEDED', ts: isP ? '0 0 18px rgba(255,255,255,0.4)' : 'none', sub: t.label, subP: t.label, sf: X.MONO, sfs: 9, sfsP: 9, sls: '0.16em', sc2: '#8A8A8E',
+      eq: isP ? X.eq(m) : null, pbOp: hv ? 1 : 0, pbIc: isP ? PK.IC.pauseF : PK.IC.playF };
+  }
+  renderVals() {
+    const st = this.state, motion = st.motion, m = motion === 'full';
+    const base = { motion, motionSeg: [['full', 'Full'], ['reduced', 'Reduced']].map(([v, l]) => { const a = st.motion === v; return { l, go: () => this.setState({ motion: v }), bg: a ? 'rgba(255,255,255,0.16)' : 'transparent', fg: a ? '#FFFFFF' : '#8A8A8E', sh: a ? 'inset 0 0 0 1px rgba(255,255,255,0.28), 0 0 14px -4px rgba(255,255,255,0.35)' : 'none' }; }) };
+    const k = kits(); if (!k) return base;
+    const [, X] = k, IC = PK.IC;
+    const notes = {
+      idle: 'Lilac-tinted fill, 1px lilac rim at 0.18. The mark is still.',
+      hover: 'Fill 0.14, rim 0.42, soft lilac glow. A lilac play button appears.',
+      pressed: 'Fill 0.30, rim 0.6, tight glow, scale 0.98. Long-press past 520ms opens the DJ panel instead.',
+      intro: 'Two lilac rings leave the dot, 3.2s apart by 1.6s, as in the mini-player. The tile breathes.',
+      onair: 'One slow ring every 6s, a 5.5s breathing glow, lilac eq. Name becomes the session title.',
+    };
+    const djStatesD = ['idle', 'hover', 'pressed', 'intro', 'onair'].map(s => Object.assign(this.dj(X, s, 56, m), { cap: { idle: 'IDLE', hover: 'HOVER', pressed: 'PRESSED', intro: 'ON AIR · INTRO SPEAKING', onair: 'ON AIR · SONG' }[s], note: notes[s] }));
+    const djStatesP = ['idle', 'pressed', 'intro', 'onair'].map(s => Object.assign(this.dj(X, s, 48, m), { cap: s === 'onair' ? 'ON AIR' : s === 'intro' ? 'INTRO' : s.toUpperCase() }));
+    const J = X.JBI;
+    const kindTiles = [
+      Object.assign(this.item(X, J[0], 'default', m), { cap: 'ALBUM' }), Object.assign(this.item(X, J[3], 'default', m), { cap: 'PLAYLIST' }),
+      Object.assign(this.item(X, J[5], 'default', m), { cap: 'SMART · ✦ BADGE ON THE MOSAIC' }), Object.assign(this.item(X, J[1], 'default', m), { cap: 'DAILY MIX · 56PX GENERATED COVER' }),
+      Object.assign(this.item(X, J[2], 'default', m), { cap: 'RADIO · ORBIT RING AT 56' }), Object.assign(this.item(X, J[4], 'default', m), { cap: 'ARTIST · ROUND ART' }),
+      Object.assign(this.item(X, J[1], 'hover', m), { cap: 'HOVER · PLAY BUTTON SCALES IN' }), Object.assign(this.item(X, J[0], 'playing', m), { cap: 'NOW PLAYING · WHITE GLOW RING + EQ' }),
+    ];
+    const djIdle = this.dj(X, 'idle', 56, m), djIdleP = this.dj(X, 'idle', 48, m);
+    const earlyRows = [
+      { cap: 'DJ + 2', tiles: [djIdle, this.item(X, X.JBI_EARLY[0], 'playing', m), this.item(X, X.JBI_EARLY[1], 'default', m)] },
+      { cap: 'DJ + 3', tiles: [djIdle, ...X.JBI_EARLY.map(t => this.item(X, t, 'default', m))] },
+    ];
+    const earlyPhone = [djIdleP, ...X.JBI_EARLY.slice(0, 2).map(t => this.item(X, t, 'default', m, 48))];
+    const d1 = X.MIXES[0];
+    const stages = [
+      { el: X.mixCover(200, d1, { stage: 1 }), cap: '1 · MOSAIC', note: 'The four most-played albums of the mix, one per artist where possible. 1px seams.' },
+      { el: X.mixCover(200, d1, { stage: 2 }), cap: '2 · NORMALISE', note: 'Greyscale, then brightness = target ÷ mean luminance (clamped 0.4–2.4). Target 0.27 daily, 0.22 deep, 0.36 rediscover.' },
+      { el: X.mixCover(200, d1, { stage: 3 }), cap: '3 · GENRE TINT', note: 'Colour blend with oklch(0.62 0.07 H). H comes from the top genre (darkwave 205, metalcore 25, J-rock 350…).' },
+      { el: X.mixCover(200, d1, { stage: 4 }), cap: '4 · KIND OVERLAY', note: 'Daily: top and bottom scrims in the tint. Deep cuts: sunk from the top. Rediscover: surface light. Grain 0.09.' },
+      { el: X.mixCover(200, d1), cap: '5 · MARKS', note: 'Mono kind label top-left. Daily: the numeral in 300 weight. Deep: a depth line ending in a glowing dot. Rediscover: a surface line.' },
+    ];
+    const coverRows = [168, 140, 56].map(sz => ({ cap: sz + '', w: 168, cells: X.MIXES.map(x => ({ el: X.mixCover(sz, x) })) }));
+    const coverNames = X.MIXES.map(x => ({ t: x.title, s: x.sub, h: x.kind === 'daily' ? 'DAILY MIX ' + x.n + ' · H ' + x.hue : x.kind === 'deep' ? 'DEEP CUTS · H ' + x.hue : 'REDISCOVER · H ' + x.hue }));
+    const dark = { id: 'x', kind: 'daily', n: 2, hue: 205, covers: ['periphery', 'roto', 'tsunami', 'fear'] };
+    const stress = [
+      { el: X.mixCover(168, dark, { stage: 1 }), cap: 'DARK ART · RAW', c: '#8A8A8E' }, { el: X.mixCover(168, dark), cap: 'DARK ART · PELAGIC COVER', c: '#EDEDED' },
+      { el: X.mixCover(168, dark, { stage: 1, sim: 'bright' }), cap: 'WHITE ART · RAW', c: '#8A8A8E' }, { el: X.mixCover(168, dark, { sim: 'bright' }), cap: 'WHITE ART · PELAGIC COVER', c: '#EDEDED' },
+      { el: X.mixCover(168, Object.assign({}, X.MIXES[6]), { sim: 'bright' }), cap: 'WHITE ART · DEEP CUTS', c: '#EDEDED' }, { el: X.mixCover(168, X.MIXES[7], { sim: 'bright' }), cap: 'WHITE ART · REDISCOVER', c: '#EDEDED' },
+    ];
+    const R = X.RADIOS;
+    const radioCards = [
+      { el: X.radioArt(168, R[0], { m }), t: R[0].title, s: R[0].sub, cap: 'ARTIST SEED', hv: false },
+      { el: X.radioArt(168, R[1], { m }), t: R[1].title, s: R[1].sub, cap: 'SONG SEED', hv: false },
+      { el: X.radioArt(168, R[3], { m }), t: R[3].title, s: R[3].sub, cap: 'ARTIST WITHOUT PHOTO', hv: false },
+      { el: X.radioArt(168, R[2], { m }), t: R[2].title, s: R[2].sub, cap: 'HOVER · PLAY', hv: true },
+    ];
+    const radioSmall = [{ el: X.radioArt(140, R[0], { m }), cap: 'PHONE 140' }, { el: X.radioArt(140, R[1], { m }), cap: 'PHONE 140' }, { el: X.radioArt(56, R[0], { m, r: 8 }), cap: 'TILE 56' }, { el: X.radioArt(56, R[1], { m, r: 8 }), cap: 'TILE 56' }];
+    const marks = [{ el: X.djMark(150, { speak: true, lvl: 0.4, m }), cap: 'DJ · SPEAKING', c: X.LIL }, { el: X.djMark(150, { onair: true, m }), cap: 'DJ · ON AIR', c: X.LIL }, { el: X.radioArt(150, R[0], { m }), cap: 'RADIO · ORBIT', c: '#EDEDED' }];
+    const A = X.ARTISTS;
+    const artistCells = [{ el: X.avatar(132, A[0]), t: A[0].name, s: A[0].sub, hv: false, ring: 'none', tc: '#EDEDED' }, { el: X.avatar(132, A[1]), t: A[1].name, s: A[1].sub, hv: true, ring: 'none', tc: '#EDEDED' }, { el: X.avatar(132, A[3]), t: A[3].name, s: A[3].sub, hv: false, ring: 'none', tc: '#EDEDED' }, { el: X.avatar(132, A[2]), t: A[2].name, s: A[2].sub, hv: false, ring: GLOW, tc: '#FFFFFF' }];
+    const artistPhone = [A[0], A[3], A[6]].map(a => ({ el: X.avatar(104, a), t: a.name, s: a.sub.replace(' · 90 DAYS', '') }));
+    const smartCells = X.SMART.slice(0, 2).map(s => ({ el: X.mosaic(168, s.covers, 10), t: s.title, s: `${s.n} SONGS · UPDATES ITSELF` }));
+    const row = (icon, l, hint, o) => Object.assign({ row: true, div: false, icon, l, hint: hint || '', bg: 'transparent', fg: '#EDEDED', icC: '#8A8A8E', hc: '#55555A', sub: false }, o || {});
+    const DIV = { div: true, row: false };
+    const radioRow = hint => row(X.ICX.radio(), 'Start radio', hint, { bg: '#1A1A1D', fg: '#FFFFFF', icC: '#FFFFFF', hc: '#BDBDBD' });
+    const menus = [
+      { cap: 'SONG ⋯ / RIGHT-CLICK', anchor: X.cover(40, 'bfmv', 6), t: 'Evil', s: 'Interpol · Antics', items: [row(IC.next, 'Play next', '⇧ N'), row(IC.queue, 'Add to queue', 'Q'), radioRow('FROM THIS SONG'), DIV, row(IC.playlist, 'Add to playlist', '', { sub: true }), row(IC.download, 'Download'), DIV, row(IC.library, 'Go to album'), row(IC.library, 'Go to artist'), row(IC.lyrics, 'Show lyrics'), row(IC.alert, 'Track info')] },
+      { cap: 'ALBUM ⋯ / RIGHT-CLICK', anchor: X.cover(40, 'tsunami', 6), t: 'Tsunami Sea', s: 'Spiritbox · Album', items: [row(IC.playF, 'Play'), row(IC.shuffle, 'Shuffle'), radioRow('FROM THIS ALBUM'), DIV, row(IC.next, 'Play next', '⇧ N'), row(IC.queue, 'Add to queue', 'Q'), row(IC.playlist, 'Add to playlist', '', { sub: true }), DIV, row(IC.download, 'Download album'), row(IC.library, 'Go to artist'), row(IC.alert, 'Album info')] },
+      { cap: 'ARTIST ⋯ / RIGHT-CLICK', anchor: X.avatar(40, A[0]), t: 'Interpol', s: '48 plays in 90 days', items: [row(IC.playF, 'Play'), row(IC.shuffle, 'Shuffle'), radioRow('FROM THIS ARTIST'), DIV, row(IC.library, 'Go to artist')] },
+    ];
+    const playerMenu = [radioRow('FROM ‘EVIL’'), DIV, row(IC.playlist, 'Add to playlist', '', { sub: true }), row(IC.download, 'Download'), DIV, row(IC.library, 'Go to album'), row(IC.library, 'Go to artist'), row(IC.alert, 'Track info')];
+    const motionRows = [
+      ['DJ tile · intro', 'Two lilac rings r 4.5→12, 3.2s, offset 1.6s; tile glow breathes 5.5s', 'One static ring, no breathing; label ON AIR · DJ IS SPEAKING'],
+      ['DJ tile · on air', 'One ring r 4.5→11, 6s; glow breathes 5.5s; lilac eq', 'No ring, steady glow, eq frozen in a still shape'],
+      ['Radio art', 'Satellite dot orbits the inner ring, 36s per turn, linear', 'Satellite parked at 1 o\u2019clock'],
+      ['Now-playing tile / card', 'White glow ring fades in 0.6s, eq bars', 'Ring appears instantly, eq still'],
+      ['Card hover', 'Scrim + buttons fade, buttons rise 6px, 0.3s', 'Instant, no rise'],
+      ['Tile hover', 'Play button scales 0.8→1, 0.35s', 'Instant'],
+      ['Skeletons', 'Existing shimmer, 2.8s; real cards fade in 0.6s', 'Flat #121214 blocks, instant swap'],
+      ['Toast', 'Rise 20px + fade 0.6s in, 0.35s out', 'Instant'],
+      ['Atmosphere', 'Breathing contours, marine snow', 'Static contours, no snow'],
+    ].map(([a, b, c]) => ({ a, b, c }));
+    return Object.assign(base, {
+      ic: IC, djStatesD, djStatesP, kindTiles, earlyRows, earlyPhone, stages, coverRows, coverNames, stress, hoverMix: X.mixCover(168, d1),
+      radioCards, radioSmall, marks, radioIc: X.ICX.radio(), artistCells, artistPhone, smartCells, sparkIc: X.ICX.spark(), menus, playerMenu, motionRows,
+      radioScene: 'radial-gradient(55% 70% at 26% 50%, oklch(0.20 0.03 230), transparent 72%), radial-gradient(90% 50% at 50% 108%, oklch(0.13 0.019 230), transparent 80%), #0B0B0C',
+      texLayer: h('div', { style: { position: 'absolute', inset: 0, pointerEvents: 'none' } }, h('div', { style: { position: 'absolute', inset: 0, backgroundImage: PK.STONE, backgroundSize: '900px 900px', opacity: 0.09 } }), h('div', { style: { position: 'absolute', inset: 0, backgroundImage: PK.CONTOUR_SMOOTH, backgroundSize: '1600px 1000px', opacity: 0.075 } }), h('div', { style: { position: 'absolute', inset: 0, backgroundImage: PK.GRAIN, backgroundSize: '220px 220px', opacity: 0.07, mixBlendMode: 'screen' } })),
+    });
+  }
+}
+</script>
+</body>
+</html>

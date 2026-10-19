@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://api.fontshare.com/v2/css?f[]=general-sans@300,400,500,600&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+JP:wght@300;400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#030303;-webkit-font-smoothing:antialiased}
+a{color:#EDEDED}a:hover{color:#FFFFFF}
+@keyframes pg-eq{0%,100%{transform:scaleY(.3)}50%{transform:scaleY(1)}}
+@keyframes pg-shimmer{0%{background-position:150% 0}100%{background-position:-50% 0}}
+@keyframes pg-breathe{0%,100%{opacity:.3}50%{opacity:1}}
+@keyframes pg-sway{0%{transform:translate3d(0,-40px,0);opacity:0}10%{opacity:1}50%{transform:translate3d(22px,110px,0)}90%{opacity:1}100%{transform:translate3d(-8px,260px,0);opacity:0}}
+@media (prefers-reduced-motion: reduce){.pg-anim{animation:none !important}.pg-snow{display:none !important}}
+</style>
+<script src="./pelagic-kit.js"></script>
+<script src="./home-kit.js"></script>
+</helmet>
+<div onContextMenu="{{ prevent }}" style="position:relative; width:{{ W }}px; height:{{ Hpx }}; border-radius:16px; overflow:hidden; background:{{ bg }}; border:1.5px solid rgba(255,255,255,0.07); box-sizing:border-box; font-family:'General Sans','Noto Sans JP',system-ui,sans-serif; color:#EDEDED;">
+  {{ water }}
+  <div style="position:absolute; left:0; top:0; bottom:84px; width:232px; padding:30px 14px; box-sizing:border-box; display:flex; flex-direction:column; gap:36px; background:rgba(11,11,12,0.7); border-right:1px solid rgba(255,255,255,0.06); z-index:1;">
+    <div style="padding:0 14px;"><div style="display:flex; align-items:center; gap:12px;"><div style="position:relative; width:22px; height:22px; flex:none;"><div style="position:absolute; inset:0; border-radius:50%; border:1.5px solid rgba(255,255,255,0.9); box-sizing:border-box; clip-path:inset(0 0 50% 0);"></div><div style="position:absolute; inset:0; border-radius:50%; border:1.5px solid rgba(255,255,255,0.22); box-sizing:border-box; clip-path:inset(50% 0 0 0);"></div><div style="position:absolute; left:-5px; right:-5px; top:10.5px; height:1px; background:#FFFFFF;"></div></div><div style="font-size:14px; font-weight:500; letter-spacing:0.42em; text-transform:uppercase;">Pelagic</div></div></div>
+    <div style="display:flex; flex-direction:column; gap:4px;">
+      <sc-for list="{{ nav }}" as="n" hint-placeholder-count="6"><div style="position:relative; display:flex; align-items:center; gap:12px; height:44px; padding:4px 12px 4px 4px; box-sizing:border-box; border-radius:12px; background:{{ n.bg }}; color:{{ n.fg }}; font-size:14px; font-weight:500;"><span style="width:36px; height:36px; flex:none; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:20px; background:{{ n.icBg }}; color:{{ n.icFg }};">{{ n.icon }}</span><span style="flex:1;">{{ n.label }}</span><span style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:{{ n.bdg }};">{{ n.badge }}</span></div></sc-for>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:6px;">
+      <div style="display:flex; align-items:center; justify-content:space-between; padding:0 12px 8px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.16em; color:#55555A;">PLAYLISTS</div><span style="font-size:16px; color:#8A8A8E;">{{ ic.plus }}</span></div>
+      <sc-for list="{{ playlists }}" as="p" hint-placeholder-count="5"><div style="display:flex; align-items:center; gap:12px; height:44px; padding:0 12px;"><img src="{{ p.img }}" alt="" style="width:30px; height:30px; border-radius:6px; object-fit:cover; flex:none; filter:grayscale(1) brightness(0.8);"><div style="display:flex; flex-direction:column; gap:2px; min-width:0;"><div style="font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ p.n }}</div><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:#55555A;">{{ p.c }}</div></div></div></sc-for>
+    </div>
+  </div>
+
+  <div style="position:relative; margin-left:232px; padding:{{ pad }}; box-sizing:border-box;">
+    <sc-if value="{{ pHome }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex; flex-direction:column; gap:44px;">
+        <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:24px;">
+          <div style="display:flex; flex-direction:column; gap:10px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.16em; color:#55555A;">{{ dateL }}</div><div style="font-size:40px; font-weight:400; letter-spacing:-0.02em;">Good evening, Kast</div></div>
+          <div style="display:flex; align-items:center; gap:14px;"><div style="width:{{ searchW }}px; height:40px; border-radius:999px; display:flex; align-items:center; gap:10px; padding:0 16px; box-sizing:border-box; border:2px solid rgba(255,255,255,0.12); background:rgba(255,255,255,0.03); color:#8A8A8E; font-size:14px;"><span style="font-size:21px;">{{ ic.search }}</span>Search your library</div><div style="width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:2px solid rgba(255,255,255,0.14); background:#121214; box-sizing:border-box; font-size:14px;">K</div></div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:16px;">
+          <div style="display:flex; align-items:center; gap:16px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.16em; color:#EDEDED; white-space:nowrap;">JUMP BACK IN</div><div style="flex:1; height:1px; background:rgba(255,255,255,0.08);"></div><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.14em; color:#8A8A8E; white-space:nowrap;">{{ jbiSub }}</div></div>
+          <div style="display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px;">
+            <sc-for list="{{ tiles }}" as="t" hint-placeholder-count="8">
+              <div onMouseEnter="{{ t.enter }}" onMouseLeave="{{ t.leave }}" onMouseDown="{{ t.down }}" onMouseUp="{{ t.up }}" onClick="{{ t.click }}" onContextMenu="{{ t.ctx }}" style="position:relative; height:72px; min-width:0; display:flex; align-items:center; gap:14px; padding:8px 12px 8px 8px; box-sizing:border-box; border-radius:12px; background:{{ t.bg }}; box-shadow:{{ t.sh }}; transform:scale({{ t.sc }}); transition:{{ t.tr }}; cursor:pointer; user-select:none;">
+                {{ t.alive }}{{ t.art }}
+                <div style="position:relative; flex:1; min-width:0; display:flex; flex-direction:column; gap:5px;">
+                  <div style="font-size:14px; font-weight:500; color:{{ t.fg }}; text-shadow:{{ t.ts }}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ t.name }}</div>
+                  <div style="display:flex; align-items:center; gap:8px; min-width:0; font-family:{{ t.sf }}; font-size:{{ t.sfs }}px; letter-spacing:{{ t.sls }}; color:{{ t.sc2 }}; white-space:nowrap;">{{ t.eq }}<span style="overflow:hidden; text-overflow:ellipsis;">{{ t.sub }}</span></div>
+                </div>
+                <div style="position:relative; width:32px; height:32px; flex:none; border-radius:50%; display:flex; align-items:center; justify-content:center; background:{{ t.pbBg }}; color:#0B0B0C; font-size:14px; opacity:{{ t.pbOp }}; transform:scale({{ t.pbSc }}); transition:{{ t.pbTr }};">{{ t.pbIc }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <sc-for list="{{ shelves }}" as="s" hint-placeholder-count="4">
+          <div style="display:flex; flex-direction:column; gap:16px;">
+            <div style="display:flex; align-items:center; gap:16px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.16em; color:#EDEDED; white-space:nowrap;">{{ s.label }}</div><div style="flex:1; height:1px; background:rgba(255,255,255,0.08);"></div><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.14em; color:#8A8A8E; white-space:nowrap;">{{ s.sub }}</div></div>
+            <sc-if value="{{ s.square }}">
+              <div style="display:flex; gap:24px; margin-right:-60px;">
+                <sc-for list="{{ s.items }}" as="c">
+                  <div onMouseEnter="{{ c.enter }}" onMouseLeave="{{ c.leave }}" style="width:168px; flex:none; display:flex; flex-direction:column; gap:12px;">
+                    <div style="position:relative; width:168px; height:168px; border-radius:10px; box-shadow:{{ c.ring }}; transition:box-shadow .6s;">
+                      {{ c.art }}
+                      <sc-if value="{{ c.isNew }}"><div style="width:168px; height:168px; border-radius:10px; border:1.5px dashed rgba(255,255,255,0.22); box-sizing:border-box; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,0.02); cursor:pointer;" style-hover="border-color:rgba(255,255,255,0.45); background:rgba(255,255,255,0.04);"><div style="width:52px; height:52px; border-radius:14px; border:1.5px solid rgba(255,255,255,0.18); box-sizing:border-box; display:flex; align-items:center; justify-content:center; font-size:24px;">{{ spark }}</div></div></sc-if>
+                      <div style="position:absolute; inset:0; border-radius:10px; background:linear-gradient(180deg, rgba(5,5,5,0) 45%, rgba(5,5,5,0.62)); opacity:{{ c.hovOp }}; transition:opacity {{ c.tr }}; pointer-events:none;"></div>
+                      <sc-if value="{{ c.btns }}"><div style="position:absolute; right:10px; bottom:10px; display:flex; align-items:center; gap:8px; opacity:{{ c.hovOp }}; transform:translateY({{ c.hovY }}px); transition:opacity {{ c.tr }}, transform {{ c.tr }}; pointer-events:{{ c.pe }};">
+                        <sc-if value="{{ c.shuf }}"><div onClick="{{ c.shuffle }}" title="Shuffle" style="width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:rgba(11,11,12,0.72); border:1.5px solid rgba(255,255,255,0.22); box-sizing:border-box; font-size:17px; color:#EDEDED; cursor:pointer;" style-hover="border-color:rgba(255,255,255,0.5);">{{ ic.shuffle }}</div></sc-if>
+                        <div onClick="{{ c.play }}" title="Play" style="width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:#EDEDED; color:#0B0B0C; font-size:19px; cursor:pointer; box-shadow:0 8px 24px -8px rgba(0,0,0,0.8);" style-hover="background:#FFFFFF; box-shadow:0 0 32px -6px rgba(255,255,255,0.5);">{{ c.playIc }}</div>
+                      </div></sc-if>
+                      <sc-if value="{{ c.playing }}"><div style="position:absolute; left:8px; bottom:8px; height:22px; padding:0 8px; border-radius:6px; background:rgba(5,5,5,0.85); display:flex; align-items:center;">{{ eqEl }}</div></sc-if>
+                    </div>
+                    <sc-if value="{{ c.txt }}"><div style="display:flex; flex-direction:column; gap:4px; min-width:0;"><div style="font-size:14px; font-weight:500; color:{{ c.tColor }}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ c.title }}</div><div style="font-size:{{ c.subFs }}px; font-family:{{ c.subFf }}; letter-spacing:{{ c.subLs }}; color:#8A8A8E; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ c.sub }}</div></div></sc-if>
+                    <sc-if value="{{ c.skel }}"><div style="display:flex; flex-direction:column; gap:8px; padding-top:2px;">{{ c.sk1 }}{{ c.sk2 }}</div></sc-if>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+            <sc-if value="{{ s.round }}">
+              <div style="display:flex; gap:28px; margin-right:-60px;">
+                <sc-for list="{{ s.items }}" as="c">
+                  <div onMouseEnter="{{ c.enter }}" onMouseLeave="{{ c.leave }}" style="width:132px; flex:none; display:flex; flex-direction:column; align-items:center; gap:14px;">
+                    <div style="position:relative; width:132px; height:132px; border-radius:50%; box-shadow:{{ c.ring }}; transition:box-shadow .6s;">
+                      {{ c.art }}
+                      <div onClick="{{ c.play }}" title="Play" style="position:absolute; right:0; bottom:0; width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:#EDEDED; color:#0B0B0C; font-size:17px; cursor:pointer; box-shadow:0 0 0 3px #0B0B0C; opacity:{{ c.hovOp }}; transform:translateY({{ c.hovY }}px); transition:opacity {{ c.tr }}, transform {{ c.tr }}; pointer-events:{{ c.pe }};" style-hover="background:#FFFFFF;">{{ c.playIc }}</div>
+                    </div>
+                    <div style="display:flex; flex-direction:column; align-items:center; gap:6px; max-width:132px; text-align:center;"><div style="font-size:14px; font-weight:500; color:{{ c.tColor }}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:132px;">{{ c.title }}</div><div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.14em; color:#8A8A8E; white-space:nowrap;">{{ c.sub }}</div></div>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+            <sc-if value="{{ s.recap }}">
+              <div style="height:216px; border-radius:14px; border:1.5px dashed rgba(255,255,255,0.14); box-sizing:border-box; background:repeating-linear-gradient(135deg, rgba(255,255,255,0.025) 0 10px, transparent 10px 20px); display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.16em; color:#8A8A8E; text-align:center; line-height:1.8;">EXISTING YEARLY RECAP SHELF · UNCHANGED<br>SHOWN 18 DEC – 31 JAN ONLY</div>
+            </sc-if>
+            <sc-if value="{{ s.invite }}">
+              <div style="display:flex; align-items:center; gap:20px; max-width:720px; padding:20px 20px 20px 20px; border-radius:14px; border:1.5px dashed rgba(255,255,255,0.2); box-sizing:border-box; background:rgba(255,255,255,0.02);">
+                <div style="width:52px; height:52px; flex:none; border-radius:14px; border:1.5px solid rgba(255,255,255,0.18); box-sizing:border-box; display:flex; align-items:center; justify-content:center; font-size:24px;">{{ spark }}</div>
+                <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:5px;"><div style="font-size:15px; font-weight:500;">Playlists that fill themselves</div><div style="font-size:13px; line-height:1.5; color:#8A8A8E; text-wrap:pretty;">Pick a few rules, like never played, added this month or longer than 6 minutes. The playlist keeps itself up to date.</div></div>
+                <div style="height:40px; padding:0 16px; flex:none; border-radius:12px; display:flex; align-items:center; gap:8px; border:1.5px solid rgba(255,255,255,0.18); box-sizing:border-box; font-size:14px; font-weight:500; cursor:pointer;" style-hover="border-color:rgba(255,255,255,0.4);"><span style="font-size:17px;">{{ spark }}</span>New smart playlist</div>
+              </div>
+            </sc-if>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ pMix }}">
+      <div style="display:flex; flex-direction:column; gap:30px;">
+        <div style="display:flex; align-items:center; gap:10px; font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.16em; color:#8A8A8E;"><span style="font-size:16px;">{{ ic.chevL }}</span>HOME / MADE FOR YOU</div>
+        <div style="display:flex; align-items:flex-end; gap:40px;">
+          <div style="box-shadow:0 40px 80px -30px {{ mixGlow }}; border-radius:14px;">{{ mixBig }}</div>
+          <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:14px;">
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.16em; color:#8A8A8E;">DAILY MIX · MADE FOR YOU · REFRESHES DAILY</div>
+            <div style="font-size:{{ mixTitleFs }}px; font-weight:400; letter-spacing:-0.035em; line-height:0.95;">Darkwave · Post-punk</div>
+            <div style="font-size:15px; color:#BDBDBD; text-wrap:pretty;">Your most played genres lately, with 9 songs you haven't heard yet</div>
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.12em; color:#8A8A8E;">50 SONGS · 3 HR 12 MIN · 9 NEW TO YOU</div>
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <div onClick="{{ playMix }}" style="height:46px; padding:0 24px; border-radius:12px; display:flex; align-items:center; gap:10px; background:#EDEDED; color:#0B0B0C; font-weight:500; font-size:15px; cursor:pointer;" style-hover="background:#FFFFFF; box-shadow:0 0 32px -6px rgba(255,255,255,0.5);"><span style="font-size:21px;">{{ ic.playF }}</span>Play</div>
+          <div onClick="{{ playMix }}" style="height:46px; padding:0 20px; border-radius:12px; display:flex; align-items:center; gap:10px; border:1.5px solid rgba(255,255,255,0.18); box-sizing:border-box; font-weight:500; font-size:15px; cursor:pointer;" style-hover="border-color:rgba(255,255,255,0.4);"><span style="font-size:21px;">{{ ic.shuffle }}</span>Shuffle</div>
+          <div onClick="{{ saveMix }}" style="height:46px; padding:0 20px; border-radius:12px; display:flex; align-items:center; gap:10px; border:1.5px solid rgba(255,255,255,0.18); box-sizing:border-box; font-weight:500; font-size:15px; cursor:pointer;" style-hover="border-color:rgba(255,255,255,0.4);"><span style="font-size:21px;">{{ saveIc }}</span>Save as playlist</div>
+          <div style="flex:1;"></div>
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.14em; color:#55555A;">READ-ONLY · NEXT REFRESH TOMORROW 06:00</div>
+        </div>
+        <div style="display:flex; flex-direction:column;">
+          <div style="display:grid; grid-template-columns:{{ cols }}; align-items:center; gap:16px; height:36px; padding:0 12px; border-bottom:1px solid rgba(255,255,255,0.08); font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.16em; color:#55555A;"><span style="text-align:center;">#</span><span>TITLE</span><span>ALBUM</span><span>QUALITY</span><span>LAST PLAYED</span><span style="display:flex; justify-content:flex-end; font-size:14px;">{{ ic.clock }}</span></div>
+          <sc-for list="{{ rows }}" as="r" hint-placeholder-count="8">
+            <div onMouseEnter="{{ r.enter }}" onMouseLeave="{{ r.leave }}" style="display:grid; grid-template-columns:{{ cols }}; align-items:center; gap:16px; height:58px; padding:0 12px; border-radius:10px; background:{{ r.bg }};">
+              <div style="display:flex; justify-content:center; font-family:'IBM Plex Mono',monospace; font-size:11px; color:#55555A;"><sc-if value="{{ r.playing }}">{{ eqEl }}</sc-if><sc-if value="{{ r.idle }}">{{ r.n }}</sc-if><sc-if value="{{ r.hover }}"><span style="font-size:15px; color:#EDEDED;">{{ ic.playF }}</span></sc-if></div>
+              <div style="display:flex; align-items:center; gap:12px; min-width:0;"><img src="{{ r.img }}" alt="" style="width:40px; height:40px; border-radius:6px; object-fit:cover; flex:none;"><div style="display:flex; flex-direction:column; gap:2px; min-width:0;"><div style="font-size:15px; color:{{ r.tc }}; text-shadow:{{ r.ts }}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ r.t }}</div><div style="font-size:13px; color:#8A8A8E; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ r.a }}</div></div></div>
+              <div style="font-size:13px; color:#8A8A8E; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ r.al }}</div>
+              <div style="display:flex;"><span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.08em; padding:3px 6px; border-radius:6px; border:1.5px solid {{ r.qBd }}; background:{{ r.qBg }}; color:{{ r.qFg }}; white-space:nowrap;">{{ r.q }}</span></div>
+              <div style="display:flex; font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.12em; color:#8A8A8E;"><sc-if value="{{ r.isNew }}"><span style="padding:3px 6px; border-radius:6px; border:1.5px solid rgba(255,255,255,0.18); color:#EDEDED; font-size:9px; letter-spacing:0.14em; white-space:nowrap;">NEW TO YOU</span></sc-if><sc-if value="{{ r.notNew }}">{{ r.last }}</sc-if></div>
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#8A8A8E; text-align:right;">{{ r.d }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ pExp }}">
+      <div style="display:flex; flex-direction:column; gap:40px;">
+        <div style="display:flex; align-items:center; gap:10px; font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.16em; color:#8A8A8E;"><span style="font-size:16px;">{{ ic.chevL }}</span>HOME / MADE FOR YOU</div>
+        <div style="display:flex; flex-direction:column; align-items:center; gap:22px; padding-top:8px; text-align:center;">
+          <div style="position:relative; width:150px; height:150px; display:flex; align-items:center; justify-content:center;"><div style="position:absolute; inset:0; border-radius:50%; border:1px solid rgba(255,255,255,0.06);"></div><div style="position:absolute; inset:28px; border-radius:50%; border:1px solid rgba(255,255,255,0.12);"></div><div style="position:absolute; inset:52px; border-radius:50%; border:1px solid rgba(255,255,255,0.3);"></div><span style="position:relative; font-size:24px;">{{ ic.refresh }}</span></div>
+          <div style="font-size:26px; font-weight:400; letter-spacing:-0.01em;">This mix has been refreshed</div>
+          <div style="font-size:15px; line-height:1.55; color:#8A8A8E; max-width:500px; text-wrap:pretty;">Daily Mixes are rebuilt every morning from what you've been playing. This link was for Daily Mix 1 from 17 Oct. Save a mix as a playlist to keep it.</div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:16px;">
+          <div style="display:flex; align-items:center; gap:16px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.16em; color:#EDEDED; white-space:nowrap;">TODAY'S MIXES</div><div style="flex:1; height:1px; background:rgba(255,255,255,0.08);"></div><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.14em; color:#8A8A8E;">UPDATED TODAY · 06:00</div></div>
+          <div style="display:flex; gap:24px; margin-right:-60px;">
+            <sc-for list="{{ todayMixes }}" as="c">
+              <div style="width:168px; flex:none; display:flex; flex-direction:column; gap:12px;">{{ c.art }}<div style="display:flex; flex-direction:column; gap:4px; min-width:0;"><div style="font-size:14px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ c.title }}</div><div style="font-size:13px; color:#8A8A8E; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ c.sub }}</div></div></div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+  </div>
+
+  <div style="position:absolute; left:{{ toastL }}px; bottom:108px; z-index:6; transform:translate(-50%, {{ tY }}px); opacity:{{ tOp }}; pointer-events:{{ tPe }}; transition:{{ tTr }}; display:flex; align-items:center; gap:14px; padding:10px 10px 10px 16px; border-radius:12px; background:#1A1A1D; box-shadow:0 24px 50px -16px rgba(0,0,0,0.8); white-space:nowrap;">
+    <span style="font-size:18px; display:flex;">{{ tIc }}</span><span style="font-size:14px;">{{ tText }}</span>
+    <sc-if value="{{ tHasAct }}"><div onClick="{{ tAct }}" style="height:32px; padding:0 14px; border-radius:10px; display:flex; align-items:center; border:1.5px solid rgba(255,255,255,0.18); box-sizing:border-box; font-size:13px; font-weight:500; cursor:pointer;" style-hover="border-color:rgba(255,255,255,0.4);">{{ tActL }}</div></sc-if>
+  </div>
+
+  <div style="position:absolute; left:0; right:0; bottom:0; height:84px; z-index:5; display:grid; grid-template-columns:minmax(0,1fr) {{ barMid }}px minmax(0,1fr); align-items:center; padding:0 20px; gap:24px; background:#0B0B0C; border-top:1px solid rgba(255,255,255,0.08);">
+    <div style="display:flex; align-items:center; gap:14px; min-width:0;">{{ pbArt }}<div style="display:flex; flex-direction:column; gap:3px; min-width:0;"><div style="display:flex; align-items:center; gap:10px; min-width:0;"><div style="font-size:15px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ pbTitle }}</div><sc-if value="{{ pbChip }}"><span style="flex:none; font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.14em; padding:3px 6px; border-radius:6px; border:1.5px solid {{ pbChipBd }}; color:{{ pbChipFg }};">{{ pbChipL }}</span></sc-if></div><div style="font-size:13px; color:#8A8A8E; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ pbBy }}</div></div></div>
+    <div style="display:flex; flex-direction:column; gap:8px; align-items:center;">
+      <div style="display:flex; align-items:center; gap:24px; font-size:19px; color:#8A8A8E;"><span style="color:{{ pbShufC }};">{{ ic.shuffle }}</span><span style="color:#EDEDED;">{{ ic.prev }}</span><div style="width:38px; height:38px; border-radius:50%; background:#EDEDED; color:#0B0B0C; display:flex; align-items:center; justify-content:center; font-size:17px;">{{ ic.pauseF }}</div><span style="color:#EDEDED;">{{ ic.next }}</span><span style="color:{{ pbShufC }};">{{ ic.repeat }}</span></div>
+      <div style="display:flex; align-items:center; gap:12px; width:100%;"><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:#8A8A8E;">01:36</div><div style="position:relative; flex:1; height:9px;"><div style="position:absolute; left:0; right:0; top:4px; height:1px; background:rgba(255,255,255,0.18);"></div><div style="position:absolute; left:0; width:38%; top:4px; height:1px; background:#FFFFFF;"></div><div style="position:absolute; left:38%; top:2px; width:5px; height:5px; margin-left:-2.5px; border-radius:50%; background:#FFFFFF; box-shadow:0 0 8px 2px rgba(255,255,255,0.5);"></div></div><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:#8A8A8E;">04:11</div></div>
+    </div>
+    <div style="display:flex; align-items:center; justify-content:flex-end; gap:18px; font-size:18px; color:#8A8A8E;"><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.12em; padding:4px 7px; border-radius:6px; border:1.5px solid rgba(143,199,230,0.5); background:rgba(143,199,230,0.08); color:rgb(143,199,230);">FLAC 16/44.1</div><span>{{ ic.lyrics }}</span><span style="color:{{ pbDjC }};">{{ djIc }}</span><span>{{ ic.queue }}</span><span>{{ ic.volume }}</span><div style="position:relative; width:80px; height:1px; background:rgba(255,255,255,0.18);"><div style="width:70%; height:1px; background:#EDEDED;"></div></div></div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:900},&quot;w&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:1440,&quot;tsType&quot;:&quot;number&quot;},&quot;h&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:900,&quot;tsType&quot;:&quot;number&quot;},&quot;page&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;mix&quot;,&quot;expired&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;data&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;early&quot;,&quot;loading&quot;,&quot;noSmart&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;dj&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;idle&quot;,&quot;intro&quot;,&quot;onair&quot;],&quot;default&quot;:&quot;idle&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;full&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;recap&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;toast&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;reduced&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;hover&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;playing&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;al-tsunami&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+const h = React.createElement;
+let PK = null, HK = null;
+const kits = () => { if (!PK && window.PelagicKit) PK = window.PelagicKit(h); if (!HK && PK && window.HomeKit) HK = window.HomeKit(h, PK); return PK && HK ? [PK, HK] : null; };
+const SESSION = 'Never played · 2010s post-punk';
+const GLOW = '0 0 0 1px rgba(255,255,255,0.5), 0 0 32px -6px rgba(255,255,255,0.35)';
+const NOW = { 'al-tsunami': ['Soft Spine', 'Spiritbox · Tsunami Sea'], 'al-zanmu': ['唱 Show', 'Ado · Zanmu'], d1: ['Sudno (Boris Ryzhy)', 'Molchat Doma · Daily Mix 1'], r1: ['Evil', 'Interpol · Interpol Radio'], 'pl-heavy': ['Wildfire', 'Periphery · Heavy water'], 'ar-Ado': ['唱 Show', 'Ado'], 'sm-0': ['Black Rainbow', 'Spiritbox · Added this month'], 'ar-Spiritbox': ['Jaded', 'Spiritbox'] };
+
+class Component extends DCLogic {
+  state = { hv: null, press: null, playing: undefined, dj: undefined, toast: null, tOn: false };
+  componentDidMount() { if (!kits()) this.kp = setInterval(() => { if (kits()) { clearInterval(this.kp); this.forceUpdate(); } }, 100); }
+  componentWillUnmount() { clearInterval(this.kp); clearTimeout(this.it); clearTimeout(this.tt); }
+  m() { return (this.props.motion ?? 'full') !== 'reduced' && !!this.props.live; }
+  djS() { return this.state.dj ?? (this.props.dj ?? 'idle'); }
+  playingId() { if (this.djS() !== 'idle') return 'dj'; return this.state.playing !== undefined ? this.state.playing : (this.props.playing ?? 'al-tsunami'); }
+  play(id) { clearTimeout(this.it); this.setState({ playing: this.playingId() === id ? null : id, dj: 'idle' }); }
+  startDj() { this.setState({ dj: 'intro', press: null }); clearTimeout(this.it); this.it = setTimeout(() => this.setState({ dj: 'onair' }), 7000); }
+  toast(t) { clearTimeout(this.tt); this.setState({ toast: t, tOn: true }); this.tt = setTimeout(() => this.setState({ tOn: false }), 4500); }
+  tileKey(t) { return t.mix || t.radio || (t.k ? 'al-' + t.k : t.kind === 'artist' ? 'ar-' + t.name : t.kind === 'smart' ? 'sm-' + t.smart : 'pl-heavy'); }
+  renderVals() {
+    const P = this.props, W = P.w ?? 1440, H = P.h ?? 900, full = !!P.full, page = P.page ?? 'home', data = P.data ?? 'full', recap = !!P.recap;
+    const narrow = W < 1300;
+    const base = { W, Hpx: full ? 'auto' : H + 'px', bg: '#0B0B0C', pad: full ? (narrow ? '32px 40px 140px' : '40px 56px 150px') : (narrow ? '32px 40px 0' : '40px 56px 0'), prevent: e => e.preventDefault(), pHome: page === 'home', pMix: page === 'mix', pExp: page === 'expired' };
+    const k = kits(); if (!k) return base;
+    const [PKk, HKk] = k, IC = PKk.IC, X = HKk, m = this.m(), st = this.state, dj = this.djS(), playing = this.playingId(), LA = X.LA;
+    const tr = m ? '.3s cubic-bezier(.16,1,.3,1)' : '0s';
+    const hvOf = id => st.hv === id || P.hover === id;
+    const enter = id => () => this.setState({ hv: id }), leave = () => this.setState({ hv: null, press: null });
+
+    const djOn = dj !== 'idle', djHv = hvOf('dj'), djPr = st.press === 'dj' || P.djPress;
+    const fill = (a, b) => `linear-gradient(120deg, ${LA(a)}, ${LA(b)} 60%), rgba(20,20,22,0.6)`;
+    const djTile = {
+      art: X.djMark(56, { speak: dj === 'intro', onair: dj === 'onair', lvl: 0.4, m }),
+      alive: djOn ? X.alive(12, LA(0.55), m, 5.5) : null,
+      bg: djPr ? fill(0.3, 0.1) : djOn ? (djHv ? fill(0.22, 0.07) : fill(0.15, 0.05)) : djHv ? fill(0.14, 0.04) : fill(0.08, 0.02),
+      sh: djPr ? `inset 0 0 0 1px ${LA(0.6)}, 0 0 14px -2px ${LA(0.7)}` : djOn ? `inset 0 0 0 1px ${LA(0.42)}, 0 0 24px -6px ${LA(djHv ? 0.65 : 0.5)}` : djHv ? `inset 0 0 0 1px ${LA(0.42)}, 0 0 26px -8px ${LA(0.55)}` : `inset 0 0 0 1px ${LA(0.18)}`,
+      sc: djPr ? 0.98 : 1, tr: m ? 'background .25s, box-shadow .6s, transform .2s' : 'none',
+      name: djOn ? SESSION : 'DJ', fg: djOn ? '#FFFFFF' : '#EDEDED', ts: 'none',
+      sub: djOn ? (dj === 'intro' ? 'ON AIR · DJ IS SPEAKING' : 'ON AIR · SONG 3 OF 7') : 'Endless · tap to start',
+      sf: djOn ? X.MONO : 'inherit', sfs: djOn ? 9 : 12, sls: djOn ? '0.16em' : '0', sc2: djOn ? X.LIL : '#8A8A8E', eq: dj === 'onair' ? X.eq(m, X.LIL) : null,
+      pbBg: X.LIL, pbIc: IC.playF, pbOp: djHv && !djOn ? 1 : 0, pbSc: djHv && !djOn ? 1 : 0.8, pbTr: m ? 'opacity .25s, transform .35s cubic-bezier(.16,1,.3,1)' : 'none',
+      enter: enter('dj'), leave, down: e => { if (e.button === 0) this.setState({ press: 'dj' }); }, up: () => this.setState({ press: null }),
+      click: () => { if (!djOn) this.startDj(); else this.toast({ ic: X.ICX.dj(true), text: 'Opens the full-screen player, into the run.' }); },
+      ctx: e => { e.preventDefault(); this.toast({ ic: X.ICX.dj(true), text: 'Right-click opens the DJ panel.' }); },
+    };
+    const list = (data === 'early' ? X.JBI_EARLY : X.JBI).slice(0, 7);
+    const tiles = [djTile, ...list.map(t => {
+      const key = this.tileKey(t), isP = playing === key, hv = hvOf('t-' + key);
+      return { art: X.tileArt(t, 56, m), alive: null,
+        bg: hv ? 'rgba(255,255,255,0.075)' : isP ? 'rgba(255,255,255,0.055)' : 'rgba(255,255,255,0.035)',
+        sh: isP ? GLOW : hv ? 'inset 0 0 0 1px rgba(255,255,255,0.1)' : 'inset 0 0 0 1px rgba(255,255,255,0.05)', sc: 1, tr: m ? 'background .25s, box-shadow .6s' : 'none',
+        name: t.name, fg: isP ? '#FFFFFF' : '#EDEDED', ts: isP ? '0 0 18px rgba(255,255,255,0.4)' : 'none',
+        sub: t.label, sf: X.MONO, sfs: 9, sls: '0.16em', sc2: '#8A8A8E', eq: isP ? X.eq(m) : null,
+        pbBg: '#EDEDED', pbIc: isP ? IC.pauseF : IC.playF, pbOp: hv ? 1 : 0, pbSc: hv ? 1 : 0.8, pbTr: m ? 'opacity .25s, transform .35s cubic-bezier(.16,1,.3,1)' : 'none',
+        enter: enter('t-' + key), leave, down: () => {}, up: () => {}, click: () => this.play(key), ctx: e => e.preventDefault() };
+    })];
+
+    const sq = (shelf, key, art, title, sub, o) => {
+      o = o || {}; const hid = shelf + ':' + key, hv = hvOf(hid) || P.hover === key, isP = playing === key;
+      return { art, title, sub, subFs: o.mono ? 10 : 13, subFf: o.mono ? X.MONO : 'inherit', subLs: o.mono ? '0.12em' : '0',
+        hovOp: hv ? 1 : 0, hovY: hv ? 0 : 6, pe: hv ? 'auto' : 'none', tr, btns: !o.isNew, shuf: !!o.shuf, isNew: !!o.isNew,
+        play: () => this.play(key), shuffle: () => this.play(key), enter: enter(hid), leave,
+        ring: isP ? GLOW : 'none', playing: isP, playIc: isP ? IC.pauseF : IC.playF, tColor: isP ? '#FFFFFF' : '#EDEDED', txt: true, skel: false };
+    };
+    const sk = (art) => ({ art, txt: false, skel: true, btns: false, hovOp: 0, ring: 'none', sk1: X.skel(120, 12, 6, m), sk2: X.skel(84, 10, 6, m) });
+    const early = data === 'early', loading = data === 'loading';
+    const mixes = early ? [X.MIXES[0], X.MIXES[1], X.MIXES[6]] : X.MIXES;
+    const shelves = [];
+    if (recap) shelves.push({ label: 'YOUR 2026', sub: 'UNTIL 31 JAN', recap: true });
+    shelves.push({ label: 'MADE FOR YOU', sub: loading ? 'MIXING FROM 3,912 SONGS' : early ? '2 DAILY MIXES FOR NOW · MORE AS YOU LISTEN' : 'UPDATED TODAY · 06:00', square: true,
+      items: loading ? [0, 1, 2, 3, 4, 5, 6].map(() => sk(X.skelMix(168, m))) : mixes.map(x => sq('mx', x.id, X.mixCover(168, x), x.title, x.sub, { shuf: true })) });
+    shelves.push({ label: 'RADIO FOR YOU', sub: loading ? 'TUNING IN' : early ? 'FROM THE ARTISTS WITH THE MOST ALBUMS' : 'FROM WHAT YOU PLAY', square: true,
+      items: loading ? [0, 1, 2, 3, 4, 5, 6].map(() => sk(X.skelRadio(168, m))) : (early ? X.RADIOS_EARLY : X.RADIOS).map(r => sq('rd', r.id, X.radioArt(168, r, { m }), r.title, r.sub)) });
+    shelves.push({ label: 'RECENTLY ADDED', sub: '4 THIS WEEK', square: true, items: X.RECENT.map(kk => sq('ra', 'al-' + kk, X.cover(168, kk, 10), X.AL[kk][0], X.AL[kk][1])) });
+    const rd = (key, a) => { const hid = 'ar:' + key, hv = hvOf(hid), isP = playing === key; return { art: X.avatar(132, a), title: a.name, sub: a.sub, hovOp: hv ? 1 : 0, hovY: hv ? 0 : 6, pe: hv ? 'auto' : 'none', tr, play: () => this.play(key), enter: enter(hid), leave, ring: isP ? GLOW : 'none', playIc: isP ? IC.pauseF : IC.playF, tColor: isP ? '#FFFFFF' : '#EDEDED' }; };
+    shelves.push({ label: 'YOUR ARTISTS', sub: early ? 'MOST ALBUMS IN YOUR LIBRARY' : 'MOST PLAYED · LAST 90 DAYS', round: true, items: (early ? X.ARTISTS_EARLY : X.ARTISTS).map(a => rd('ar-' + a.name, a)) });
+    if (early || data === 'noSmart') shelves.push({ label: 'SMART PLAYLISTS', sub: 'NONE YET', invite: true });
+    else shelves.push({ label: 'SMART PLAYLISTS', sub: '5 · UPDATE THEMSELVES', square: true, items: [...X.SMART.map((s, i) => sq('sm', 'sm-' + i, X.mosaic(168, s.covers, 10), s.title, `${s.n} SONGS · UPDATES ITSELF`, { mono: true })), Object.assign(sq('sm', 'new', null, 'New smart playlist', 'RULES · UPDATES ITSELF', { mono: true, isNew: true }), {})] });
+    if (!early) shelves.push({ label: 'REDISCOVER', sub: 'NOT HEARD IN A WHILE', square: true, items: X.REDIS_AL.map(([kk, d]) => sq('rs', 'al-' + kk, X.cover(168, kk, 10), X.AL[kk][0], 'Last played ' + d)) });
+
+    const nav = [['home', 'Home'], ['library', 'Library'], ['search', 'Search'], ['newr', 'New releases', '3'], ['upload', 'Upload'], ['download', 'Downloads']].map(([i, l, b]) => { const on = l === 'Home' && page === 'home'; return { icon: IC[i], label: l, badge: b || '', bg: on ? '#EDEDED' : 'transparent', fg: on ? '#0B0B0C' : '#8A8A8E', icBg: on ? '#0B0B0C' : 'transparent', icFg: on ? '#FFFFFF' : '#8A8A8E', bdg: on ? '#55555A' : '#8A8A8E' }; });
+
+    const d1 = X.MIXES[0];
+    const rows = X.TRACKS.slice(0, 9).map((t, i) => { const pl = page === 'mix' && i === 1 && playing === 'd1', hv = hvOf('row' + i); const q = X.Q[t[4]];
+      return { n: String(i + 1).padStart(2, '0'), t: t[0], a: t[1], al: t[2], img: X.ART(t[3]), q: q[0], qFg: `rgb(${q[1]})`, qBd: `rgba(${q[1]},0.5)`, qBg: `rgba(${q[1]},0.08)`, isNew: !t[5], notNew: !!t[5], last: t[5], d: t[6],
+        playing: pl, hover: hv && !pl, idle: !hv && !pl, bg: hv ? '#121214' : pl ? 'rgba(255,255,255,0.03)' : 'transparent', tc: pl ? '#FFFFFF' : '#EDEDED', ts: pl ? '0 0 18px rgba(255,255,255,0.45)' : 'none', enter: enter('row' + i), leave }; });
+
+    let pbArt, pbTitle, pbBy, pbChip = false, pbChipL = '', pbChipBd = '', pbChipFg = '';
+    if (playing === 'dj') { pbArt = X.djMark(52, { speak: dj === 'intro', lvl: 0.4, m }); pbTitle = dj === 'intro' ? SESSION : 'Ceremony'; pbBy = dj === 'intro' ? 'DJ is speaking · 7 songs' : 'Joy Division'; pbChip = true; pbChipL = dj === 'intro' ? 'DJ · INTRO' : 'DJ · 3/7'; pbChipBd = LA(0.5); pbChipFg = X.LIL; }
+    else { const nw = NOW[playing] || NOW['al-tsunami']; const t = list.find(x => this.tileKey(x) === playing);
+      pbArt = t ? X.tileArt(t, 52, m) : playing && playing.startsWith('r') ? X.radioArt(52, X.radioById(playing) || X.RADIOS[0], { r: 8, m }) : playing && X.mixById(playing) ? X.mixCover(52, X.mixById(playing), { r: 8 }) : X.cover(52, 'tsunami', 8);
+      pbTitle = nw[0]; pbBy = nw[1]; }
+    const ts = st.toast, tOn = st.tOn || (P.toast && page === 'mix');
+    const tData = ts || (P.toast ? { ic: IC.check, text: 'Saved as ‘Darkwave · Post-punk · 19 Oct’', actL: 'Open', act: () => {} } : { text: '' });
+    return Object.assign(base, {
+      ic: IC, nav, playlists: X.PLAYLISTS.map(([n, c, kk]) => ({ n, c, img: X.ART(kk) })), water: this.water(PKk),
+      bg: page === 'mix' ? `radial-gradient(55% 70% at 26% 40%, oklch(0.20 0.035 ${d1.hue}), transparent 72%), radial-gradient(90% 50% at 50% 108%, oklch(0.13 0.022 ${d1.hue}), transparent 80%), #0B0B0C` : '#0B0B0C',
+      dateL: recap ? 'MON 22 DEC · 21:47' : 'MON 19 OCT · 21:47', searchW: narrow ? 240 : 300,
+      jbiSub: early ? 'YOUR LAST PLAYS · PC AND PHONE' : 'SYNCED · PC AND PHONE', tiles, shelves, spark: X.ICX.spark(), eqEl: X.eq(m), saveIc: X.ICX.save(), djIc: X.ICX.dj(djOn),
+      mixBig: X.mixCover(narrow ? 168 : 200, d1, { r: 14 }), mixGlow: `oklch(0.34 0.06 ${d1.hue} / 0.9)`, mixTitleFs: narrow ? 56 : 72,
+      cols: narrow ? '32px minmax(0,1fr) 170px 110px 110px 48px' : '32px minmax(0,1fr) 240px 130px 130px 56px', rows,
+      playMix: () => this.play('d1'),
+      saveMix: () => this.toast({ ic: IC.check, text: 'Saved as ‘Darkwave · Post-punk · 19 Oct’', actL: 'Open', act: () => this.setState({ tOn: false }) }),
+      todayMixes: X.MIXES.map(x => ({ art: X.mixCover(168, x), title: x.title, sub: x.sub })),
+      toastL: 232 + (W - 232) / 2, tOp: tOn ? 1 : 0, tY: tOn ? 0 : 20, tPe: tOn ? 'auto' : 'none', tTr: m ? (tOn ? 'opacity .6s cubic-bezier(.16,1,.3,1), transform .6s cubic-bezier(.16,1,.3,1)' : 'opacity .35s ease, transform .35s ease') : 'none',
+      tIc: tData.ic || IC.check, tText: tData.text, tHasAct: !!tData.actL, tActL: tData.actL || '', tAct: () => { if (tData.act) tData.act(); this.setState({ tOn: false }); },
+      barMid: narrow ? 420 : 560, pbArt, pbTitle, pbBy, pbChip, pbChipL, pbChipBd, pbChipFg, pbShufC: djOn ? '#3A3A3E' : '#8A8A8E', pbDjC: djOn ? X.LIL : '#8A8A8E',
+    });
+  }
+  water(PKk) {
+    const m = this.m(), n = m ? 12 : 0;
+    let s = 17; const rnd = () => (s = (s * 9301 + 49297) % 233280) / 233280;
+    const kids = [h('div', { key: 'st', style: { position: 'absolute', inset: 0, backgroundImage: PKk.STONE, backgroundSize: '900px 900px', opacity: 0.09 } }), h('div', { key: 'ct', style: { position: 'absolute', inset: 0, backgroundImage: m ? PKk.CONTOUR_LIVE : PKk.CONTOUR_SMOOTH, backgroundSize: '1600px 1000px', opacity: 0.075 } }), h('div', { key: 'gr', style: { position: 'absolute', inset: 0, backgroundImage: PKk.GRAIN, backgroundSize: '220px 220px', opacity: 0.035 } })];
+    const fl = [];
+    for (let i = 0; i < n; i++) { const sz = 1.4 + rnd() * 2.2, d = 16 + rnd() * 22; fl.push(h('div', { key: i, className: 'pg-anim', style: { position: 'absolute', left: (rnd() * 100) + '%', top: (rnd() * 85) + '%', animation: `pg-sway ${d}s cubic-bezier(.45,0,.55,1) ${-rnd() * d}s infinite` } }, h('div', { style: { width: sz, height: sz, borderRadius: '50%', background: '#FFFFFF', opacity: 0.25 + rnd() * 0.4 } }))); }
+    if (n) kids.push(h('div', { key: 'sn', className: 'pg-snow', style: { position: 'absolute', inset: 0 } }, fl));
+    return h('div', { style: { position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' } }, kids);
+  }
+}
+</script>
+</body>
+</html>
