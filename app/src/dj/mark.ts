@@ -1,12 +1,12 @@
 /**
  * DJ mark geometry (handoff_dj §1) shared by the React mark (DjMark.tsx) and the PNG used as
  * lock-screen / media-session art. A horizon line that fades at both ends, a glowing dot on it,
- * arcs rising above it at falling opacity and a faint reflection below — all in DJ gold.
+ * arcs rising above it at falling opacity and a faint reflection below — all in the DJ violet.
  */
-export const GOLD = 'rgb(226,186,96)'
-export const GOLD_LIGHT = 'rgb(242,218,160)'
-export const goldA = (a: number) => `rgba(226,186,96,${a})`
-export const MARK_TILE = 'radial-gradient(85% 75% at 50% 64%, #221E17 0%, #111011 55%, #070708 100%)'
+export const ACCENT = 'rgb(198, 180, 242)'
+export const ACCENT_LIGHT = 'rgb(230,220,252)'
+export const accentA = (a: number) => `rgba(198, 180, 242,${a})`
+export const MARK_TILE = 'radial-gradient(85% 75% at 50% 64%, #1D1726 0%, #100F13 55%, #070708 100%)'
 
 export interface MarkGeometry {
   big: boolean
@@ -78,16 +78,16 @@ export function markSvg(px: number): string {
   const sw = (g.stroke * 100) / px // non-scaling stroke in a 100-unit viewBox
   const parts: string[] = []
   parts.push(
-    `<defs><radialGradient id="t" cx="50%" cy="64%" r="80%"><stop offset="0" stop-color="#221E17"/><stop offset=".55" stop-color="#111011"/><stop offset="1" stop-color="#070708"/></radialGradient>` +
-      `<linearGradient id="h" x1="0" x2="1"><stop offset="0" stop-color="${GOLD}" stop-opacity="0"/><stop offset=".5" stop-color="${GOLD}" stop-opacity=".75"/><stop offset="1" stop-color="${GOLD}" stop-opacity="0"/></linearGradient>` +
+    `<defs><radialGradient id="t" cx="50%" cy="64%" r="80%"><stop offset="0" stop-color="#1D1726"/><stop offset=".55" stop-color="#100F13"/><stop offset="1" stop-color="#070708"/></radialGradient>` +
+      `<linearGradient id="h" x1="0" x2="1"><stop offset="0" stop-color="${ACCENT}" stop-opacity="0"/><stop offset=".5" stop-color="${ACCENT}" stop-opacity=".75"/><stop offset="1" stop-color="${ACCENT}" stop-opacity="0"/></linearGradient>` +
       `<filter id="b" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="${g.blur}"/></filter></defs>`,
   )
   parts.push(`<rect width="100" height="100" fill="url(#t)"/>`)
   parts.push(`<line x1="${g.horizon[0]}" x2="${g.horizon[1]}" y1="${g.cy}" y2="${g.cy}" stroke="url(#h)" stroke-width="${sw}"/>`)
-  for (const a of g.arcs) parts.push(`<path d="${arcPath(g.cx, g.cy, a.r, true)}" fill="none" stroke="${GOLD}" stroke-opacity="${a.op}" stroke-width="${sw}" stroke-linecap="round"/>`)
-  for (const a of g.reflections) parts.push(`<path d="${arcPath(g.cx, g.cy, a.r, false)}" fill="none" stroke="${GOLD}" stroke-opacity="${a.op}" stroke-width="${sw}"/>`)
-  parts.push(`<circle cx="${g.cx}" cy="${g.cy}" r="${g.halo}" fill="${GOLD}" opacity=".4" filter="url(#b)"/>`)
-  parts.push(`<circle cx="${g.cx}" cy="${g.cy}" r="${g.dot}" fill="${GOLD_LIGHT}"/>`)
+  for (const a of g.arcs) parts.push(`<path d="${arcPath(g.cx, g.cy, a.r, true)}" fill="none" stroke="${ACCENT}" stroke-opacity="${a.op}" stroke-width="${sw}" stroke-linecap="round"/>`)
+  for (const a of g.reflections) parts.push(`<path d="${arcPath(g.cx, g.cy, a.r, false)}" fill="none" stroke="${ACCENT}" stroke-opacity="${a.op}" stroke-width="${sw}"/>`)
+  parts.push(`<circle cx="${g.cx}" cy="${g.cy}" r="${g.halo}" fill="${ACCENT}" opacity=".4" filter="url(#b)"/>`)
+  parts.push(`<circle cx="${g.cx}" cy="${g.cy}" r="${g.dot}" fill="${ACCENT_LIGHT}"/>`)
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${px}" height="${px}" viewBox="${g.viewBox}">${parts.join('')}</svg>`
 }
 

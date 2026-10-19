@@ -1,5 +1,5 @@
 /**
- * The DJ mark (handoff_dj §1) and the DJ icon. Gold on a dark tile; stands in for the cover while
+ * The DJ mark (handoff_dj §1) and the DJ icon. Violet on a dark tile; stands in for the cover while
  * the DJ talks.
  *
  *   idle      the two outer arcs breathe on a 9 s loop (large marks only)
@@ -10,7 +10,7 @@
 import { useId, type CSSProperties } from 'react'
 import { CONTOUR_SMOOTH, GRAIN, STONE } from '../design/textures'
 import { useMotion } from '../state/motion'
-import { arcPath, GOLD, GOLD_LIGHT, MARK_TILE, markGeometry, markRadius } from './mark'
+import { arcPath, ACCENT, ACCENT_LIGHT, MARK_TILE, markGeometry, markRadius } from './mark'
 
 export interface DjMarkProps {
   size: number
@@ -56,9 +56,9 @@ export function DjMark({ size, speaking = false, level = 0, idle = false, radius
       <svg viewBox={g.viewBox} className={g.big ? 'djm-svg' : 'djm-svg is-small'}>
         <defs>
           <linearGradient id={`${id}h`} x1="0" x2="1" y1="0" y2="0">
-            <stop offset="0" stopColor={GOLD} stopOpacity="0" />
-            <stop offset="0.5" stopColor={GOLD} stopOpacity="0.75" />
-            <stop offset="1" stopColor={GOLD} stopOpacity="0" />
+            <stop offset="0" stopColor={ACCENT} stopOpacity="0" />
+            <stop offset="0.5" stopColor={ACCENT} stopOpacity="0.75" />
+            <stop offset="1" stopColor={ACCENT} stopOpacity="0" />
           </linearGradient>
           <filter id={`${id}b`} x="-100%" y="-100%" width="300%" height="300%">
             <feGaussianBlur stdDeviation={g.blur} />
@@ -69,7 +69,7 @@ export function DjMark({ size, speaking = false, level = 0, idle = false, radius
           const op = speaking && i > 0 ? Math.min(1, a.op * (1 + lvl * 1.4)) : a.op
           const breathe = idle && motion && g.big && i >= 3
           return (
-            <path key={a.r} d={arcPath(g.cx, g.cy, a.r, true)} fill="none" stroke={GOLD} strokeOpacity={op} strokeWidth={g.stroke} strokeLinecap="round" vectorEffect="non-scaling-stroke" className="djm-arc">
+            <path key={a.r} d={arcPath(g.cx, g.cy, a.r, true)} fill="none" stroke={ACCENT} strokeOpacity={op} strokeWidth={g.stroke} strokeLinecap="round" vectorEffect="non-scaling-stroke" className="djm-arc">
               {breathe && (
                 <animate attributeName="stroke-opacity" values={`${op};${Math.min(1, op * 2.4)};${op}`} dur="9s" begin={`${-i * 1.5}s`} repeatCount="indefinite" calcMode="spline" keyTimes="0;0.5;1" keySplines=".45 0 .55 1;.45 0 .55 1" />
               )}
@@ -77,18 +77,18 @@ export function DjMark({ size, speaking = false, level = 0, idle = false, radius
           )
         })}
         {g.reflections.map((a) => (
-          <path key={`r${a.r}`} d={arcPath(g.cx, g.cy, a.r, false)} fill="none" stroke={GOLD} strokeOpacity={a.op} strokeWidth={g.stroke} vectorEffect="non-scaling-stroke" />
+          <path key={`r${a.r}`} d={arcPath(g.cx, g.cy, a.r, false)} fill="none" stroke={ACCENT} strokeOpacity={a.op} strokeWidth={g.stroke} vectorEffect="non-scaling-stroke" />
         ))}
         {speaking && motion
           ? [0, 1.6].map((b) => (
-              <circle key={b} cx={g.cx} cy={g.cy} r={g.sonar[0]} fill="none" stroke={GOLD} strokeWidth={1} vectorEffect="non-scaling-stroke" opacity={0}>
+              <circle key={b} cx={g.cx} cy={g.cy} r={g.sonar[0]} fill="none" stroke={ACCENT} strokeWidth={1} vectorEffect="non-scaling-stroke" opacity={0}>
                 <animate attributeName="r" values={`${g.sonar[0]};${g.sonar[1]}`} dur="3.2s" begin={`${b}s`} repeatCount="indefinite" calcMode="spline" keyTimes="0;1" keySplines=".15 .6 .35 1" />
                 <animate attributeName="opacity" values="0.65;0" dur="3.2s" begin={`${b}s`} repeatCount="indefinite" calcMode="spline" keyTimes="0;1" keySplines=".15 .6 .35 1" />
               </circle>
             ))
-          : speaking && <circle cx={g.cx} cy={g.cy} r={g.still} fill="none" stroke={GOLD} strokeOpacity={0.32} strokeWidth={1} vectorEffect="non-scaling-stroke" />}
-        <circle cx={g.cx} cy={g.cy} r={g.big ? g.halo + lvl * 3 : g.halo} fill={GOLD} opacity={0.4 + lvl * 0.3} filter={`url(#${id}b)`} className="djm-halo" />
-        <circle cx={g.cx} cy={g.cy} r={g.dot} fill={GOLD_LIGHT} />
+          : speaking && <circle cx={g.cx} cy={g.cy} r={g.still} fill="none" stroke={ACCENT} strokeOpacity={0.32} strokeWidth={1} vectorEffect="non-scaling-stroke" />}
+        <circle cx={g.cx} cy={g.cy} r={g.big ? g.halo + lvl * 3 : g.halo} fill={ACCENT} opacity={0.4 + lvl * 0.3} filter={`url(#${id}b)`} className="djm-halo" />
+        <circle cx={g.cx} cy={g.cy} r={g.dot} fill={ACCENT_LIGHT} />
       </svg>
       {size >= 200 && (
         <>
@@ -116,7 +116,7 @@ export function DjIcon({ on = false, alive = false, dark = false, size = '1em' }
       <path d="M3.5 16.5a8.5 8.5 0 0 1 17 0" strokeOpacity={on ? 1 : 0.55}>
         {alive && motion && <animate attributeName="stroke-opacity" values="0.35;1;0.35" dur="4.8s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.5;1" keySplines=".45 0 .55 1;.45 0 .55 1" />}
       </path>
-      <circle cx={12} cy={16.5} r={1.7} fill="currentColor" stroke="none" style={{ filter: on && !dark ? 'drop-shadow(0 0 3px rgba(226,186,96,0.95))' : 'none' }} />
+      <circle cx={12} cy={16.5} r={1.7} fill="currentColor" stroke="none" style={{ filter: on && !dark ? 'drop-shadow(0 0 3px rgba(168, 120, 255,0.95))' : 'none' }} />
     </svg>
   )
 }
@@ -133,7 +133,7 @@ export function LevelBars({ n, height, level, speaking, t, className }: { n: num
         ? 2 + height * bell * Math.min(1, (0.25 + 0.75 * level) * (0.35 + 0.65 * Math.abs(Math.sin(i * 0.83 + t * 6.1) * Math.cos(i * 0.29 - t * 3.7))))
         : 2 + height * 0.4 * bell * (0.6 + 0.4 * Math.abs(Math.sin(i * 1.7)))
     }
-    bars.push(<span key={i} style={{ height: Math.round(h), background: speaking ? 'rgba(226,186,96,0.9)' : 'rgba(226,186,96,0.3)' }} />)
+    bars.push(<span key={i} style={{ height: Math.round(h), background: speaking ? 'rgba(168, 120, 255,0.9)' : 'rgba(168, 120, 255,0.3)' }} />)
   }
   return (
     <span className={`dj-bars ${className ?? ''}`} style={{ height }} aria-hidden>

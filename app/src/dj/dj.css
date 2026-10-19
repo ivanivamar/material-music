@@ -1,11 +1,11 @@
-/* DJ (step 22) — handoff_dj. Gold is the DJ's colour only. */
+/* DJ (step 22) — handoff_dj, with Ivan's lilac (the FLAC 24-bit badge colour) instead of the handoff's gold (Oct 19). */
 :root {
-  --dj-rgb: 226, 186, 96;
-  --dj: rgb(226, 186, 96);
-  --dj-hover: rgb(238, 204, 128);
-  --dj-light: rgb(242, 218, 160);
-  --dj-scene: radial-gradient(55% 70% at 26% 50%, oklch(0.20 0.022 238), transparent 72%), radial-gradient(90% 50% at 50% 108%, oklch(0.13 0.014 238), transparent 80%), #0B0B0C;
-  --dj-scene-phone: radial-gradient(90% 45% at 50% 30%, oklch(0.20 0.022 238), transparent 72%), radial-gradient(100% 40% at 50% 104%, oklch(0.13 0.014 238), transparent 80%), #0B0B0C;
+  --dj-rgb: 198, 180, 242;
+  --dj: rgb(198, 180, 242);
+  --dj-hover: rgb(214, 200, 248);
+  --dj-light: rgb(230, 220, 252);
+  --dj-scene: radial-gradient(55% 70% at 26% 50%, oklch(0.20 0.024 295), transparent 72%), radial-gradient(90% 50% at 50% 108%, oklch(0.13 0.016 295), transparent 80%), #0B0B0C;
+  --dj-scene-phone: radial-gradient(90% 45% at 50% 30%, oklch(0.20 0.024 295), transparent 72%), radial-gradient(100% 40% at 50% 104%, oklch(0.13 0.016 295), transparent 80%), #0B0B0C;
 }
 
 /* ── mark ── */
