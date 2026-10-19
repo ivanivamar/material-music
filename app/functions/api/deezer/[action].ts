@@ -10,6 +10,11 @@
  *        albums overlap our album titles wins (an ambiguous guess with no overlap is dropped).
  *   GET /api/deezer/image?url=<picture url>
  *        → the image bytes (only https://….dzcdn.net/… URLs)
+ *   GET /api/deezer/related?id=<deezer artist id>   (or ?name=<artist>&a=<album title>… to look it up)
+ *        → { found: true, id, artists: [{ id, name }] } | { found: false }   (radio, step 26)
+ *        Deezer's related artists, most related first; the app keeps the ones in the library.
+ *
+ * The Android app calls the Firebase copy from https://localhost, so that origin gets CORS headers.
  *
  * Needs the `X-Pelagic: 1` header (same as the sign-in helper), so other sites can't borrow it.
  * Nothing is stored.
@@ -22,8 +27,22 @@ interface Ctx {
 
 const UA = 'Pelagic/0.1 (personal music player)'
 
-const json = (body: unknown, status = 200) =>
-  new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' } })
+const NATIVE_ORIGINS = new Set(['https://localhost', 'http://localhost', 'capacitor://localhost'])
+function cors(origin: string | null): Record<string, string> {
+  if (!origin || !NATIVE_ORIGINS.has(origin)) return {}
+  return {
+    'access-control-allow-origin': origin,
+    'access-control-allow-methods': 'GET, OPTIONS',
+    'access-control-allow-headers': 'x-pelagic',
+    'access-control-max-age': '86400',
+    vary: 'Origin',
+  }
+}
+
+const jsonFor =
+  (origin: string | null) =>
+  (body: unknown, status = 200, cache = 'no-store') =>
+    new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json', 'cache-control': cache, ...cors(origin) } })
 
 const norm = (s: string) =>
   s
@@ -66,6 +85,9 @@ async function lookup(name: string, titles: string[]) {
 
 export async function onRequest({ request, params }: Ctx): Promise<Response> {
   const action = Array.isArray(params.action) ? params.action[0] : params.action
+  const origin = request.headers.get('origin')
+  const json = jsonFor(origin)
+  if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors(origin) })
   if (request.method !== 'GET') return json({ error: 'method_not_allowed' }, 405)
   if (request.headers.get('x-pelagic') !== '1') return json({ error: 'forbidden' }, 403)
   const url = new URL(request.url)
@@ -77,6 +99,24 @@ export async function onRequest({ request, params }: Ctx): Promise<Response> {
     try {
       const hit = await lookup(name, titles)
       return json(hit ? { found: true, ...hit } : { found: false })
+    } catch (e) {
+      return json({ error: 'deezer_failed', message: (e as Error).message }, 502)
+    }
+  }
+
+  if (action === 'related') {
+    try {
+      let id = Number(url.searchParams.get('id'))
+      if (!Number.isFinite(id) || id <= 0) {
+        const name = (url.searchParams.get('name') ?? '').trim().slice(0, 200)
+        if (!name) return json({ error: 'missing_id' }, 400)
+        const hit = await lookup(name, url.searchParams.getAll('a').slice(0, 100).map((t) => t.slice(0, 200)))
+        if (!hit) return json({ found: false }, 200, 'private, max-age=86400')
+        id = hit.id
+      }
+      const res = await getJson<{ data?: { id: number; name: string }[] }>(`https://api.deezer.com/artist/${id}/related?limit=60`)
+      const artists = (res.data ?? []).map((a) => ({ id: a.id, name: a.name }))
+      return json({ found: true, id, artists }, 200, 'private, max-age=86400')
     } catch (e) {
       return json({ error: 'deezer_failed', message: (e as Error).message }, 502)
     }
@@ -95,7 +135,7 @@ export async function onRequest({ request, params }: Ctx): Promise<Response> {
     if (!res.ok || !type.startsWith('image/')) return json({ error: 'image_failed' }, 502)
     const bytes = await res.arrayBuffer()
     if (bytes.byteLength > 10_000_000) return json({ error: 'too_big' }, 502)
-    return new Response(bytes, { headers: { 'content-type': type, 'cache-control': 'private, max-age=86400' } })
+    return new Response(bytes, { headers: { 'content-type': type, 'cache-control': 'private, max-age=86400', ...cors(origin) } })
   }
 
   return json({ error: 'not_found' }, 404)

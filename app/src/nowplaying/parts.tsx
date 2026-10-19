@@ -5,7 +5,8 @@ import { Icon } from '../design/icons'
 import { useLibrary, type Album, type Track } from '../state/library'
 import { nowPlayingStore, useNowPlayingUi } from '../state/nowPlaying'
 import { playerStore, usePlayer, type PlayContext, type PlayerState } from '../state/player'
-import { albumHref, artistHref, playlistHref } from '../shell/routes'
+import { albumHref, artistHref, mixHref, playlistHref } from '../shell/routes'
+import { parseRadioId } from '../lib/mixing'
 import { useDjView } from '../state/djUi'
 import { DjButton } from '../dj/DjButton'
 
@@ -32,14 +33,32 @@ const KICKER: Record<PlayContext['kind'], string> = {
   search: 'PLAYING FROM SEARCH',
   queue: 'PLAYING FROM QUEUE',
   dj: 'PLAYING FROM DJ',
+  mix: 'PLAYING FROM MIX',
+  radio: 'PLAYING FROM RADIO',
 }
 
 /** "PLAYING FROM ALBUM" + "Zanmu", with a link back when the context has a page. */
 export function contextLine(ctx: PlayContext | null): { kicker: string; label: string; href?: string } {
   if (!ctx) return { kicker: 'PLAYING FROM QUEUE', label: 'Queue' }
   const label = ctx.label.replace(/^(Library|Search) · /, '')
-  const href = !ctx.id ? undefined : ctx.kind === 'album' ? albumHref(ctx.id) : ctx.kind === 'artist' ? artistHref(ctx.id) : ctx.kind === 'playlist' ? playlistHref(ctx.id) : undefined
-  return { kicker: KICKER[ctx.kind], label, href }
+  const radio = ctx.kind === 'radio' && ctx.id ? parseRadioId(ctx.id) : null
+  const href = !ctx.id
+    ? undefined
+    : ctx.kind === 'album'
+      ? albumHref(ctx.id)
+      : ctx.kind === 'artist'
+        ? artistHref(ctx.id)
+        : ctx.kind === 'playlist'
+          ? playlistHref(ctx.id)
+          : ctx.kind === 'mix'
+            ? mixHref(ctx.id)
+            : radio?.type === 'artist'
+              ? artistHref(radio.id)
+              : radio?.type === 'album'
+                ? albumHref(radio.id)
+                : undefined
+  const kicker = ctx.kind === 'mix' && !!ctx.id?.startsWith('daily-') ? 'PLAYING FROM DAILY MIX' : KICKER[ctx.kind]
+  return { kicker, label, href }
 }
 
 /** In-app link from inside the full-screen player: closes it first (and pops its history entry). */
@@ -63,14 +82,18 @@ export function onPlayPause() {
 /** Shuffle · prev · play · next · repeat (handoff: 40px gaps, 76px play). `compact` = lyrics view (54px play, tighter gaps; shuffle and repeat stay). */
 export function Transport({ compact }: { compact?: boolean }) {
   const p = usePlayer()
-  const dj = useDjView().on
+  const djOn = useDjView().on
+  const radio = p.context?.kind === 'radio'
+  // shuffle / repeat are not used by the DJ or a radio
+  const dj = djOn || radio
+  const offLabel = djOn ? 'Not used by the DJ' : 'Not used by the radio'
   const state = p.buffering ? 'buffering' : p.playing ? 'playing' : 'paused'
   const repeatLabel = p.repeat === 'off' ? 'Repeat' : p.repeat === 'all' ? 'Repeat all' : 'Repeat one'
   return (
     <div className={`np-transport ${compact ? 'is-compact' : ''}`}>
       <IconButton
         icon="shuffle"
-        label={dj ? 'Not used by the DJ' : p.shuffle ? 'Shuffle on' : 'Shuffle'}
+        label={dj ? offLabel : p.shuffle ? 'Shuffle on' : 'Shuffle'}
         bare
         pressed={!dj && p.shuffle}
         className={`np-mode ${!dj && p.shuffle ? 'is-on' : ''} ${dj ? 'is-dj-off' : ''}`}
@@ -84,7 +107,7 @@ export function Transport({ compact }: { compact?: boolean }) {
       <span className="np-repeat-wrap">
         <IconButton
           icon="repeat"
-          label={dj ? 'Not used by the DJ' : repeatLabel}
+          label={dj ? offLabel : repeatLabel}
           bare
           pressed={!dj && p.repeat !== 'off'}
           className={`np-mode ${!dj && p.repeat !== 'off' ? 'is-on' : ''} ${dj ? 'is-dj-off' : ''}`}

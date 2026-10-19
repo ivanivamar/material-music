@@ -14,7 +14,7 @@ import { onAccountReset } from './session'
 export type RepeatMode = 'off' | 'all' | 'one'
 
 export interface PlayContext {
-  kind: 'album' | 'artist' | 'playlist' | 'library' | 'search' | 'queue' | 'dj'
+  kind: 'album' | 'artist' | 'playlist' | 'library' | 'search' | 'queue' | 'dj' | 'mix' | 'radio'
   id?: string
   /** "Playing from" label, e.g. the album title */
   label: string
@@ -304,7 +304,7 @@ export const playerStore = {
    * upcoming) is shuffled after it. Shuffle off: the original order comes back (see unshuffledOrder).
    */
   toggleShuffle() {
-    if (state.context?.kind === 'dj') return // not used by the DJ
+    if (state.context?.kind === 'dj' || state.context?.kind === 'radio') return // not used by the DJ / radio
     if (!state.shuffle) {
       if (state.index < 0) return set({ shuffle: true, unshuffled: null })
       const cur = state.queue[state.index]
@@ -315,7 +315,7 @@ export const playerStore = {
     }
   },
   cycleRepeat() {
-    if (state.context?.kind === 'dj') return
+    if (state.context?.kind === 'dj' || state.context?.kind === 'radio') return
     set({ repeat: state.repeat === 'off' ? 'all' : state.repeat === 'all' ? 'one' : 'off' })
   },
   clear() {
@@ -442,7 +442,7 @@ export const playerStore = {
     if (id && engine) engine.load(id, { autoplay: false, position: snap.position })
     syncPreload(true)
   },
-  /** Start a DJ run: replaces the queue (shuffle and repeat off) and plays row 0. */
+  /** Start a DJ run or a radio: replaces the queue (shuffle and repeat off) and plays row 0. */
   playDj(ids: string[], context: PlayContext) {
     if (!ids.length) return
     lastCleared = null

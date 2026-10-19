@@ -23,6 +23,9 @@ import { Upload } from './pages/upload/Upload'
 import { Stats } from './pages/stats/Stats'
 import { NewReleases } from './pages/releases/NewReleases'
 import { PlaylistPage } from './pages/playlists/PlaylistPage'
+import { MixPage } from './pages/mix/MixPage'
+import { recentStore } from './state/recent'
+import { initRadio } from './state/radio'
 import { playlistsStore } from './state/playlists'
 import { downloadsStore } from './state/downloads'
 import { libraryStore, useLibrary } from './state/library'
@@ -69,6 +72,9 @@ genresStore.init()
 // DJ (step 22): sessions in the player queue; what it has learned synced through Drive dj.json.
 djStore.init()
 initDjLive()
+// Home v2 (step 26): Jump back in synced through Drive recent.json; radio keeps its queue filled.
+recentStore.init()
+initRadio()
 
 function Page({ route }: { route: Extract<Route, { kind: 'app' }> }) {
   switch (route.key) {
@@ -82,6 +88,8 @@ function Page({ route }: { route: Extract<Route, { kind: 'app' }> }) {
       return <ArtistPage key={route.id} id={route.id} />
     case 'playlist':
       return <PlaylistPage key={route.id} id={route.id} />
+    case 'mix':
+      return <MixPage key={route.id} id={route.id} />
     case 'search':
       return <Search />
     case 'new':

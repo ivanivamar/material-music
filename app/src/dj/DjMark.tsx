@@ -24,9 +24,11 @@ export interface DjMarkProps {
   style?: CSSProperties
   /** fill the parent instead of a fixed size (size still picks the detail level) */
   fluid?: boolean
+  /** DJ running, not speaking (Home's DJ tile): one slow ring every 6 s, a brighter halo */
+  onAir?: boolean
 }
 
-export function DjMark({ size, speaking = false, level = 0, idle = false, radius, shadow, className, style, fluid }: DjMarkProps) {
+export function DjMark({ size, speaking = false, level = 0, idle = false, radius, shadow, className, style, fluid, onAir = false }: DjMarkProps) {
   const motion = useMotion()
   const id = useId().replace(/[^a-zA-Z0-9]/g, '')
   const g = markGeometry(size)
@@ -86,8 +88,16 @@ export function DjMark({ size, speaking = false, level = 0, idle = false, radius
                 <animate attributeName="opacity" values="0.65;0" dur="3.2s" begin={`${b}s`} repeatCount="indefinite" calcMode="spline" keyTimes="0;1" keySplines=".15 .6 .35 1" />
               </circle>
             ))
-          : speaking && <circle cx={g.cx} cy={g.cy} r={g.still} fill="none" stroke={ACCENT} strokeOpacity={0.32} strokeWidth={1} vectorEffect="non-scaling-stroke" />}
-        <circle cx={g.cx} cy={g.cy} r={g.big ? g.halo + lvl * 3 : g.halo} fill={ACCENT} opacity={0.4 + lvl * 0.3} filter={`url(#${id}b)`} className="djm-halo" />
+          : speaking
+            ? <circle cx={g.cx} cy={g.cy} r={g.still} fill="none" stroke={ACCENT} strokeOpacity={0.32} strokeWidth={1} vectorEffect="non-scaling-stroke" />
+            : onAir &&
+              motion && (
+                <circle cx={g.cx} cy={g.cy} r={g.sonar[0]} fill="none" stroke={ACCENT} strokeWidth={1} vectorEffect="non-scaling-stroke" opacity={0}>
+                  <animate attributeName="r" values={`${g.sonar[0]};${g.big ? 48 : 11}`} dur="6s" repeatCount="indefinite" calcMode="spline" keyTimes="0;1" keySplines=".15 .6 .35 1" />
+                  <animate attributeName="opacity" values="0.42;0" dur="6s" repeatCount="indefinite" calcMode="spline" keyTimes="0;1" keySplines=".15 .6 .35 1" />
+                </circle>
+              )}
+        <circle cx={g.cx} cy={g.cy} r={g.big ? g.halo + lvl * 3 : (onAir || speaking) && !g.big ? 3.6 : g.halo} fill={ACCENT} opacity={0.4 + lvl * 0.3 + (onAir && !speaking ? 0.15 : 0)} filter={`url(#${id}b)`} className="djm-halo" />
         <circle cx={g.cx} cy={g.cy} r={g.dot} fill={ACCENT_LIGHT} />
       </svg>
       {size >= 200 && (

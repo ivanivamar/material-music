@@ -252,3 +252,7 @@
   .sm-rule > .sm-x { order: 1; margin-left: 0; }
   .sm-order { flex-direction: column; align-items: flex-start; }
 }
+
+/* Start radio (step 26): mono hint under the label in the phone sheet; the menu hint brightens on hover */
+.as-sub { display: block; font-family: var(--font-mono); font-size: 9px; letter-spacing: .12em; color: #bdbdbd; margin-top: 2px; }
+.menu-item:hover .am-hint, .am-item:hover .am-hint { color: #bdbdbd; }

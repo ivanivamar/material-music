@@ -33,7 +33,11 @@ export function PlayerBar() {
   const introAudio = useIntroAudio(intro && id ? djIntroInfo(id)?.sessionId : null)
   const duration = intro ? (introAudio?.duration ?? 0) : (track?.duration ?? 0)
   const empty = !track && !intro
-  const djChip = dj.on ? <span className="dj-chip">{intro ? 'DJ · INTRO' : 'DJ'}</span> : null
+  const radio = p.context?.kind === 'radio'
+  const djChip = dj.on ? <span className="dj-chip">{intro ? 'DJ · INTRO' : 'DJ'}</span> : radio ? <span className="radio-chip">RADIO</span> : null
+  // shuffle / repeat: not used by the DJ or a radio
+  const fixed = dj.on || radio
+  const offLabel = dj.on ? 'Not used by the DJ' : 'Not used by the radio'
 
   const onPlay = () => {
     if (!playerStore.hasEngine()) {
@@ -108,12 +112,12 @@ export function PlayerBar() {
         <div className="pb-transport">
           <IconButton
             icon="shuffle"
-            label={dj.on ? 'Not used by the DJ' : p.shuffle ? 'Shuffle on' : 'Shuffle'}
+            label={fixed ? offLabel : p.shuffle ? 'Shuffle on' : 'Shuffle'}
             bare
             size="sm"
-            pressed={!dj.on && p.shuffle}
-            className={`pb-mode ${!dj.on && p.shuffle ? 'is-on' : ''} ${dj.on ? 'is-dj-off' : ''}`}
-            onClick={() => !dj.on && playerStore.toggleShuffle()}
+            pressed={!fixed && p.shuffle}
+            className={`pb-mode ${!fixed && p.shuffle ? 'is-on' : ''} ${fixed ? 'is-dj-off' : ''}`}
+            onClick={() => !fixed && playerStore.toggleShuffle()}
           />
           <IconButton icon="prev" label="Previous" bare size="sm" className="pb-skip" disabled={empty} onClick={() => playerStore.prev()} />
           <PlayButton size={38} state={p.buffering ? 'buffering' : p.playing ? 'playing' : 'paused'} onClick={empty ? undefined : onPlay} />
@@ -121,14 +125,14 @@ export function PlayerBar() {
           <span className="pb-repeat-wrap">
             <IconButton
               icon="repeat"
-              label={dj.on ? 'Not used by the DJ' : p.repeat === 'off' ? 'Repeat' : p.repeat === 'all' ? 'Repeat all' : 'Repeat one'}
+              label={fixed ? offLabel : p.repeat === 'off' ? 'Repeat' : p.repeat === 'all' ? 'Repeat all' : 'Repeat one'}
               bare
               size="sm"
-              pressed={!dj.on && p.repeat !== 'off'}
-              className={`pb-mode ${!dj.on && p.repeat !== 'off' ? 'is-on' : ''} ${dj.on ? 'is-dj-off' : ''}`}
-              onClick={() => !dj.on && playerStore.cycleRepeat()}
+              pressed={!fixed && p.repeat !== 'off'}
+              className={`pb-mode ${!fixed && p.repeat !== 'off' ? 'is-on' : ''} ${fixed ? 'is-dj-off' : ''}`}
+              onClick={() => !fixed && playerStore.cycleRepeat()}
             />
-            {!dj.on && p.repeat === 'one' && <span className="pb-repeat-one" aria-hidden>1</span>}
+            {!fixed && p.repeat === 'one' && <span className="pb-repeat-one" aria-hidden>1</span>}
           </span>
         </div>
         <SeekBar compact position={empty ? 0 : p.position} duration={duration} onSeek={(s) => playerStore.seek(s)} />

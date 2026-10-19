@@ -137,6 +137,11 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
   const nextItem = nextIdx >= 0 ? p.queue[nextIdx] : null
   // while the DJ plays there's no NEXT line: it would give away when a session ends
   const nextTitle = dj.on ? undefined : nextItem ? (isIntroId(nextItem) ? `DJ · ${djIntroInfo(nextItem)?.title ?? 'Next session'}` : data?.tracks[nextItem]?.title) : undefined
+  // radio: "RADIO · KEEPS GOING · NEXT  Munich, Editors"
+  const radioOn = p.context?.kind === 'radio'
+  const nextTrack = radioOn && nextItem ? data?.tracks[nextItem] : undefined
+  const nextLabel = radioOn ? (phone ? 'RADIO KEEPS GOING · UP NEXT' : 'RADIO · KEEPS GOING · NEXT') : 'NEXT'
+  const nextText = nextTrack ? `${nextTrack.title}, ${nextTrack.artist}` : nextTitle
   const kicker = startView ? 'DJ' : dj.on ? (dj.addedByUser ? 'PLAYING FROM DJ · ADDED BY YOU' : 'PLAYING FROM DJ') : ctx.kicker
   const fromLabel = startView ? 'Choose how to start' : ctx.label
   const backToNp = startView && hasSomething
@@ -158,8 +163,9 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
           {backToNp ? 'NOW PLAYING' : 'CLOSE'}
         </button>
         <div className="np-from">
-          <div className={`np-from-k t-mono ${dj.on && !startView ? 'has-dj' : ''}`}>
+          <div className={`np-from-k t-mono ${dj.on && !startView ? 'has-dj' : ''} ${radioOn && !startView ? 'has-radio' : ''}`}>
             {dj.on && !startView && <DjIcon on />}
+            {radioOn && !startView && <Icon name="radio" />}
             {kicker}
           </div>
           {startView ? (
@@ -253,11 +259,11 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
               </div>
             </div>
           </section>
-          {nextTitle && (
-            <button type="button" className="np-next pg-anim" onClick={() => playerStore.next()} title="Skip to next" tabIndex={ly ? -1 : 0}>
-              <span className="t-mono">NEXT</span>
+          {nextText && (
+            <button type="button" className={`np-next pg-anim ${radioOn ? 'is-radio' : ''}`} onClick={() => playerStore.next()} title="Skip to next" tabIndex={ly ? -1 : 0}>
+              <span className="t-mono">{nextLabel}</span>
               <span className="np-next-line" />
-              <span className="np-next-t">{nextTitle}</span>
+              <span className="np-next-t">{nextText}</span>
             </button>
           )}
 

@@ -117,3 +117,43 @@ export function monthYear(sec: number): string {
   const d = new Date(sec * 1000)
   return `${MONTHS[d.getMonth()]} ${d.getFullYear()}`
 }
+
+/* ── Home v2 (step 26): Your artists ─────────────────── */
+
+export interface ArtistShelfItem {
+  artistId: string
+  /** plays in the last 90 days (byPlays) or albums in the library */
+  n: number
+}
+
+let artistsMemo: { c: Catalogue; plays: readonly Play[]; day: string; out: { items: ArtistShelfItem[]; byPlays: boolean } } | null = null
+
+/** Most played album artists of the last 90 days; while history is thin, the artists with the most albums. */
+export function yourArtists(c: Catalogue, plays: readonly Play[], nowMs: number): { items: ArtistShelfItem[]; byPlays: boolean } {
+  const d = new Date(nowMs)
+  const day = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`
+  if (artistsMemo && artistsMemo.c === c && artistsMemo.plays === plays && artistsMemo.day === day) return artistsMemo.out
+  const since = Math.floor(nowMs / 1000) - 90 * DAY
+  const per = new Map<string, number>()
+  for (const p of plays) {
+    if (p.at < since) continue
+    const t = c.tracks[p.trackId]
+    const a = t ? c.albums[t.albumId]?.artistId : undefined
+    if (a && c.artists[a]) per.set(a, (per.get(a) ?? 0) + 1)
+  }
+  let out: { items: ArtistShelfItem[]; byPlays: boolean }
+  if (per.size >= 5) out = { items: [...per].sort((a, b) => b[1] - a[1]).slice(0, SHELF_SIZE).map(([artistId, n]) => ({ artistId, n })), byPlays: true }
+  else {
+    const albums = new Map<string, number>()
+    for (const a of Object.values(c.albums)) if (c.artists[a.artistId]) albums.set(a.artistId, (albums.get(a.artistId) ?? 0) + 1)
+    out = {
+      items: [...albums]
+        .sort((a, b) => b[1] - a[1] || c.artists[a[0]].name.localeCompare(c.artists[b[0]].name))
+        .slice(0, SHELF_SIZE)
+        .map(([artistId, n]) => ({ artistId, n })),
+      byPlays: false,
+    }
+  }
+  artistsMemo = { c, plays, day, out }
+  return out
+}

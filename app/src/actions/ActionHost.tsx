@@ -30,6 +30,8 @@ import { SmartDialog } from './SmartDialog'
 import { useDjView } from '../state/djUi'
 import { addToPlaylist, createPlaylist, deletePlaylist, downloadTrack, goTo, playPlaylist, queueTracks, removeFromPlaylist, removeTrackDownload } from './ops'
 import { playList } from '../pages/library/playback'
+import { radioStore } from '../state/radio'
+import type { RadioSeed } from '../lib/mixing'
 import './actions.css'
 
 type Toast = ReturnType<typeof useToast>
@@ -61,6 +63,10 @@ interface Described {
   rows: Row[]
 }
 
+function startRadio(toast: Toast, seed: RadioSeed) {
+  if (!radioStore.start(seed)) toast.show({ icon: 'radio', mutedIcon: true, text: 'Nothing to play for this radio right now.' })
+}
+
 function describe(t: ActionTarget, c: Catalogue, toast: Toast, lists: Map<string, Playlist>, dl: ReturnType<typeof useDownloads>): Described | null {
   const div = 'div' as const
   if (t.kind === 'track') {
@@ -72,6 +78,8 @@ function describe(t: ActionTarget, c: Catalogue, toast: Toast, lists: Map<string
     const rows: Row[] = [
       { icon: 'next', label: 'Play next', run: () => queueTracks(toast, ids(), true) },
       { icon: 'queue', label: 'Add to queue', run: () => queueTracks(toast, ids(), false) },
+      { icon: 'radio', label: 'Start radio', hint: 'FROM THIS SONG', run: () => startRadio(toast, { type: 'song', id: tr.id }) },
+      div,
       { icon: 'playlist', label: 'Add to playlist', picker: true },
     ]
     // Android app: keep this one song offline, like an album's Download. Nothing to offer when its
@@ -114,6 +122,7 @@ function describe(t: ActionTarget, c: Catalogue, toast: Toast, lists: Map<string
       rows: [
         { icon: 'playF', label: 'Play', run: () => playList(ids(), ctx) },
         { icon: 'shuffle', label: 'Shuffle', run: () => playList(ids(), ctx, { shuffle: true }) },
+        { icon: 'radio', label: 'Start radio', hint: 'FROM THIS ALBUM', run: () => startRadio(toast, { type: 'album', id: album.id }) },
         div,
         { icon: 'next', label: 'Play next', run: () => queueTracks(toast, ids(), true) },
         { icon: 'queue', label: 'Add to queue', run: () => queueTracks(toast, ids(), false) },
@@ -140,11 +149,13 @@ function describe(t: ActionTarget, c: Catalogue, toast: Toast, lists: Map<string
       rows: [
         { icon: 'playF', label: 'Play', run: () => playList(ids(), ctx) },
         { icon: 'shuffle', label: 'Shuffle', run: () => playList(ids(), ctx, { shuffle: true }) },
+        { icon: 'radio', label: 'Start radio', hint: 'FROM THIS ARTIST', run: () => startRadio(toast, { type: 'artist', id: t.artistId }) },
         div,
         { icon: 'next', label: 'Play next', run: () => queueTracks(toast, ids(), true) },
         { icon: 'queue', label: 'Add to queue', run: () => queueTracks(toast, ids(), false) },
         { icon: 'playlist', label: 'Add to playlist', picker: true },
         div,
+        { icon: 'library', label: 'Go to artist', run: () => goTo(artistHref(t.artistId)) },
         { icon: 'gear', label: 'Edit genre…', run: () => actions.editGenre('artist', t.artistId) },
         div,
         { icon: 'x', label: 'Remove from library…', danger: true, run: () => actions.confirmRemove({ kind: 'artist', artistId: t.artistId }) },
@@ -566,6 +577,11 @@ function Sheet({ target, picker }: { target: ActionTarget; picker: boolean }) {
                       <span className="as-label-col">
                         <span className="as-label">{r.label}</span>
                         <span className="as-dj">{r.djHint}</span>
+                      </span>
+                    ) : r.icon === 'radio' && r.hint ? (
+                      <span className="as-label-col">
+                        <span className="as-label">{r.label}</span>
+                        <span className="as-sub">NEW · {r.hint}</span>
                       </span>
                     ) : (
                       <span className="as-label">{r.label}</span>

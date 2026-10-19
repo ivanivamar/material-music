@@ -1,12 +1,12 @@
 /**
  * Hash routes: #/home, #/library[/artists|albums|playlists|songs], #/album/<id>, #/artist/<id>,
- * #/playlist/<id>, #/stats[/<year>|/<year>-<month>] …
+ * #/playlist/<id>, #/mix/<id>, #/stats[/<year>|/<year>-<month>] …
  * plus the dev reference pages (#/dev/components, #/dev/foundations).
  */
 import { useSyncExternalStore } from 'react'
 import type { IconName } from '../design/icons'
 
-export type RouteKey = 'home' | 'library' | 'search' | 'new' | 'upload' | 'downloads' | 'album' | 'artist' | 'playlist' | 'stats'
+export type RouteKey = 'home' | 'library' | 'search' | 'new' | 'upload' | 'downloads' | 'album' | 'artist' | 'playlist' | 'stats' | 'mix'
 export type DevRoute = 'dev/components' | 'dev/foundations'
 export type LibraryTab = 'albums' | 'artists' | 'playlists' | 'songs'
 export const LIBRARY_TABS: LibraryTab[] = ['artists', 'albums', 'playlists', 'songs']
@@ -27,14 +27,14 @@ export const NAV: NavItem[] = [
   { key: 'downloads', label: 'Downloads', icon: 'download' },
 ]
 
-type SimpleKey = Exclude<RouteKey, 'library' | 'album' | 'artist' | 'playlist' | 'stats'>
+type SimpleKey = Exclude<RouteKey, 'library' | 'album' | 'artist' | 'playlist' | 'stats' | 'mix'>
 const KEYS = new Set<string>(['home', 'search', 'new', 'upload', 'downloads'])
 const DEV = new Set<string>(['dev/components', 'dev/foundations'])
 
 export type Route =
   | { kind: 'app'; key: SimpleKey; path: string }
   | { kind: 'app'; key: 'library'; tab: LibraryTab | null; path: string }
-  | { kind: 'app'; key: 'album' | 'artist' | 'playlist'; id: string; path: string }
+  | { kind: 'app'; key: 'album' | 'artist' | 'playlist' | 'mix'; id: string; path: string }
   /** listening stats (step 21); `period` = "2026" / "2026-10", null = the latest */
   | { kind: 'app'; key: 'stats'; period: string | null; path: string }
   | { kind: 'dev'; key: DevRoute; path: string }
@@ -47,7 +47,7 @@ function parse(hash: string): Route {
     const tab = rest[0] as LibraryTab | undefined
     return { kind: 'app', key: 'library', tab: tab && LIBRARY_TABS.includes(tab) ? tab : null, path }
   }
-  if ((head === 'album' || head === 'artist' || head === 'playlist') && rest[0]) {
+  if ((head === 'album' || head === 'artist' || head === 'playlist' || head === 'mix') && rest[0]) {
     let id = rest.join('/')
     try {
       id = decodeURIComponent(id)
@@ -83,6 +83,8 @@ export const libraryHref = (tab: LibraryTab) => `#/library/${tab}`
 export const albumHref = (id: string) => `#/album/${encodeURIComponent(id)}`
 export const artistHref = (id: string) => `#/artist/${encodeURIComponent(id)}`
 export const playlistHref = (id: string) => `#/playlist/${encodeURIComponent(id)}`
+/** a mix of today (step 26): daily-<genre>, deepcuts, rediscover */
+export const mixHref = (id: string) => `#/mix/${encodeURIComponent(id)}`
 /** `period`: "2026" / "2026-10" (state/stats.ts periodKey) */
 export const statsHref = (period?: string) => (period ? `#/stats/${period}` : '#/stats')
 
@@ -95,7 +97,7 @@ export function go(to: string) {
 }
 
 /** Sidebar item lit for a route: album / artist / playlist pages live under Library. */
-export const navKeyOf = (r: Route): RouteKey => (r.kind === 'app' ? (r.key === 'album' || r.key === 'artist' || r.key === 'playlist' ? 'library' : r.key) : 'home')
+export const navKeyOf = (r: Route): RouteKey => (r.kind === 'app' ? (r.key === 'album' || r.key === 'artist' || r.key === 'playlist' ? 'library' : r.key === 'mix' ? 'home' : r.key) : 'home')
 
 /** In-app history depth (hash changes since load), so Back can fall back to a page when there's none. */
 let depth = 0

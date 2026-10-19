@@ -70,6 +70,12 @@ export const ICON_PATHS = {
   alert: [['circle', { cx: 12, cy: 12, r: 8.5 }], 'M12 7.8v5', 'M12 16.2h.01'],
   /** DJ (step 22): horizon, two arcs, the dot */
   dj: [['path', { d: 'M2 16.5h20', strokeOpacity: 0.45 }], 'M7.5 16.5a4.5 4.5 0 0 1 9 0', 'M3.5 16.5a8.5 8.5 0 0 1 17 0', ['circle', { cx: 12, cy: 16.5, r: 1.7, fill: 'currentColor', stroke: 'none' }]],
+  /** Radio (step 26): a station ring, its centre, the satellite */
+  radio: [['circle', { cx: 12, cy: 12, r: 8, strokeOpacity: 0.5 }], ['circle', { cx: 12, cy: 12, r: 3.2 }], ['circle', { cx: 17.66, cy: 6.34, r: 1.6, fill: 'currentColor', stroke: 'none' }]],
+  /** Save as playlist (step 26): a list with a plus */
+  saveList: ['M4 6h11', 'M4 11h11', 'M4 16h7', 'M17.5 13v7', 'M14 16.5h7'],
+  /** ✦ (step 26 smart playlists shelf) */
+  spark: ['M12 3.5c.6 4.6 3.9 7.9 8.5 8.5-4.6.6-7.9 3.9-8.5 8.5-.6-4.6-3.9-7.9-8.5-8.5 4.6-.6 7.9-3.9 8.5-8.5z'],
 } satisfies Record<string, Shape[]>
 
 export type IconName = keyof typeof ICON_PATHS
