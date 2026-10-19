@@ -10,9 +10,8 @@
  */
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { Atmosphere } from '../components/Atmosphere'
-import { IconButton, QualityBadge, SeekBar, Slider, Waveform, formatTime, qualityKind, qualityLabel, seedFrom } from '../components/ui'
+import { IconButton, SeekBar, Slider, Waveform, formatTime, seedFrom } from '../components/ui'
 import { Icon } from '../design/icons'
-import { isNative } from '../native/bridge'
 import { rgba, sceneBackground, useArtTint } from '../design/tint'
 import { useCover } from '../lib/covers'
 import { useLibrary } from '../state/library'
@@ -40,7 +39,6 @@ import { registerBack } from '../native/backButton'
 import '../dj/dj.css'
 import './nowplaying.css'
 
-const pad2 = (n: number) => String(n).padStart(2, '0')
 const closeNp = () => nowPlayingStore.close()
 
 export function NowPlaying() {
@@ -139,35 +137,6 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
   const nextItem = nextIdx >= 0 ? p.queue[nextIdx] : null
   // while the DJ plays there's no NEXT line: it would give away when a session ends
   const nextTitle = dj.on ? undefined : nextItem ? (isIntroId(nextItem) ? `DJ · ${djIntroInfo(nextItem)?.title ?? 'Next session'}` : data?.tracks[nextItem]?.title) : undefined
-
-  const quality = songTrack ? (
-    <QualityBadge kind={qualityKind('flac', songTrack.flac?.bitDepth, songTrack.flac?.sampleRate)}>{qualityLabel('flac', { bitDepth: songTrack.flac?.bitDepth, sampleRate: songTrack.flac?.sampleRate })}</QualityBadge>
-  ) : null
-  const source =
-    p.source === 'local' ? (
-      <span className="np-src" title={isNative ? 'Stored on this phone' : 'Playing from your local folder'}>
-        <Icon name="check" />
-        {isNative ? 'OFFLINE' : 'LOCAL'}
-      </span>
-    ) : p.source === 'drive' ? (
-      <span className="np-src" title="Streaming from Google Drive">
-        <Icon name="cloud" />
-        STREAMING
-      </span>
-    ) : null
-  const trackNo = songTrack?.track ? `TRACK ${pad2(songTrack.track)}${songAlbum?.trackCount ? `/${pad2(songAlbum.trackCount)}` : ''}` : null
-  const badges = dj.on ? (
-    <>
-      {quality}
-      {dj.addedByUser && <span className="dj-mine">ADDED BY YOU</span>}
-    </>
-  ) : (
-    <>
-      {quality}
-      {source}
-      {trackNo && <span>{trackNo}</span>}
-    </>
-  )
   const kicker = startView ? 'DJ' : dj.on ? (dj.addedByUser ? 'PLAYING FROM DJ · ADDED BY YOU' : 'PLAYING FROM DJ') : ctx.kicker
   const fromLabel = startView ? 'Choose how to start' : ctx.label
   const backToNp = startView && hasSomething
