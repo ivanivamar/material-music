@@ -31,7 +31,6 @@ export function Waveform({
   duration = 0,
   height = 40,
   accent = '#FFFFFF',
-  glow = 'rgba(255,255,255,0.7)',
 }: WaveformProps) {
   const ref = useRef<HTMLDivElement>(null)
   const [width, setWidth] = useState(0)
@@ -66,7 +65,6 @@ export function Waveform({
     const h = BASE + lift * lift * (PEAK - BASE)
     const lit = x <= px
     const style: CSSProperties = { left: x - 1.25, height: h, background: lit ? accent : undefined }
-    if (lift > 0.7) style.boxShadow = `0 0 6px ${glow}`
     bars.push(<span key={i} className={'tide-bar' + (lit ? ' is-lit' : '')} style={style} />)
   }
 
