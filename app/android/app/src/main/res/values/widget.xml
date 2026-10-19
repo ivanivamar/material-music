@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Home screen widget (design_handoff_android_widget). Colours, sizes and text styles. -->
+<resources>
+    <color name="wg_base">#FF0B0B0C</color>
+    <color name="wg_surface">#FF141416</color>
+    <color name="wg_text">#FFEDEDED</color>
+    <color name="wg_text2">#FFBDBDBD</color>
+    <color name="wg_muted">#FF8A8A8E</color>
+    <color name="wg_faint">#FF55555A</color>
+    <color name="wg_lilac">#FFC6B4F2</color>
+    <color name="wg_hair">#14FFFFFF</color>
+
+    <dimen name="wg_radius">24dp</dimen>
+
+    <string name="wg_name">Now playing</string>
+    <string name="wg_description">What\'s playing, with controls and the queue</string>
+    <string name="wg_play">Play</string>
+    <string name="wg_pause">Pause</string>
+    <string name="wg_prev">Previous</string>
+    <string name="wg_next">Next</string>
+    <string name="wg_shuffle">Shuffle</string>
+    <string name="wg_repeat">Repeat</string>
+    <string name="wg_shuffle_library">Shuffle library</string>
+    <string name="wg_start_dj">Start the DJ</string>
+
+    <style name="WgText">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:singleLine">true</item>
+        <item name="android:ellipsize">end</item>
+        <item name="android:includeFontPadding">false</item>
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:textColor">@color/wg_text</item>
+    </style>
+    <style name="WgText.Medium">
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+    <style name="WgText.Muted">
+        <item name="android:textColor">@color/wg_muted</item>
+    </style>
+    <style name="WgMono">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:singleLine">true</item>
+        <item name="android:ellipsize">end</item>
+        <item name="android:includeFontPadding">false</item>
+        <item name="android:fontFamily">monospace</item>
+        <item name="android:textSize">9dp</item>
+        <item name="android:letterSpacing">0.14</item>
+        <item name="android:textColor">@color/wg_muted</item>
+    </style>
+    <!-- secondary transport button: 40 x 44, icon 20 -->
+    <style name="WgIconBtn">
+        <item name="android:layout_width">40dp</item>
+        <item name="android:layout_height">44dp</item>
+        <item name="android:paddingStart">10dp</item>
+        <item name="android:paddingEnd">10dp</item>
+        <item name="android:paddingTop">12dp</item>
+        <item name="android:paddingBottom">12dp</item>
+        <item name="android:scaleType">fitCenter</item>
+        <item name="android:tint">@color/wg_text</item>
+    </style>
+    <!-- play / pause: 44 circle, icon 18 -->
+    <style name="WgPlay">
+        <item name="android:layout_width">44dp</item>
+        <item name="android:layout_height">44dp</item>
+        <item name="android:padding">13dp</item>
+        <item name="android:scaleType">fitCenter</item>
+        <item name="android:background">@drawable/wg_play_bg</item>
+        <item name="android:src">@drawable/ic_wg_play</item>
+        <item name="android:tint">@color/wg_base</item>
+        <item name="android:contentDescription">@string/wg_play</item>
+    </style>
+</resources>

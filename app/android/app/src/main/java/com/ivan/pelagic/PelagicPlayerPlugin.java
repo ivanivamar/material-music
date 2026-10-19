@@ -154,6 +154,9 @@ public class PelagicPlayerPlugin extends Plugin {
     @PluginMethod
     public void clearAuth(PluginCall call) {
         DriveAuth.clear(getContext());
+        // home screen widget: no "Resume" of the signed-out account's queue
+        WidgetState.clear(getContext());
+        PelagicWidget.requestUpdate(getContext());
         withController(call, c -> {
             c.stop();
             c.clearMediaItems();
@@ -182,6 +185,8 @@ public class PelagicPlayerPlugin extends Plugin {
         boolean play = Boolean.TRUE.equals(call.getBoolean("play", false));
         boolean keepCurrent = Boolean.TRUE.equals(call.getBoolean("keepCurrent", false));
         String repeat = call.getString("repeat", "off");
+        // home screen widget: the last queue, for its Resume (also with the app closed)
+        if (!items.isEmpty()) WidgetState.saveQueue(getContext(), arr.toString());
         withController(call, c -> {
             if (items.isEmpty()) {
                 c.stop();
@@ -318,7 +323,8 @@ public class PelagicPlayerPlugin extends Plugin {
         return call.getData().optLong(name, fallback);
     }
 
-    private static MediaItem toItem(JSONObject o) throws Exception {
+    /** Also used by the widget's Resume (WidgetState.loadQueue). */
+    static MediaItem toItem(JSONObject o) throws Exception {
         String uri = o.getString("uri");
         MediaMetadata.Builder meta = new MediaMetadata.Builder()
             .setTitle(o.optString("title", ""))

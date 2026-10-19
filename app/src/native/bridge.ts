@@ -144,3 +144,38 @@ interface PelagicDownloadsPlugin {
 
 /** WorkManager downloads into the app's storage (android/…/Offline.java, DownloadWorker.java). */
 export const PelagicDownloads = registerPlugin<PelagicDownloadsPlugin>('PelagicDownloads')
+
+/* ── Home screen widget ──────────────────────────────── */
+
+export interface WidgetPick {
+  /** what tapping it does (handled in native/widget.ts): "mix:<id>", "radio:<id>" */
+  action: string
+  title: string
+  /** mono sub line, e.g. MADE FOR YOU */
+  sub: string
+  /** Drive alt=media URL of a cover (the widget loads it itself) */
+  art?: string
+}
+
+export interface WidgetInfo {
+  /** "playing from" label (the context's label) */
+  context: string
+  /** shuffle / repeat can be changed (not for the DJ or a radio) */
+  shuffleOk: boolean
+  shuffle: boolean
+  /** "3/7" while the DJ plays a session's songs */
+  djStep: string
+  /** library size, for Shuffle library */
+  songs: number
+  /** the "nothing playing" grid after Resume and DJ: Daily Mix 1, a radio, Daily Mix 2, Rediscover */
+  picks: WidgetPick[]
+}
+
+interface PelagicWidgetPlugin {
+  setInfo(info: WidgetInfo): Promise<void>
+  /** a widget tap the app performs: open, shuffle, repeat, dj, mix:<id>, radio:<id>, shuffle-all */
+  addListener(event: 'action', cb: (e: { action: string }) => void): Promise<PluginListenerHandle>
+}
+
+/** The "Now playing" home screen widget (android/…/PelagicWidget*.java, Widget*.java). */
+export const PelagicWidget = registerPlugin<PelagicWidgetPlugin>('PelagicWidget')

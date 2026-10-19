@@ -6,6 +6,7 @@ import { initDriveStream } from './lib/driveStream'
 import { initPwa } from './lib/pwa'
 import { initNativeUpdates } from './native/updates'
 import { initBackButton } from './native/backButton'
+import { initWidget } from './native/widget'
 import { Home } from './pages/Home'
 import { LibraryError, LoadingLibrary, NoLibrary } from './screens/LibraryStatus'
 import { createHtmlAudioEngine } from './player/htmlEngine'
@@ -75,6 +76,8 @@ initDjLive()
 // Home v2 (step 26): Jump back in synced through Drive recent.json; radio keeps its queue filled.
 recentStore.init()
 initRadio()
+// Android: the home screen widget — its info (playing from, mixes…) and the taps the app performs.
+initWidget()
 
 function Page({ route }: { route: Extract<Route, { kind: 'app' }> }) {
   switch (route.key) {

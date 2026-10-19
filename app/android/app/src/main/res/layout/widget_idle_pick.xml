@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A square pick on the idle grid: art + scrim (or the DJ tile) as one bitmap, title and sub on top -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal">
+
+    <FrameLayout
+        android:id="@+id/wg_pick_gap"
+        android:layout_width="8dp"
+        android:layout_height="1dp" />
+
+    <FrameLayout
+        android:id="@+id/wg_pick"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+
+        <ImageView
+            android:id="@+id/wg_pick_img"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:importantForAccessibility="no" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:layout_marginStart="10dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginBottom="9dp"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/wg_pick_title"
+                style="@style/WgText.Medium"
+                android:textSize="13dp" />
+
+            <TextView
+                android:id="@+id/wg_pick_sub"
+                style="@style/WgMono"
+                android:layout_width="match_parent"
+                android:layout_marginTop="2dp"
+                android:textColor="@color/wg_text2"
+                android:textSize="8dp" />
+        </LinearLayout>
+    </FrameLayout>
+</LinearLayout>

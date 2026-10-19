@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Home screen widget icon (pelagic-kit.js: 24-grid line icons, 1.25 stroke) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path android:fillColor="#FFFFFFFF" android:pathData="M7.8,5h1.4a0.8,0.8 0,0 1,0.8 0.8v12.4a0.8,0.8 0,0 1,-0.8 0.8h-1.4a0.8,0.8 0,0 1,-0.8 -0.8v-12.4a0.8,0.8 0,0 1,0.8 -0.8z" />
+    <path android:fillColor="#FFFFFFFF" android:pathData="M14.8,5h1.4a0.8,0.8 0,0 1,0.8 0.8v12.4a0.8,0.8 0,0 1,-0.8 0.8h-1.4a0.8,0.8 0,0 1,-0.8 -0.8v-12.4a0.8,0.8 0,0 1,0.8 -0.8z" />
+</vector>

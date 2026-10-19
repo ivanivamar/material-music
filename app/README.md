@@ -221,4 +221,19 @@ Signing: one release key for every build (debug too) so the Google OAuth client'
 
 Local build (optional, needs Android Studio / JDK 21 + SDK): `npm run build && npx cap sync android`, then open `android/` in Android Studio or `cd android && gradlew assembleDebug`.
 
+### Home screen widget (step 27)
+
+One resizable "Now playing" widget, 1×1 up to 4×4 (default 4×2), per `design_handoff_android_widget/` (RemoteViews, no Glance: the app is Java). The layout follows the widget's real size in dp: < 128 wide = album tile, < 224 = compact (1 row) / cover, else bar (1 row; ⏮ from 320 dp), player (< 250 tall), player + queue (`floor((h − 222) / 44)` rows). Nothing loaded = the "nothing playing" layouts (Resume · DJ · Daily Mix 1 …, Shuffle library). No heart: Shuffle sits in its place on the player, Repeat on player + queue.
+
+| File | What |
+|---|---|
+| `android/…/PelagicWidget.java` | `AppWidgetProvider`: redraws on player changes (debounced), taps. Play / pause, ⏮ ⏭, a queue row and Resume act on the native player directly, also with the app closed (Resume loads the last queue the app sent; a `MediaController` starts the service). Shuffle, repeat, DJ, mixes, radio, Shuffle library go to the app's JS when it's running, else open the app with the action. Elsewhere = open the app on the full-screen player |
+| `android/…/WidgetRenderer.java` | RemoteViews per size (`res/layout/widget_*.xml`); Android 12+ gets one layout per launcher size |
+| `android/…/WidgetArt.java` | Bitmaps: tinted background (album light = cover blurred 48 dp / saturate 1.3, radial scrim, STONE / CONTOUR / GRAIN from `res/drawable-nodpi/wg_tex_*`), cover glow `oklch(0.34 0.06 hue / 0.9)`, full-bleed covers, hairline progress, scrubber, grid picks. Covers: downloaded copy → disk cache → Drive with the token |
+| `android/…/WidgetState.java` | Now playing (read from the service's player), the app's info (prefs), the Resume queue (`files/widget-queue.json`, written on every `setQueue`) + position |
+| `android/…/PelagicWidgetPlugin.java` | JS bridge `PelagicWidget`: `setInfo`, "action" events (kept until the app listens) |
+| `src/native/widget.ts` | Sends the info (playing-from label, shuffle, DJ step, library size, today's Daily Mix 1/2, first Radio for you, Rediscover) and runs the widget's app actions |
+
+`PelagicPlaybackService` updates the widget on every player event and every 30 s while playing (progress line; the elapsed time in the player + queue size ticks by itself); `nativeEngine` adopts a queue the widget's Resume started while the app had nothing loaded. Fonts are the system's (sans-serif / monospace): RemoteViews can't use General Sans / Plex Mono. The EQ bars are static.
+
 Edge-to-edge: Capacitor's SystemBars (`insetsHandling: 'native'`) keeps `env(safe-area-inset-*)` correct; `src/shell/phone.css` pads the top/bottom with it.

@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Widget 3×1 / 4×1, nothing playing: mark box, Nothing playing / Resume …, (DJ pill) + play -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@android:id/background"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/wg_shape"
+    android:clipToOutline="true">
+
+    <ImageView
+        android:id="@+id/wg_bg"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:importantForAccessibility="no"
+        android:scaleType="fitXY" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="16dp"
+        android:paddingEnd="10dp">
+
+        <FrameLayout
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="@drawable/wg_mark_box">
+
+            <ImageView
+                android:layout_width="30dp"
+                android:layout_height="20dp"
+                android:layout_gravity="center"
+                android:importantForAccessibility="no"
+                android:src="@drawable/ic_wg_mark" />
+        </FrameLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/wg_title"
+                style="@style/WgText.Medium"
+                android:textSize="15dp" />
+
+            <TextView
+                android:id="@+id/wg_sub"
+                style="@style/WgText.Muted"
+                android:layout_marginTop="4dp"
+                android:textSize="12dp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:id="@+id/wg_dj"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:background="@drawable/wg_dj_pill_small"
+                android:contentDescription="@string/wg_start_dj"
+                android:gravity="center"
+                android:orientation="horizontal"
+                android:paddingStart="14dp"
+                android:paddingEnd="14dp"
+                android:layout_marginEnd="8dp">
+
+                <ImageView
+                    android:layout_width="5dp"
+                    android:layout_height="5dp"
+                    android:layout_marginEnd="7dp"
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/wg_dj_dot" />
+
+                <TextView
+                    style="@style/WgMono"
+                    android:letterSpacing="0.16"
+                    android:text="DJ"
+                    android:textColor="@color/wg_lilac"
+                    android:textSize="10dp" />
+            </LinearLayout>
+
+            <ImageView
+                android:id="@+id/wg_play"
+                style="@style/WgPlay" />
+        </LinearLayout>
+    </LinearLayout>
+</FrameLayout>

@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Widget 3×2 / 4×2 (player, the default size): cover (bitmap sized by WidgetRenderer, its glow is
+    in wg_bg), status, title, artist, scrubber, shuffle · prev / play / next.
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@android:id/background"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/wg_shape"
+    android:clipToOutline="true">
+
+    <ImageView
+        android:id="@+id/wg_bg"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:importantForAccessibility="no"
+        android:scaleType="fitXY" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="horizontal"
+        android:padding="16dp">
+
+        <ImageView
+            android:id="@+id/wg_art"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:importantForAccessibility="no" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_marginStart="16dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:id="@+id/wg_eq"
+                    android:layout_width="8.5dp"
+                    android:layout_height="11dp"
+                    android:layout_marginEnd="6dp"
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/ic_wg_eq" />
+
+                <TextView
+                    android:id="@+id/wg_label"
+                    style="@style/WgMono" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/wg_title"
+                style="@style/WgText"
+                android:layout_marginTop="6dp"
+                android:letterSpacing="-0.01"
+                android:textSize="18dp" />
+
+            <TextView
+                android:id="@+id/wg_artist"
+                style="@style/WgText.Muted"
+                android:layout_marginTop="6dp"
+                android:textSize="13dp" />
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+            <!-- 9dp tall in the layout; the bitmap bleeds 6dp up / down and 10dp sideways for the glow -->
+            <ImageView
+                android:id="@+id/wg_scrub"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="-10dp"
+                android:layout_marginTop="-6dp"
+                android:layout_marginEnd="-10dp"
+                android:layout_marginBottom="-6dp"
+                android:importantForAccessibility="no" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="-8dp"
+                android:layout_marginTop="6dp"
+                android:layout_marginEnd="-8dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:id="@+id/wg_shuffle"
+                    style="@style/WgIconBtn"
+                    android:contentDescription="@string/wg_shuffle"
+                    android:src="@drawable/ic_wg_shuffle" />
+
+                <FrameLayout
+                    android:layout_width="0dp"
+                    android:layout_height="1dp"
+                    android:layout_weight="1" />
+
+                <ImageView
+                    android:id="@+id/wg_prev"
+                    style="@style/WgIconBtn"
+                    android:layout_marginEnd="2dp"
+                    android:contentDescription="@string/wg_prev"
+                    android:src="@drawable/ic_wg_prev" />
+
+                <ImageView
+                    android:id="@+id/wg_play"
+                    style="@style/WgPlay" />
+
+                <ImageView
+                    android:id="@+id/wg_next"
+                    style="@style/WgIconBtn"
+                    android:layout_marginStart="2dp"
+                    android:contentDescription="@string/wg_next"
+                    android:src="@drawable/ic_wg_next" />
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+</FrameLayout>

@@ -11,6 +11,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(PelagicNativePlugin.class);
         registerPlugin(PelagicPlayerPlugin.class);
         registerPlugin(PelagicDownloadsPlugin.class);
+        registerPlugin(PelagicWidgetPlugin.class);
         super.onCreate(savedInstanceState);
     }
 }

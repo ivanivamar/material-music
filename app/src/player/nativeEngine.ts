@@ -135,9 +135,36 @@ export function createNativeEngine(): PlayerEngine {
           if (st.index !== s.index && s.queue[st.index] === st.mediaId) playerStore.engineMoved(st.index)
         }
         apply(st)
-      }
+      } else if (st.count > 0 && s.index < 0) void adoptNative()
     })
     .catch(() => {})
+
+  /**
+   * The native player has a queue while the store has none: the home screen widget's Resume started
+   * the last queue (app closed, or nothing loaded). Follow it instead of ignoring it. Not right after
+   * an unload (late events from before the stop), not for DJ queues (their run lives in the app).
+   */
+  let adopting = false
+  let quietUntil = 0
+  async function adoptNative() {
+    if (adopting || performance.now() < quietUntil) return
+    adopting = true
+    try {
+      const st = await PelagicPlayer.getState()
+      if (playerStore.get().index >= 0 || loadReq || st.count === 0 || st.index < 0 || st.index >= st.ids.length) return
+      if (st.ids.some((id) => isIntroId(id))) return
+      playerStore.adopt(st.ids, st.index, { kind: 'queue', label: 'Queue' })
+      sentQueue = playerStore.get().queue
+      sentRepeat = playerStore.get().repeat
+      expect = null
+      left = null
+      apply(st)
+    } catch {
+      /* not now */
+    } finally {
+      adopting = false
+    }
+  }
 
   function flush() {
     if (flushQueued) return
@@ -190,6 +217,10 @@ export function createNativeEngine(): PlayerEngine {
   /* ── native → store ── */
   function apply(st: NativePlayerState) {
     if (st.count === 0) return
+    if (playerStore.get().index < 0 && !sentQueue && !loadReq) {
+      void adoptNative()
+      return
+    }
     const now = performance.now()
     if (expect) {
       if (st.mediaId === expect.id || now > expect.until) {
@@ -300,6 +331,7 @@ export function createNativeEngine(): PlayerEngine {
     unload() {
       sentQueue = null
       loadReq = null
+      quietUntil = performance.now() + 3000
       void PelagicPlayer.stop().catch(() => {})
     },
   }

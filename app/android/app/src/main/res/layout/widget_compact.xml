@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Widget 2×1 (compact): status, title, artist, play / pause -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@android:id/background"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/wg_shape"
+    android:clipToOutline="true">
+
+    <ImageView
+        android:id="@+id/wg_bg"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:importantForAccessibility="no"
+        android:scaleType="fitXY" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="16dp"
+        android:paddingEnd="12dp">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:id="@+id/wg_eq"
+                    android:layout_width="8.5dp"
+                    android:layout_height="11dp"
+                    android:layout_marginEnd="6dp"
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/ic_wg_eq" />
+
+                <TextView
+                    android:id="@+id/wg_label"
+                    style="@style/WgMono" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/wg_title"
+                style="@style/WgText.Medium"
+                android:layout_marginTop="4dp"
+                android:textSize="14dp" />
+
+            <TextView
+                android:id="@+id/wg_artist"
+                style="@style/WgText.Muted"
+                android:layout_marginTop="4dp"
+                android:textSize="12dp" />
+        </LinearLayout>
+
+        <ImageView
+            android:id="@+id/wg_play"
+            style="@style/WgPlay"
+            android:layout_marginStart="10dp" />
+    </LinearLayout>
+</FrameLayout>

@@ -4,6 +4,8 @@ import android.app.PendingIntent;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -73,6 +75,24 @@ public class PelagicPlaybackService extends MediaSessionService {
     private int authRetries = 0;
     private int skips = 0;
 
+    /* Home screen widget: the running service (main thread), and its progress refresh while playing */
+    @Nullable static volatile PelagicPlaybackService instance;
+    private final Handler main = new Handler(Looper.getMainLooper());
+    private static final long WIDGET_TICK_MS = 30_000;
+    private final Runnable widgetTick = new Runnable() {
+        @Override
+        public void run() {
+            PelagicWidget.requestUpdate(PelagicPlaybackService.this);
+            if (player != null && player.isPlaying()) main.postDelayed(this, WIDGET_TICK_MS);
+        }
+    };
+
+    /** The player, for the widget (main thread only). */
+    @Nullable
+    ExoPlayer player() {
+        return player;
+    }
+
     @Override
     public void onCreate() {
         super.onCreate();
@@ -133,7 +153,19 @@ public class PelagicPlaybackService extends MediaSessionService {
             public void onTimelineChanged(@NonNull androidx.media3.common.Timeline timeline, int reason) {
                 updateDj();
             }
+
+            /* home screen widget: redraw on any change; remember where it is for Resume */
+            @Override
+            public void onEvents(@NonNull Player p, @NonNull Player.Events events) {
+                PelagicWidget.requestUpdate(PelagicPlaybackService.this);
+                if (events.containsAny(Player.EVENT_MEDIA_ITEM_TRANSITION, Player.EVENT_IS_PLAYING_CHANGED, Player.EVENT_POSITION_DISCONTINUITY)) {
+                    saveResume();
+                }
+                main.removeCallbacks(widgetTick);
+                if (p.isPlaying()) main.postDelayed(widgetTick, WIDGET_TICK_MS);
+            }
         });
+        instance = this;
 
         // tapping the media notification / lock-screen player brings the app to the front
         // (MainActivity is singleTask, so the running instance is reused)
@@ -265,8 +297,18 @@ public class PelagicPlaybackService extends MediaSessionService {
         }
     }
 
+    /** Where the player is, for the widget's Resume (the queue itself is saved by PelagicPlayerPlugin). */
+    private void saveResume() {
+        WidgetState.Now n = WidgetState.capture(player);
+        if (n != null) WidgetState.savePosition(this, n);
+    }
+
     @Override
     public void onDestroy() {
+        main.removeCallbacks(widgetTick);
+        if (player != null) saveResume();
+        instance = null;
+        PelagicWidget.requestUpdate(this);
         if (session != null) {
             session.release();
             session = null;

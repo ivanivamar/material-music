@@ -442,6 +442,21 @@ export const playerStore = {
     if (id && engine) engine.load(id, { autoplay: false, position: snap.position })
     syncPreload(true)
   },
+  /**
+   * Android: take over a queue the native player is already playing that the store doesn't have
+   * (the home screen widget's Resume started the last queue while nothing was loaded here).
+   * Nothing is sent to the engine — the native engine adopts it as what it has sent.
+   */
+  adopt(queue: string[], index: number, context: PlayContext | null) {
+    if (!queue.length || index < 0 || index >= queue.length) return
+    lastCleared = null
+    holdPreload = true
+    try {
+      set({ queue, index, context, position: 0, shuffle: false, unshuffled: null })
+    } finally {
+      holdPreload = false
+    }
+  },
   /** Start a DJ run or a radio: replaces the queue (shuffle and repeat off) and plays row 0. */
   playDj(ids: string[], context: PlayContext) {
     if (!ids.length) return
