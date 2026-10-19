@@ -394,6 +394,28 @@ export function setFilter(filter: UploadFilter) {
   set({ filter })
 }
 
+/** Clear finished: drop the releases already added to the library (and the skipped-file counts). */
+export function clearFinished() {
+  const gone = state.albums.filter((a) => a.phase === 'added')
+  if (!gone.length) return
+  const items = { ...state.items }
+  for (const a of gone) {
+    if (a.coverUrl) URL.revokeObjectURL(a.coverUrl)
+    for (const i of a.itemIds) delete items[i]
+    prepared.delete(a.key)
+  }
+  const keys = new Set(gone.map((a) => a.key))
+  set({
+    albums: state.albums.filter((a) => !keys.has(a.key)),
+    items,
+    focus: state.focus && keys.has(state.focus) ? null : state.focus,
+    checked: state.checked.filter((k) => !keys.has(k)),
+    filter: state.filter === 'added' ? 'all' : state.filter,
+    skipped: 0,
+    unreadable: 0,
+  })
+}
+
 /** Tags can change until the first of the release's tracks has started uploading (paths and ids depend on them). */
 export const editable = (a: UploadAlbum, s: UploadState = state) =>
   a.phase === 'pending' && a.itemIds.every((i) => !s.items[i] || (['reading', 'ready', 'dup'].includes(s.items[i].state) && !s.items[i].resume && !s.items[i].flac))

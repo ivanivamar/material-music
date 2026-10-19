@@ -9,7 +9,7 @@ import type { MouseEvent } from 'react'
 import { Button } from '../../components/ui'
 import { useCover } from '../../lib/covers'
 import type { Catalogue } from '../../state/library'
-import { pause, resume, setChecked, setFilter, setFocus, start, toggleChecked, type UploadAlbum, type UploadFilter, type UploadState } from '../../state/upload'
+import { clearFinished, pause, resume, setChecked, setFilter, setFocus, start, toggleChecked, type UploadAlbum, type UploadFilter, type UploadState } from '../../state/upload'
 import { inFilter, isActive, issueOf, missingOf, releasePct, statusOf, type BatchView, type RowStatus } from '../../state/uploadViews'
 import { plural } from '../../state/views'
 
@@ -63,6 +63,11 @@ export function ReleaseList({ s, cat, view }: { s: UploadState; cat: Catalogue |
             <span className="ub-foot-skip">
               {[s.skipped > 0 && `${plural(s.skipped, 'FILE')} SKIPPED · NOT FLAC`, s.unreadable > 0 && `${plural(s.unreadable, 'FILE')} UNREADABLE`].filter(Boolean).join(' · ')}
             </span>
+          )}
+          {view.counts.added > 0 && (
+            <button type="button" className="ub-foot-clear" onClick={clearFinished}>
+              CLEAR FINISHED
+            </button>
           )}
         </div>
       </div>

@@ -44,7 +44,7 @@
 .ub-body { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 32px; }
 .ub-list { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
 
-.ub-toolbar { display: flex; align-items: center; gap: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--hairline-mid); }
+.ub-toolbar { display: flex; align-items: center; gap: 16px; padding: 0 0 12px 12px; border-bottom: 1px solid var(--hairline-mid); }
 .ub-check {
   width: 18px; height: 18px; flex: none; padding: 0; border-radius: var(--r-check);
   border: 1.5px solid rgba(255, 255, 255, .3); background: transparent; color: var(--bg-1);
@@ -76,14 +76,14 @@
 .ub-rows-none { padding: 28px 0; font-size: 14px; color: var(--ink-secondary); }
 .ub-row {
   display: grid; grid-template-columns: 18px 44px minmax(0, 1fr) 56px 120px 128px; align-items: center; gap: 16px;
-  height: 64px; padding: 0 12px 0 0; border-bottom: 1px solid var(--hairline-faint);
-  cursor: pointer; outline: none; transition: background .2s;
+  height: 64px; padding: 0 12px; border-radius: 12px; border-bottom: 1px solid var(--hairline-faint);
+  cursor: pointer; outline: none; transition: background .2s, box-shadow .2s;
 }
 .ub-row:hover { background: rgba(255, 255, 255, .035); }
-.ub-row.is-focus, .ub-row.is-checked { background: rgba(255, 255, 255, .05); }
-.ub-row.is-focus { box-shadow: inset 2px 0 0 #fff; }
+.ub-row.is-checked { background: rgba(255, 255, 255, .05); }
+/* focused row: a raised card (lighter fill, 1px ring), no left bar */
+.ub-row.is-focus { background: rgba(255, 255, 255, .04); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .12); border-bottom-color: transparent; }
 .ub-row:focus-visible { box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, .5); }
-.ub-row.is-focus:focus-visible { box-shadow: inset 2px 0 0 #fff, inset 0 0 0 1.5px rgba(255, 255, 255, .5); }
 .ub-row.is-skipped { opacity: .45; }
 
 .ub-thumb { display: block; flex: none; object-fit: cover; }
@@ -128,8 +128,10 @@
 .ub-foot-bar { position: relative; height: 2px; border-radius: 2px; background: var(--hairline-strong); }
 .ub-foot-bar > span { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 2px; background: #fff; box-shadow: 0 0 8px rgba(255, 255, 255, .6); transition: width .4s linear; }
 .ub-foot-line { display: flex; align-items: center; gap: 20px; font-family: var(--font-mono); font-size: 10px; letter-spacing: .14em; }
-.ub-foot-meta { flex: 1; min-width: 0; color: var(--ink-secondary); }
-.ub-foot-skip { color: var(--ink-tertiary); white-space: nowrap; }
+.ub-foot-meta { flex: 0 1 auto; min-width: 0; color: var(--ink-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ub-foot-skip { flex: 1 1 0; min-width: 0; text-align: right; color: var(--ink-tertiary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ub-foot-clear { flex: none; margin-left: auto; padding: 0; border: 0; background: none; cursor: pointer; font: inherit; letter-spacing: inherit; color: var(--ink-secondary); transition: color .2s; }
+.ub-foot-clear:hover { color: var(--ink-primary); }
 
 /* ── Inspector ─────────────────────────────────────── */
 .ub-insp {
