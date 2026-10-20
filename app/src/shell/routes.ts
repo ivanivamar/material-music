@@ -6,7 +6,7 @@
 import { useSyncExternalStore } from 'react'
 import type { IconName } from '../design/icons'
 
-export type RouteKey = 'home' | 'library' | 'search' | 'new' | 'upload' | 'downloads' | 'album' | 'artist' | 'playlist' | 'stats' | 'mix'
+export type RouteKey = 'home' | 'library' | 'search' | 'new' | 'upload' | 'downloads' | 'settings' | 'album' | 'artist' | 'playlist' | 'stats' | 'mix'
 export type DevRoute = 'dev/components' | 'dev/foundations'
 export type LibraryTab = 'albums' | 'artists' | 'playlists' | 'songs'
 export const LIBRARY_TABS: LibraryTab[] = ['artists', 'albums', 'playlists', 'songs']
@@ -26,9 +26,11 @@ export const NAV: NavItem[] = [
   { key: 'upload', label: 'Upload', icon: 'upload' },
   { key: 'downloads', label: 'Downloads', icon: 'download' },
 ]
+/** Pinned to the bottom of the sidebar (handoff Settings). */
+export const SETTINGS_NAV: NavItem = { key: 'settings', label: 'Settings', icon: 'gear' }
 
 type SimpleKey = Exclude<RouteKey, 'library' | 'album' | 'artist' | 'playlist' | 'stats' | 'mix'>
-const KEYS = new Set<string>(['home', 'search', 'new', 'upload', 'downloads'])
+const KEYS = new Set<string>(['home', 'search', 'new', 'upload', 'downloads', 'settings'])
 const DEV = new Set<string>(['dev/components', 'dev/foundations'])
 
 export type Route =

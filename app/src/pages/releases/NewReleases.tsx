@@ -22,7 +22,7 @@ import { DEFAULT_TYPES, releasesStore, sweepTargets, useReleases, type ReleasesS
 import { buildFeed, fmtClock, fmtStamp, nextSweepClock, type Feed, type FeedItem } from '../../state/releaseViews'
 import { useIsPhone } from '../../state/viewport'
 import { useMotion } from '../../state/motion'
-import { artistHref, go } from '../../shell/routes'
+import { artistHref, go, href, replace } from '../../shell/routes'
 import { registerBack } from '../../native/backButton'
 import type { RelType } from '../../lib/musicbrainz'
 import { PageHeader } from '../PageHeader'
@@ -68,9 +68,13 @@ function Page({ c }: { c: Catalogue }) {
   const feed = buildFeed(rs.doc, c, history.plays, rs.prefs)
   const artistsN = useMemo(() => sweepTargets(c, rs.doc).length, [c, rs.doc])
 
-  const [panel, setPanelState] = useState<PanelState>(null)
+  // #/new?artists (Settings → Followed artists) opens with the Followed artists panel
+  const [panel, setPanelState] = useState<PanelState>(() => (window.location.hash.includes('?artists') ? { kind: 'artists' } : null))
   // the content stays while the panel slides out
-  const [shown, setShown] = useState<PanelState>(null)
+  const [shown, setShown] = useState<PanelState>(panel)
+  useEffect(() => {
+    if (window.location.hash.includes('?artists')) replace(href('new'))
+  }, [])
   const setPanel = (p: PanelState | ((prev: PanelState) => PanelState)) =>
     setPanelState((prev) => {
       const next = typeof p === 'function' ? p(prev) : p

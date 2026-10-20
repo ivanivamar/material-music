@@ -13,11 +13,8 @@ import { APP_VERSION, appUpdate, usePwa } from '../lib/pwa'
 import { isNative } from '../native/bridge'
 import { registerBack } from '../native/backButton'
 import { nativeUpdates, useNativeUpdates } from '../native/updates'
-import { genresStore } from '../state/genres'
-import { historyStore } from '../state/history'
-import { releasesStore } from '../state/releases'
-import { playlistsStore } from '../state/playlists'
-import { libraryStore, useLibrary } from '../state/library'
+import { useLibrary } from '../state/library'
+import { checkDrive } from '../state/checkDrive'
 import { sessionStore, useSession } from '../state/session'
 import { go, href, statsHref } from '../shell/routes'
 import { djStore } from '../state/dj'
@@ -73,15 +70,10 @@ function useAccountMenu() {
       icon: 'refresh',
       label: lib.refreshing ? 'Checking Drive…' : 'Check Drive for changes',
       disabled: lib.refreshing,
-      run: () => {
-        void libraryStore.sync({ force: true })
-        void historyStore.sync()
-        void releasesStore.sync()
-        void playlistsStore.sync()
-        void genresStore.sync().then(() => genresStore.fill())
-      },
+      run: checkDrive,
     })
   rows.push({ icon: 'clock', label: 'Listening stats', run: () => go(statsHref()) })
+  rows.push({ icon: 'gear', label: 'Settings', run: () => go(href('settings')) })
   rows.push({ icon: 'dj', label: djStore.get().run ? 'DJ panel' : 'Start the DJ', disabled: !lib.data, run: () => (djStore.get().run ? djUi.openPanel(null, isNative) : djUi.openStart()) })
   if (isNative) rows.push({ icon: 'download', label: 'Downloads', run: () => go(href('downloads')) })
   if (localFolder.supported) rows.push({ icon: 'library', label: linked ? 'Change local music folder…' : 'Play FLAC from a local folder…', disabled: !lib.data, run: () => void linkFolder() })

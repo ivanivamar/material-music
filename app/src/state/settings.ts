@@ -7,6 +7,10 @@
  */
 import { useSyncExternalStore } from 'react'
 import type { MotionSetting, ParticleSetting } from '../design/tokens'
+import { isNative } from '../native/bridge'
+
+/** What streams from Drive: the Opus 160 copy (`track.mobile`) or the FLAC as stored. */
+export type StreamQuality = 'opus' | 'original'
 
 export interface Settings {
   /** Atmosphere */
@@ -16,6 +20,12 @@ export interface Settings {
   /** Lyrics */
   romaji: boolean
   english: boolean
+  /** Playback: what streams from Drive (a linked local folder always plays its FLAC) */
+  streamQuality: StreamQuality
+  /** Library (PC): play from Drive when a track isn't in the linked local folder */
+  driveFallback: boolean
+  /** New Releases: the daily sweep runs after this local hour */
+  sweepHour: number
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -24,6 +34,10 @@ export const DEFAULT_SETTINGS: Settings = {
   texture: true,
   romaji: true,
   english: false,
+  // what each device played before the setting existed: FLAC on the PC, the Opus copy on the phone
+  streamQuality: isNative ? 'opus' : 'original',
+  driveFallback: true,
+  sweepHour: 6,
 }
 
 const KEY = 'pelagic.settings.v1'

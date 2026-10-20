@@ -8,7 +8,7 @@
  * entry, latest wins — the same Drive pattern as history.json (download only when Drive's `version`
  * moved, write only when this device changed something, re-check the version right before writing).
  *
- * The sweep: due once per day after 06:00 local. Artists are swept oldest-checked first and each one
+ * The sweep: due once per day after the Settings hour (06:00 by default). Artists are swept oldest-checked first and each one
  * is stamped, so a sweep cut short (app closed, phone asleep, rate-limited) carries on where it
  * stopped, and an artist the other device already checked this cycle is skipped. "In library" is
  * never stored: it's derived from the catalogue (state/releaseViews.ts).
@@ -38,6 +38,7 @@ import { DEVICE } from './history'
 import { libraryStore, type Catalogue } from './library'
 import { onAccountReset, sessionStore } from './session'
 import { artistsByName } from './views'
+import { settingsStore } from './settings'
 
 /* ── Types ──────────────────────────────────────────── */
 
@@ -139,8 +140,8 @@ const DAY = 86_400_000
 export const WINDOW_DAYS = 183
 /** first time a release is seen and it's older than this → it starts as "seen", not "new" */
 const FRESH_DAYS = 30
-/** daily sweep after this local hour */
-export const SWEEP_HOUR = 6
+/** daily sweep after this local hour (Settings → New Releases; 06:00 by default) */
+const sweepHour = () => settingsStore.get().sweepHour
 const RETRY_MS = 30 * 60_000
 const RESOLVE_AGAIN_MS = 30 * DAY
 
@@ -161,7 +162,7 @@ const emptyDoc = (): ReleasesDoc => ({
 /** Start of the current sweep cycle: today 06:00, or yesterday's before 06:00. */
 export function cycleStart(now = Date.now()): number {
   const d = new Date(now)
-  d.setHours(SWEEP_HOUR, 0, 0, 0)
+  d.setHours(sweepHour(), 0, 0, 0)
   if (d.getTime() > now) d.setDate(d.getDate() - 1)
   return d.getTime()
 }

@@ -125,3 +125,6 @@ html[data-dragging-tracks] .sb-pl:not(.is-drop):not(.is-active) { box-shadow: in
 .sb-pl.is-active .sb-pl-meta { color: var(--ink-tertiary); }
 .sb-pl-dot { width: 5px; height: 5px; border-radius: 50%; flex: none; background: #fff; box-shadow: var(--glow-dot); }
 .sb-pl.is-active .sb-pl-dot { background: var(--bg-1); box-shadow: none; }
+
+/* Settings: pinned under the playlists, at the bottom when they're short (handoff Settings) */
+.sb-foot { margin-top: auto; display: flex; flex-direction: column; }

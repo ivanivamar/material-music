@@ -24,6 +24,7 @@ import { isIntroId, playerStore, type PlayerEngine } from '../state/player'
 import { djIntroInfo } from '../state/dj'
 import { djVoice } from '../dj/voice'
 import { onAccountReset, sessionStore } from '../state/session'
+import { settingsStore } from '../state/settings'
 
 const DRIVE = 'https://www.googleapis.com/drive/v3/files/'
 const media = (fileId: string) => `${DRIVE}${encodeURIComponent(fileId)}?alt=media`
@@ -67,7 +68,9 @@ function toItem(id: string, dj: boolean): NativeQueueItem {
   const album = track ? data?.albums[track.albumId] : undefined
   // a downloaded copy (either quality) first: the native side plays it from the phone
   const stored = storedFileOf(downloadsStore.get(), track)
-  const file = stored ? [track!.mobile, track!.flac].find((f) => f?.id === stored) : track?.mobile?.id ? track.mobile : track?.flac
+  // otherwise stream the copy Settings → Playback → Streaming quality asks for
+  const opus = settingsStore.get().streamQuality === 'opus'
+  const file = stored ? [track!.mobile, track!.flac].find((f) => f?.id === stored) : opus && track?.mobile?.id ? track.mobile : track?.flac
   return {
     id,
     // a track gone from the catalogue gets a URL that fails, so the native player skips it.

@@ -108,6 +108,8 @@ export interface DjPrefs {
   voiceVolume: number
   /** Android: only downloaded songs on mobile data */
   dataSaver: boolean
+  /** Settings → DJ → Session types: what a plain Start DJ (endless) mixes; at least one */
+  types: DjType[]
 }
 
 export interface DjDoc {
@@ -149,7 +151,7 @@ export interface DjState {
   starting: boolean
 }
 
-const DEFAULT_PREFS: DjPrefs = { voice: true, voiceVolume: 0.7, dataSaver: false }
+const DEFAULT_PREFS: DjPrefs = { voice: true, voiceVolume: 0.7, dataSaver: false, types: [...DJ_TYPES] }
 const emptyDoc = (): DjDoc => ({ outcomes: [], songPenalties: {}, voiceUsage: {}, prefs: { ...DEFAULT_PREFS }, prefsAt: {}, resetAt: 0 })
 
 /* ── Store ──────────────────────────────────────────── */
@@ -536,6 +538,12 @@ function scheduleSync(ms: number) {
   syncTimer = window.setTimeout(() => void djStore.sync(), ms)
 }
 
+/** Session types from an older / other file: known ones only, never none. */
+function cleanPrefs(p: DjPrefs): DjPrefs {
+  const types = Array.isArray(p.types) ? DJ_TYPES.filter((t) => p.types.includes(t)) : []
+  return { ...p, types: types.length ? types : [...DJ_TYPES] }
+}
+
 function normalise(raw: Partial<DjDoc> | undefined): DjDoc {
   const d = emptyDoc()
   if (!raw) return d
@@ -543,7 +551,7 @@ function normalise(raw: Partial<DjDoc> | undefined): DjDoc {
     outcomes: Array.isArray(raw.outcomes) ? raw.outcomes.filter((o) => o && typeof o.id === 'string' && Array.isArray(o.features)) : [],
     songPenalties: raw.songPenalties && typeof raw.songPenalties === 'object' ? raw.songPenalties : {},
     voiceUsage: raw.voiceUsage && typeof raw.voiceUsage === 'object' ? raw.voiceUsage : {},
-    prefs: { ...d.prefs, ...(raw.prefs ?? {}) },
+    prefs: cleanPrefs({ ...d.prefs, ...(raw.prefs ?? {}) }),
     prefsAt: raw.prefsAt ?? {},
     resetAt: typeof raw.resetAt === 'number' ? raw.resetAt : 0,
   }
@@ -615,7 +623,7 @@ export const djStore = {
     if (!lib || !lib.tracks.length) return false
     const prevRun = state.run
     const before = prevRun?.before ?? (playerStore.get().context?.kind === 'dj' ? null : playerStore.snapshot())
-    const mode: Mode = opts.type ? { types: [opts.type], genres: opts.type === 'genre' ? (opts.genres ?? []) : [], endless: false } : { types: [...DJ_TYPES], genres: [], endless: true }
+    const mode: Mode = opts.type ? { types: [opts.type], genres: opts.type === 'genre' ? (opts.genres ?? []) : [], endless: false } : { types: [...state.doc.prefs.types], genres: [], endless: true }
     const base: DjRun = { id: rid(), startedAt: Date.now(), mode, sessions: [], count: 0, current: null, skippedFrom: null, used: [], skippedEarly: [], before, pendingSkip: null, tally: {}, recorded: [] }
     const first = plan(base, null, false)
     if (!first) return false

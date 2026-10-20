@@ -17,6 +17,7 @@ import { useDjView } from '../state/djUi'
 import { useIntroAudio } from '../dj/voice'
 import { DjButton } from '../dj/DjButton'
 import { IntroSub, LiveMark } from '../dj/DjIntro'
+import { useSettings } from '../state/settings'
 import './playerbar.css'
 
 export function PlayerBar() {
@@ -46,6 +47,9 @@ export function PlayerBar() {
     }
     playerStore.toggle()
   }
+  const streamQuality = useSettings().streamQuality
+  // streaming the Opus copy (Settings → Playback); a local / stored file is whatever the engine found
+  const opusStream = p.source === 'drive' && streamQuality === 'opus' && !!track?.mobile?.id
   const sourceLabel = p.source === 'local' ? (isNative ? 'Stored on this phone' : 'Playing from your local folder') : p.source === 'drive' ? 'Streaming from Google Drive' : undefined
 
   return (
@@ -142,9 +146,13 @@ export function PlayerBar() {
         {track && !intro && (
           <span className="pb-quality" title={sourceLabel}>
             {p.source && <span className="pb-source t-mono">{p.source === 'local' ? (isNative ? 'OFFLINE' : 'LOCAL') : 'DRIVE'}</span>}
-            <QualityBadge kind={qualityKind('flac', track.flac?.bitDepth, track.flac?.sampleRate)}>
-              {qualityLabel('flac', { bitDepth: track.flac?.bitDepth, sampleRate: track.flac?.sampleRate })}
-            </QualityBadge>
+            {opusStream ? (
+              <QualityBadge kind="opus">{qualityLabel('opus', { bitrate: Number.parseInt(track.mobile?.bitrate ?? '', 10) * 1000 || undefined })}</QualityBadge>
+            ) : (
+              <QualityBadge kind={qualityKind('flac', track.flac?.bitDepth, track.flac?.sampleRate)}>
+                {qualityLabel('flac', { bitDepth: track.flac?.bitDepth, sampleRate: track.flac?.sampleRate })}
+              </QualityBadge>
+            )}
           </span>
         )}
         <IconButton icon="lyrics" label="Lyrics" bare size="sm" disabled={empty} className={`pb-panel ${ui.open && ui.view === 'lyrics' ? 'is-on' : ''}`} onClick={() => nowPlayingStore.toggleLyrics()} />

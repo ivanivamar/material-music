@@ -23,10 +23,10 @@ import { loadCover } from '../lib/covers'
 import { AuthError, downloadBlob } from '../lib/drive'
 import { streamUrl } from '../lib/driveStream'
 import { localFolder } from '../lib/localFolder'
-import { isNative } from '../native/bridge'
 import { libraryStore, type Album, type Track } from '../state/library'
 import { isIntroId, playerStore, type PlaybackSource, type PlayerEngine } from '../state/player'
 import { sessionStore } from '../state/session'
+import { settingsStore } from '../state/settings'
 import { djIntroInfo } from '../state/dj'
 import { djVoice } from '../dj/voice'
 import { markPng } from '../dj/mark'
@@ -201,15 +201,17 @@ export function createHtmlAudioEngine(): PlayerEngine {
     }
     const { track, album } = lookup(id)
     if (!track) return null
+    const prefs = settingsStore.get()
     // 1. linked local folder (prompting for access only inside a click)
     if (allowLocal && localFolder.get().status !== 'none' && (await localFolder.ensurePermission(prompt && gesture()))) {
       const file = await localFolder.file(track, album)
       if (stale()) return null
       if (file) return { trackId: id, url: URL.createObjectURL(file), owned: true, source: 'local', triedLocal: false }
+      // Settings → Library: "Stream from Drive when the folder is missing" is off
+      if (!prefs.driveFallback) throw new Error('It isn’t in your local music folder.')
     }
-    // 2. / 3. Google Drive. The Android app plays the Opus copy (small, whole-file download) until
-    //    the native player (step 7, phase C) streams and caches on its own.
-    const file = isNative && track.mobile?.id ? track.mobile : track.flac
+    // 2. / 3. Google Drive: the Opus 160 copy or the FLAC as stored (Settings → Playback → Streaming quality)
+    const file = prefs.streamQuality === 'opus' && track.mobile?.id ? track.mobile : track.flac
     if (!file?.id) throw new Error('This track has no FLAC on Drive.')
     if (!(await sessionStore.ensureToken())) throw new NeedsAuth()
     if (stale()) return null
