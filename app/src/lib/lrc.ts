@@ -24,6 +24,8 @@ const ID_TAG = /^\s*\[([a-z#]+):(.*)\]\s*$/i
 const WORD_STAMP = /<\d{1,3}:\d{1,2}(?:[.:]\d{1,3})?>/g
 /** seconds: a blank stamp shorter than this before the next line isn't shown as a break */
 const MIN_BREAK = 4
+/** seconds: how far past the next line's start a misplaced end-of-line blank can be */
+const SKEW = 1.5
 
 function stampSeconds(a: string, b: string, c: string | undefined, frac: string | undefined): number {
   // [mm:ss(.xx)] or [h:mm:ss(.xx)]
@@ -53,7 +55,7 @@ export function parseLyrics(raw: string | undefined | null): Lyrics | null {
   }
 
   let offset = 0
-  const lines: LyricLine[] = []
+  const entries: { times: number[]; text: string }[] = []
   for (const row of rows) {
     const stamps = row.match(LINE_STAMPS)
     if (!stamps) {
@@ -62,8 +64,21 @@ export function parseLyrics(raw: string | undefined | null): Lyrics | null {
       continue
     }
     const body = row.slice(stamps[0].length).replace(WORD_STAMP, '').replace(/\s+/g, ' ').trim()
-    for (const m of stamps[0].matchAll(STAMP)) lines.push({ time: stampSeconds(m[1], m[2], m[3], m[4]), text: body })
+    const times = [...stamps[0].matchAll(STAMP)].map((m) => stampSeconds(m[1], m[2], m[3], m[4]))
+    entries.push({ times, text: body })
   }
+  const lines: LyricLine[] = []
+  entries.forEach((e, i) => {
+    let times = e.times
+    if (!e.text) {
+      // End-of-line markers stamped slightly *after* the next line starts (sloppy sources):
+      // in the file they sit before that line, but sorted they'd land just after it and cut it
+      // off after a split second. Drop them.
+      const next = entries.slice(i + 1).find((n) => n.text)
+      if (next) times = times.filter((t) => !next.times.some((nt) => nt <= t && t - nt <= SKEW))
+    }
+    for (const time of times) lines.push({ time, text: e.text })
+  })
   if (!lines.length) return null
   // LRC offset: positive = lyrics come sooner
   for (const l of lines) l.time = Math.max(0, l.time - offset)
