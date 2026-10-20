@@ -231,7 +231,7 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
                       />
                     </div>
                     <div className="np-seek">
-                      <Waveform progress={frac} duration={duration} onSeek={(f) => playerStore.seek(f * duration)} />
+                      <Waveform progress={frac} duration={duration} playing={p.playing} onSeek={(f) => playerStore.seek(f * duration)} />
                       <div className="np-times t-mono">
                         <span className="is-now">{formatTime(p.position)}</span>
                         <span>−{formatTime(Math.max(0, duration - p.position))}</span>
