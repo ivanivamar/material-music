@@ -344,7 +344,7 @@ final class WidgetRenderer {
         WidgetState.Now n = r.m.now;
         if (n != null) {
             bg.light = WidgetArt.load(r.ctx, n.cur.art);
-            bg.lightAlpha = r.on ? 0.42f : 0.22f;
+            bg.lightAlpha = r.on ? 0.6f : 0.32f; // brighter album light on the glass base (was 0.42 / 0.22)
         }
         bg.accent = r.accent;
         bg.accentGlow = r.accentGlow;

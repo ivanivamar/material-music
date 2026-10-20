@@ -2,6 +2,8 @@
 <!-- Home screen widget (design_handoff_android_widget). Colours, sizes and text styles. -->
 <resources>
     <color name="wg_base">#FF0B0B0C</color>
+    <!-- widget background: glass, the wallpaper shows through a little (WidgetArt.GLASS) -->
+    <color name="wg_glass">#CC1E1E22</color>
     <color name="wg_surface">#FF141416</color>
     <color name="wg_text">#FFEDEDED</color>
     <color name="wg_text2">#FFBDBDBD</color>

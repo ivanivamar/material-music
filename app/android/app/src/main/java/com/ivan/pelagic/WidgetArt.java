@@ -34,7 +34,8 @@ import java.util.Arrays;
  * so everything that isn't text or an icon button is drawn here into bitmaps (handoff "Background —
  * tinted" + the cover / tile / scrubber details):
  *
- *  - background(): base #0B0B0C, the blurred "album light" top-left, the dark radial scrim from
+ *  - background(): transparent (the glass base is the layout's wg_shape, ~80% #1E1E22, so the
+ *    wallpaper shows through a little — Oct 20, 2026, was solid #0B0B0C), the blurred "album light" top-left, the dark radial scrim from
  *    the bottom-right, the app's STONE / CONTOUR / GRAIN textures (res/drawable-nodpi/wg_tex_*,
  *    rendered from pelagic-kit.js), the cover glow of the player sizes, full-bleed covers of the
  *    1×1 / 2×2 sizes, the progress hairline and the 1dp inner ring, clipped to the widget radius.
@@ -46,6 +47,8 @@ import java.util.Arrays;
  */
 final class WidgetArt {
     static final int BASE = 0xFF0B0B0C;
+    /** glass base under the bitmap (drawable/wg_shape, color/wg_glass): #1E1E22 at 80% */
+    static final int GLASS = 0xCC1E1E22;
     static final int SURFACE = 0xFF141416;
     static final int LILAC = 0xFFC6B4F2;
 
@@ -274,14 +277,16 @@ final class WidgetArt {
         Canvas c = new Canvas(out);
         float k = s.scale;
         float top = H - 1.5f * k;
+        // clipped to the widget's rounded shape (the base is see-through now, so SRC_ATOP would fade it)
+        android.graphics.Path clip = new android.graphics.Path();
+        clip.addRoundRect(new RectF(0, 0, W, H), s.radius * k, s.radius * k, android.graphics.Path.Direction.CW);
+        c.clipPath(clip);
         Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
-        p.setXfermode(new android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.SRC_ATOP));
         p.setColor(0x1FFFFFFF);
         c.drawRect(0, top, W, H, p);
         float fw = W * Math.max(0, Math.min(1, s.hairline));
         if (fw > 0) {
             Paint g = new Paint(Paint.ANTI_ALIAS_FLAG);
-            g.setXfermode(new android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.SRC_ATOP));
             g.setColor(s.accentGlow);
             g.setMaskFilter(new BlurMaskFilter(blurRadius(3 * k), BlurMaskFilter.Blur.NORMAL));
             c.drawRect(0, top, fw, H, g);
@@ -296,16 +301,17 @@ final class WidgetArt {
         float k = s.scale;
         Bitmap full = Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888);
         Canvas c = new Canvas(full);
-        c.drawColor(BASE);
+        // 1. base: none here — wg_shape (GLASS) sits under this bitmap, so it stays see-through
         Paint p = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
 
         // 2. album light: the cover, blurred 48, saturation ×1.3, at (−30%, −60%) 110% × 160%
         if (s.light != null && s.lightAlpha > 0) drawLight(c, s.light, W, H, k, s.lightAlpha);
 
-        // 3. scrim: radial from the bottom-right (120% × 110%), app-dark there, light pools top-left
+        // 3. scrim: radial from the bottom-right (120% × 110%), 55% app-dark there (keeps the controls
+        //    readable on light wallpapers), fading out towards the top-left light
         Paint scrim = new Paint(Paint.ANTI_ALIAS_FLAG);
         RadialGradient rg = new RadialGradient(0, 0, 1f,
-            new int[] { BASE, BASE, 0x990B0B0C, 0x000B0B0C }, new float[] { 0f, 0.25f, 0.6f, 1f }, Shader.TileMode.CLAMP);
+            new int[] { 0x8C0B0B0C, 0x8C0B0B0C, 0x4D0B0B0C, 0x000B0B0C }, new float[] { 0f, 0.25f, 0.6f, 1f }, Shader.TileMode.CLAMP);
         Matrix m = new Matrix();
         m.setScale(1.2f * W, 1.1f * H);
         m.postTranslate(W, H);
