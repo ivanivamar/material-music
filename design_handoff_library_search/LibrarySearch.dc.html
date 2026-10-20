@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://api.fontshare.com/v2/css?f[]=general-sans@300,400,500,600&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+JP:wght@300;400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#030303;-webkit-font-smoothing:antialiased}
+a{color:#EDEDED;text-decoration:underline;text-underline-offset:3px}a:hover{color:#FFFFFF}
+@keyframes pg-sway{0%{transform:translate3d(0,-40px,0);opacity:0}10%{opacity:1}50%{transform:translate3d(22px,110px,0)}90%{opacity:1}100%{transform:translate3d(-8px,260px,0);opacity:0}}
+@media (prefers-reduced-motion: reduce){.pg-anim{animation:none !important}.pg-snow{display:none !important}}
+</style>
+<script src="./pelagic-kit.js"></script>
+</helmet>
+<div style="font-family:'General Sans','Noto Sans JP',sans-serif; color:#EDEDED; padding:72px; display:flex; flex-direction:column; gap:80px; background:#030303; min-width:1600px;">
+
+<div style="display:flex; flex-direction:column; gap:14px; max-width:900px;">
+  <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.16em; color:#55555A;">PELAGIC · LIBRARY + SEARCH (MERGED)</div>
+  <div style="font-size:44px; font-weight:400; letter-spacing:-0.02em;">Library + Search</div>
+  <div style="font-size:16px; line-height:1.55; color:#8A8A8E; text-wrap:pretty;">Search is no longer its own page. Library carries the search field under its header; an empty field browses, a typed query shows ranked results in place.</div>
+  <div style="display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px 40px; padding-top:10px; font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.1em; line-height:1.6; color:#8A8A8E;">
+    <div>01 · TYPING FROM ANY TAB SWITCHES RESULTS TO ALL.</div>
+    <div>02 · ✕ OR ESC CLEARS AND RETURNS TO THE TAB YOU WERE BROWSING, SORT AND SCROLL KEPT.</div>
+    <div>03 · THE SIDEBAR LOSES ITS SEARCH ITEM. ANDROID LOSES THE SEARCH TAB.</div>
+    <div>04 · / AND CTRL+K FOCUS THE LIBRARY FIELD FROM ANY SCREEN.</div>
+  </div>
+</div>
+
+<!-- DESKTOP -->
+<div style="display:flex; flex-direction:column; gap:20px;">
+  <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:#55555A;">01 / Desktop · 1440 × 900</div>
+  <div style="display:flex; flex-wrap:wrap; gap:64px;">
+
+    <div style="display:flex; flex-direction:column; gap:12px;">
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.12em; color:#8A8A8E;">1 · FIELD EMPTY, BROWSING ALBUMS</div>
+      <div data-screen-label="Desktop Library · browsing" style="width:1440px; height:900px; border-radius:16px; overflow:hidden; position:relative; background:#0B0B0C; border:1.5px solid rgba(255,255,255,0.07);">
+        {{ water }}
+        <div style="position:absolute; left:0; top:0; bottom:84px; width:232px; padding:30px 14px; box-sizing:border-box; display:flex; flex-direction:column; gap:36px; background:rgba(11,11,12,0.7); border-right:1px solid rgba(255,255,255,0.06);">
+          <div style="padding:0 14px; display:flex; align-items:center; gap:12px;"><div style="position:relative; width:22px; height:22px; flex:none;"><div style="position:absolute; inset:0; border-radius:50%; border:1.5px solid rgba(255,255,255,0.9); box-sizing:border-box; clip-path:inset(0 0 50% 0);"></div><div style="position:absolute; inset:0; border-radius:50%; border:1.5px solid rgba(255,255,255,0.22); box-sizing:border-box; clip-path:inset(50% 0 0 0);"></div><div style="position:absolute; left:-5px; right:-5px; top:10.5px; height:1px; background:#FFFFFF;"></div></div><div style="font-size:14px; font-weight:500; letter-spacing:0.42em; text-transform:uppercase;">Pelagic</div></div>
+          <div style="display:flex; flex-direction:column; gap:4px;"><sc-for list="{{ nav }}" as="n" hint-placeholder-count="5"><div style="display:flex; align-items:center; gap:12px; height:44px; padding:4px 12px 4px 4px; box-sizing:border-box; border-radius:12px; background:{{ n.bg }}; color:{{ n.fg }}; font-size:14px; font-weight:500;"><span style="width:36px; height:36px; flex:none; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:20px; background:{{ n.icBg }}; color:{{ n.icFg }};">{{ n.icon }}</span><span style="flex:1;">{{ n.label }}</span><span style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:{{ n.bdg }};">{{ n.badge }}</span></div></sc-for></div>
+          <div style="display:flex; flex-direction:column; gap:6px;"><div style="display:flex; align-items:center; justify-content:space-between; padding:0 12px 8px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.16em; color:#55555A;">PLAYLISTS</div><span style="font-size:16px; color:#8A8A8E;">{{ ic.plus }}</span></div><sc-for list="{{ plSide }}" as="p" hint-placeholder-count="5"><div style="display:flex; align-items:center; gap:12px; height:44px; padding:0 12px;"><img src="{{ p.img }}" alt="" style="width:30px; height:30px; border-radius:6px; object-fit:cover; flex:none; filter:grayscale(1) brightness(0.8);"><div style="display:flex; flex-direction:column; gap:2px; min-width:0;"><div style="font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ p.n }}</div><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:#55555A;">{{ p.c }}</div></div></div></sc-for></div>
+        </div>
+        <div style="position:absolute; left:232px; right:0; top:0; bottom:84px; padding:40px 56px 0; box-sizing:border-box; overflow:hidden; display:flex; flex-direction:column; gap:24px;">
+          <div style="display:flex; flex-direction:column; gap:10px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.16em; color:#55555A;">412 ALBUMS · 68 ARTISTS · 2,931 SONGS</div><div style="font-size:40px; font-weight:400; letter-spacing:-0.02em;">Library</div></div>
+          <div style="height:60px; flex:none; border-radius:16px; display:flex; align-items:center; gap:14px; padding:0 20px; box-sizing:border-box; border:1.5px solid rgba(255,255,255,0.12); background:rgba(255,255,255,0.03);">
+            <span style="font-size:22px; color:#8A8A8E;">{{ ic.search }}</span>
+            <div style="flex:1; font-size:22px; color:#55555A;">Search your library</div>
+            <div style="display:flex; align-items:center; gap:10px; font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.14em; color:#55555A;"><span style="width:22px; height:22px; border-radius:6px; border:1.5px solid rgba(255,255,255,0.18); box-sizing:border-box; display:flex; align-items:center; justify-content:center; font-size:11px; color:#8A8A8E;">/</span>TO SEARCH</div>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <div style="height:34px; padding:0 16px; border-radius:999px; display:flex; align-items:center; font-size:14px; color:#8A8A8E; border:1.5px solid rgba(255,255,255,0.12);">Artists</div>
+            <div style="height:34px; padding:0 16px; border-radius:999px; display:flex; align-items:center; font-size:14px; font-weight:500; background:#EDEDED; color:#0B0B0C;">Albums</div>
+            <div style="height:34px; padding:0 16px; border-radius:999px; display:flex; align-items:center; font-size:14px; color:#8A8A8E; border:1.5px solid rgba(255,255,255,0.12);">Playlists</div>
+            <div style="height:34px; padding:0 16px; border-radius:999px; display:flex; align-items:center; font-size:14px; color:#8A8A8E; border:1.5px solid rgba(255,255,255,0.12);">Songs</div>
+          </div>
+          <div style="display:flex; align-items:center; gap:16px;"><div style="display:flex; align-items:center; gap:6px; font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.16em; color:#8A8A8E;">SORT · RECENTLY ADDED<span style="font-size:13px;">{{ ic.chevD }}</span></div><div style="flex:1; height:1px; background:rgba(255,255,255,0.08);"></div><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.16em; color:#8A8A8E;">412 ALBUMS</div></div>
+          <div style="display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:36px 28px;">
+            <sc-for list="{{ grid }}" as="c" hint-placeholder-count="10">
+              <div style="display:flex; flex-direction:column; gap:12px; min-width:0;">
+                <img src="{{ c.img }}" alt="" style="width:100%; aspect-ratio:1; border-radius:10px; object-fit:cover; display:block; box-shadow:inset 0 0 0 1px rgba(255,255,255,0.05);">
+                <div style="display:flex; align-items:flex-start; gap:10px;"><div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:3px;"><div style="font-size:14px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ c.t }}</div><div style="font-size:13px; color:#8A8A8E; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ c.a }}</div></div><sc-if value="{{ c.off }}"><span style="font-size:15px; color:#EDEDED; margin-top:2px;">{{ ic.check }}</span></sc-if></div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="position:absolute; left:0; right:0; bottom:0; height:84px; display:grid; grid-template-columns:minmax(0,1fr) 560px minmax(0,1fr); align-items:center; padding:0 20px; gap:24px; background:#0B0B0C; border-top:1px solid rgba(255,255,255,0.08);">
+          <div style="display:flex; align-items:center; gap:14px; min-width:0;"><img src="./art/spiritbox-tsunami-sea.jpg" alt="" style="width:52px; height:52px; border-radius:8px; object-fit:cover;"><div style="display:flex; flex-direction:column; gap:3px; min-width:0;"><div style="font-size:15px; font-weight:500;">Tsunami Sea</div><div style="font-size:13px; color:#8A8A8E;">Spiritbox</div></div></div>
+          <div style="display:flex; flex-direction:column; gap:8px; align-items:center;"><div style="display:flex; align-items:center; gap:24px; font-size:19px; color:#8A8A8E;"><span>{{ ic.shuffle }}</span><span style="color:#EDEDED;">{{ ic.prev }}</span><div style="width:38px; height:38px; border-radius:50%; background:#EDEDED; color:#0B0B0C; display:flex; align-items:center; justify-content:center; font-size:17px;">{{ ic.pauseF }}</div><span style="color:#EDEDED;">{{ ic.next }}</span><span>{{ ic.repeat }}</span></div><div style="display:flex; align-items:center; gap:12px; width:100%;"><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:#8A8A8E;">01:36</div><div style="position:relative; flex:1; height:9px;"><div style="position:absolute; left:0; right:0; top:4px; height:1px; background:rgba(255,255,255,0.18);"></div><div style="position:absolute; left:0; width:38%; top:4px; height:1px; background:#FFFFFF;"></div><div style="position:absolute; left:38%; top:2px; width:5px; height:5px; margin-left:-2.5px; border-radius:50%; background:#FFFFFF; box-shadow:0 0 8px 2px rgba(255,255,255,0.5);"></div></div><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:#8A8A8E;">04:11</div></div></div>
+          <div style="display:flex; align-items:center; justify-content:flex-end; gap:18px; font-size:18px; color:#8A8A8E;"><span>{{ ic.lyrics }}</span><span>{{ ic.queue }}</span><span>{{ ic.volume }}</span><div style="position:relative; width:80px; height:1px; background:rgba(255,255,255,0.18);"><div style="width:70%; height:1px; background:#EDEDED;"></div></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:12px;">
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.12em; color:#8A8A8E;">2 · FIELD FOCUSED, EMPTY · RECENT SEARCHES</div>
+      <div data-screen-label="Desktop Library · focused" style="width:1440px; height:900px; border-radius:16px; overflow:hidden; position:relative; background:#0B0B0C; border:1.5px solid rgba(255,255,255,0.07);">
+        {{ water }}
+        <div style="position:absolute; left:0; top:0; bottom:84px; width:232px; padding:30px 14px; box-sizing:border-box; display:flex; flex-direction:column; gap:36px; background:rgba(11,11,12,0.7); border-right:1px solid rgba(255,255,255,0.06);">
+          <div style="padding:0 14px; display:flex; align-items:center; gap:12px;"><div style="position:relative; width:22px; height:22px; flex:none;"><div style="position:absolute; inset:0; border-radius:50%; border:1.5px solid rgba(255,255,255,0.9); box-sizing:border-box; clip-path:inset(0 0 50% 0);"></div><div style="position:absolute; inset:0; border-radius:50%; border:1.5px solid rgba(255,255,255,0.22); box-sizing:border-box; clip-path:inset(50% 0 0 0);"></div><div style="position:absolute; left:-5px; right:-5px; top:10.5px; height:1px; background:#FFFFFF;"></div></div><div style="font-size:14px; font-weight:500; letter-spacing:0.42em; text-transform:uppercase;">Pelagic</div></div>
+          <div style="display:flex; flex-direction:column; gap:4px;"><sc-for list="{{ nav }}" as="n" hint-placeholder-count="5"><div style="display:flex; align-items:center; gap:12px; height:44px; padding:4px 12px 4px 4px; box-sizing:border-box; border-radius:12px; background:{{ n.bg }}; color:{{ n.fg }}; font-size:14px; font-weight:500;"><span style="width:36px; height:36px; flex:none; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:20px; background:{{ n.icBg }}; color:{{ n.icFg }};">{{ n.icon }}</span><span style="flex:1;">{{ n.label }}</span><span style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:{{ n.bdg }};">{{ n.badge }}</span></div></sc-for></div>
+          <div style="display:flex; flex-direction:column; gap:6px;"><div style="display:flex; align-items:center; justify-content:space-between; padding:0 12px 8px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.16em; color:#55555A;">PLAYLISTS</div><span style="font-size:16px; color:#8A8A8E;">{{ ic.plus }}</span></div><sc-for list="{{ plSide }}" as="p" hint-placeholder-count="5"><div style="display:flex; align-items:center; gap:12px; height:44px; padding:0 12px;"><img src="{{ p.img }}" alt="" style="width:30px; height:30px; border-radius:6px; object-fit:cover; flex:none; filter:grayscale(1) brightness(0.8);"><div style="display:flex; flex-direction:column; gap:2px; min-width:0;"><div style="font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ p.n }}</div><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:#55555A;">{{ p.c }}</div></div></div></sc-for></div>
+        </div>
+        <div style="position:absolute; left:232px; right:0; top:0; bottom:84px; padding:40px 56px 0; box-sizing:border-box; overflow:hidden; display:flex; flex-direction:column; gap:24px;">
+          <div style="display:flex; flex-direction:column; gap:10px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.16em; color:#55555A;">412 ALBUMS · 68 ARTISTS · 2,931 SONGS</div><div style="font-size:40px; font-weight:400; letter-spacing:-0.02em;">Library</div></div>
+          <div style="display:flex; flex:none; flex-direction:column; gap:14px;">
+            <div style="height:60px; flex:none; border-radius:16px; display:flex; align-items:center; gap:14px; padding:0 20px; box-sizing:border-box; border:2px solid rgba(255,255,255,0.45); background:rgba(255,255,255,0.03); box-shadow:0 0 32px -12px rgba(255,255,255,0.35);">
+              <span style="font-size:22px;">{{ ic.search }}</span>
+              <div style="flex:1; display:flex; align-items:center; font-size:22px; color:#55555A;"><span style="width:1.5px; height:26px; background:#FFFFFF; margin-right:2px; box-shadow:0 0 6px rgba(255,255,255,0.8);"></span>Search your library</div>
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.14em; color:#55555A;">ESC · CLOSE</div>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.16em; color:#55555A; padding-right:8px;">RECENT</div>
+              <sc-for list="{{ recents }}" as="r" hint-placeholder-count="4"><div style="height:34px; padding:0 14px 0 12px; border-radius:999px; display:flex; align-items:center; gap:8px; font-size:14px; color:#EDEDED; border:1.5px solid rgba(255,255,255,0.12); background:rgba(255,255,255,0.02);" style-hover="border-color:rgba(255,255,255,0.3);"><span style="font-size:15px; color:#8A8A8E;">{{ ic.clock }}</span>{{ r }}</div></sc-for>
+              <div style="flex:1;"></div>
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.16em; color:#8A8A8E;" style-hover="color:#FFFFFF;">CLEAR</div>
+            </div>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <div style="height:34px; padding:0 16px; border-radius:999px; display:flex; align-items:center; font-size:14px; color:#8A8A8E; border:1.5px solid rgba(255,255,255,0.12);">Artists</div>
+            <div style="height:34px; padding:0 16px; border-radius:999px; display:flex; align-items:center; font-size:14px; font-weight:500; background:#EDEDED; color:#0B0B0C;">Albums</div>
+            <div style="height:34px; padding:0 16px; border-radius:999px; display:flex; align-items:center; font-size:14px; color:#8A8A8E; border:1.5px solid rgba(255,255,255,0.12);">Playlists</div>
+            <div style="height:34px; padding:0 16px; border-radius:999px; display:flex; align-items:center; font-size:14px; color:#8A8A8E; border:1.5px solid rgba(255,255,255,0.12);">Songs</div>
+          </div>
+          <div style="display:flex; align-items:center; gap:16px;"><div style="display:flex; align-items:center; gap:6px; font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.16em; color:#8A8A8E;">SORT · RECENTLY ADDED<span style="font-size:13px;">{{ ic.chevD }}</span></div><div style="flex:1; height:1px; background:rgba(255,255,255,0.08);"></div><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.16em; color:#8A8A8E;">412 ALBUMS</div></div>
+          <div style="display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:36px 28px;">
+            <sc-for list="{{ grid }}" as="c" hint-placeholder-count="10">
+              <div style="display:flex; flex-direction:column; gap:12px; min-width:0;">
+                <img src="{{ c.img }}" alt="" style="width:100%; aspect-ratio:1; border-radius:10px; object-fit:cover; display:block; box-shadow:inset 0 0 0 1px rgba(255,255,255,0.05);">
+                <div style="display:flex; align-items:flex-start; gap:10px;"><div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:3px;"><div style="font-size:14px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ c.t }}</div><div style="font-size:13px; color:#8A8A8E; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ c.a }}</div></div><sc-if value="{{ c.off }}"><span style="font-size:15px; color:#EDEDED; margin-top:2px;">{{ ic.check }}</span></sc-if></div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="position:absolute; left:0; right:0; bottom:0; height:84px; display:grid; grid-template-columns:minmax(0,1fr) 560px minmax(0,1fr); align-items:center; padding:0 20px; gap:24px; background:#0B0B0C; border-top:1px solid rgba(255,255,255,0.08);">
+          <div style="display:flex; align-items:center; gap:14px; min-width:0;"><img src="./art/spiritbox-tsunami-sea.jpg" alt="" style="width:52px; height:52px; border-radius:8px; object-fit:cover;"><div style="display:flex; flex-direction:column; gap:3px; min-width:0;"><div style="font-size:15px; font-weight:500;">Tsunami Sea</div><div style="font-size:13px; color:#8A8A8E;">Spiritbox</div></div></div>
+          <div style="display:flex; flex-direction:column; gap:8px; align-items:center;"><div style="display:flex; align-items:center; gap:24px; font-size:19px; color:#8A8A8E;"><span>{{ ic.shuffle }}</span><span style="color:#EDEDED;">{{ ic.prev }}</span><div style="width:38px; height:38px; border-radius:50%; background:#EDEDED; color:#0B0B0C; display:flex; align-items:center; justify-content:center; font-size:17px;">{{ ic.pauseF }}</div><span style="color:#EDEDED;">{{ ic.next }}</span><span>{{ ic.repeat }}</span></div><div style="display:flex; align-items:center; gap:12px; width:100%;"><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:#8A8A8E;">01:36</div><div style="position:relative; flex:1; height:9px;"><div style="position:absolute; left:0; right:0; top:4px; height:1px; background:rgba(255,255,255,0.18);"></div><div style="position:absolute; left:0; width:38%; top:4px; height:1px; background:#FFFFFF;"></div><div style="position:absolute; left:38%; top:2px; width:5px; height:5px; margin-left:-2.5px; border-radius:50%; background:#FFFFFF; box-shadow:0 0 8px 2px rgba(255,255,255,0.5);"></div></div><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:#8A8A8E;">04:11</div></div></div>
+          <div style="display:flex; align-items:center; justify-content:flex-end; gap:18px; font-size:18px; color:#8A8A8E;"><span>{{ ic.lyrics }}</span><span>{{ ic.queue }}</span><span>{{ ic.volume }}</span><div style="position:relative; width:80px; height:1px; background:rgba(255,255,255,0.18);"><div style="width:70%; height:1px; background:#EDEDED;"></div></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:12px;">
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.12em; color:#8A8A8E;">3 · TYPING “TIDE” · ALL, RANKED BY MATCH</div>
+      <div data-screen-label="Desktop Library · results" style="width:1440px; height:900px; border-radius:16px; overflow:hidden; position:relative; background:#0B0B0C; border:1.5px solid rgba(255,255,255,0.07);">
+        {{ water }}
+        <div style="position:absolute; left:0; top:0; bottom:84px; width:232px; padding:30px 14px; box-sizing:border-box; display:flex; flex-direction:column; gap:36px; background:rgba(11,11,12,0.7); border-right:1px solid rgba(255,255,255,0.06);">
+          <div style="padding:0 14px; display:flex; align-items:center; gap:12px;"><div style="position:relative; width:22px; height:22px; flex:none;"><div style="position:absolute; inset:0; border-radius:50%; border:1.5px solid rgba(255,255,255,0.9); box-sizing:border-box; clip-path:inset(0 0 50% 0);"></div><div style="position:absolute; inset:0; border-radius:50%; border:1.5px solid rgba(255,255,255,0.22); box-sizing:border-box; clip-path:inset(50% 0 0 0);"></div><div style="position:absolute; left:-5px; right:-5px; top:10.5px; height:1px; background:#FFFFFF;"></div></div><div style="font-size:14px; font-weight:500; letter-spacing:0.42em; text-transform:uppercase;">Pelagic</div></div>
+          <div style="display:flex; flex-direction:column; gap:4px;"><sc-for list="{{ nav }}" as="n" hint-placeholder-count="5"><div style="display:flex; align-items:center; gap:12px; height:44px; padding:4px 12px 4px 4px; box-sizing:border-box; border-radius:12px; background:{{ n.bg }}; color:{{ n.fg }}; font-size:14px; font-weight:500;"><span style="width:36px; height:36px; flex:none; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:20px; background:{{ n.icBg }}; color:{{ n.icFg }};">{{ n.icon }}</span><span style="flex:1;">{{ n.label }}</span><span style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:{{ n.bdg }};">{{ n.badge }}</span></div></sc-for></div>
+          <div style="display:flex; flex-direction:column; gap:6px;"><div style="display:flex; align-items:center; justify-content:space-between; padding:0 12px 8px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.16em; color:#55555A;">PLAYLISTS</div><span style="font-size:16px; color:#8A8A8E;">{{ ic.plus }}</span></div><sc-for list="{{ plSide }}" as="p" hint-placeholder-count="5"><div style="display:flex; align-items:center; gap:12px; height:44px; padding:0 12px;"><img src="{{ p.img }}" alt="" style="width:30px; height:30px; border-radius:6px; object-fit:cover; flex:none; filter:grayscale(1) brightness(0.8);"><div style="display:flex; flex-direction:column; gap:2px; min-width:0;"><div style="font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ p.n }}</div><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:#55555A;">{{ p.c }}</div></div></div></sc-for></div>
+        </div>
+        <div style="position:absolute; left:232px; right:0; top:0; bottom:84px; padding:40px 56px 0; box-sizing:border-box; overflow:hidden; display:flex; flex-direction:column; gap:24px;">
+          <div style="display:flex; flex-direction:column; gap:10px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.16em; color:#55555A;">412 ALBUMS · 68 ARTISTS · 2,931 SONGS</div><div style="font-size:40px; font-weight:400; letter-spacing:-0.02em;">Library</div></div>
+          <div style="height:60px; flex:none; border-radius:16px; display:flex; align-items:center; gap:14px; padding:0 20px; box-sizing:border-box; border:2px solid rgba(255,255,255,0.45); background:rgba(255,255,255,0.03); box-shadow:0 0 32px -12px rgba(255,255,255,0.35);">
+            <span style="font-size:22px;">{{ ic.search }}</span>
+            <div style="flex:1; display:flex; align-items:center; font-size:22px;">tide<span style="width:1.5px; height:26px; background:#FFFFFF; margin-left:2px; box-shadow:0 0 6px rgba(255,255,255,0.8);"></span></div>
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.14em; color:#8A8A8E;">22 RESULTS · 2 MS</div>
+            <span style="font-size:18px; color:#8A8A8E;">{{ ic.x }}</span>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <div style="height:34px; padding:0 16px; border-radius:999px; display:flex; align-items:center; font-size:14px; font-weight:500; background:#EDEDED; color:#0B0B0C;">All</div>
+            <div style="height:34px; padding:0 16px; border-radius:999px; display:flex; align-items:center; font-size:14px; color:#8A8A8E; border:1.5px solid rgba(255,255,255,0.12);">Artists</div>
+            <div style="height:34px; padding:0 16px; border-radius:999px; display:flex; align-items:center; font-size:14px; color:#8A8A8E; border:1.5px solid rgba(255,255,255,0.12);">Albums</div>
+            <div style="height:34px; padding:0 16px; border-radius:999px; display:flex; align-items:center; font-size:14px; color:#8A8A8E; border:1.5px solid rgba(255,255,255,0.12);">Playlists</div>
+            <div style="height:34px; padding:0 16px; border-radius:999px; display:flex; align-items:center; font-size:14px; color:#8A8A8E; border:1.5px solid rgba(255,255,255,0.12);">Songs</div>
+          </div>
+          <div style="display:flex; align-items:center; gap:16px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.16em; color:#8A8A8E;">RANKED BY MATCH</div><div style="flex:1; height:1px; background:rgba(255,255,255,0.08);"></div><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.16em; color:#8A8A8E;">ESC · BACK TO ALBUMS</div></div>
+          <div style="display:grid; grid-template-columns:380px minmax(0,1fr); gap:48px;">
+            <div style="display:flex; flex-direction:column; gap:14px;">
+              <div style="display:flex; align-items:center; gap:16px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.16em;">TOP RESULT</div><div style="flex:1; height:1px; background:rgba(255,255,255,0.08);"></div></div>
+              <div style="height:252px; border-radius:16px; background:#121214; border:1.5px solid rgba(255,255,255,0.08); padding:24px; box-sizing:border-box; display:flex; flex-direction:column; justify-content:space-between;">
+                <div style="width:96px; height:96px; border-radius:50%; background:#0B0B0C; border:1.5px solid rgba(255,255,255,0.14); display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Mono',monospace; font-size:26px; letter-spacing:0.1em;">TL</div>
+                <div style="display:flex; align-items:flex-end; justify-content:space-between;">
+                  <div style="display:flex; flex-direction:column; gap:8px;"><div style="font-size:36px; font-weight:400; letter-spacing:-0.02em; color:#8A8A8E;"><span style="color:#FFFFFF; text-shadow:0 0 18px rgba(255,255,255,0.4);">Tide</span>lines</div><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.14em; color:#8A8A8E;">ARTIST · 2 RELEASES</div></div>
+                  <div style="width:48px; height:48px; border-radius:50%; background:#EDEDED; color:#0B0B0C; display:flex; align-items:center; justify-content:center; font-size:20px;">{{ ic.playF }}</div>
+                </div>
+              </div>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:14px;">
+              <div style="display:flex; align-items:center; gap:16px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.16em;">SONGS</div><div style="flex:1; height:1px; background:rgba(255,255,255,0.08);"></div><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:#55555A;">09</div></div>
+              <div style="display:flex; flex-direction:column;">
+                <sc-for list="{{ sSongs }}" as="r" hint-placeholder-count="4">
+                  <div style="display:grid; grid-template-columns:44px minmax(0,1fr) 180px 52px; align-items:center; gap:14px; height:60px; padding:0 10px; border-radius:10px; border-bottom:1px solid rgba(255,255,255,0.04);">
+                    <img src="{{ r.img }}" alt="" style="width:44px; height:44px; border-radius:8px; object-fit:cover;">
+                    <div style="display:flex; align-items:center; gap:10px; min-width:0;"><div style="flex:1; display:flex; flex-direction:column; gap:2px; min-width:0;"><div style="font-size:15px; color:#BDBDBD; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ r.t.a }}<span style="color:#FFFFFF; text-shadow:0 0 14px rgba(255,255,255,0.45);">{{ r.t.b }}</span>{{ r.t.c }}</div><div style="font-size:12px; color:#8A8A8E;">{{ r.a }}</div></div><div style="width:28px; height:28px; flex:none; display:flex; align-items:center; justify-content:center; font-size:17px; color:{{ r.likeFg }};">{{ r.likeIc }}</div></div>
+                    <div style="font-size:13px; color:#8A8A8E; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ r.al }}</div>
+                    <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#8A8A8E; text-align:right;">{{ r.d }}</div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+          <div style="display:grid; grid-template-columns:auto auto auto; justify-content:start; gap:56px;">
+            <div style="display:flex; flex-direction:column; gap:14px;">
+              <div style="display:flex; align-items:center; gap:16px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.16em;">ALBUMS</div><div style="flex:1; height:1px; background:rgba(255,255,255,0.08);"></div><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:#55555A;">05</div></div>
+              <div style="display:flex; gap:20px;"><sc-for list="{{ sAlbums }}" as="c" hint-placeholder-count="3"><div style="width:128px; display:flex; flex-direction:column; gap:10px;"><img src="{{ c.img }}" alt="" style="width:128px; height:128px; border-radius:10px; object-fit:cover;"><div style="display:flex; flex-direction:column; gap:3px;"><div style="font-size:14px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ c.t }}</div><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.1em; color:#8A8A8E; white-space:nowrap;">{{ c.m.a }}<span style="color:#FFFFFF; text-shadow:0 0 10px rgba(255,255,255,0.45);">{{ c.m.b }}</span>{{ c.m.c }}</div></div></div></sc-for></div>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:14px;">
+              <div style="display:flex; align-items:center; gap:16px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.16em;">PLAYLISTS</div><div style="flex:1; height:1px; background:rgba(255,255,255,0.08);"></div><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:#55555A;">04</div></div>
+              <div style="display:flex; gap:20px;"><sc-for list="{{ sPls }}" as="p" hint-placeholder-count="2"><div style="width:128px; display:flex; flex-direction:column; gap:10px;"><div style="width:128px; height:128px; border-radius:10px; overflow:hidden; display:grid; grid-template-columns:1fr 1fr; gap:2px; background:#0B0B0C;"><sc-for list="{{ p.imgs }}" as="im"><img src="{{ im }}" alt="" style="width:100%; height:100%; object-fit:cover; display:block;"></sc-for></div><div style="display:flex; flex-direction:column; gap:3px;"><div style="font-size:14px; font-weight:500; color:#BDBDBD; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ p.t.a }}<span style="color:#FFFFFF; text-shadow:0 0 14px rgba(255,255,255,0.45);">{{ p.t.b }}</span>{{ p.t.c }}</div><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.1em; color:#8A8A8E;">{{ p.c }}</div></div></div></sc-for></div>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:14px;">
+              <div style="display:flex; align-items:center; gap:16px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.16em;">ARTISTS</div><div style="flex:1; height:1px; background:rgba(255,255,255,0.08);"></div><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:#55555A;">04</div></div>
+              <div style="display:flex; gap:20px;"><sc-for list="{{ sArtists }}" as="r" hint-placeholder-count="2"><div style="width:128px; display:flex; flex-direction:column; align-items:center; gap:10px;"><div style="position:relative; width:128px; height:128px; border-radius:50%; background:#121214; border:1.5px solid rgba(255,255,255,0.14); box-sizing:border-box; display:flex; align-items:center; justify-content:center; overflow:hidden;"><div style="position:absolute; left:0; right:0; top:50%; height:1px; background:rgba(255,255,255,0.12);"></div><div style="position:relative; font-family:'IBM Plex Mono',monospace; font-size:30px; letter-spacing:0.1em;">{{ r.m }}</div></div><div style="display:flex; flex-direction:column; align-items:center; gap:3px;"><div style="font-size:14px; font-weight:500; color:#BDBDBD; white-space:nowrap;">{{ r.t.a }}<span style="color:#FFFFFF; text-shadow:0 0 14px rgba(255,255,255,0.45);">{{ r.t.b }}</span>{{ r.t.c }}</div><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.1em; color:#8A8A8E;">{{ r.c }}</div></div></div></sc-for></div>
+            </div>
+          </div>
+        </div>
+        <div style="position:absolute; left:0; right:0; bottom:0; height:84px; display:grid; grid-template-columns:minmax(0,1fr) 560px minmax(0,1fr); align-items:center; padding:0 20px; gap:24px; background:#0B0B0C; border-top:1px solid rgba(255,255,255,0.08);">
+          <div style="display:flex; align-items:center; gap:14px; min-width:0;"><img src="./art/spiritbox-tsunami-sea.jpg" alt="" style="width:52px; height:52px; border-radius:8px; object-fit:cover;"><div style="display:flex; flex-direction:column; gap:3px; min-width:0;"><div style="font-size:15px; font-weight:500;">Tsunami Sea</div><div style="font-size:13px; color:#8A8A8E;">Spiritbox</div></div></div>
+          <div style="display:flex; flex-direction:column; gap:8px; align-items:center;"><div style="display:flex; align-items:center; gap:24px; font-size:19px; color:#8A8A8E;"><span>{{ ic.shuffle }}</span><span style="color:#EDEDED;">{{ ic.prev }}</span><div style="width:38px; height:38px; border-radius:50%; background:#EDEDED; color:#0B0B0C; display:flex; align-items:center; justify-content:center; font-size:17px;">{{ ic.pauseF }}</div><span style="color:#EDEDED;">{{ ic.next }}</span><span>{{ ic.repeat }}</span></div><div style="display:flex; align-items:center; gap:12px; width:100%;"><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:#8A8A8E;">01:36</div><div style="position:relative; flex:1; height:9px;"><div style="position:absolute; left:0; right:0; top:4px; height:1px; background:rgba(255,255,255,0.18);"></div><div style="position:absolute; left:0; width:38%; top:4px; height:1px; background:#FFFFFF;"></div><div style="position:absolute; left:38%; top:2px; width:5px; height:5px; margin-left:-2.5px; border-radius:50%; background:#FFFFFF; box-shadow:0 0 8px 2px rgba(255,255,255,0.5);"></div></div><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:#8A8A8E;">04:11</div></div></div>
+          <div style="display:flex; align-items:center; justify-content:flex-end; gap:18px; font-size:18px; color:#8A8A8E;"><span>{{ ic.lyrics }}</span><span>{{ ic.queue }}</span><span>{{ ic.volume }}</span><div style="position:relative; width:80px; height:1px; background:rgba(255,255,255,0.18);"><div style="width:70%; height:1px; background:#EDEDED;"></div></div></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ANDROID -->
+<div style="display:flex; flex-direction:column; gap:20px;">
+  <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:#55555A;">02 / Android · 412 × 915 · search tab removed</div>
+  <div style="display:flex; flex-wrap:wrap; gap:56px;">
+
+    <div style="display:flex; flex-direction:column; gap:12px;">
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.12em; color:#8A8A8E;">4 · BROWSING ALBUMS</div>
+      <div data-screen-label="Android Library · browsing" style="width:412px; height:915px; border-radius:32px; overflow:hidden; position:relative; background:#0B0B0C; border:1.5px solid rgba(255,255,255,0.09);">
+        {{ water }}
+        <div style="position:absolute; left:0; right:0; top:0; height:36px; display:flex; align-items:center; justify-content:space-between; padding:0 24px; font-family:'IBM Plex Mono',monospace; font-size:12px;"><span>21:47</span><span style="display:flex; gap:6px; align-items:center;"><span style="width:14px; height:9px; border:1.5px solid #EDEDED; border-radius:3px;"></span><span style="width:5px; height:5px; border-radius:50%; background:#EDEDED;"></span></span></div>
+        <div style="position:absolute; left:0; right:0; top:36px; bottom:166px; overflow:hidden; padding:18px 20px 0; display:flex; flex-direction:column; gap:20px; min-height:0;">
+          <div style="display:flex; flex-direction:column; gap:8px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.16em; color:#55555A;">412 ALBUMS · 68 ARTISTS</div><div style="font-size:30px; font-weight:400; letter-spacing:-0.02em;">Library</div></div>
+          <div style="height:60px; flex:none; border-radius:14px; display:flex; align-items:center; gap:12px; padding:0 16px; box-sizing:border-box; border:1.5px solid rgba(255,255,255,0.12); background:rgba(255,255,255,0.03);"><span style="font-size:20px; color:#8A8A8E;">{{ ic.search }}</span><div style="flex:1; font-size:18px; color:#55555A;">Search your library</div></div>
+          <div style="display:flex; flex:none; gap:8px; margin-right:-20px; overflow:hidden;">
+            <div style="height:36px; flex:none; padding:0 16px; border-radius:999px; display:flex; align-items:center; font-size:14px; color:#8A8A8E; border:1.5px solid rgba(255,255,255,0.12);">Artists</div>
+            <div style="height:36px; flex:none; padding:0 16px; border-radius:999px; display:flex; align-items:center; font-size:14px; font-weight:500; background:#EDEDED; color:#0B0B0C;">Albums</div>
+            <div style="height:36px; flex:none; padding:0 16px; border-radius:999px; display:flex; align-items:center; font-size:14px; color:#8A8A8E; border:1.5px solid rgba(255,255,255,0.12);">Playlists</div>
+            <div style="height:36px; flex:none; padding:0 16px; border-radius:999px; display:flex; align-items:center; font-size:14px; color:#8A8A8E; border:1.5px solid rgba(255,255,255,0.12);">Songs</div>
+          </div>
+          <div style="display:flex; align-items:center; gap:12px;"><div style="display:flex; align-items:center; gap:6px; font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.16em; color:#8A8A8E;">SORT · RECENTLY ADDED<span style="font-size:13px;">{{ ic.chevD }}</span></div><div style="flex:1; height:1px; background:rgba(255,255,255,0.08);"></div><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.16em; color:#8A8A8E;">412</div></div>
+          <div style="display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:22px 14px;">
+            <sc-for list="{{ gridA }}" as="c" hint-placeholder-count="4">
+              <div style="display:flex; flex-direction:column; gap:10px; min-width:0;">
+                <img src="{{ c.img }}" alt="" style="width:100%; aspect-ratio:1; border-radius:10px; object-fit:cover; display:block;">
+                <div style="display:flex; align-items:flex-start; gap:8px;"><div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:2px;"><div style="font-size:14px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ c.t }}</div><div style="font-size:12px; color:#8A8A8E; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ c.a }}</div></div><sc-if value="{{ c.off }}"><span style="font-size:14px; color:#EDEDED; margin-top:2px;">{{ ic.check }}</span></sc-if></div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="position:absolute; left:8px; right:8px; bottom:96px; height:62px; border-radius:14px; overflow:hidden; display:flex; align-items:center; gap:12px; padding:0 8px; background:#151517; border:1.5px solid rgba(255,255,255,0.09);">
+          <img src="./art/ado-zanmu.jpg" alt="" style="width:46px; height:46px; border-radius:8px; object-fit:cover;">
+          <div style="flex:1; display:flex; flex-direction:column; gap:2px; min-width:0;"><div style="font-size:15px; font-weight:500;">唱 <span style="color:#8A8A8E; font-weight:400;">Show</span></div><div style="font-size:12px; color:#8A8A8E;">Ado</div></div>
+          <div style="width:44px; height:44px; display:flex; align-items:center; justify-content:center; font-size:21px; color:#8A8A8E;">{{ ic.lyrics }}</div>
+          <div style="width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:18px; background:#EDEDED; color:#0B0B0C;">{{ ic.pauseF }}</div>
+          <div style="position:absolute; left:0; right:0; bottom:0; height:1px; background:rgba(255,255,255,0.12);"><div style="width:44%; height:1px; background:#FFFFFF; box-shadow:0 0 6px rgba(255,255,255,0.7);"></div></div>
+        </div>
+        <div style="position:absolute; left:0; right:0; bottom:0; height:88px; display:grid; grid-template-columns:repeat(4,1fr); padding:6px 8px 22px; box-sizing:border-box; background:#0B0B0C; border-top:1px solid rgba(255,255,255,0.06);">
+          <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="4"><div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; color:{{ t.fg }};"><div style="position:relative; font-size:22px; width:22px; height:22px; display:flex; align-items:center; justify-content:center;">{{ t.icon }}<sc-if value="{{ t.you }}"><div style="width:19px; height:19px; border-radius:50%; border:1.25px solid currentColor; box-sizing:border-box; display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Mono',monospace; font-size:8px;">J</div></sc-if><sc-if value="{{ t.active }}"><div style="position:absolute; left:50%; top:-9px; width:16px; height:1px; margin-left:-8px; background:#FFFFFF; box-shadow:0 0 6px rgba(255,255,255,0.8);"></div></sc-if></div><div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.14em;">{{ t.label }}</div></div></sc-for>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:12px;">
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.12em; color:#8A8A8E;">5 · TYPING “TIDE” · ALL</div>
+      <div data-screen-label="Android Library · results" style="width:412px; height:915px; border-radius:32px; overflow:hidden; position:relative; background:#0B0B0C; border:1.5px solid rgba(255,255,255,0.09);">
+        {{ water }}
+        <div style="position:absolute; left:0; right:0; top:0; height:36px; display:flex; align-items:center; justify-content:space-between; padding:0 24px; font-family:'IBM Plex Mono',monospace; font-size:12px;"><span>21:47</span><span style="display:flex; gap:6px; align-items:center;"><span style="width:14px; height:9px; border:1.5px solid #EDEDED; border-radius:3px;"></span><span style="width:5px; height:5px; border-radius:50%; background:#EDEDED;"></span></span></div>
+        <div style="position:absolute; left:0; right:0; top:36px; bottom:166px; overflow:hidden; padding:18px 20px 0; display:flex; flex-direction:column; gap:20px; min-height:0;">
+          <div style="display:flex; flex-direction:column; gap:8px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.16em; color:#55555A;">22 RESULTS · 2 MS</div><div style="font-size:30px; font-weight:400; letter-spacing:-0.02em;">Library</div></div>
+          <div style="height:60px; flex:none; border-radius:14px; display:flex; align-items:center; gap:12px; padding:0 16px; box-sizing:border-box; border:2px solid rgba(255,255,255,0.45); background:rgba(255,255,255,0.03); box-shadow:0 0 32px -12px rgba(255,255,255,0.35);"><span style="font-size:20px;">{{ ic.search }}</span><div style="flex:1; display:flex; align-items:center; font-size:18px;">tide<span style="width:1.5px; height:22px; background:#FFFFFF; margin-left:2px; box-shadow:0 0 6px rgba(255,255,255,0.8);"></span></div><div style="width:44px; height:44px; margin-right:-12px; display:flex; align-items:center; justify-content:center; font-size:18px; color:#8A8A8E;">{{ ic.x }}</div></div>
+          <div style="display:flex; flex:none; gap:8px; margin-right:-20px; overflow:hidden;">
+            <div style="height:36px; flex:none; padding:0 16px; border-radius:999px; display:flex; align-items:center; font-size:14px; font-weight:500; background:#EDEDED; color:#0B0B0C;">All</div>
+            <div style="height:36px; flex:none; padding:0 16px; border-radius:999px; display:flex; align-items:center; font-size:14px; color:#8A8A8E; border:1.5px solid rgba(255,255,255,0.12);">Artists</div>
+            <div style="height:36px; flex:none; padding:0 16px; border-radius:999px; display:flex; align-items:center; font-size:14px; color:#8A8A8E; border:1.5px solid rgba(255,255,255,0.12);">Albums</div>
+            <div style="height:36px; flex:none; padding:0 16px; border-radius:999px; display:flex; align-items:center; font-size:14px; color:#8A8A8E; border:1.5px solid rgba(255,255,255,0.12);">Playlists</div>
+            <div style="height:36px; flex:none; padding:0 16px; border-radius:999px; display:flex; align-items:center; font-size:14px; color:#8A8A8E; border:1.5px solid rgba(255,255,255,0.12);">Songs</div>
+          </div>
+          <div style="display:flex; align-items:center; gap:14px; padding:14px; border-radius:16px; background:#121214; border:1.5px solid rgba(255,255,255,0.08);">
+            <div style="width:60px; height:60px; flex:none; border-radius:50%; background:#0B0B0C; border:1.5px solid rgba(255,255,255,0.14); display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Mono',monospace; font-size:16px; letter-spacing:0.1em; box-sizing:border-box;">TL</div>
+            <div style="flex:1; display:flex; flex-direction:column; gap:4px;"><div style="font-size:22px; color:#8A8A8E;"><span style="color:#FFFFFF; text-shadow:0 0 14px rgba(255,255,255,0.4);">Tide</span>lines</div><div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.14em; color:#8A8A8E;">TOP RESULT · ARTIST</div></div>
+            <div style="width:44px; height:44px; border-radius:50%; background:#EDEDED; color:#0B0B0C; display:flex; align-items:center; justify-content:center; font-size:18px;">{{ ic.playF }}</div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:4px;">
+            <div style="display:flex; align-items:center; gap:12px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.16em;">SONGS</div><div style="flex:1; height:1px; background:rgba(255,255,255,0.08);"></div><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:#55555A;">09</div></div>
+            <sc-for list="{{ sSongs }}" as="r" hint-placeholder-count="4"><div style="display:flex; align-items:center; gap:12px; height:58px;"><img src="{{ r.img }}" alt="" style="width:42px; height:42px; border-radius:8px; object-fit:cover;"><div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:2px;"><div style="font-size:15px; color:#BDBDBD; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ r.t.a }}<span style="color:#FFFFFF; text-shadow:0 0 14px rgba(255,255,255,0.45);">{{ r.t.b }}</span>{{ r.t.c }}</div><div style="font-size:12px; color:#8A8A8E; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ r.a }} · {{ r.al }}</div></div><div style="width:28px; height:28px; flex:none; display:flex; align-items:center; justify-content:center; font-size:17px; color:{{ r.likeFg }};">{{ r.likeIc }}</div><div style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#8A8A8E;">{{ r.d }}</div></div></sc-for>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:14px;">
+            <div style="display:flex; align-items:center; gap:12px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.16em;">ALBUMS</div><div style="flex:1; height:1px; background:rgba(255,255,255,0.08);"></div><div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:#55555A;">05</div></div>
+            <div style="display:flex; gap:14px; margin-right:-20px;"><sc-for list="{{ sAlbums }}" as="c" hint-placeholder-count="3"><div style="width:120px; flex:none; display:flex; flex-direction:column; gap:8px;"><img src="{{ c.img }}" alt="" style="width:120px; height:120px; border-radius:10px; object-fit:cover;"><div style="font-size:13px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ c.t }}</div></div></sc-for></div>
+          </div>
+        </div>
+        <div style="position:absolute; left:8px; right:8px; bottom:96px; height:62px; border-radius:14px; overflow:hidden; display:flex; align-items:center; gap:12px; padding:0 8px; background:#151517; border:1.5px solid rgba(255,255,255,0.09);">
+          <img src="./art/ado-zanmu.jpg" alt="" style="width:46px; height:46px; border-radius:8px; object-fit:cover;">
+          <div style="flex:1; display:flex; flex-direction:column; gap:2px; min-width:0;"><div style="font-size:15px; font-weight:500;">唱 <span style="color:#8A8A8E; font-weight:400;">Show</span></div><div style="font-size:12px; color:#8A8A8E;">Ado</div></div>
+          <div style="width:44px; height:44px; display:flex; align-items:center; justify-content:center; font-size:21px; color:#8A8A8E;">{{ ic.lyrics }}</div>
+          <div style="width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:18px; background:#EDEDED; color:#0B0B0C;">{{ ic.pauseF }}</div>
+          <div style="position:absolute; left:0; right:0; bottom:0; height:1px; background:rgba(255,255,255,0.12);"><div style="width:44%; height:1px; background:#FFFFFF; box-shadow:0 0 6px rgba(255,255,255,0.7);"></div></div>
+        </div>
+        <div style="position:absolute; left:0; right:0; bottom:0; height:88px; display:grid; grid-template-columns:repeat(4,1fr); padding:6px 8px 22px; box-sizing:border-box; background:#0B0B0C; border-top:1px solid rgba(255,255,255,0.06);">
+          <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="4"><div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; color:{{ t.fg }};"><div style="position:relative; font-size:22px; width:22px; height:22px; display:flex; align-items:center; justify-content:center;">{{ t.icon }}<sc-if value="{{ t.you }}"><div style="width:19px; height:19px; border-radius:50%; border:1.25px solid currentColor; box-sizing:border-box; display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Mono',monospace; font-size:8px;">J</div></sc-if><sc-if value="{{ t.active }}"><div style="position:absolute; left:50%; top:-9px; width:16px; height:1px; margin-left:-8px; background:#FFFFFF; box-shadow:0 0 6px rgba(255,255,255,0.8);"></div></sc-if></div><div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.14em;">{{ t.label }}</div></div></sc-for>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;motion&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Atmosphere&quot;}}">
+const h = React.createElement;
+let K = null;
+const kit = () => K || (window.PelagicKit ? (K = window.PelagicKit(h)) : null);
+const ART = n => './art/' + n + '.jpg';
+const AL = {
+  tsunami: ['Tsunami Sea', 'Spiritbox', 'spiritbox-tsunami-sea'], zanmu: ['Zanmu', 'Ado', 'ado-zanmu'], sanctuary: ['Sanctuary', 'Evanescence', 'evanescence-sanctuary'],
+  dopamine: ['Dopamine', 'Wing', 'wing-dopamine'], fear: ['The Fear of Fear', 'Spiritbox', 'spiritbox-fear-of-fear'], social: ['Social Apocalypse', 'Bullet for My Valentine', 'bfmv-social-apocalypse'],
+  under: ['Under Blue', 'Eve', 'eve-under-blue'], vindicate: ['Vindicate', 'Black Veil Brides', 'bvb-vindicate'], periphery: ['Periphery V: Djent Is Not a Genre', 'Periphery', 'periphery-v'], roto: ['Rotoscope', 'Spiritbox', 'spiritbox-rotoscope'],
+};
+const Q = 'tide';
+const hl = s => { const i = s.toLowerCase().indexOf(Q); return i < 0 ? { a: s, b: '', c: '' } : { a: s.slice(0, i), b: s.slice(i, i + Q.length), c: s.slice(i + Q.length) }; };
+const OFF = { tsunami: 1, zanmu: 1, periphery: 1, roto: 1 };
+
+class Component extends DCLogic {
+  state = { reduced: false };
+  componentDidMount() {
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) this.setState({ reduced: true });
+    const poll = () => { if (kit()) this.forceUpdate(); else this.pt = setTimeout(poll, 60); };
+    poll();
+  }
+  componentWillUnmount() { clearTimeout(this.pt); }
+  waterEl() {
+    const k = kit(); if (!k) return null;
+    const n = (this.props.motion ?? true) && !this.state.reduced ? 12 : 0;
+    let s = 41; const rnd = () => (s = (s * 9301 + 49297) % 233280) / 233280;
+    const kids = [h('div', { key: 'st', style: { position: 'absolute', inset: 0, backgroundImage: k.STONE, backgroundSize: '900px 900px', opacity: 0.09 } }), h('div', { key: 'gr', style: { position: 'absolute', inset: 0, backgroundImage: k.GRAIN, backgroundSize: '220px 220px', opacity: 0.07, mixBlendMode: 'screen' } })];
+    const fl = [];
+    for (let i = 0; i < n; i++) { const sz = 1.4 + rnd() * 2.2, d = 16 + rnd() * 22; fl.push(h('div', { key: i, className: 'pg-anim', style: { position: 'absolute', left: (rnd() * 100) + '%', top: (rnd() * 85) + '%', animation: `pg-sway ${d}s cubic-bezier(.45,0,.55,1) ${-rnd() * d}s infinite` } }, h('div', { style: { width: sz, height: sz, borderRadius: '50%', background: '#FFFFFF', opacity: 0.25 + rnd() * 0.4 } }))); }
+    if (n) kids.push(h('div', { key: 'sn', className: 'pg-snow', style: { position: 'absolute', inset: 0 } }, fl));
+    return h('div', { style: { position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' } }, kids);
+  }
+  renderVals() {
+    const IC = kit() ? kit().IC : {};
+    const al = k => ({ img: ART(AL[k][2]), t: AL[k][0], a: AL[k][1], off: !!OFF[k] });
+    const nav = [['home', 'Home'], ['library', 'Library'], ['newr', 'New releases', '3'], ['upload', 'Upload'], ['download', 'Downloads']].map(([i, l, b]) => { const on = l === 'Library';
+      return { icon: IC[i], label: l, badge: b || '', bg: on ? '#EDEDED' : 'transparent', fg: on ? '#0B0B0C' : '#8A8A8E', icBg: on ? '#0B0B0C' : 'transparent', icFg: on ? '#FFFFFF' : '#8A8A8E', bdg: on ? '#55555A' : '#8A8A8E' }; });
+    const plSide = [['Heavy water', '42 TRACKS', 'periphery'], ['Late train, Tokyo', '28 TRACKS', 'zanmu'], ['Breakdowns only', '63 TRACKS', 'roto'], ['Low volume', '19 TRACKS', 'under'], ['Gym, unfortunately', '51 TRACKS', 'vindicate']].map(([n, c, k]) => ({ n, c, img: ART(AL[k][2]) }));
+    const grid = ['tsunami', 'zanmu', 'sanctuary', 'dopamine', 'fear', 'social', 'under', 'vindicate', 'periphery', 'roto'].map(al);
+    const liked = { 'Riptide': 1 };
+    const sSongs = [['Riptide', 'Wing', 'dopamine', '03:12'], ['Tidewater', 'Periphery', 'periphery', '06:04'], ['Ebb Tide', 'Eve', 'under', '03:58'], ['Low Tide Lights', 'Spiritbox', 'tsunami', '04:02']]
+      .map(([t, a, k, d]) => ({ t: hl(t), a, al: AL[k][0], img: ART(AL[k][2]), d, likeIc: liked[t] ? IC.heartF : IC.heart, likeFg: liked[t] ? '#FFFFFF' : '#55555A' }));
+    const sAlbums = [['dopamine', 'HAS RIPTIDE'], ['periphery', 'HAS TIDEWATER'], ['under', 'HAS EBB TIDE']].map(([k, m]) => ({ img: ART(AL[k][2]), t: AL[k][0], m: hl(m) }));
+    const sPls = [['Low tide', '19 TRACKS', ['under', 'zanmu', 'sanctuary', 'tsunami']], ['Tidepool mornings', '24 TRACKS', ['dopamine', 'under', 'fear', 'social']]].map(([t, c, ks]) => ({ t: hl(t), c, imgs: ks.map(k => ART(AL[k][2])) }));
+    const sArtists = [['Tidelines', 'TL', '2 RELEASES'], ['Riptide Choir', 'RC', '1 ALBUM']].map(([t, m, c]) => ({ t: hl(t), m, c }));
+    const tabs = [['home', 'HOME'], ['library', 'LIBRARY'], ['newr', 'NEW'], [null, 'YOU']].map(([i, l]) => ({ icon: i ? IC[i] : null, you: !i, label: l, active: l === 'LIBRARY', fg: l === 'LIBRARY' ? '#FFFFFF' : '#8A8A8E' }));
+    return { ic: IC, water: this.waterEl(), nav, plSide, grid, gridA: grid.slice(0, 6), recents: ['spiritbox', 'zanmu', 'periphery v', 'low tide'], sSongs, sAlbums, sPls, sArtists, tabs };
+  }
+}
+</script>
+</body>
+</html>
