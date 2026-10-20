@@ -1,6 +1,6 @@
 /**
  * Deezer related artists for the radio (step 26), through the site's Deezer proxy
- * (`/api/deezer/related`, Cloudflare + the Firebase copy; the Android app uses the Firebase one).
+ * (`/api/deezer/related` on Firebase; the Android app calls https://pelagic-sound.web.app).
  *
  * Only artists that are in the library are kept (matched by Deezer id, else by folded name), most
  * related first. Cached in IndexedDB `kv.related` for 30 days, fetched lazily when a radio needs an

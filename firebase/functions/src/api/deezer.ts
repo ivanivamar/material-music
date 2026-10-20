@@ -1,5 +1,5 @@
 /**
- * Deezer helper — a Cloudflare Pages Function on the app's own origin (`/api/deezer/*`).
+ * Deezer helper — `/api/deezer/*` on the app's own origin (Firebase Hosting → the `api` function).
  *
  * The Upload page uses it to find an artist photo for a new artist (same rule as tools/import):
  * browsers can't call Deezer directly (no CORS), so the lookups run here.
@@ -14,7 +14,7 @@
  *        → { found: true, id, artists: [{ id, name }] } | { found: false }   (radio, step 26)
  *        Deezer's related artists, most related first; the app keeps the ones in the library.
  *
- * The Android app calls the Firebase copy from https://localhost, so that origin gets CORS headers.
+ * The Android app calls it on https://pelagic-sound.web.app from https://localhost, so that origin gets CORS headers.
  *
  * Needs the `X-Pelagic: 1` header (same as the sign-in helper), so other sites can't borrow it.
  * Nothing is stored.

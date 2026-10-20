@@ -1,7 +1,7 @@
 /**
- * DJ voice (step 22c) — a Cloudflare Pages Function on the app's own origin (`/api/voice/*`), also
- * bundled into the Firebase function. Turns a DJ intro line into speech with Google Cloud
- * Text-to-Speech; the API key lives only here (Cloudflare variable / Firebase secret), never in the app.
+ * DJ voice (step 22c) — `/api/voice/*` on the app's own origin (Firebase Hosting → the `api` function).
+ * Turns a DJ intro line into speech with Google Cloud
+ * Text-to-Speech; the API key lives only here (Firebase secret), never in the app.
  *
  *   GET  /api/voice/status → { configured, voice }
  *   POST /api/voice/speak  { text, voice? } → { audio: <base64 MP3>, timepoints: [{ i, t }], voice, chars }
@@ -12,16 +12,15 @@
  * Costs nothing inside Google's free allowance (1 million characters a month for Neural2 / Chirp 3:
  * HD). Guards, from the inside out: the app stops asking at 500k characters a month (synced
  * counter in dj.json); this function refuses lines over 600 characters and more than DAILY_CHARS a
- * day (a KV namespace bound as DJ_VOICE_KV makes that count exact; without one it is per instance);
+ * day (counted per function instance — at most 3 — unless a store is passed as DJ_VOICE_KV);
  * and the Google Cloud project has a lowered quota + a €1 budget alert.
  *
  * Needs the `X-Pelagic: 1` header (like the other helpers). The Android app calls it from
  * https://localhost, so that origin gets CORS headers.
  *
  * Setup: Google Cloud project → enable "Cloud Text-to-Speech API" → Credentials → API key
- * restricted to that API → Cloudflare Pages: encrypted variable GOOGLE_TTS_API_KEY (optional
- * TTS_VOICE, default en-US-Chirp3-HD-Charon) → redeploy. Firebase: `firebase functions:secrets:set
- * GOOGLE_TTS_API_KEY`, then `firebase deploy --only functions`.
+ * restricted to that API → `firebase functions:secrets:set GOOGLE_TTS_API_KEY` → deploy the function
+ * (the Firebase workflow does it on push). Default voice en-US-Chirp3-HD-Charon.
  */
 
 interface Kv {

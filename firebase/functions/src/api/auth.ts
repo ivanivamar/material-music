@@ -1,5 +1,6 @@
 /**
- * Pelagic token helper — a Cloudflare Pages Function on the app's own origin (`/api/auth/*`).
+ * Pelagic token helper — `/api/auth/*` on the app's own origin (Firebase Hosting → the `api` function,
+ * see ../index.ts).
  *
  * Why: in the browser, Google's token model only hands out 1-hour access tokens and can't renew them
  * without a popup, so the PC app asked to sign in again every hour. The authorization-code flow
@@ -15,8 +16,8 @@
  * (`__Host-pelagic_rt`), so page scripts can never read it. POSTs need the `X-Pelagic: 1` header
  * and a same-origin `Origin` (CSRF guard). Nothing else is stored anywhere.
  *
- * Cloudflare Pages → Settings → Variables and secrets (Production): GOOGLE_CLIENT_ID (the
- * "Pelagic Web" client id) and GOOGLE_CLIENT_SECRET (its secret, as an encrypted secret).
+ * Firebase secrets GOOGLE_CLIENT_ID (the "Pelagic Web" client id) and GOOGLE_CLIENT_SECRET (its
+ * secret): `firebase functions:secrets:set …`, then deploy the function.
  * Without them every call answers 501 and the app keeps the old hourly sign-in.
  */
 

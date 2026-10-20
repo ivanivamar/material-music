@@ -1,5 +1,5 @@
-// Bundles src/index.ts (and the shared handlers in app/functions/api) into lib/index.js.
-// Runs before every `firebase deploy --only functions` (firebase.json → predeploy).
+// Bundles src/index.ts and its handlers (src/api/*) into lib/index.js.
+// Runs before every functions deploy (firebase.json → predeploy), locally or in the Firebase workflow.
 import { build } from 'esbuild'
 
 await build({

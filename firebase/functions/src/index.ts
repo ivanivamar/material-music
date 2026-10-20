@@ -1,9 +1,9 @@
 /**
- * Pelagic on Firebase — the same `/api/auth/*` (sign-in helper), `/api/deezer/*` (Deezer proxy) and `/api/voice/*` (DJ voice)
- * as the Cloudflare Pages Functions, so the Firebase copy of the site works exactly like the
- * Cloudflare one. The handlers themselves are NOT copied: build.mjs bundles app/functions/api/…
- * into this function, and this file only adapts Firebase's request/response to the Web
- * Request/Response the handlers expect.
+ * Pelagic's only server code: one Cloud Function, `api`, behind Firebase Hosting (`/api/**`).
+ * It serves `/api/auth/*` (sign-in helper), `/api/deezer/*` (Deezer proxy) and `/api/voice/*` (DJ voice).
+ * The handlers in ./api/ are plain Web Request → Response functions (they started life as
+ * Cloudflare Pages Functions, moved here Oct 20, 2026); this file adapts Firebase's request/response
+ * to them. build.mjs bundles everything into lib/index.js.
  *
  * Two Firebase specifics:
  * - Firebase Hosting forwards only ONE cookie to functions, and it must be named `__session`.
@@ -18,9 +18,9 @@
  */
 import { onRequest } from 'firebase-functions/v2/https'
 import { defineSecret } from 'firebase-functions/params'
-import * as auth from '../../../app/functions/api/auth/[action].ts'
-import * as deezer from '../../../app/functions/api/deezer/[action].ts'
-import * as voice from '../../../app/functions/api/voice/[action].ts'
+import * as auth from './api/auth.ts'
+import * as deezer from './api/deezer.ts'
+import * as voice from './api/voice.ts'
 
 const GOOGLE_CLIENT_ID = defineSecret('GOOGLE_CLIENT_ID')
 const GOOGLE_CLIENT_SECRET = defineSecret('GOOGLE_CLIENT_SECRET')

@@ -1,12 +1,12 @@
 /**
  * Google sign-in (Google Identity Services, token model — no backend).
  *
- * Browser (PC): when the site has its token helper (Cloudflare Pages Function `functions/api/auth`,
- * which holds the OAuth client secret), sign-in uses the authorization-code flow: the helper swaps
+ * Browser (PC): when the site has its token helper (`/api/auth`, part of the Firebase `api` function in
+ * firebase/functions, which holds the OAuth client secret), sign-in uses the authorization-code flow: the helper swaps
  * the code for tokens and keeps the refresh token in an HttpOnly cookie, and the app silently gets a
  * new 1-hour access token from `/api/auth/refresh` 5 min before the old one runs out, on wake-up and
  * when the connection comes back — so you sign in once, not every hour. Without the helper (local
- * `npm run dev`, or the secret not set in Cloudflare) it falls back to the token model: a ~1 hour
+ * `npm run dev`, or the Firebase secret not set) it falls back to the token model: a ~1 hour
  * token and no refresh, so the session becomes `expired` and one click on "Sign in again" renews it.
  *
  * Persisted in localStorage `pelagic.session.v1` so a reload inside the hour stays signed in.
@@ -102,7 +102,7 @@ function armExpiry() {
 }
 armExpiry()
 
-/* ── Token helper (Cloudflare Pages Function, web only) ── */
+/* ── Token helper (Firebase `api` function, web only) ── */
 
 const AUTH_API = `${import.meta.env.BASE_URL}api/auth/`
 interface HelperTokens {

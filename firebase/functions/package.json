@@ -1,7 +1,7 @@
 {
   "name": "pelagic-firebase-functions",
   "private": true,
-  "description": "Firebase copy of the Pelagic sign-in helper + Deezer proxy (same code as app/functions, bundled)",
+  "description": "Pelagic /api function: sign-in helper, Deezer proxy, DJ voice (bundled with esbuild)",
   "main": "lib/index.js",
   "engines": { "node": "22" },
   "scripts": {
