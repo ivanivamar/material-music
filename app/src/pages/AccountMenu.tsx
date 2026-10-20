@@ -5,7 +5,6 @@
  */
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { useToast } from '../components/ui'
 import { useSheetDrag } from '../components/useSheetDrag'
 import { Icon, type IconName } from '../design/icons'
 import { localFolder, useLocalFolder } from '../lib/localFolder'
@@ -17,8 +16,6 @@ import { useLibrary } from '../state/library'
 import { checkDrive } from '../state/checkDrive'
 import { sessionStore, useSession } from '../state/session'
 import { go, href, statsHref } from '../shell/routes'
-import { djStore } from '../state/dj'
-import { djUi } from '../state/djUi'
 
 const time = (ms: number | null) =>
   ms ? new Date(ms).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '—'
@@ -36,19 +33,9 @@ function useAccountMenu() {
   const { account, status } = useSession()
   const lib = useLibrary()
   const local = useLocalFolder()
-  const toast = useToast()
   const pwa = usePwa()
   const apk = useNativeUpdates()
 
-  const linkFolder = async () => {
-    if (!lib.data) return
-    try {
-      const r = await localFolder.link(lib.data)
-      if (r) toast.show({ icon: 'check', text: `FLAC now plays from “${r.name}”.`, meta: `${r.found} OF ${r.probed} SAMPLE TRACKS FOUND` })
-    } catch (e) {
-      toast.show({ icon: 'alert', tone: 'danger', text: (e as Error).message, meta: 'LOCAL FOLDER', duration: 8000 })
-    }
-  }
   const linked = local.status !== 'none' && local.status !== 'unsupported' && local.status !== 'loading'
 
   const initial = (account?.name || account?.email || '?').trim()[0]!.toUpperCase()

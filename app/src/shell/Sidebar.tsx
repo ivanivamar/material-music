@@ -19,7 +19,7 @@ import { playlistInfo } from '../state/playlistViews'
 import { usePlaylists, type Playlist } from '../state/playlists'
 import { usePlayer } from '../state/player'
 import { plural } from '../state/views'
-import { NAV, SETTINGS_NAV, href, playlistHref, type NavItem, type RouteKey } from './routes'
+import { NAV, href, playlistHref, type NavItem, type RouteKey } from './routes'
 import './sidebar.css'
 
 interface NavEvent {
