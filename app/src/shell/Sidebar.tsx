@@ -61,16 +61,6 @@ export function Sidebar({ active, activePlaylist, badges }: { active: RouteKey; 
       </nav>
 
       <SidebarPlaylists active={activePlaylist ?? null} />
-
-      <nav className="sb-foot" aria-label="Settings">
-        <SidebarItem
-          item={SETTINGS_NAV}
-          on={active === 'settings'}
-          motion={motion}
-          ping={motion && ev.n > 0 ? (ev.on === 'settings' ? 'on' : ev.off === 'settings' ? 'off' : null) : null}
-          pingKey={ev.n}
-        />
-      </nav>
     </aside>
   )
 }
