@@ -22,6 +22,8 @@ const STAMP = /\[(\d{1,3}):(\d{1,2})(?::(\d{1,2}))?(?:[.:](\d{1,3}))?\]/g
 const LINE_STAMPS = /^(\s*\[\d{1,3}:\d{1,2}(?::\d{1,2})?(?:[.:]\d{1,3})?\])+/
 const ID_TAG = /^\s*\[([a-z#]+):(.*)\]\s*$/i
 const WORD_STAMP = /<\d{1,3}:\d{1,2}(?:[.:]\d{1,3})?>/g
+/** seconds: a blank stamp shorter than this before the next line isn't shown as a break */
+const MIN_BREAK = 4
 
 function stampSeconds(a: string, b: string, c: string | undefined, frac: string | undefined): number {
   // [mm:ss(.xx)] or [h:mm:ss(.xx)]
@@ -67,11 +69,19 @@ export function parseLyrics(raw: string | undefined | null): Lyrics | null {
   for (const l of lines) l.time = Math.max(0, l.time - offset)
   lines.sort((a, b) => a.time - b.time)
   // drop leading blank stamps and consecutive duplicate blanks
-  const out: LyricLine[] = []
+  const deduped: LyricLine[] = []
   for (const l of lines) {
-    if (!l.text && (!out.length || !out[out.length - 1].text)) continue
-    out.push(l)
+    if (!l.text && (!deduped.length || !deduped[deduped.length - 1].text)) continue
+    deduped.push(l)
   }
+  // Some sources put a blank stamp after every line (end-of-line marker). Only keep a blank
+  // ("· · ·") when the pause before the next line is a real break; short gaps keep the
+  // previous line lit.
+  const out = deduped.filter((l, i) => {
+    if (l.text) return true
+    const next = deduped[i + 1]
+    return !next || next.time - l.time >= MIN_BREAK
+  })
   return out.length ? { synced: true, lines: out } : null
 }
 
