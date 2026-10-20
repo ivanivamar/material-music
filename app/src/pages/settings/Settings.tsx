@@ -674,7 +674,7 @@ function AtmosphereSection() {
 
 const SHORTCUTS: [string, string][] = [
   ['Space', 'Play / pause'],
-  ['/  or  Ctrl K', 'Search'],
+  ['/  or  Ctrl K', 'Search the library'],
   ['Esc', 'Close the player or the queue'],
   ['Alt ↑ / ↓', 'Move a song in the queue'],
   ['Delete', 'Remove a song from the queue'],

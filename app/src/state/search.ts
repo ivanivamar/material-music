@@ -8,13 +8,15 @@
  * When nothing matches, `suggest()` offers the closest name ("spiritbx" → Spiritbox).
  *
  * The query, filter and recent searches live in `searchStore` (query survives navigation and
- * reloads in the tab; recents in localStorage `pelagic.search.v1`).
+ * reloads in the tab; recents in localStorage `pelagic.search.v1`). Since the Library + Search merge
+ * the field lives on Library; `filter` is the results tab ('all' once a query starts).
  */
 import { useSyncExternalStore } from 'react'
 import { type Album, type Artist, type Catalogue, type Track } from './library'
 import type { Playlist } from './playlists'
 import { onAccountReset } from './session'
 import { artistInfos, byName } from './views'
+import { go, href, replace } from '../shell/routes'
 
 /* ── Folding ───────────────────────────────────────────
  * Folded text starts with a space and keeps one space between words, so "starts a word" is
@@ -339,6 +341,7 @@ function loadSession(): Pick<SearchState, 'query' | 'filter'> {
 
 let state: SearchState = { ...loadSession(), recent: loadRecent(), focusTick: 0 }
 const listeners = new Set<() => void>()
+let focusPending = false
 
 function emit(next: SearchState) {
   const recentChanged = next.recent !== state.recent
@@ -378,12 +381,41 @@ export const searchStore = {
   clearRecent() {
     if (state.recent.length) emit({ ...state, recent: [] })
   },
+  /** Ask the Library field to take focus (/ or Ctrl+K, the top-bar pill). The field may not be mounted yet: it takes the request when it mounts. */
   requestFocus() {
+    focusPending = true
     emit({ ...state, focusTick: state.focusTick + 1 })
+  },
+  /** The field calls this on mount and on each focusTick: true once per request. */
+  takeFocus() {
+    const v = focusPending
+    focusPending = false
+    return v
   },
 }
 
 onAccountReset(() => emit({ query: '', filter: 'all', recent: [], focusTick: state.focusTick }))
+
+/** Is the Library page (which carries the search field) showing? */
+export const onLibrary = () => /^#\/(library|search)(\/|$|\?)/.test(window.location.hash || '')
+
+/** / or Ctrl+K, the top-bar pill, "Find songs": go to Library (if elsewhere) and focus its field. */
+export function focusLibrarySearch() {
+  if (!onLibrary()) go(href('library'))
+  searchStore.requestFocus()
+}
+
+/** The old Search page address (bookmarks, the "Search" app shortcut): Library with its field focused. */
+function redirectOldSearch() {
+  if (!/^#\/search(\/|$|\?)/.test(window.location.hash)) return
+  focusPending = true
+  replace('#/library')
+  emit({ ...state, focusTick: state.focusTick + 1 })
+}
+if (typeof window !== 'undefined') {
+  redirectOldSearch()
+  window.addEventListener('hashchange', redirectOldSearch)
+}
 
 export function useSearch(): SearchState {
   return useSyncExternalStore(searchStore.subscribe, searchStore.get, searchStore.get)

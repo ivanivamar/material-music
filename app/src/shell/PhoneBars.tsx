@@ -1,5 +1,5 @@
 /**
- * Phone shell (handoff 05 Android): bottom tab bar (88px, HOME · LIBRARY · SEARCH · NEW · YOU) and the
+ * Phone shell (handoff 05 Android): bottom tab bar (88px, HOME · LIBRARY · NEW · YOU; search lives on Library) and the
  * floating mini-player (62px, 8px from the edges, just above the tabs).
  *
  * Mini-player: cover · title / artist · lyrics · play, with a 1px glowing progress line along
@@ -19,10 +19,9 @@ import { DjMark } from '../dj/DjMark'
 import { IntroSub, LiveMark } from '../dj/DjIntro'
 import { useIntroProgress } from '../dj/live'
 
-const TABS: { key: RouteKey; label: string; icon: 'home' | 'library' | 'search' | 'newr' }[] = [
+const TABS: { key: RouteKey; label: string; icon: 'home' | 'library' | 'newr' }[] = [
   { key: 'home', label: 'HOME', icon: 'home' },
   { key: 'library', label: 'LIBRARY', icon: 'library' },
-  { key: 'search', label: 'SEARCH', icon: 'search' },
   { key: 'new', label: 'NEW', icon: 'newr' },
 ]
 

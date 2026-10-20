@@ -16,12 +16,13 @@ import { Icon } from '../../design/icons'
 import { useLazyCover } from '../../lib/covers'
 import { actions, DRAG_MIME } from '../../actions/actions'
 import { playPlaylist, removeFromPlaylist } from '../../actions/ops'
-import { albumHref, artistHref, go, href, libraryHref } from '../../shell/routes'
+import { albumHref, artistHref, libraryHref } from '../../shell/routes'
 import { downloadsStore, playlistOffline, useDownloadProgress, useDownloads } from '../../state/downloads'
 import { useLibrary, type Catalogue } from '../../state/library'
 import { playerStore } from '../../state/player'
 import { fmtAgo, playlistInfo, type PlaylistRow } from '../../state/playlistViews'
 import { playlistsStore, usePlaylists, type Playlist } from '../../state/playlists'
+import { focusLibrarySearch } from '../../state/search'
 import { describeSmart, describeSort } from '../../state/smart'
 import { isTouch, useIsPhone } from '../../state/viewport'
 import { fmtTotal, plural } from '../../state/views'
@@ -151,7 +152,7 @@ function PlaylistView({ c, p }: { c: Catalogue; p: Playlist }) {
             title={`${p.name} is empty`}
             body={phone ? 'Add songs from any album: long-press a song or tap ⋯, then Add to playlist.' : 'Add songs from any album, or drag tracks onto the playlist in the sidebar.'}
             actions={
-              <Button icon="search" onClick={() => go(href('search'))}>
+              <Button icon="search" onClick={focusLibrarySearch}>
                 Find songs
               </Button>
             }

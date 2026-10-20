@@ -1,14 +1,19 @@
 /**
- * Library (handoff 06 Desktop Library): header with counts, Artists / Albums / Playlists / Songs chips,
- * sort row, then the tab's view. The tab lives in the URL (#/library/albums) and is remembered.
+ * Library (handoff 06 Desktop Library + the Library + Search merge): header with counts, the search
+ * field, Artists / Albums / Playlists / Songs chips, sort row, then the tab's view. The tab lives in
+ * the URL (#/library/albums) and is remembered.
+ *
+ * Typing turns the page into ranked results in place: an "All" chip is inserted and selected, the
+ * sort row reads RANKED BY MATCH, and the content is the Search results (pages/search/Search.tsx).
+ * Clearing (✕, Esc, deleting the text) goes back to the tab being browsed, its sort and scroll.
  *
  * Android app: an "OFFLINE ONLY" switch on the Albums / Artists / Songs sort row narrows each view to what
  * plays from the phone (any track stored, either quality; remembered per device). Without a connection
  * the header counts playable albums and the handoff 11 offline banner shows (albums with nothing stored
  * are greyed by LibAlbumCard).
  */
-import { isTouch } from '../../state/viewport'
-import { useEffect, useMemo, useRef } from 'react'
+import { isTouch, useIsPhone } from '../../state/viewport'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Button, Chip, EmptyState, Eq, OfflineBanner, Toggle } from '../../components/ui'
 import { offlineIndex, useDownloads, useOnline, type OfflineIndex } from '../../state/downloads'
 import { Icon } from '../../design/icons'
@@ -38,14 +43,24 @@ import { playList, useContextState, useNowPlaying, usePlayingAlbumId } from './p
 import { playerStore } from '../../state/player'
 import { ROW_H, useWindow } from './useWindow'
 import { actions, trackDrag } from '../../actions/actions'
+import { searchStore, useSearch, type SearchFilter } from '../../state/search'
+import { SearchResultsView } from '../search/Search'
+import { firstResult, openTopResult, resultsMeta, useSearchResults } from '../search/results'
+import { LibrarySearchField, RecentSearches } from './LibrarySearch'
+import { forgetScrollBeforeFocus, noteScrollBeforeFocus, restoreBrowseScroll, setLibraryQuery } from './browseContext'
 import './library.css'
+import '../search/search.css'
 
 const TAB_LABEL: Record<LibraryTab, string> = { artists: 'Artists', albums: 'Albums', playlists: 'Playlists', songs: 'Songs' }
+const RESULT_TABS: SearchFilter[] = ['all', ...LIBRARY_TABS]
+const RESULT_LABEL: Record<SearchFilter, string> = { all: 'All', ...TAB_LABEL }
 
 export function Library({ tab: routeTab }: { tab: LibraryTab | null }) {
   const { data } = useLibrary()
   const prefs = useLibraryPrefs()
   const tab = routeTab ?? prefs.tab
+  const phone = useIsPhone()
+  const touch = isTouch()
 
   useEffect(() => {
     if (routeTab && routeTab !== libraryPrefs.get().tab) libraryPrefs.set({ tab: routeTab })
@@ -54,51 +69,130 @@ export function Library({ tab: routeTab }: { tab: LibraryTab | null }) {
   const dl = useDownloads()
   const online = useOnline()
 
+  // ── search (Library + Search merge) ──
+  const { query, filter, recent, focusTick } = useSearch()
+  const [focused, setFocused] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const resultsRef = useRef<HTMLDivElement>(null)
+  const { results, suggestion } = useSearchResults(data, query)
+  const typing = query.trim() !== ''
+  const onQuery = (q: string) => setLibraryQuery(q, tab)
+
+  // "/" / Ctrl+K / the top-bar pill (state/search.ts focusLibrarySearch), also when it was pressed on another page
+  const hasData = !!data
+  useEffect(() => {
+    if (!inputRef.current || !searchStore.takeFocus()) return
+    noteScrollBeforeFocus(tab)
+    inputRef.current.focus()
+    inputRef.current.select()
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only on a focus request
+  }, [focusTick, hasData])
+
+  // Clearing the query (✕, Esc, deleting the text) puts back the tab where it was scrolled
+  const wasTyping = useRef(typing)
+  useLayoutEffect(() => {
+    if (wasTyping.current === typing) return
+    wasTyping.current = typing
+    if (!typing) restoreBrowseScroll(tab)
+  }, [typing, tab])
+
   if (!data) return null
   const stats = libraryStats(data)
   // what plays from the phone (Android app); null in the browser
   const offline = dl.available ? offlineIndex(dl, data) : null
-  const filter = offline && prefs.offlineOnly ? offline : null
+  const filterOffline = offline && prefs.offlineOnly ? offline : null
   const cut = !!offline && !online
+  const meta = results ? resultsMeta(results, filter) : null
+  const empty = stats.tracks === 0
+
+  const headMeta =
+    phone && typing && meta
+      ? meta
+      : cut
+        ? `${offline.albums.size} OF ${plural(stats.albums, 'ALBUM')} PLAYABLE`
+        : phone
+          ? `${plural(stats.albums, 'ALBUM')} · ${plural(stats.artists, 'ARTIST')}`
+          : `${plural(stats.albums, 'ALBUM')} · ${plural(stats.artists, 'ARTIST')} · ${plural(stats.tracks, 'SONG')}`
+
+  const focusFirstResult = () => {
+    const first = firstResult(resultsRef.current)
+    first?.focus()
+    return !!first
+  }
 
   return (
-    <>
-      <PageHeader
-        meta={
-          cut
-            ? `${offline.albums.size} OF ${plural(stats.albums, 'ALBUM')} PLAYABLE`
-            : `${plural(stats.albums, 'ALBUM')} · ${plural(stats.artists, 'ARTIST')} · ${plural(stats.tracks, 'SONG')}`
-        }
-        title="Library"
-        tools={
-          <div className="lib-tabs" role="tablist" aria-label="Library view">
-            {LIBRARY_TABS.map((t) => (
-              <Chip key={t} selected={t === tab} onClick={() => go(libraryHref(t))}>
-                {TAB_LABEL[t]}
-              </Chip>
-            ))}
-          </div>
-        }
-      />
-      {cut && (
+    <div className="lib">
+      <PageHeader meta={headMeta} title="Library" />
+      {!empty && (
+        <LibrarySearchField
+          ref={inputRef}
+          query={query}
+          focused={focused}
+          meta={meta}
+          touch={touch}
+          onQuery={onQuery}
+          onClear={() => {
+            onQuery('')
+            inputRef.current?.focus({ preventScroll: true })
+          }}
+          onFocused={(v) => {
+            setFocused(v)
+            if (!v) forgetScrollBeforeFocus()
+          }}
+          onEnter={() => openTopResult(results, query)}
+          onDown={focusFirstResult}
+        />
+      )}
+      {!empty && focused && !query && <RecentSearches recent={recent} onPick={onQuery} />}
+      {!empty && (
+        <div className="lib-tabs" role="tablist" aria-label={typing ? 'Show results' : 'Library view'}>
+          {typing
+            ? RESULT_TABS.map((t) => (
+                <Chip key={t} selected={t === filter} onClick={() => searchStore.setFilter(t)}>
+                  {RESULT_LABEL[t]}
+                </Chip>
+              ))
+            : LIBRARY_TABS.map((t) => (
+                <Chip key={t} selected={t === tab} onClick={() => go(libraryHref(t))}>
+                  {TAB_LABEL[t]}
+                </Chip>
+              ))}
+        </div>
+      )}
+      {cut && !typing && (
         <div className="lib-offline">
           <OfflineBanner />
         </div>
       )}
-      {stats.tracks === 0 ? (
+      {empty ? (
         <div className="placeholder">
           <EmptyState icon="library" title="Your library is empty." body="Run the importer on your PC (npm run import) to fill it." />
         </div>
+      ) : typing ? (
+        <>
+          <div className="lib-bar lib-bar-ranked">
+            <span className="lib-bar-k">RANKED BY MATCH</span>
+            <span className="lib-bar-line" />
+            <button type="button" className="lib-bar-meta lib-bar-back" onClick={() => onQuery('')}>
+              {touch ? '' : 'ESC · '}BACK TO {TAB_LABEL[tab].toUpperCase()}
+            </button>
+          </div>
+          {results && (
+            <div ref={resultsRef}>
+              <SearchResultsView c={data} r={results} filter={filter} suggestion={suggestion} query={query} onBackToField={() => inputRef.current?.focus()} />
+            </div>
+          )}
+        </>
       ) : tab === 'albums' ? (
-        <AlbumsView c={data} offline={offline} filter={filter} />
+        <AlbumsView c={data} offline={offline} filter={filterOffline} />
       ) : tab === 'artists' ? (
-        <ArtistsView c={data} offline={offline} filter={filter} />
+        <ArtistsView c={data} offline={offline} filter={filterOffline} />
       ) : tab === 'playlists' ? (
         <PlaylistsView c={data} />
       ) : (
-        <SongsView c={data} offline={offline} filter={filter} />
+        <SongsView c={data} offline={offline} filter={filterOffline} />
       )}
-    </>
+    </div>
   )
 }
 

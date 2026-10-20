@@ -16,7 +16,7 @@
 .tabs {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
   height: calc(var(--android-tabs-h) + env(safe-area-inset-bottom));
-  display: grid; grid-template-columns: repeat(5, 1fr);
+  display: grid; grid-template-columns: repeat(4, 1fr);
   padding: 6px 4px calc(22px + env(safe-area-inset-bottom));
   background: var(--bg-1); border-top: 1px solid rgba(255, 255, 255, .06);
 }
@@ -93,8 +93,8 @@ html[data-phone][data-qp] .toasts.toasts-shell { right: 0; }
 .shell.is-phone .ph-meta { font-size: var(--fs-mono-sm); }
 .shell.is-phone .search-pill { display: none; }
 .shell.is-phone .avatar { width: 36px; height: 36px; font-size: 13px; }
-.shell.is-phone .ph:has(.lib-tabs) { flex-direction: column; align-items: stretch; gap: 20px; margin-bottom: 22px; }
-.shell.is-phone .ph:has(.lib-tabs) .ph-title { font-size: var(--fs-page-android); letter-spacing: var(--ls-page); }
+.shell.is-phone .lib > .ph { margin-bottom: 0; }
+.shell.is-phone .lib > .ph .ph-title { font-size: var(--fs-page-android); letter-spacing: var(--ls-page); }
 
 /* ── Home shelves: two columns ── */
 .shell.is-phone .shelves { gap: 30px; }
@@ -199,26 +199,37 @@ html[data-phone][data-qp] .toasts.toasts-shell { right: 0; }
 .shell.is-phone .artist-songs.has-dl .trow.trow-artist { grid-template-columns: 24px minmax(0, 1fr) 22px 52px; }
 .shell.is-phone .disco-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px 14px; }
 
-/* ── Search ── */
-.shell.is-phone .srch { gap: 22px; }
-.shell.is-phone .srch-field { height: 52px; border-radius: 14px; gap: 12px; padding: 0 16px; }
+/* ── Library + Search (design_handoff_library_search · Android): 20px column, 60px field ── */
+.shell.is-phone .lib { gap: 20px; }
+.shell.is-phone .srch-field { height: 60px; border-radius: 14px; gap: 12px; padding: 0 16px; }
+.shell.is-phone .lib-field.is-focused, .shell.is-phone .lib-field:focus-within { padding: 0 15.5px; }
 .shell.is-phone .srch-ic { font-size: 20px; }
 .shell.is-phone .srch-input { font-size: 18px; }
-.shell.is-phone .srch-meta, .shell.is-phone .srch-hint { display: none; }
-.shell.is-phone .srch-chips { overflow-x: auto; scrollbar-width: none; margin-right: -20px; padding-right: 20px; }
+/* results count lives in the header on the phone; ✕ gets a 44px tap target */
+.shell.is-phone .srch-meta, .shell.is-phone .lib-field-hint, .shell.is-phone .lib-bar-ranked { display: none; }
+.shell.is-phone .lib-field-clear { width: 44px; height: 44px; margin-right: -12px; }
+.shell.is-phone .lib-recent { margin-top: -6px; gap: 10px; }
+.shell.is-phone .lib-recent-list { margin-right: -20px; padding-right: 20px; }
+.shell.is-phone .lib-recent-clear { display: none; }
+.shell.is-phone .lib-recent-k { order: 0; }
 .shell.is-phone .srch-all { gap: 32px; }
-/* All view: the desktop "one row, extras clipped" trick left only 2 albums / 1 artist reachable on a
-   phone. Here the rows wrap normally and show 4 of each; "Show all N" opens the rest. */
-.shell.is-phone .srch-row { grid-auto-rows: auto; overflow: visible; padding: 0; margin: 0; }
-.shell.is-phone .lib-grid.srch-row { row-gap: 22px !important; }
-.shell.is-phone .srch-row > :nth-child(n + 5) { display: none; }
-.shell.is-phone .srch-top { padding: 14px; gap: 14px; border-radius: 16px; }
-.shell.is-phone .srch-top-name { font-size: 22px; }
+/* All view: Albums / Playlists / Artists as one row of 120px cards scrolling sideways */
+.shell.is-phone .srch-row {
+  display: flex; gap: 14px; overflow-x: auto; overflow-y: visible; scrollbar-width: none;
+  padding: 0 20px 0 0; margin: 0 -20px 0 0; grid-auto-rows: auto;
+}
+.shell.is-phone .srch-row::-webkit-scrollbar { display: none; }
+.shell.is-phone .srch-row > * { flex: none; width: 120px; }
+/* compact Top result row: padding 14, 60px art, 22px name, TOP RESULT · ARTIST, 44px play */
+.shell.is-phone .srch-top-head { display: none; }
+.shell.is-phone .srch-top { height: auto; flex-direction: row; align-items: center; padding: 14px; gap: 14px; border-radius: 16px; }
+.shell.is-phone .srch-top-foot { flex: 1; min-width: 0; align-items: center; }
+.shell.is-phone .srch-top-name { font-size: 22px; -webkit-line-clamp: 1; }
 .shell.is-phone .srch-top-name.is-long { font-size: 18px; }
 .shell.is-phone .srch-top-meta { font-size: var(--fs-mono-xs); }
 .shell.is-phone .srow { grid-template-columns: 42px minmax(0, 1fr) 48px; gap: 12px; padding: 0 2px; height: 58px; }
 .shell.is-phone .srow-cover { width: 42px; height: 42px; }
-.shell.is-phone .srch-recent-x { opacity: 1; }
+.shell.is-phone .srow-sub-album { display: inline; }
 
 /* ── Full-screen player (handoff 05 Android Now Playing) ── */
 /* Android app (edge-to-edge): the player's background reaches the top of the screen (behind the

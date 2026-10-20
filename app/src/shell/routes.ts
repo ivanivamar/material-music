@@ -6,7 +6,7 @@
 import { useSyncExternalStore } from 'react'
 import type { IconName } from '../design/icons'
 
-export type RouteKey = 'home' | 'library' | 'search' | 'new' | 'upload' | 'downloads' | 'settings' | 'album' | 'artist' | 'playlist' | 'stats' | 'mix'
+export type RouteKey = 'home' | 'library' | 'new' | 'upload' | 'downloads' | 'settings' | 'album' | 'artist' | 'playlist' | 'stats' | 'mix'
 export type DevRoute = 'dev/components' | 'dev/foundations'
 export type LibraryTab = 'albums' | 'artists' | 'playlists' | 'songs'
 export const LIBRARY_TABS: LibraryTab[] = ['artists', 'albums', 'playlists', 'songs']
@@ -17,11 +17,10 @@ export interface NavItem {
   icon: IconName
 }
 
-/** Sidebar order (handoff 04 Desktop). */
+/** Sidebar order (handoff 04 Desktop; Search folded into Library by the Library + Search merge). */
 export const NAV: NavItem[] = [
   { key: 'home', label: 'Home', icon: 'home' },
   { key: 'library', label: 'Library', icon: 'library' },
-  { key: 'search', label: 'Search', icon: 'search' },
   { key: 'new', label: 'New releases', icon: 'newr' },
   { key: 'upload', label: 'Upload', icon: 'upload' },
   { key: 'downloads', label: 'Downloads', icon: 'download' },
@@ -30,7 +29,7 @@ export const NAV: NavItem[] = [
 export const SETTINGS_NAV: NavItem = { key: 'settings', label: 'Settings', icon: 'gear' }
 
 type SimpleKey = Exclude<RouteKey, 'library' | 'album' | 'artist' | 'playlist' | 'stats' | 'mix'>
-const KEYS = new Set<string>(['home', 'search', 'new', 'upload', 'downloads', 'settings'])
+const KEYS = new Set<string>(['home', 'new', 'upload', 'downloads', 'settings'])
 const DEV = new Set<string>(['dev/components', 'dev/foundations'])
 
 export type Route =
@@ -45,6 +44,8 @@ function parse(hash: string): Route {
   const path = hash.replace(/^#\/?/, '').split('?')[0]
   if (DEV.has(path)) return { kind: 'dev', key: path as DevRoute, path }
   const [head, ...rest] = path.split('/')
+  // the old Search page (bookmarks, the PWA shortcut): Library, which carries the field now
+  if (head === 'search') return { kind: 'app', key: 'library', tab: null, path: 'library' }
   if (head === 'library') {
     const tab = rest[0] as LibraryTab | undefined
     return { kind: 'app', key: 'library', tab: tab && LIBRARY_TABS.includes(tab) ? tab : null, path }

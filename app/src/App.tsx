@@ -18,7 +18,6 @@ import { useRoute, type Route } from './shell/routes'
 import { AlbumPage } from './pages/library/AlbumPage'
 import { ArtistPage } from './pages/library/ArtistPage'
 import { Library } from './pages/library/Library'
-import { Search } from './pages/search/Search'
 import { Downloads } from './pages/downloads/Downloads'
 import { Upload } from './pages/upload/Upload'
 import { Stats } from './pages/stats/Stats'
@@ -94,8 +93,6 @@ function Page({ route }: { route: Extract<Route, { kind: 'app' }> }) {
       return <PlaylistPage key={route.id} id={route.id} />
     case 'mix':
       return <MixPage key={route.id} id={route.id} />
-    case 'search':
-      return <Search />
     case 'new':
       return <NewReleases />
     case 'upload':

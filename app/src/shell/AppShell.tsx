@@ -12,7 +12,7 @@ import { NowPlaying } from '../nowplaying/NowPlaying'
 import { QueuePanel } from '../nowplaying/QueuePanel'
 import { nowPlayingStore, useNowPlayingUi } from '../state/nowPlaying'
 import { onPlayerNotice, playerStore, usePlayer } from '../state/player'
-import { searchStore } from '../state/search'
+import { focusLibrarySearch } from '../state/search'
 import { sessionStore, useSession } from '../state/session'
 import { PlayerBar } from './PlayerBar'
 import { MiniPlayer, TabBar } from './PhoneBars'
@@ -298,7 +298,7 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
-  // "/" or Ctrl/⌘+K: jump to Search and focus the field (from anywhere, unless typing)
+  // "/" or Ctrl/⌘+K: focus the Library search field, going to Library first (from anywhere, unless typing)
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const slash = e.key === '/' && !e.ctrlKey && !e.metaKey && !e.altKey
@@ -307,8 +307,7 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
       const el = e.target as HTMLElement | null
       if (slash && el?.closest('input, textarea, select, [contenteditable="true"]')) return
       e.preventDefault()
-      if (window.location.hash !== href('search')) go(href('search'))
-      searchStore.requestFocus()
+      focusLibrarySearch()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -330,7 +329,7 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
-  // Any navigation (e.g. "/" to Search) takes the full-screen player and queue panel down with it
+  // Any navigation (e.g. "/" to Library search) takes the full-screen player and queue panel down with it
   const npPath = useRef(route.path)
   useEffect(() => {
     if (npPath.current === route.path) return
@@ -390,14 +389,11 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
         <main className="shell-main" ref={mainRef} id="main" tabIndex={-1}>
           {!phone && (
             <div className="topbar">
-              {!(route.kind === 'app' && route.key === 'search') && (
+              {!(route.kind === 'app' && route.key === 'library') && (
                 <button
                   type="button"
                   className="search-pill"
-                  onClick={() => {
-                    go(href('search'))
-                    searchStore.requestFocus()
-                  }}
+                  onClick={focusLibrarySearch}
                 >
                   <span className="sp-ic">
                     <Icon name="search" />

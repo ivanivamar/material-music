@@ -33,6 +33,9 @@
 /* matched text: white + glow (titles), brighter grey (secondary lines) */
 .hl { color: #fff; text-shadow: 0 0 14px rgba(255, 255, 255, .45); }
 .hl-soft { color: var(--ink-primary); }
+.srch-top-name .hl { text-shadow: 0 0 18px rgba(255, 255, 255, .4); }
+/* phone only: "Artist · Album" under the title (the album column is hidden there) */
+.srow-sub-album { display: none; }
 
 /* ── Sections ───────────────────────────────────────── */
 .srch-all { display: flex; flex-direction: column; gap: 44px; }

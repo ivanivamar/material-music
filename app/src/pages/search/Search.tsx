@@ -1,46 +1,33 @@
 /**
- * Search (handoff 06–07 Desktop Search "instant, grouped" + 11 "Search · no match").
+ * Search results (handoff 06–07 "instant, grouped" + 11 "Search · no match"), shown inside Library
+ * since the Library + Search merge (design_handoff_library_search): the field, chips and recent
+ * searches live in pages/library/LibrarySearch.tsx; this module renders the results.
  *
- * Instant over the cached catalogue (state/search.ts). Field with live "N RESULTS · 4 MS",
- * All / Artists / Albums / Playlists / Songs chips, then: Top result + Songs, Albums, Playlists, Artists (All), or the
- * full list for one kind. Matched query text glows. No match → "Did you mean …".
- * Empty field → recent searches.
- *
- * Keys: / or Ctrl+K anywhere focuses the field (AppShell) · Enter opens the top result ·
- * Esc clears · ↓ / ↑ move through the results · Enter on a song plays it.
+ * Instant over the cached catalogue (state/search.ts). All: Top result + Songs, Albums, Playlists,
+ * Artists; or the full list for one kind. Matched query text glows. No match → "Did you mean …".
  */
-import { useDeferredValue, useEffect, useMemo, useRef, type KeyboardEvent, type ReactNode } from 'react'
-import { Button, Chip, EmptyState, Eq, PlayButton } from '../../components/ui'
+import { useMemo, useRef, type KeyboardEvent, type ReactNode } from 'react'
+import { Button, EmptyState, Eq, PlayButton } from '../../components/ui'
 import { Icon } from '../../design/icons'
 import { useLazyCover } from '../../lib/covers'
 import { useLibrary, type Album, type Catalogue, type Track } from '../../state/library'
 import { playerStore, usePlayer } from '../../state/player'
-import { usePlaylists, type Playlist } from '../../state/playlists'
+import { type Playlist } from '../../state/playlists'
 import { playlistInfo } from '../../state/playlistViews'
 import { playPlaylist } from '../../actions/ops'
 import { PlaylistCard } from '../playlists/PlaylistsView'
 import { PlaylistCover } from '../playlists/PlaylistCover'
-import { highlight, search, searchStore, suggest, useSearch, type SearchFilter, type SearchResults, type TopHit } from '../../state/search'
+import { highlight, searchStore, type SearchFilter, type SearchResults, type TopHit } from '../../state/search'
 import { albumHref, artistHref, go, playlistHref } from '../../shell/routes'
 import { albumInfos, artistInfos, fmtN, fmtTotal, plural, RELEASE_LABEL } from '../../state/views'
-import { isTouch } from '../../state/viewport'
+import { isTouch, useIsPhone } from '../../state/viewport'
 import { ArtistAvatar, LibAlbumCard, SectionHead } from '../library/common'
 import { useWindow } from '../library/useWindow'
 import { albumTrackIds, artistTrackIds, playList, useContextState, useNowPlaying, usePlayingAlbumId } from '../library/playback'
 import { actions, trackDrag } from '../../actions/actions'
+import { NAV, playTracks } from './results'
 import '../library/library.css'
 import './search.css'
-
-const FILTERS: { value: SearchFilter; label: string }[] = [
-  { value: 'all', label: 'All' },
-  { value: 'artists', label: 'Artists' },
-  { value: 'albums', label: 'Albums' },
-  { value: 'playlists', label: 'Playlists' },
-  { value: 'songs', label: 'Songs' },
-]
-
-/** Focusable results for ↑ / ↓ (album cards come from the shared AlbumCard). */
-const NAV = '[data-nav], .acard'
 
 const pad2 = (n: number) => (n < 100 ? String(n).padStart(2, '0') : fmtN(n))
 
@@ -61,55 +48,15 @@ function Hl({ text, tokens, className = 'hl' }: { text: string; tokens: string[]
   )
 }
 
-export function Search() {
-  const { data } = useLibrary()
-  const { query, filter, recent, focusTick } = useSearch()
-  const inputRef = useRef<HTMLInputElement>(null)
+/**
+ * The ranked results for a typed query, shown in place of the Library tab (Library + Search merge):
+ * All = Top result + Songs, then Albums / Playlists / Artists; or the full list for one kind.
+ * ↑ / ↓ move between results; ↑ from the first goes back to the field.
+ */
+export function SearchResultsView({ c, r, filter, suggestion, query, onBackToField }: { c: Catalogue; r: SearchResults; filter: SearchFilter; suggestion: string | null; query: string; onBackToField: () => void }) {
   const resultsRef = useRef<HTMLDivElement>(null)
-
-  // Typing stays responsive on big libraries: results follow a frame behind if needed.
-  const deferred = useDeferredValue(query)
-  const { list: playlists } = usePlaylists()
-  const results = useMemo(() => (data && deferred.trim() ? search(data, deferred, playlists) : null), [data, deferred, playlists])
-  const suggestion = useMemo(() => (data && results && results.total === 0 ? suggest(data, deferred) : null), [data, results, deferred])
-
-  useEffect(() => {
-    inputRef.current?.focus()
-    inputRef.current?.select()
-  }, [focusTick])
-
-  if (!data) return null
   const remember = () => searchStore.remember(query)
 
-  const openTop = () => {
-    const top = results?.top
-    if (!top) return
-    remember()
-    if (top.kind === 'artist') go(artistHref(top.item.id))
-    else if (top.kind === 'album') go(albumHref(top.item.id))
-    else if (top.kind === 'playlist') go(playlistHref(top.item.id))
-    else playTracks(results.tracks.map((h) => h.item.id), 0, query)
-  }
-
-  const onInputKey = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      e.preventDefault()
-      openTop()
-    } else if (e.key === 'Escape') {
-      if (query) {
-        e.preventDefault()
-        searchStore.setQuery('')
-      } else inputRef.current?.blur()
-    } else if (e.key === 'ArrowDown') {
-      const first = resultsRef.current?.querySelector<HTMLElement>(NAV)
-      if (first) {
-        e.preventDefault()
-        first.focus()
-      }
-    }
-  }
-
-  // ↑ / ↓ between results (rows, cards, tiles); ↑ from the first goes back to the field.
   const onResultsKey = (e: KeyboardEvent<HTMLDivElement>) => {
     if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return
     const items = [...(resultsRef.current?.querySelectorAll<HTMLElement>(NAV) ?? [])]
@@ -117,119 +64,26 @@ export function Search() {
     if (at < 0) return
     e.preventDefault()
     const next = at + (e.key === 'ArrowDown' ? 1 : -1)
-    if (next < 0) inputRef.current?.focus()
+    if (next < 0) onBackToField()
     else items[Math.min(next, items.length - 1)]?.focus()
   }
 
-  const shownCount = results ? (filter === 'artists' ? results.artists.length : filter === 'albums' ? results.albums.length : filter === 'playlists' ? results.playlists.length : filter === 'songs' ? results.tracks.length : results.total) : 0
-
   return (
-    <div className="srch">
-      <h1 className="sr-only">Search</h1>
-      <div className="srch-field">
-        <span className="srch-ic" aria-hidden>
-          <Icon name="search" />
-        </span>
-        <input
-          ref={inputRef}
-          className="srch-input"
-          type="search"
-          value={query}
-          placeholder="Artists, albums, playlists, songs"
-          aria-label="Search your library"
-          autoComplete="off"
-          spellCheck={false}
-          onChange={(e) => searchStore.setQuery(e.target.value)}
-          onKeyDown={onInputKey}
-        />
-        {results && (
-          <span className="srch-meta" aria-live="polite">
-            {plural(shownCount, 'RESULT')} · {results.ms < 1 ? '<1' : Math.round(results.ms)} MS
-          </span>
-        )}
-        {query && (
-          <button
-            type="button"
-            className="srch-clear"
-            aria-label="Clear search"
-            onClick={() => {
-              searchStore.setQuery('')
-              inputRef.current?.focus()
-            }}
-          >
-            <Icon name="x" />
-          </button>
-        )}
-      </div>
-
-      <div className="srch-chips" role="group" aria-label="Show">
-        {FILTERS.map((f) => (
-          <Chip key={f.value} selected={filter === f.value} onClick={() => searchStore.setFilter(f.value)}>
-            {f.label}
-          </Chip>
-        ))}
-      </div>
-
-      <div className="srch-results" ref={resultsRef} onKeyDown={onResultsKey}>
-        {!results ? (
-          <Recent recent={recent} />
-        ) : results.total === 0 ? (
-          <NoMatch query={deferred.trim()} suggestion={suggestion} />
-        ) : filter === 'all' ? (
-          <AllView c={data} r={results} remember={remember} />
-        ) : filter === 'artists' ? (
-          <ArtistsList r={results} remember={remember} />
-        ) : filter === 'albums' ? (
-          <AlbumsList c={data} r={results} remember={remember} />
-        ) : filter === 'playlists' ? (
-          <PlaylistsList c={data} r={results} remember={remember} />
-        ) : (
-          <SongsList c={data} r={results} />
-        )}
-      </div>
+    <div className="srch-results" ref={resultsRef} onKeyDown={onResultsKey} data-search-results>
+      {r.total === 0 ? (
+        <NoMatch query={r.query.trim()} suggestion={suggestion} />
+      ) : filter === 'all' ? (
+        <AllView c={c} r={r} remember={remember} />
+      ) : filter === 'artists' ? (
+        <ArtistsList r={r} remember={remember} />
+      ) : filter === 'albums' ? (
+        <AlbumsList c={c} r={r} remember={remember} />
+      ) : filter === 'playlists' ? (
+        <PlaylistsList c={c} r={r} remember={remember} />
+      ) : (
+        <SongsList c={c} r={r} />
+      )}
     </div>
-  )
-}
-
-/* ── Empty field: recent searches ─────────────────── */
-
-function Recent({ recent }: { recent: string[] }) {
-  if (!recent.length) {
-    return (
-      <div className="placeholder srch-empty">
-        <EmptyState icon="search" title="Search your library" body="Artists, albums, playlists and songs, matched as you type." />
-        <div className="srch-hint">
-          <kbd>/</kbd> OR <kbd>CTRL K</kbd> TO SEARCH FROM ANYWHERE
-        </div>
-      </div>
-    )
-  }
-  return (
-    <section className="srch-sect">
-      <SectionHead
-        label="RECENT SEARCHES"
-        right={
-          <button type="button" className="srch-more" onClick={() => searchStore.clearRecent()}>
-            CLEAR
-          </button>
-        }
-      />
-      <ul className="srch-recent">
-        {recent.map((q) => (
-          <li key={q} className="srch-recent-row">
-            <button type="button" className="srch-recent-q" data-nav onClick={() => searchStore.setQuery(q)}>
-              <span className="srch-recent-ic" aria-hidden>
-                <Icon name="clock" />
-              </span>
-              {q}
-            </button>
-            <button type="button" className="ibtn ibtn-sm ibtn-bare srch-recent-x" aria-label={`Remove “${q}”`} onClick={() => searchStore.forget(q)}>
-              <Icon name="x" />
-            </button>
-          </li>
-        ))}
-      </ul>
-    </section>
   )
 }
 
@@ -288,7 +142,9 @@ function AllView({ c, r, remember }: { c: Catalogue; r: SearchResults; remember:
       <div className={`srch-lead ${songs.length ? '' : 'is-solo'}`}>
         {r.top && (
           <section className="srch-sect">
-            <SectionHead label="TOP RESULT" />
+            <div className="srch-top-head">
+              <SectionHead label="TOP RESULT" />
+            </div>
             <TopCard c={c} top={r.top} r={r} remember={remember} />
           </section>
         )}
@@ -354,6 +210,8 @@ function AlbumSub({ a, tokens }: { a: Album; tokens: string[] }) {
 function TopCard({ c, top, r, remember }: { c: Catalogue; top: TopHit; r: SearchResults; remember: () => void }) {
   const ctx = useContextState(top.kind === 'track' ? 'search' : top.kind, top.kind === 'track' ? r.query : top.item.id)
   const now = useNowPlaying()
+  // phone: the compact Top result row (60px art, 44px play)
+  const art_ = useIsPhone() ? 60 : 96
 
   let name: string
   let meta: string
@@ -366,34 +224,37 @@ function TopCard({ c, top, r, remember }: { c: Catalogue; top: TopHit; r: Search
     const info = artistInfos(c).get(top.item.id)
     name = top.item.name
     meta = `ARTIST · ${plural(info?.albums.length ?? 0, 'RELEASE')}`
-    art = <ArtistAvatar artist={top.item} size={96} lazy={false} className="srch-top-avatar" />
+    art = <ArtistAvatar artist={top.item} size={art_} lazy={false} className="srch-top-avatar" />
     open = () => go(artistHref(top.item.id))
     play = () => playList(artistTrackIds(c, top.item.id), { kind: 'artist', id: top.item.id, label: top.item.name })
   } else if (top.kind === 'album') {
     const info = albumInfos(c).get(top.item.id)
     name = top.item.title
     meta = [info ? RELEASE_LABEL[info.kind].one : 'ALBUM', top.item.artist.toUpperCase(), top.item.year].filter(Boolean).join(' · ')
-    art = <Cover id={top.item.cover} size={96} />
+    art = <Cover id={top.item.cover} size={art_} />
     open = () => go(albumHref(top.item.id))
     play = () => playList(albumTrackIds(c, top.item.id), { kind: 'album', id: top.item.id, label: top.item.title })
   } else if (top.kind === 'playlist') {
     const n = playlistInfo(c, top.item).ids.length
     name = top.item.name
     meta = `PLAYLIST · ${plural(n, 'TRACK')}`
-    art = <PlaylistCover playlist={top.item} size={96} className="srch-top-pl" />
+    art = <PlaylistCover playlist={top.item} size={art_} className="srch-top-pl" />
     open = () => go(playlistHref(top.item.id))
     play = () => playPlaylist(top.item.id)
   } else {
     const album = c.albums[top.item.albumId]
     name = top.item.title
     meta = `SONG · ${top.item.artist.toUpperCase()}`
-    art = <Cover id={album?.cover} size={96} />
+    art = <Cover id={album?.cover} size={art_} />
     open = () => playTracks(r.tracks.map((h) => h.item.id), 0, r.query)
     play = open
     // the same song from elsewhere counts too
     active = now.id === top.item.id
     playing = active && now.playing
   }
+
+  // phone: "TOP RESULT · ARTIST" inside the card (its section label is hidden there)
+  if (art_ === 60) meta = `TOP RESULT · ${meta.split(' · ')[0]}`
 
   return (
     <div
@@ -422,7 +283,7 @@ function TopCard({ c, top, r, remember }: { c: Catalogue; top: TopHit; r: Search
         </div>
         <div onClick={(e) => e.stopPropagation()}>
           <PlayButton
-            size={48}
+            size={art_ === 60 ? 44 : 48}
             state={playing ? 'playing' : 'paused'}
             onClick={() => {
               remember()
@@ -447,10 +308,6 @@ function Cover({ id, size }: { id: string | null | undefined; size: number }) {
 
 /* ── Song row (handoff: 44px cover · title + artist · album · time) ── */
 
-function playTracks(ids: string[], start: number, query: string) {
-  searchStore.remember(query)
-  playList(ids, { kind: 'search', id: query, label: `Search · “${query.trim()}”` }, { start })
-}
 
 function SongRow({ c, t, tokens, onPlay, style }: { c: Catalogue; t: Track; tokens: string[]; onPlay: () => void; style?: React.CSSProperties }) {
   const album = c.albums[t.albumId]
@@ -494,6 +351,12 @@ function SongRow({ c, t, tokens, onPlay, style }: { c: Catalogue; t: Track; toke
             <a className="ln" href={artistHref(t.artistId)} tabIndex={-1}>
               <Hl text={t.artist} tokens={tokens} className="hl-soft" />
             </a>
+            {album && (
+              <span className="srow-sub-album">
+                {' · '}
+                <Hl text={album.title} tokens={tokens} className="hl-soft" />
+              </span>
+            )}
           </div>
         </div>
       </div>

@@ -2,7 +2,6 @@
 
 /* ── Library header & bar ───────────────────────────── */
 .lib-tabs { display: flex; align-items: center; gap: 8px; }
-.ph:has(.lib-tabs) { margin-bottom: 32px; }
 
 .lib-bar { display: flex; align-items: center; gap: 16px; margin-bottom: 32px; min-height: 28px; }
 .lib-bar-line { flex: 1; height: 1px; background: rgba(255, 255, 255, .08); }
@@ -256,4 +255,50 @@ a.ln:hover { color: var(--ink-primary); text-decoration: underline; text-underli
   .actions .offl-text { align-items: flex-start; text-align: left; }
   .songs { --cols: 48px minmax(0, 1.3fr) minmax(0, 1fr) 28px 64px; }
   .songs-head > :nth-child(5), .songs-row .trow-label { display: none; }
+}
+
+/* ── Library + Search merge (design_handoff_library_search) ─────────────────
+   One column, 24px apart: header · field · (Recent) · chips · sort row · content.
+   Every child is flex: none so the field and chip rows can't be squeezed. */
+.lib { display: flex; flex-direction: column; gap: 24px; }
+.lib > * { flex: none; min-width: 0; }
+.lib > .ph { margin-bottom: 0; }
+.lib > .lib-bar { margin-bottom: 0; }
+.lib > .lib-offline { margin: 0; }
+.lib > .actions { margin: 0; }
+
+/* field: at rest 1.5px .12 border; focused 2px .45 + glow (srch-field timing) */
+.lib-field { border-width: 1.5px; padding: 0 20px; }
+.lib-field.is-focused, .lib-field:focus-within { border-width: 2px; padding: 0 19.5px; border-color: rgba(255, 255, 255, .45); box-shadow: 0 0 32px -12px rgba(255, 255, 255, .35); }
+.lib-field-hint { display: inline-flex; align-items: center; gap: 10px; flex: none; font-family: var(--font-mono); font-size: 10px; letter-spacing: .14em; color: var(--ink-tertiary); white-space: nowrap; }
+.lib-kbd {
+  width: 22px; height: 22px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 6px; border: 1.5px solid rgba(255, 255, 255, .18);
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: 0; color: var(--ink-secondary);
+}
+
+/* Recent searches: 14px under the field */
+.lib-recent { display: flex; align-items: center; gap: 14px; margin-top: -10px; }
+.lib-recent-k, .lib-recent-clear { font-family: var(--font-mono); font-size: 10px; letter-spacing: .16em; flex: none; }
+.lib-recent-k { color: var(--ink-tertiary); }
+.lib-recent-list { display: flex; gap: 8px; min-width: 0; flex: 1; overflow-x: auto; scrollbar-width: none; }
+.lib-recent-list::-webkit-scrollbar { display: none; }
+.lib-recent-chip {
+  flex: none; height: 34px; padding: 0 14px 0 12px; display: inline-flex; align-items: center; gap: 8px;
+  border-radius: var(--r-pill); border: 1.5px solid rgba(255, 255, 255, .12); background: rgba(255, 255, 255, .02);
+  font: inherit; font-size: 14px; color: var(--ink-primary); cursor: pointer; white-space: nowrap;
+  transition: border-color .2s var(--ease);
+}
+.lib-recent-chip:hover, .lib-recent-chip:focus-visible { border-color: rgba(255, 255, 255, .3); outline: none; }
+.lib-recent-ic { font-size: 15px; display: inline-flex; color: var(--ink-secondary); }
+.lib-recent-clear { padding: 0; border: 0; background: none; cursor: pointer; color: var(--ink-secondary); }
+.lib-recent-clear:hover { color: #fff; }
+
+/* sort row while typing: RANKED BY MATCH ─── ESC · BACK TO ALBUMS */
+.lib-bar-k { font-family: var(--font-mono); font-size: var(--fs-mono-sm); letter-spacing: .16em; color: var(--ink-secondary); white-space: nowrap; }
+.lib-bar-back { padding: 0; border: 0; background: none; cursor: pointer; font-family: var(--font-mono); }
+.lib-bar-back:hover { color: var(--ink-primary); }
+
+@media (pointer: coarse) {
+  .lib-field-hint { display: none; }
 }
