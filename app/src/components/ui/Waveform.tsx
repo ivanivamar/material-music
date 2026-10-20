@@ -8,6 +8,8 @@
  *
  * Drawn in an rAF loop that writes SVG attributes directly (no React render per
  * frame). The loop only runs while playing or while the wave is settling.
+ * Reduced motion only drops the pause/play easing and the playhead glide; the wave
+ * still drifts while playing.
  */
 import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent } from 'react'
 import { useMotion } from '../../state/motion'
@@ -97,7 +99,8 @@ export function Waveform({
 
   // Animation loop while playing or settling.
   useEffect(() => {
-    if (!motion) return
+    // The drift runs whenever music plays, even with reduced motion on (Ivan, Oct 20).
+    if (!motion && !playing) return
     let raf = 0
     let last = performance.now()
     const tick = (now: number) => {
@@ -105,7 +108,7 @@ export function Waveform({
       const dt = Math.min(0.1, (now - last) / 1000)
       last = now
       if (playing) s.phase += dt * SPEED
-      s.amp += ((playing ? 1 : 0) - s.amp) * Math.min(1, dt * 4)
+      s.amp = motion ? s.amp + ((playing ? 1 : 0) - s.amp) * Math.min(1, dt * 4) : playing ? 1 : 0
       s.shown = s.jump ? s.target : s.shown + (s.target - s.shown) * Math.min(1, dt * 8)
       draw()
       const settled = !playing && s.amp < 0.01 && Math.abs(s.target - s.shown) < 1e-4
