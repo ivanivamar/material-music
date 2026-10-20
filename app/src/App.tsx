@@ -7,6 +7,7 @@ import { initPwa } from './lib/pwa'
 import { initNativeUpdates } from './native/updates'
 import { initBackButton } from './native/backButton'
 import { initWidget } from './native/widget'
+import { initReleaseNotifications } from './native/releaseNotify'
 import { Home } from './pages/Home'
 import { LibraryError, LoadingLibrary, NoLibrary } from './screens/LibraryStatus'
 import { createHtmlAudioEngine } from './player/htmlEngine'
@@ -38,6 +39,7 @@ import { initDjLive } from './dj/live'
 import { historyStore } from './state/history'
 import './state/removal'
 import { releasesStore } from './state/releases'
+import { initDiscover } from './state/discover'
 import { initPlayTracker } from './player/playTracker'
 import { useSession } from './state/session'
 
@@ -78,6 +80,10 @@ recentStore.init()
 initRadio()
 // Android: the home screen widget — its info (playing from, mixes…) and the taps the app performs.
 initWidget()
+// Android: release-day notifications for New Releases reminders, even with the app closed.
+initReleaseNotifications()
+// New Releases → Discover: recent releases by related artists who aren't in the library.
+initDiscover()
 
 function Page({ route }: { route: Extract<Route, { kind: 'app' }> }) {
   switch (route.key) {

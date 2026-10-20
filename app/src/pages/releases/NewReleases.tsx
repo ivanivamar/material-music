@@ -11,7 +11,7 @@
  *
  * Data: state/releases.ts (sweep + Drive sync), state/releaseViews.ts (feed, matching).
  */
-import { useEffect, useMemo, useState, type CSSProperties, type MouseEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent } from 'react'
 import { Skeleton, Toggle } from '../../components/ui'
 import { Icon } from '../../design/icons'
 import { useOnline } from '../../state/downloads'
@@ -19,7 +19,9 @@ import { useHistory } from '../../state/history'
 import { useLibrary, type Catalogue } from '../../state/library'
 import { nowPlayingStore } from '../../state/nowPlaying'
 import { DEFAULT_TYPES, releasesStore, sweepTargets, useReleases, type ReleasesState } from '../../state/releases'
-import { buildFeed, fmtClock, fmtStamp, nextSweepClock, type Feed, type FeedItem } from '../../state/releaseViews'
+import { buildDiscover, buildFeed, countdown, fmtClock, fmtStamp, isOwned, nextSweepClock, type DiscoverItem, type Feed, type FeedItem } from '../../state/releaseViews'
+import { refreshDiscover } from '../../state/discover'
+import { DiscoverDetail, DiscoverSection, useDiscoverActions } from './Discover'
 import { useIsPhone } from '../../state/viewport'
 import { useMotion } from '../../state/motion'
 import { artistHref, go, href, replace } from '../../shell/routes'
@@ -31,6 +33,7 @@ import {
   Countdown,
   Dot,
   MatchingVeil,
+  OwnedTag,
   ReleaseCover,
   Spinner,
   SwipeRow,
@@ -38,6 +41,7 @@ import {
   actionsFor,
   cardMeta,
   longMeta,
+  ownedCount,
   phoneMeta,
   playRelease,
   typeLabel,
@@ -60,20 +64,49 @@ export function NewReleases() {
   return <Page c={data} />
 }
 
+function panelFromHash(): PanelState {
+  const h = window.location.hash
+  if (h.includes('?artists')) return { kind: 'artists' }
+  const m = /\?rel=([^&]+)/.exec(h)
+  if (m) {
+    try {
+      return { kind: 'rel', id: decodeURIComponent(m[1]) }
+    } catch {
+      return null
+    }
+  }
+  return null
+}
+
 function Page({ c }: { c: Catalogue }) {
   const rs = useReleases()
   const history = useHistory()
   const phone = useIsPhone()
   const online = useOnline()
   const feed = buildFeed(rs.doc, c, history.plays, rs.prefs)
+  const discover = buildDiscover(rs.doc, c, rs.prefs)
   const artistsN = useMemo(() => sweepTargets(c, rs.doc).length, [c, rs.doc])
 
-  // #/new?artists (Settings → Followed artists) opens with the Followed artists panel
-  const [panel, setPanelState] = useState<PanelState>(() => (window.location.hash.includes('?artists') ? { kind: 'artists' } : null))
+  // #/new?artists (Settings → Followed artists) opens with the Followed artists panel;
+  // #/new?rel=<id> (a reminder toast / notification) with that release's detail
+  const [panel, setPanelState] = useState<PanelState>(() => panelFromHash())
   // the content stays while the panel slides out
   const [shown, setShown] = useState<PanelState>(panel)
   useEffect(() => {
-    if (window.location.hash.includes('?artists')) replace(href('new'))
+    const take = () => {
+      const p = panelFromHash()
+      if (!p) return
+      setPanelState(p)
+      setShown(p)
+      if (p.kind === 'rel' && releasesStore.get().doc.marks[p.id]?.[0] !== 'gone') {
+        const m = releasesStore.get().doc.marks[p.id]?.[0]
+        if (!m || m === 'new') releasesStore.mark(p.id, 'seen')
+      }
+      replace(href('new'))
+    }
+    take()
+    window.addEventListener('hashchange', take)
+    return () => window.removeEventListener('hashchange', take)
   }, [])
   const setPanel = (p: PanelState | ((prev: PanelState) => PanelState)) =>
     setPanelState((prev) => {
@@ -87,7 +120,10 @@ function Page({ c }: { c: Catalogue }) {
   // a visit: fetch tracklists the cards don't have yet; sweep if one is due
   useEffect(() => {
     if (releasesStore.due()) void releasesStore.sweep()
-    else void releasesStore.fillDetails()
+    else {
+      void releasesStore.fillDetails()
+      void refreshDiscover()
+    }
   }, [])
 
   // Esc / Android Back close the panel first
@@ -116,6 +152,19 @@ function Page({ c }: { c: Catalogue }) {
     setPanel({ kind: 'rel', id: it.rel.id })
   }
   const detailItem = shown?.kind === 'rel' ? feed.byId.get(shown.id) : undefined
+  // a Discover release keeps its panel content while it slides out after Follow / Dismiss
+  const lastDz = useRef<DiscoverItem | undefined>(undefined)
+  const dzFound = shown?.kind === 'dz' ? discover.find((d) => d.key === shown.key) : undefined
+  useEffect(() => {
+    if (dzFound) lastDz.current = dzFound
+  })
+  // eslint-disable-next-line react-hooks/refs -- the last shown item, while the panel slides out
+  const dzItem = shown?.kind === 'dz' ? (dzFound ?? lastDz.current) : undefined
+  const dzAct = useDiscoverActions((key) => setPanel((p) => (p?.kind === 'dz' && p.key === key ? null : p)))
+  const openDz = (it: DiscoverItem) => {
+    dzAct.seen(it)
+    setPanel({ kind: 'dz', key: it.key })
+  }
 
   const firstSweep = !rs.doc.sweep.at
   const visibleCount = (feed.hero ? 1 : 0) + feed.groups.reduce((s, g) => s + g.items.length, 0)
@@ -166,9 +215,12 @@ function Page({ c }: { c: Catalogue }) {
         </section>
       ))}
 
-      <ReleasePanel open={!!panel} phone={phone} onClose={close} contentKey={shown?.kind === 'rel' ? shown.id : (shown?.kind ?? '')}>
+      <DiscoverSection items={discover} rs={rs} phone={phone} online={online} onOpen={openDz} />
+
+      <ReleasePanel open={!!panel} phone={phone} onClose={close} contentKey={shown?.kind === 'rel' ? shown.id : shown?.kind === 'dz' ? shown.key : (shown?.kind ?? '')}>
         {shown?.kind === 'artists' && <FollowedArtists c={c} phone={phone} onClose={close} />}
         {detailItem && <ReleaseDetail item={detailItem} c={c} phone={phone} online={online} act={act} onClose={close} />}
+        {dzItem && <DiscoverDetail item={dzItem} c={c} phone={phone} online={online} act={dzAct} onClose={close} />}
       </ReleasePanel>
     </div>
   )
@@ -250,6 +302,12 @@ function Chips({ rs, feed, phone }: { rs: ReleasesState; feed: Feed; phone: bool
           {!phone && <span className="nr-chip-n">{feed.typeCounts[t]}</span>}
         </button>
       ))}
+      <button type="button" className="chip nr-chip nr-chip-disc" aria-pressed={rs.prefs.discover} onClick={() => releasesStore.setPrefs({ discover: !rs.prefs.discover })} title="From artists like yours">
+        <span className="nr-chip-ic">
+          <Icon name="radio" />
+        </span>
+        {phone ? 'Like yours' : 'Artists like yours'}
+      </button>
       {phone ? (
         <button type="button" className="chip nr-chip" aria-pressed={showSeen} onClick={() => releasesStore.setPrefs({ showSeen: !showSeen })}>
           <span className="nr-chip-ic">
@@ -279,11 +337,11 @@ function Chips({ rs, feed, phone }: { rs: ReleasesState; feed: Feed; phone: bool
 /* ── Hero ────────────────────────────────────────────── */
 
 function Hero({ item, line, phone, act, online, onOpen }: { item: FeedItem; line: string; phone: boolean; act: ReleaseActions; online: boolean; onOpen: (it: FeedItem) => void }) {
-  const lib = item.status === 'lib'
+  const lib = isOwned(item.status)
   const seen = item.status === 'seen'
   const toArtist = (e: MouseEvent) => {
     e.stopPropagation()
-    go(artistHref(item.owners[0].id))
+    if (!item.external) go(artistHref(item.owners[0].id))
   }
   const stop = (fn: () => void) => (e: MouseEvent) => {
     e.stopPropagation()
@@ -310,7 +368,7 @@ function Hero({ item, line, phone, act, online, onOpen }: { item: FeedItem; line
             </button>
             <span className="nr-hero-a">{item.rel.a}</span>
             <span className="nr-mono nr-hero-meta">
-              {typeLabel(item)} · {phoneMeta(item)}
+              {item.status === 'pre' || item.status === 'part' ? `${item.status === 'pre' ? 'PRE-RELEASE' : 'INCOMPLETE'} · ${ownedCount(item, true)} SONGS` : `${typeLabel(item)} · ${phoneMeta(item)}`}
             </span>
           </div>
         </div>
@@ -362,8 +420,13 @@ function Hero({ item, line, phone, act, online, onOpen }: { item: FeedItem; line
               </span>
               Play
             </button>
-            <span className="nr-inlib">IN LIBRARY</span>
-            <span className="nr-mono">{item.match?.quality}</span>
+            <OwnedTag item={item} />
+            <span className="nr-mono">{ownedCount(item)}</span>
+            {item.status === 'pre' && (
+              <button type="button" className={`nr-sq ${item.reminded ? 'is-on' : ''}`} aria-label={item.reminded ? 'Reminder set' : 'Remind me'} title={item.reminded ? 'Reminder set' : 'Remind me'} onClick={stop(() => act.remind(item))}>
+                <Icon name={item.reminded ? 'bellF' : 'bell'} />
+              </button>
+            )}
           </div>
         ) : (
           <div className="nr-hero-acts">
@@ -400,7 +463,7 @@ function Hero({ item, line, phone, act, online, onOpen }: { item: FeedItem; line
 /* ── Desktop card ────────────────────────────────────── */
 
 function Card({ item, act, online, onOpen }: { item: FeedItem; act: ReleaseActions; online: boolean; onOpen: (it: FeedItem) => void }) {
-  const lib = item.status === 'lib'
+  const lib = isOwned(item.status)
   const seen = item.status === 'seen'
   return (
     <div className={`nr-card is-${item.status}`}>
@@ -419,7 +482,7 @@ function Card({ item, act, online, onOpen }: { item: FeedItem; act: ReleaseActio
           {item.status === 'new' && <Dot />}
           <span className={`nr-card-t ${seen ? 'is-seen' : ''}`}>{item.rel.t}</span>
         </button>
-        <button type="button" className={`nr-card-a ${seen ? 'is-seen' : ''}`} onClick={() => go(artistHref(item.owners[0].id))}>
+        <button type="button" className={`nr-card-a ${seen ? 'is-seen' : ''}`} onClick={() => !item.external && go(artistHref(item.owners[0].id))}>
           {item.rel.a}
         </button>
       </div>
@@ -429,9 +492,14 @@ function Card({ item, act, online, onOpen }: { item: FeedItem; act: ReleaseActio
       </div>
       {lib ? (
         <div className="nr-card-lib">
-          <span className="nr-inlib">IN LIBRARY</span>
-          <span className="nr-mono">{item.match?.quality}</span>
-          <button type="button" className="nr-sq is-end" title="Dismiss" aria-label="Dismiss" onClick={() => act.dismiss(item)}>
+          <OwnedTag item={item} />
+          <span className="nr-mono">{ownedCount(item, true)}</span>
+          {item.status === 'pre' && (
+            <button type="button" className={`nr-sq is-end ${item.reminded ? 'is-on' : ''}`} title={item.reminded ? 'Reminder set' : 'Remind me'} aria-label={item.reminded ? 'Reminder set' : 'Remind me'} onClick={() => act.remind(item)}>
+              <Icon name={item.reminded ? 'bellF' : 'bell'} />
+            </button>
+          )}
+          <button type="button" className={`nr-sq ${item.status === 'pre' ? '' : 'is-end'}`} title="Dismiss" aria-label="Dismiss" onClick={() => act.dismiss(item)}>
             <Icon name="x" />
           </button>
         </div>
@@ -451,7 +519,7 @@ function Card({ item, act, online, onOpen }: { item: FeedItem; act: ReleaseActio
 /* ── Phone row ───────────────────────────────────────── */
 
 function PhoneRow({ item, act, onOpen }: { item: FeedItem; act: ReleaseActions; onOpen: (it: FeedItem) => void }) {
-  const lib = item.status === 'lib'
+  const lib = isOwned(item.status)
   const seen = item.status === 'seen'
   return (
     <SwipeRow seenWord={seen ? 'UNSEEN' : 'SEEN'} onTap={() => onOpen(item)} onSeen={() => act.toggleSeen(item)} onDismiss={() => act.dismiss(item)}>
@@ -466,10 +534,10 @@ function PhoneRow({ item, act, onOpen }: { item: FeedItem; act: ReleaseActions; 
         </div>
         <span className={`nr-row-a ${seen ? 'is-seen' : ''}`}>{item.rel.a}</span>
         <span className={`nr-mono nr-row-m ${seen ? 'is-seen' : ''}`}>
-          {typeLabel(item)} · {phoneMeta(item)}
+          {item.status === 'pre' ? `PRE-RELEASE · ${ownedCount(item, true)} · ${countdown(item, true)}` : item.status === 'part' ? `INCOMPLETE · ${ownedCount(item, true)}` : `${typeLabel(item)} · ${phoneMeta(item)}`}
         </span>
       </div>
-      {item.upcoming && <Countdown item={item} short className="is-row" />}
+      {item.upcoming && !lib && <Countdown item={item} short className="is-row" />}
       {lib && (
         <button
           type="button"

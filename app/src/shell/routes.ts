@@ -88,6 +88,8 @@ export const artistHref = (id: string) => `#/artist/${encodeURIComponent(id)}`
 export const playlistHref = (id: string) => `#/playlist/${encodeURIComponent(id)}`
 /** a mix of today (step 26): daily-<genre>, deepcuts, rediscover */
 export const mixHref = (id: string) => `#/mix/${encodeURIComponent(id)}`
+/** New releases with one release's detail open (reminder toast / notification) */
+export const releaseHref = (id: string) => `#/new?rel=${encodeURIComponent(id)}`
 /** `period`: "2026" / "2026-10" (state/stats.ts periodKey) */
 export const statsHref = (period?: string) => (period ? `#/stats/${period}` : '#/stats')
 

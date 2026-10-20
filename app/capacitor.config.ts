@@ -17,6 +17,11 @@ const config: CapacitorConfig = {
       initialViewportFitValueHint: 'cover',
       style: 'DARK', // light status-bar icons on the dark UI
     },
+    // New Releases reminders (native/releaseNotify.ts): the Pelagic mark in the status bar
+    LocalNotifications: {
+      smallIcon: 'ic_wg_mark',
+      iconColor: '#EDEDED',
+    },
   },
 }
 

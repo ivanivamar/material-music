@@ -602,3 +602,6 @@ html[data-phone] .toast-meta { display: none; }
 .shell.is-phone .shelf-one > .recap-card { width: 288px; flex: none; scroll-snap-align: start; min-height: 220px; }
 .shell.is-phone .recap-num { font-size: 46px; }
 .shell.is-phone .recap-count { display: none; }
+/* New Releases → From artists like yours (phone) */
+.shell.is-phone .nr-row .nr-because { font-size: var(--fs-mono-xs); }
+.shell.is-phone .nrp-unfollow { height: 34px; }

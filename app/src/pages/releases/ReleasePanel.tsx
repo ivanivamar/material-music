@@ -9,13 +9,16 @@ import { Icon } from '../../design/icons'
 import { bandcampSearchUrl, mbReleaseGroupUrl } from '../../lib/musicbrainz'
 import { tracksByAlbum, type Catalogue } from '../../state/library'
 import { releasesStore, useReleases } from '../../state/releases'
-import { countdown, fmtLength, fmtRelDate, followedArtists, trackMatches, type FeedItem } from '../../state/releaseViews'
+import { countdown, fmtLength, fmtRelDate, fmtRelShort, followedArtists, isOwned, trackMatches, type FeedItem } from '../../state/releaseViews'
 import { artistHref, go } from '../../shell/routes'
 import { ArtistAvatar } from '../library/common'
 import { useNowPlaying } from '../library/playback'
-import { Countdown, Dot, MatchingVeil, ReleaseCover, actionsFor, openExternal, playRelease, typeLabel, type ReleaseActions } from './parts'
+import { Countdown, Dot, MatchingVeil, ReleaseCover, actionsFor, openExternal, ownedCount, playRelease, typeLabel, type ReleaseActions } from './parts'
 
-export type PanelState = { kind: 'rel'; id: string } | { kind: 'artists' } | null
+/** "14 Nov" */
+const niceDay = (date: string) => fmtRelShort(date).replace(/^0/, '').replace(/ ([A-Z])([A-Z]+)/, (_, a: string, b: string) => ` ${a}${b.toLowerCase()}`)
+
+export type PanelState = { kind: 'rel'; id: string } | { kind: 'dz'; key: string } | { kind: 'artists' } | null
 
 /* ── Container ───────────────────────────────────────── */
 
@@ -106,15 +109,25 @@ export function ReleaseDetail({
     void releasesStore.ensureLinks(item.mbid, 5)
   }, [id, item.mbid])
 
-  const lib = item.status === 'lib'
+  const lib = isOwned(item.status)
+  // pre-release / incomplete with a tracklist: the MusicBrainz tracklist, your songs playable, the rest marked
+  const partial = (item.status === 'pre' || item.status === 'part') && !!item.detail?.tracks.length
   const loading = !item.detail && loadingDetail.includes(id)
   const links = doc.links[item.mbid]
-  const matches = useMemo(() => (lib ? [] : trackMatches(c, item)), [c, item, lib])
+  const matches = useMemo(() => (lib && !partial ? [] : trackMatches(c, item)), [c, item, lib, partial])
   const matchedIdx = new Set(matches.map((m) => m.index))
   const owner = item.owners[0]
   const now = useNowPlaying()
 
-  const status = { new: 'New', seen: 'Seen', acq: 'Acquired · matching', lib: 'In library', gone: 'Dismissed' }[item.status]
+  const status = {
+    new: 'New',
+    seen: 'Seen',
+    acq: 'Acquired · matching',
+    lib: 'In library',
+    pre: `Pre-release · ${ownedCount(item).toLowerCase()}`,
+    part: `Incomplete · ${ownedCount(item).toLowerCase()}`,
+    gone: 'Dismissed',
+  }[item.status]
   const n = item.detail?.tracks.length ?? 0
   const facts: [string, ReactNode][] = [
     ['RELEASED', item.upcoming ? `${fmtRelDate(item.rel.date)} · ${countdown(item)}` : fmtRelDate(item.rel.date)],
@@ -126,7 +139,15 @@ export function ReleaseDetail({
   ]
 
   let matchText: string | null = null
-  if (lib && item.match) {
+  const album = item.match?.albumId ? c.albums[item.match.albumId] : null
+  const as = album && album.title !== item.rel.t ? ` as ${album.title}` : ''
+  if (item.status === 'pre') {
+    const n = item.total ? `${item.have} of ${item.total} songs are` : `${item.have} song${item.have === 1 ? ' is' : 's are'}`
+    matchText = `${n} already in your library${as}. The rest come out on ${niceDay(item.rel.date)}${item.reminded ? ', and you’ll be reminded that day' : ''}.`
+  } else if (item.status === 'part') {
+    const miss = item.total - item.have
+    matchText = `${item.have} of ${item.total} songs are in your library${as}. ${miss} missing: it moves to In library when ${miss === 1 ? 'it arrives' : 'they arrive'}.`
+  } else if (lib && item.match) {
     const album = item.match.albumId ? c.albums[item.match.albumId] : null
     matchText = album && album.title !== item.rel.t ? `In your library as ${album.title}, ${item.match.quality}.` : `In your library, ${item.match.quality}.`
   } else if (matches.length) {
@@ -136,6 +157,8 @@ export function ReleaseDetail({
   }
 
   const acts = lib ? null : actionsFor(item, act, online)
+  const matchById = new Map(matches.map((m) => [m.index, m]))
+  const partialIds = partial ? matches.map((m) => m.trackId) : []
   const libTracks = lib && item.match ? item.match.trackIds.map((tid) => c.tracks[tid]).filter(Boolean) : []
   const albumTracks = lib && item.match?.albumId ? (tracksByAlbum(c).get(item.match.albumId) ?? libTracks) : libTracks
 
@@ -156,7 +179,7 @@ export function ReleaseDetail({
         {item.status === 'new' && <Dot size="md" />}
         <h2 className="nrp-title">{item.rel.t}</h2>
       </div>
-      <button type="button" className="nrp-artist" onClick={() => owner && go(artistHref(owner.id))}>
+      <button type="button" className="nrp-artist" onClick={() => owner && !item.external && go(artistHref(owner.id))}>
         {item.rel.a}
       </button>
     </div>
@@ -198,6 +221,12 @@ export function ReleaseDetail({
               <Icon name="playF" />
               Play
             </button>
+            {item.status === 'pre' && (
+              <button type="button" className={`nrp-act ${item.reminded ? 'is-on' : ''}`} aria-pressed={item.reminded} onClick={() => act.remind(item)}>
+                <Icon name={item.reminded ? 'bellF' : 'bell'} />
+                {item.reminded ? (phone ? 'Set' : 'Reminder set') : phone ? 'Remind' : 'Remind me'}
+              </button>
+            )}
             <button type="button" className="nrp-act" onClick={() => act.dismiss(item)}>
               <Icon name="x" />
               Dismiss
@@ -234,9 +263,33 @@ export function ReleaseDetail({
       <div className="nrp-tl">
         <div className="nrp-tl-head">
           <span>TRACKLIST</span>
-          <span className="nrp-tl-note">{lib ? 'PLAYABLE · FROM YOUR FILES' : item.detail ? (n ? 'NOT IN LIBRARY · PREVIEW ONLY' : 'NOT YET LISTED') : loading ? 'ASKING MUSICBRAINZ' : online ? '' : 'NEEDS A CONNECTION'}</span>
+          <span className="nrp-tl-note">{partial ? `${item.have} OF ${item.total} IN LIBRARY` : lib ? 'PLAYABLE · FROM YOUR FILES' : item.detail ? (n ? 'NOT IN LIBRARY · PREVIEW ONLY' : 'NOT YET LISTED') : loading ? 'ASKING MUSICBRAINZ' : online ? '' : 'NEEDS A CONNECTION'}</span>
         </div>
-        {lib
+        {partial
+          ? item.detail!.tracks.map(([t, d], i) => {
+              const m = matchById.get(i)
+              if (!m)
+                return (
+                  <div key={i} className="nrp-tr is-missing">
+                    <span className="nrp-tr-n">{String(i + 1).padStart(2, '0')}</span>
+                    <span className="nrp-tr-t">{t}</span>
+                    <span className="nrp-tr-d">{item.upcoming ? countdown(item, true) : 'MISSING'}</span>
+                    <span className="nrp-tr-ic" />
+                  </div>
+                )
+              const own = c.tracks[m.trackId]
+              return (
+                <button key={i} type="button" className={`nrp-tr is-on ${now.id === m.trackId ? 'is-now' : ''}`} onClick={() => playRelease({ ...item, match: { ...item.match!, trackIds: partialIds } }, partialIds.indexOf(m.trackId))}>
+                  <span className="nrp-tr-n">{String(i + 1).padStart(2, '0')}</span>
+                  <span className="nrp-tr-t">{t}</span>
+                  <span className="nrp-tr-d">{own?.duration ? fmtLength(own.duration) : d ? fmtLength(d) : ''}</span>
+                  <span className="nrp-tr-ic">
+                    <Icon name="playF" />
+                  </span>
+                </button>
+              )
+            })
+          : lib
           ? albumTracks.map((t, i) => (
               <button key={t.id} type="button" className={`nrp-tr is-on ${now.id === t.id ? 'is-now' : ''}`} onClick={() => playRelease({ ...item, match: { ...item.match!, trackIds: albumTracks.map((x) => x.id) } }, i)}>
                 <span className="nrp-tr-n">{String(t.track ?? i + 1).padStart(2, '0')}</span>
@@ -290,7 +343,7 @@ export function FollowedArtists({ c, phone, onClose }: { c: Catalogue; phone: bo
           {rows.length} ARTISTS · {mutedN} MUTED
         </span>
       </div>
-      {!phone && <p className="nrp-explain">Every artist in your library is followed automatically. Muted artists are still swept, just kept out of the feed.</p>}
+      {!phone && <p className="nrp-explain">Every artist in your library is followed automatically, plus the ones you follow from From artists like yours (NOT IN LIBRARY). Muted artists are still swept, just kept out of the feed.</p>}
       <div className="nrp-card" onClick={() => releasesStore.setHideReissues(!hideRe)}>
         <div className="nrp-card-text">
           <span>Hide reissues and deluxe editions</span>
@@ -310,8 +363,23 @@ export function FollowedArtists({ c, phone, onClose }: { c: Catalogue; phone: bo
             <ArtistAvatar artist={r.artist} size={40} className="nrp-art-av" />
             <div className="nrp-art-text">
               <span className="nrp-art-n">{r.artist.name}</span>
-              <span className="nrp-art-c">{r.line}</span>
+              <span className="nrp-art-c">
+                {r.dz != null && <span className="nrp-art-ext">NOT IN LIBRARY · </span>}
+                {r.line}
+              </span>
             </div>
+            {r.dz != null && (
+              <button
+                type="button"
+                className="nrp-unfollow"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  releasesStore.follow(r.dz!, null)
+                }}
+              >
+                Unfollow
+              </button>
+            )}
             {r.muted && !phone && <span className="nrp-art-word">MUTED</span>}
             <span onClick={(e) => e.stopPropagation()}>
               <Toggle checked={!r.muted} onChange={(v) => releasesStore.setMuted(r.artist.id, !v)} label={`${r.muted ? 'Unmute' : 'Mute'} ${r.artist.name}`} />

@@ -81,6 +81,43 @@ export interface ReleasesDoc {
   /** keyed by catalogue artist id */
   muted: Record<string, Stamped<boolean>>
   hideReissues: Stamped<boolean>
+  /** Discover → Follow: "dz:<deezer id>" → the artist (null = unfollowed). Swept like a library artist. */
+  follow: Record<string, Stamped<FollowedExt | null>>
+  /** Discover: releases of related artists who aren't in the library, keyed by Deezer artist id */
+  discover: Record<string, DiscoverEntry>
+  /** Discover → Not interested, keyed by Deezer artist id */
+  dzMuted: Record<string, Stamped<boolean>>
+}
+
+export interface FollowedExt {
+  name: string
+  dz: number
+  /** Deezer album titles: verify the MusicBrainz name match */
+  titles: string[]
+}
+
+/** One Deezer release of a Discover artist. */
+export interface DzRel {
+  /** Deezer album id */
+  id: number
+  t: string
+  type: 'album' | 'ep' | 'single' | 'compile'
+  /** YYYY-MM-DD */
+  date: string
+  cover: string | null
+}
+
+export interface DiscoverEntry {
+  /** checked (ms) */
+  at: number
+  name: string
+  pic: string | null
+  /** library artist ids that list this artist as related, most related first */
+  because: string[]
+  score: number
+  rel: DzRel[]
+  /** all the artist's album titles on Deezer (kept for Follow) */
+  titles: string[]
 }
 
 interface ReleasesFile extends ReleasesDoc {
@@ -110,6 +147,8 @@ export interface SweepError {
 export interface ReleasePrefs {
   types: Record<RelType, boolean>
   showSeen: boolean
+  /** show "From artists like yours" */
+  discover: boolean
 }
 
 export interface ReleasesState {
@@ -128,7 +167,7 @@ export interface ReleasesState {
 export type ReleasesEvent =
   | { kind: 'matched'; id: string; title: string }
   | { kind: 'swept'; manual: boolean; fresh: number; artists: number; since: number | null }
-  | { kind: 'reminder'; id: string; title: string; artist: string }
+  | { kind: 'reminder'; id: string; title: string; artist: string; have: number; total: number }
 
 /* ── Constants ──────────────────────────────────────── */
 
@@ -157,6 +196,9 @@ const emptyDoc = (): ReleasesDoc => ({
   remind: {},
   muted: {},
   hideReissues: [true, 0],
+  follow: {},
+  discover: {},
+  dzMuted: {},
 })
 
 /** Start of the current sweep cycle: today 06:00, or yesterday's before 06:00. */
@@ -205,6 +247,9 @@ export function mergeDocs(a: ReleasesDoc, b: ReleasesDoc): ReleasesDoc {
     remind: mergeStamped(a.remind, b.remind),
     muted: mergeStamped(a.muted, b.muted),
     hideReissues: b.hideReissues[1] > a.hideReissues[1] ? b.hideReissues : a.hideReissues,
+    follow: mergeStamped(a.follow, b.follow),
+    discover: mergeAt(a.discover, b.discover),
+    dzMuted: mergeStamped(a.dzMuted, b.dzMuted),
   }
 }
 
@@ -221,6 +266,9 @@ function normalise(raw: Partial<ReleasesFile> | null | undefined): ReleasesDoc {
     remind: raw.remind ?? {},
     muted: raw.muted ?? {},
     hideReissues: Array.isArray(raw.hideReissues) ? raw.hideReissues : d.hideReissues,
+    follow: raw.follow ?? {},
+    discover: raw.discover ?? {},
+    dzMuted: raw.dzMuted ?? {},
   }
 }
 
@@ -242,7 +290,20 @@ function prune(doc: ReleasesDoc, now = Date.now()): ReleasesDoc {
     // marks of releases out of the window are kept a month longer (a release can re-enter after a date fix)
     marks: Object.fromEntries(Object.entries(doc.marks).filter(([k, v]) => keep.has(k) || !oldEnough(v[1]))),
     remind: pick(doc.remind),
+    // Discover: releases out of the window go; artists not checked for two weeks (no longer suggested) go
+    discover: Object.fromEntries(
+      Object.entries(doc.discover)
+        .filter(([, e]) => e.at > now - 14 * DAY)
+        .map(([k, e]) => [k, { ...e, rel: e.rel.filter((r) => inWindow(r.date, now)) }]),
+    ),
   }
+}
+
+/** Artists followed from Discover (not in the library). */
+export function followedExternal(doc: ReleasesDoc): (FollowedExt & { id: string })[] {
+  const out: (FollowedExt & { id: string })[] = []
+  for (const [id, [f]] of Object.entries(doc.follow)) if (f) out.push({ ...f, id })
+  return out.sort((a, b) => a.name.localeCompare(b.name))
 }
 
 /* ── Local prefs ─────────────────────────────────────── */
@@ -250,11 +311,11 @@ function prune(doc: ReleasesDoc, now = Date.now()): ReleasesDoc {
 function loadPrefs(): ReleasePrefs {
   try {
     const raw = JSON.parse(localStorage.getItem(PREFS_KEY) ?? 'null') as Partial<ReleasePrefs> | null
-    if (raw) return { types: { ...DEFAULT_TYPES, ...raw.types }, showSeen: raw.showSeen ?? true }
+    if (raw) return { types: { ...DEFAULT_TYPES, ...raw.types }, showSeen: raw.showSeen ?? true, discover: raw.discover ?? true }
   } catch {
     /* ignore */
   }
-  return { types: { ...DEFAULT_TYPES }, showSeen: true }
+  return { types: { ...DEFAULT_TYPES }, showSeen: true, discover: true }
 }
 function savePrefs(p: ReleasePrefs) {
   try {
@@ -368,6 +429,8 @@ export interface SweepTarget {
   name: string
   mbid: string | null
   albumTitles: string[]
+  /** followed from Discover, not in the library */
+  external?: boolean
 }
 
 const VARIOUS = /^(various artists?|va|soundtrack|unknown artist)$/i
@@ -383,6 +446,13 @@ export function sweepTargets(c: Catalogue, doc: ReleasesDoc): SweepTarget[] {
     if (mbid && (SPECIAL_ARTISTS.has(mbid) || seen.has(mbid))) continue
     if (mbid) seen.add(mbid)
     out.push({ artistId: a.id, name: a.name, mbid, albumTitles: info.albums.map((x) => x.title) })
+  }
+  // followed from Discover: swept the same way, found on MusicBrainz by name + Deezer album titles
+  for (const f of followedExternal(doc)) {
+    const mbid = doc.resolved[f.id]?.mbid ?? null
+    if (mbid && (SPECIAL_ARTISTS.has(mbid) || seen.has(mbid))) continue
+    if (mbid) seen.add(mbid)
+    out.push({ artistId: f.id, name: f.name, mbid, albumTitles: f.titles, external: true })
   }
   return out
 }
@@ -484,7 +554,7 @@ export const releasesStore = {
    * Sweep every followed artist not yet checked this cycle (`manual`: all of them, now).
    * Safe to call repeatedly; one sweep at a time.
    */
-  sweep(opts: { manual?: boolean; resume?: boolean } = {}): Promise<void> {
+  sweep(opts: { manual?: boolean; resume?: boolean; extra?: boolean } = {}): Promise<void> {
     if (sweepRun) return sweepRun
     const gen = generation
     sweepRun = (async () => {
@@ -496,7 +566,9 @@ export const releasesStore = {
       const c = libraryStore.get().data
       if (!c) return
       const manual = !!opts.manual
-      if (!manual && !releasesStore.due()) return
+      // `extra`: only artists never checked (a new follow), without counting as the day's sweep
+      const extra = !manual && !!opts.extra && !releasesStore.due()
+      if (!manual && !extra && !releasesStore.due()) return
       if (!navigator.onLine) {
         set({ offline: true })
         return
@@ -507,7 +579,8 @@ export const releasesStore = {
       if (manual && !(opts.resume && manualCutoff)) manualCutoff = started
       const cutoff = manual ? manualCutoff! : cycleStart(started)
       const targets = sweepTargets(c, state.doc)
-      const todo = targets.filter((t) => needsCheck(t, state.doc, cutoff, started))
+      const todo = extra ? targets.filter((t) => (t.mbid ? !state.doc.artists[t.mbid] : !state.doc.resolved[t.artistId])) : targets.filter((t) => needsCheck(t, state.doc, cutoff, started))
+      if (extra && !todo.length) return
       const known = new Set<string>()
       for (const e of Object.values(state.doc.artists)) for (const r of e.rel) known.add(r.id)
       const previousSweep = state.doc.sweep.at
@@ -579,9 +652,11 @@ export const releasesStore = {
       }
       if (gen !== generation) return
       manualCutoff = null
-      change({ ...prune(state.doc), sweep: { at: Date.now(), by: DEVICE } }, 1_000)
+      if (extra) change(state.doc, 5_000)
+      else change({ ...prune(state.doc), sweep: { at: Date.now(), by: DEVICE } }, 1_000)
       set({ sweeping: null, error: null })
-      emit({ kind: 'swept', manual, fresh: found, artists: targets.length, since: previousSweep })
+      if (!extra) emit({ kind: 'swept', manual, fresh: found, artists: targets.length, since: previousSweep })
+      autoRemind()
       void releasesStore.fillDetails()
     })().finally(() => {
       sweepRun = null
@@ -674,6 +749,25 @@ export const releasesStore = {
   setHideReissues(on: boolean) {
     change({ ...state.doc, hideReissues: [on, Date.now()] })
   },
+  /** Discover → Follow / Unfollow (swept from the next sweep on; a new follow is checked right away). */
+  follow(dz: number, f: FollowedExt | null) {
+    const id = `dz:${dz}`
+    const resolved = { ...state.doc.resolved }
+    if (!f) delete resolved[id]
+    change({ ...state.doc, follow: { ...state.doc.follow, [id]: [f, Date.now()] }, resolved })
+    if (f) void releasesStore.sweep({ manual: false, extra: true })
+  },
+  /** Discover → Not interested (or back). */
+  setDzMuted(dz: number, on: boolean) {
+    change({ ...state.doc, dzMuted: { ...state.doc.dzMuted, [String(dz)]: [on, Date.now()] } })
+  },
+  /** Discover: one artist's entry (state/discover.ts). */
+  putDiscover(dz: number, e: DiscoverEntry | null) {
+    const discover = { ...state.doc.discover }
+    if (e) discover[String(dz)] = e
+    else delete discover[String(dz)]
+    change({ ...state.doc, discover }, 60_000)
+  },
 
   /* ── Local filters ── */
 
@@ -704,7 +798,10 @@ export const releasesStore = {
    * watching the catalogue.
    */
   init() {
-    void releasesStore.load().then(checkReminders)
+    void releasesStore.load().then(() => {
+      checkReminders()
+      autoRemind()
+    })
     let kickTimer = 0
     const kick = (ms: number) => {
       window.clearTimeout(kickTimer)
@@ -713,6 +810,7 @@ export const releasesStore = {
         if (releasesStore.due()) void releasesStore.sweep()
         else void releasesStore.fillDetails()
         checkReminders()
+        autoRemind()
       }, ms)
     }
     sessionStore.subscribe(() => {
@@ -728,7 +826,10 @@ export const releasesStore = {
       lastCatalogue = c
       if (!c) return
       if (!prev) kick(8_000)
-      else watchAcquired(prev, c)
+      else {
+        watchAcquired(prev, c)
+        autoRemind()
+      }
     })
     window.addEventListener('online', () => {
       if (state.offline) set({ offline: false })
@@ -795,31 +896,80 @@ function checkReminders() {
   const remind = { ...state.doc.remind }
   for (const r of due) remind[r.id] = [false, now]
   change({ ...state.doc, remind })
-  for (const r of due) emit({ kind: 'reminder', id: r.id, title: r.t, artist: r.a })
+  const c = libraryStore.get().data
+  for (const r of due) {
+    const p = c && matcher ? matcher(c, r) : null
+    emit({ kind: 'reminder', id: r.id, title: r.t, artist: r.a, have: p?.have ?? 0, total: p?.total ?? 0 })
+  }
 }
+
+/**
+ * Pre-releases are reminded by default: an upcoming release (with a day) that's already in the
+ * library under its name — the singles out so far — gets a reminder unless one was ever set or
+ * turned off for it.
+ */
+function autoRemind() {
+  const c = libraryStore.get().data
+  if (!c || !matcher || !state.loaded) return
+  const now = Date.now()
+  let remind: ReleasesDoc['remind'] | null = null
+  for (const r of allRels()) {
+    if (state.doc.remind[r.id] || !isUpcoming(r.date) || r.date.split('-').length < 3) continue
+    if (state.doc.marks[r.id]?.[0] === 'gone' || !matcher(c, r)) continue
+    remind ??= { ...state.doc.remind }
+    remind[r.id] = [true, now]
+  }
+  if (remind) change({ ...state.doc, remind })
+}
+
+/** How much of a release the library has (null: not in it). */
+export function matchProgressOf(rel: Rel): MatchProgress | null {
+  const c = libraryStore.get().data
+  return c && matcher ? matcher(c, rel) : null
+}
+
+/** A release by id (any artist). */
+export const findRelease = (id: string) => findRel(id)
+/** Every release in the window. */
+export const allReleases = () => allRels()
 
 /**
  * The catalogue changed: an "acquired" release whose album / single just appeared is now in the
  * library. Announce it once and drop the mark back to "seen" (the match itself is derived).
  */
-let matcher: ((c: Catalogue, rel: Rel) => boolean) | null = null
-export function setMatcher(fn: (c: Catalogue, rel: Rel) => boolean) {
+export interface MatchProgress {
+  have: number
+  total: number
+  /** every tracklist song is in the library (or the tracklist isn't known) */
+  complete: boolean
+}
+let matcher: ((c: Catalogue, rel: Rel) => MatchProgress | null) | null = null
+export function setMatcher(fn: (c: Catalogue, rel: Rel) => MatchProgress | null) {
   matcher = fn
 }
+/** Watching acquired / incomplete releases: announce the ones the catalogue change completed. */
 function watchAcquired(prev: Catalogue, next: Catalogue) {
   if (!matcher) return
-  const hits: Rel[] = []
+  const acquired: Rel[] = []
+  const completed: Rel[] = []
   for (const [id, [m]] of Object.entries(state.doc.marks)) {
     if (m !== 'acq') continue
     const r = findRel(id)
-    if (r && matcher(next, r) && !matcher(prev, r)) hits.push(r)
+    if (r && matcher(next, r) && !matcher(prev, r)) acquired.push(r)
   }
-  if (!hits.length) return
-  releasesStore.markMany(
-    hits.map((r) => r.id),
-    'seen',
-  )
-  for (const r of hits) emit({ kind: 'matched', id: r.id, title: r.t })
+  // an incomplete album (or a pre-release that came out) whose missing songs just arrived
+  for (const r of allRels()) {
+    if (isUpcoming(r.date) || acquired.includes(r) || state.doc.marks[r.id]?.[0] === 'gone') continue
+    const before = matcher(prev, r)
+    if (!before || before.complete) continue
+    if (matcher(next, r)?.complete) completed.push(r)
+  }
+  if (acquired.length)
+    releasesStore.markMany(
+      acquired.map((r) => r.id),
+      'seen',
+    )
+  for (const r of [...acquired, ...completed]) emit({ kind: 'matched', id: r.id, title: r.t })
 }
 
 onAccountReset(() => releasesStore.reset())

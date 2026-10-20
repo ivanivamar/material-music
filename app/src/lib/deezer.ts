@@ -149,6 +149,36 @@ export function relatedOf(c: Catalogue, artistId: string): string[] | null {
   return out
 }
 
+/** Deezer's related artists of a library artist as fetched (including ones not in the library); null = not known. */
+export function relatedRaw(artistId: string): { id: number; name: string }[] | null {
+  return cache[artistId]?.artists ?? null
+}
+
+/** Is this Deezer artist in the library (by Deezer id, else by folded name)? */
+export function inLibrary(c: Catalogue, a: { id: number; name: string }): boolean {
+  const m = matcher(c)
+  return m.byDeezer.has(a.id) || m.byName.has(foldKey(a.name))
+}
+
+/** Wait until the related-artist cache is read from IndexedDB. */
+export const relatedLoaded = () => load()
+
+/** New Releases → Discover: a Deezer artist's releases of the last `days` (through the proxy). */
+export interface DzReleases {
+  id: number
+  name: string
+  picture: string | null
+  releases: { id: number; t: string; type: 'album' | 'ep' | 'single' | 'compile'; date: string; cover: string | null }[]
+  titles: string[]
+}
+export async function fetchDzReleases(id: number, days = 183): Promise<DzReleases | null> {
+  const res = await fetch(`${API_BASE}api/deezer/releases?id=${id}&days=${days}`, { headers: { 'X-Pelagic': '1' } })
+  if (!res.ok || !(res.headers.get('content-type') ?? '').includes('application/json')) throw new Error(`proxy ${res.status}`)
+  const j = (await res.json()) as { found?: boolean } & Partial<DzReleases>
+  if (!j.found || !j.id) return null
+  return { id: j.id, name: j.name ?? '', picture: j.picture ?? null, releases: Array.isArray(j.releases) ? j.releases : [], titles: Array.isArray(j.titles) ? j.titles : [] }
+}
+
 /** Re-render when related artists arrive. */
 export function useRelatedVersion(): number {
   return useSyncExternalStore(

@@ -5,7 +5,10 @@
  *
  * A release's status:
  *   gone  — dismissed
- *   lib   — its album (or, for a single, its song) is in the catalogue: playable, never stored
+ *   lib   — its album (or, for a single, its song) is in the catalogue, complete: playable, never stored
+ *   pre   — upcoming, but an album of that name is already in the catalogue (the singles released so
+ *           far): playable, PRE-RELEASE · 4 OF 11 SONGS, reminder on by default (state/releases.ts)
+ *   part  — out and in the catalogue, but with fewer songs than the MusicBrainz tracklist (INCOMPLETE)
  *   acq   — "I've got it": watching the catalogue for it (MATCHING)
  *   seen / new
  */
@@ -13,11 +16,14 @@ import { foldTitle, type RelDetail, type RelType } from '../lib/musicbrainz'
 import { qualityLabel } from '../components/ui/Status'
 import { albumTrackIds } from '../pages/library/playback'
 import type { Play } from './history'
-import type { Artist, Catalogue } from './library'
-import { dayOf, isUpcoming, nextSweepAt, setMatcher, sweepTargets, releasesStore, type Mark, type Rel, type ReleasePrefs, type ReleasesDoc } from './releases'
+import { tracksByAlbum, type Artist, type Catalogue } from './library'
+import { dayOf, followedExternal, inWindow, isUpcoming, nextSweepAt, setMatcher, sweepTargets, releasesStore, type DzRel, type Mark, type Rel, type ReleasePrefs, type ReleasesDoc } from './releases'
 import { artistInfos } from './views'
 
-export type RelStatus = 'new' | 'seen' | 'acq' | 'lib' | 'gone'
+export type RelStatus = 'new' | 'seen' | 'acq' | 'lib' | 'pre' | 'part' | 'gone'
+
+/** In the catalogue (complete or not): playable. */
+export const isOwned = (s: RelStatus) => s === 'lib' || s === 'pre' || s === 'part'
 
 export interface Match {
   albumId: string | null
@@ -36,6 +42,11 @@ export interface FeedItem {
   /** MusicBrainz id it was found under (links) */
   mbid: string
   match: Match | null
+  /** songs of the release in the library / on its tracklist (total 0 = tracklist unknown) */
+  have: number
+  total: number
+  /** found under a followed artist who isn't in the library (Discover → Follow) */
+  external: boolean
   detail: RelDetail | null
   /** local midnight of the release date */
   day: number
@@ -157,27 +168,66 @@ export function matchRelease(c: Catalogue, rel: Rel, ownerIds: string[]): Match 
   return null
 }
 
+/**
+ * How much of a matched release the library has: tracklist songs found on the matched album or among
+ * the owners' other tracks (total 0 while the tracklist isn't known).
+ */
+export function releaseProgress(c: Catalogue, match: Match, detail: RelDetail | null, ownerIds: string[]): { have: number; total: number } {
+  const tl = detail?.tracks
+  if (!tl?.length) return { have: match.trackIds.length, total: 0 }
+  const owners = new Set(ownerIds)
+  const mine = match.albumId ? (tracksByAlbum(c).get(match.albumId) ?? []) : []
+  const others = Object.values(c.tracks).filter((t) => owners.has(t.artistId))
+  let have = 0
+  for (const [title] of tl) if (mine.some((t) => same(t.title, title)) || others.some((t) => same(t.title, title))) have++
+  return { have, total: tl.length }
+}
+
+/** Status of a matched release: upcoming → pre-release; out with songs missing → incomplete. */
+export function ownedStatus(upcoming: boolean, p: { have: number; total: number }): 'lib' | 'pre' | 'part' {
+  if (upcoming) return 'pre'
+  return p.total && p.have < p.total ? 'part' : 'lib'
+}
+
 /** MusicBrainz artist id → catalogue artist ids (importer's mbid, else the app's name lookup). */
 function mbidMap(c: Catalogue, doc: ReleasesDoc): Map<string, string[]> {
   const m = new Map<string, string[]>()
+  const add = (mbid: string, id: string) => {
+    const list = m.get(mbid)
+    if (list) list.push(id)
+    else m.set(mbid, [id])
+  }
   for (const a of Object.values(c.artists)) {
     const mbid = a.mbid ?? doc.resolved[a.id]?.mbid
-    if (!mbid) continue
-    const list = m.get(mbid)
-    if (list) list.push(a.id)
-    else m.set(mbid, [a.id])
+    if (mbid) add(mbid, a.id)
+  }
+  // followed from Discover (not in the library): "dz:<deezer id>", resolved on MusicBrainz by name
+  for (const f of followedExternal(doc)) {
+    const mbid = doc.resolved[f.id]?.mbid
+    if (mbid && !m.has(mbid)) add(mbid, f.id)
   }
   return m
 }
 
-// the store asks this when the catalogue changes ("acquired" → in library)
+/** A catalogue artist, or a followed Discover artist as a bare Artist. */
+function ownerOf(c: Catalogue, doc: ReleasesDoc, id: string): Artist | undefined {
+  if (c.artists[id]) return c.artists[id]
+  const f = doc.follow[id]?.[0]
+  return f ? { id, name: f.name, addedAt: '' } : undefined
+}
+
+// The store asks this when the catalogue changes ("acquired" → in library, incomplete → complete),
+// for reminders (pre-releases are reminded by default) and for the reminder's "4 of 11 songs".
 setMatcher((c, rel) => {
   const doc = releasesStore.get().doc
   const map = mbidMap(c, doc)
   const owners = Object.entries(doc.artists)
     .filter(([, e]) => e.rel.some((r) => r.id === rel.id))
     .flatMap(([mbid]) => map.get(mbid) ?? [])
-  return !!matchRelease(c, rel, owners)
+  const match = matchRelease(c, rel, owners)
+  if (!match) return null
+  const p = releaseProgress(c, match, doc.details[rel.id] ?? null, owners)
+  return { ...p, complete: !p.total || p.have >= p.total }
 })
 
 /* ── Per-track matches in the detail panel ───────────── */
@@ -210,7 +260,7 @@ export function isVisible(item: Pick<FeedItem, 'status' | 'mark' | 'rel' | 'mute
   if (item.muted) return false
   if (item.status === 'acq') return true
   // in the library: past the type filters, but a seen one still follows Show seen
-  if (item.status === 'lib') return prefs.showSeen || item.mark !== 'seen'
+  if (isOwned(item.status)) return prefs.showSeen || item.mark !== 'seen'
   if (!prefs.types[item.rel.type]) return false
   if (hideReissues && item.rel.re) return false
   return prefs.showSeen || item.status !== 'seen'
@@ -245,10 +295,13 @@ export function buildFeed(doc: ReleasesDoc, c: Catalogue, plays: readonly Play[]
     for (const rel of entry.rel) {
       const prev = items.get(rel.id)
       if (prev) {
-        for (const id of ownerIds) if (!prev.owners.some((a) => a.id === id) && c.artists[id]) prev.owners.push(c.artists[id])
+        for (const id of ownerIds) {
+          const a = ownerOf(c, doc, id)
+          if (a && !prev.owners.some((x) => x.id === id)) prev.owners.push(a)
+        }
         continue
       }
-      const owners = ownerIds.map((id) => c.artists[id]).filter(Boolean)
+      const owners = ownerIds.map((id) => ownerOf(c, doc, id)).filter((a): a is Artist => !!a)
       if (!owners.length) continue
       const day = dayOf(rel.date)
       const upcoming = isUpcoming(rel.date)
@@ -259,6 +312,9 @@ export function buildFeed(doc: ReleasesDoc, c: Catalogue, plays: readonly Play[]
         owners,
         mbid,
         match: null,
+        have: 0,
+        total: 0,
+        external: false,
         detail: doc.details[rel.id] ?? null,
         day,
         upcoming,
@@ -274,8 +330,14 @@ export function buildFeed(doc: ReleasesDoc, c: Catalogue, plays: readonly Play[]
     it.muted = ids.every((id) => doc.muted[id]?.[0])
     const mark = doc.marks[it.rel.id]?.[0] ?? 'new'
     it.mark = mark
+    it.external = it.owners.every((a) => !c.artists[a.id])
     it.match = mark === 'gone' ? null : matchRelease(c, it.rel, ids)
-    it.status = mark === 'gone' ? 'gone' : it.match ? 'lib' : mark
+    if (it.match) {
+      const p = releaseProgress(c, it.match, it.detail, ids)
+      it.have = p.have
+      it.total = p.total
+    }
+    it.status = mark === 'gone' ? 'gone' : it.match ? ownedStatus(it.upcoming, it) : mark
     it.visible = isVisible(it, prefs, hideRe)
   }
   const all = [...items.values()].sort((a, b) => b.day - a.day || a.rel.t.localeCompare(b.rel.t))
@@ -333,6 +395,62 @@ export function buildFeed(doc: ReleasesDoc, c: Catalogue, plays: readonly Play[]
   return out
 }
 
+/* ── Discover: from artists like yours ───────────────── */
+
+export interface DiscoverItem {
+  /** mark key: "dz:<deezer album id>" */
+  key: string
+  rel: DzRel
+  /** the Discover artist */
+  dz: number
+  artist: string
+  pic: string | null
+  /** library artists it's related to (most related first) */
+  because: Artist[]
+  status: 'new' | 'seen' | 'gone'
+  /** RelType for the type chips (Deezer "compile" → other) */
+  type: RelType
+  day: number
+  titles: string[]
+}
+
+let discoverCache: { doc: ReleasesDoc; c: Catalogue; prefs: ReleasePrefs; out: DiscoverItem[] } | null = null
+
+/** Discover releases, newest first, following the type chips and Show seen (dismissed ones out). */
+export function buildDiscover(doc: ReleasesDoc, c: Catalogue, prefs: ReleasePrefs, now = Date.now()): DiscoverItem[] {
+  if (discoverCache && discoverCache.doc === doc && discoverCache.c === c && discoverCache.prefs === prefs) return discoverCache.out
+  const out: DiscoverItem[] = []
+  const seenIds = new Set<number>()
+  for (const [k, e] of Object.entries(doc.discover)) {
+    const dz = Number(k)
+    if (doc.dzMuted[k]?.[0] || doc.follow[`dz:${k}`]?.[0]) continue
+    const because = e.because.map((id) => c.artists[id]).filter((a): a is Artist => !!a)
+    if (!because.length) continue
+    for (const rel of e.rel) {
+      if (seenIds.has(rel.id) || !inWindow(rel.date, now)) continue
+      seenIds.add(rel.id)
+      const key = `dz:${rel.id}`
+      const day = dayOf(rel.date)
+      const mark = doc.marks[key]?.[0]
+      const status = mark === 'gone' ? 'gone' : mark === 'seen' || mark === 'acq' ? 'seen' : day < now - 30 * DAY ? 'seen' : 'new'
+      const type: RelType = rel.type === 'compile' ? 'other' : rel.type
+      out.push({ key, rel, dz, artist: e.name, pic: e.pic, because, status, type, day, titles: e.titles })
+    }
+  }
+  const shown = out
+    .filter((it) => it.status !== 'gone' && prefs.types[it.type] && (prefs.showSeen || it.status !== 'seen'))
+    .sort((a, b) => b.day - a.day || a.rel.t.localeCompare(b.rel.t))
+  discoverCache = { doc, c, prefs, out: shown }
+  return shown
+}
+
+/** "BECAUSE YOU HAVE SPIRITBOX, PERIPHERY" (+ N) */
+export function becauseLine(it: DiscoverItem, max = 2): string {
+  const names = it.because.slice(0, max).map((a) => a.name.toUpperCase())
+  const more = it.because.length - names.length
+  return `BECAUSE YOU HAVE ${names.join(', ')}${more > 0 ? ` +${more}` : ''}`
+}
+
 /* ── Followed artists ────────────────────────────────── */
 
 export interface FollowedRow {
@@ -340,11 +458,14 @@ export interface FollowedRow {
   mbid: string | null
   muted: boolean
   line: string
+  /** followed from Discover, not in the library: its Deezer id (Unfollow) */
+  dz: number | null
 }
 
 export function followedArtists(c: Catalogue, doc: ReleasesDoc): FollowedRow[] {
   return sweepTargets(c, doc).map((t) => {
     const artist = c.artists[t.artistId] ?? { id: t.artistId, name: t.name, addedAt: '' }
+    const dz = t.external ? (doc.follow[t.artistId]?.[0]?.dz ?? null) : null
     const muted = !!doc.muted[t.artistId]?.[0]
     let line: string
     if (!t.mbid) line = doc.resolved[t.artistId] ? 'NOT ON MUSICBRAINZ' : 'NOT CHECKED YET'
@@ -357,6 +478,6 @@ export function followedArtists(c: Catalogue, doc: ReleasesDoc): FollowedRow[] {
         line = next ? `NEXT · ${fmtRelDate(next.date)}` : last ? `LAST · ${fmtRelDate(last.date)}` : 'QUIET · NOTHING IN 6 MONTHS'
       }
     }
-    return { artist, mbid: t.mbid, muted, line }
+    return { artist, mbid: t.mbid, muted, line, dz }
   })
 }

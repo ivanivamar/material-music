@@ -53,6 +53,7 @@
   font-family: var(--font-mono); font-size: var(--fs-mono-sm); letter-spacing: .12em; color: #fff;
   padding: 4px 7px; border-radius: 6px; border: var(--bw-control) solid rgba(255, 255, 255, .7);
 }
+.nr-inlib.is-pre, .nr-inlib.is-part { color: var(--ink-primary); border-style: dashed; border-color: rgba(255, 255, 255, .45); }
 .nr-dot { flex: none; border-radius: 50%; background: #fff; }
 .nr-dot-sm { width: 6px; height: 6px; box-shadow: 0 0 8px 2px rgba(255, 255, 255, .55); }
 .nr-dot-md { width: 7px; height: 7px; box-shadow: 0 0 10px 2px rgba(255, 255, 255, .55); }
@@ -79,7 +80,7 @@
 .nr-cover { display: block; width: 100%; height: 100%; object-fit: cover; transition: filter 1.4s ease, opacity 1.4s ease; }
 img.nr-cover.is-new, img.nr-cover.is-acq { filter: saturate(.7) brightness(.8); }
 img.nr-cover.is-seen { filter: grayscale(.85) brightness(.48); }
-img.nr-cover.is-lib { filter: none; }
+img.nr-cover.is-lib, img.nr-cover.is-pre, img.nr-cover.is-part { filter: none; }
 .nr-fb { position: relative; background: #111113; overflow: hidden; text-align: left; }
 .nr-fb::before { content: ''; position: absolute; inset: 0; background-image: var(--nr-grain); background-size: 160px 160px; opacity: .16; }
 .nr-fb.is-seen { opacity: .5; }
@@ -351,3 +352,28 @@ button.nrp-tr:hover .nrp-tr-t { color: #fff; }
   .nr-skel { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .nr-skel-card:nth-child(4) { display: none; }
 }
+
+/* pre-release / incomplete tracklist: the songs not in the library yet */
+.nrp-tr.is-missing .nrp-tr-t { color: var(--ink-tertiary); }
+.nrp-tr.is-missing .nrp-tr-d { font-family: var(--font-mono); font-size: var(--fs-mono-sm); letter-spacing: .12em; color: var(--ink-tertiary); }
+
+/* ── From artists like yours (Discover) ── */
+.nr-gring-dash { border-style: dashed; }
+.nr-disc-wait { color: var(--ink-tertiary); letter-spacing: .14em; }
+.nr-because { font-size: var(--fs-mono-xs); letter-spacing: .12em; color: var(--ink-tertiary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nr-card-a.nr-card-a-plain { cursor: default; }
+.nr-card-a.nr-card-a-plain:hover { color: var(--ink-secondary); text-decoration: none; }
+.nr-sq.nr-sq-word { width: auto; padding: 0 10px; font-family: var(--font-mono); font-size: var(--fs-mono-xs); letter-spacing: .12em; }
+.nrp-artist.nrp-artist-plain { cursor: default; }
+.nrp-artist.nrp-artist-plain:hover { color: #bdbdbd; text-decoration: none; }
+.nrp-match.is-disc { border-style: dashed; }
+.nrp-match.is-disc > svg, .nrp-match.is-disc > .ic { flex: none; }
+.nrp-inline { padding: 0; border: 0; background: none; font: inherit; color: var(--ink-primary); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: rgba(255, 255, 255, .3); }
+.nrp-inline:hover { color: #fff; text-decoration-color: #fff; }
+.nrp-art-ext { color: var(--ink-secondary); }
+.nrp-unfollow {
+  flex: none; height: 30px; padding: 0 12px; border-radius: var(--r-pill); cursor: pointer;
+  border: var(--bw-control) solid var(--border); background: none; color: var(--ink-secondary);
+  font: inherit; font-size: 13px;
+}
+.nrp-unfollow:hover { color: var(--ink-primary); border-color: rgba(255, 255, 255, .32); }

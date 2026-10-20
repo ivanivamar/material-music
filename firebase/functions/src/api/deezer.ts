@@ -13,6 +13,10 @@
  *   GET /api/deezer/related?id=<deezer artist id>   (or ?name=<artist>&a=<album title>… to look it up)
  *        → { found: true, id, artists: [{ id, name }] } | { found: false }   (radio, step 26)
  *        Deezer's related artists, most related first; the app keeps the ones in the library.
+ *   GET /api/deezer/releases?id=<deezer artist id>&days=<n>   (New Releases → Discover)
+ *        → { found: true, id, name, picture, releases: [{ id, t, type, date, cover }], titles: [...] }
+ *        The artist's albums / EPs / singles released in the last `days` (default 183, max 400),
+ *        newest first, and all their album titles (the app uses them to find the artist on MusicBrainz).
  *
  * The Android app calls it on https://pelagic-sound.web.app from https://localhost, so that origin gets CORS headers.
  *
@@ -66,6 +70,14 @@ interface DzArtist {
   picture_xl?: string
 }
 
+interface DzAlbum {
+  id: number
+  title: string
+  release_date?: string
+  record_type?: 'album' | 'ep' | 'single' | 'compile'
+  cover_medium?: string
+}
+
 async function lookup(name: string, titles: string[]) {
   const ours = new Set(titles.map(norm))
   const res = await getJson<{ data?: DzArtist[] }>(`https://api.deezer.com/search/artist?q=${encodeURIComponent(name)}&limit=10`)
@@ -117,6 +129,29 @@ export async function onRequest({ request, params }: Ctx): Promise<Response> {
       const res = await getJson<{ data?: { id: number; name: string }[] }>(`https://api.deezer.com/artist/${id}/related?limit=60`)
       const artists = (res.data ?? []).map((a) => ({ id: a.id, name: a.name }))
       return json({ found: true, id, artists }, 200, 'private, max-age=86400')
+    } catch (e) {
+      return json({ error: 'deezer_failed', message: (e as Error).message }, 502)
+    }
+  }
+
+  if (action === 'releases') {
+    const id = Number(url.searchParams.get('id'))
+    if (!Number.isFinite(id) || id <= 0) return json({ error: 'missing_id' }, 400)
+    const days = Math.min(400, Math.max(1, Number(url.searchParams.get('days')) || 183))
+    try {
+      const artist = await getJson<DzArtist & { error?: unknown; picture_medium?: string }>(`https://api.deezer.com/artist/${id}`)
+      if (!artist || artist.error || !artist.id) return json({ found: false }, 200, 'private, max-age=86400')
+      const albums = await getJson<{ data?: DzAlbum[] }>(`https://api.deezer.com/artist/${id}/albums?limit=100`)
+      const since = new Date(Date.now() - days * 86_400_000).toISOString().slice(0, 10)
+      const list = albums.data ?? []
+      const releases = list
+        .filter((a) => a.release_date && a.release_date >= since)
+        .sort((a, b) => b.release_date!.localeCompare(a.release_date!))
+        .slice(0, 30)
+        .map((a) => ({ id: a.id, t: a.title, type: a.record_type ?? 'album', date: a.release_date, cover: a.cover_medium ?? null }))
+      const pic = artist.picture_medium && !/\/artist\/\//.test(artist.picture_medium) ? artist.picture_medium : null
+      const titles = [...new Set(list.map((a) => a.title))].slice(0, 100)
+      return json({ found: true, id: artist.id, name: artist.name, picture: pic, releases, titles }, 200, 'private, max-age=21600')
     } catch (e) {
       return json({ error: 'deezer_failed', message: (e as Error).message }, 502)
     }

@@ -24,7 +24,7 @@ import { Sidebar } from './Sidebar'
 import { ActionHost } from '../actions/ActionHost'
 import { DjPanelHost } from '../dj/DjPanel'
 import { djStore } from '../state/dj'
-import { albumHref, go, href, navKeyOf, type Route } from './routes'
+import { albumHref, go, href, navKeyOf, releaseHref, type Route } from './routes'
 import { albumOffline, downloadsStore, qualityOf, trackOffline } from '../state/downloads'
 import { fmtBytes, plural } from '../state/views'
 import { onAlbumAdded, useUpload } from '../state/upload'
@@ -165,7 +165,9 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
             action: item?.match ? { label: 'Play', onClick: () => playRelease(item) } : undefined,
           })
         } else if (e.kind === 'reminder') {
-          toast.show({ icon: 'bellF', text: `${e.title} by ${e.artist} is out today.`, meta: 'NEW RELEASE', action: { label: 'View', onClick: () => go(href('new')) }, duration: 8000 })
+          // a pre-release you already have part of says how much
+          const have = e.total ? `You have ${e.have} of ${e.total} songs.` : e.have ? `You have ${e.have} song${e.have === 1 ? '' : 's'} of it.` : ''
+          toast.show({ icon: 'bellF', text: `${e.title} by ${e.artist} is out today.${have ? ` ${have}` : ''}`, meta: 'NEW RELEASE', action: { label: 'View', onClick: () => go(releaseHref(e.id)) }, duration: 8000 })
         }
       }),
     [toast],

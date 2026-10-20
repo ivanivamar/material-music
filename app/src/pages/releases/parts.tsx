@@ -6,7 +6,7 @@ import { GRAIN } from '../../design/textures'
 import { coverUrl, mbReleaseGroupUrl } from '../../lib/musicbrainz'
 import { PelagicNative, isNative } from '../../native/bridge'
 import { releasesStore } from '../../state/releases'
-import { countdown, fmtLength, fmtRelDate, fmtRelShort, type FeedItem } from '../../state/releaseViews'
+import { countdown, fmtLength, fmtRelDate, fmtRelShort, isOwned, type FeedItem } from '../../state/releaseViews'
 import { playList } from '../library/playback'
 
 /* ── Labels ──────────────────────────────────────────── */
@@ -19,6 +19,22 @@ export function TypeBadge({ item, className }: { item: FeedItem; className?: str
 }
 
 const trackCount = (it: FeedItem) => it.detail?.tracks.length || 0
+
+/* ── In the library: complete, pre-release, incomplete ── */
+
+/** IN LIBRARY · PRE-RELEASE · INCOMPLETE */
+export const ownedLabel = (it: FeedItem) => (it.status === 'pre' ? 'PRE-RELEASE' : it.status === 'part' ? 'INCOMPLETE' : 'IN LIBRARY')
+
+/** "4 OF 11 SONGS" (pre-release / incomplete), else the quality ("FLAC 16/44.1") */
+export function ownedCount(it: FeedItem, short = false): string {
+  if (it.status === 'lib') return it.match?.quality ?? ''
+  if (it.total) return short ? `${it.have}/${it.total}` : `${it.have} OF ${it.total} SONGS`
+  return short ? `${it.have}` : `${it.have} SONG${it.have === 1 ? '' : 'S'} IN LIBRARY`
+}
+
+export function OwnedTag({ item }: { item: FeedItem }) {
+  return <span className={`nr-inlib is-${item.status}`}>{ownedLabel(item)}</span>
+}
 
 /** "10 OCT · 11 TRK · 44:18" (card) */
 export function cardMeta(it: FeedItem): string {
@@ -144,7 +160,7 @@ export function useReleaseActions(opts: { onDismissed?: (id: string) => void } =
         releasesStore.mark(it.rel.id, it.status === 'seen' ? 'new' : 'seen')
       },
       got(it: FeedItem) {
-        if (it.status === 'acq' || it.status === 'lib') return
+        if (it.status === 'acq' || isOwned(it.status)) return
         releasesStore.mark(it.rel.id, 'acq')
         toast.show({ icon: 'check', text: `Watching your library for ${it.rel.t}.`, meta: 'MATCHES ON NEXT SCAN' })
       },
