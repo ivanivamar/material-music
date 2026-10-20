@@ -1,7 +1,8 @@
 /**
- * Swell seek (full-screen Now Playing). The played part is a slow, smooth sine wave
- * that drifts while music plays; the part ahead is a flat line. On pause the wave
- * settles flat; on play it swells back. A small glowing pill marks the playhead.
+ * Swell seek (full-screen Now Playing). The played part is a smooth standing wave:
+ * while music plays, every crest sinks to an equally deep trough as the troughs rise
+ * into crests, and back, continuously. The part ahead is a flat line. On pause the
+ * wave settles flat; on play it swells back. A small glowing pill marks the playhead.
  * Hovering (mouse) or dragging shows a mono timestamp over the spot under the pointer.
  * Replaced the tide bars (Oct 20, 2026), which replaced the jagged pseudo-waveform;
  * the component keeps its name and slot.
@@ -9,7 +10,7 @@
  * Drawn in an rAF loop that writes SVG attributes directly (no React render per
  * frame). The loop only runs while playing or while the wave is settling.
  * Reduced motion only drops the pause/play easing and the playhead glide; the wave
- * still drifts while playing.
+ * still rises and falls while playing.
  */
 import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent } from 'react'
 import { useMotion } from '../../state/motion'
@@ -21,7 +22,7 @@ interface WaveformProps {
   onSeek?: (fraction: number) => void
   /** seconds; enables the hover timestamp and aria-valuetext */
   duration?: number
-  /** drifts and swells while true, settles flat while false */
+  /** rises and falls while true, settles flat while false */
   playing?: boolean
   height?: number
   /** accent colour */
@@ -29,9 +30,9 @@ interface WaveformProps {
   glow?: string
 }
 
-const AMP = 4.5 // wave amplitude, px
+const AMP = 5 // wave amplitude, px
 const WAVELENGTH = 34 // px
-const SPEED = 2.2 // phase, rad/s
+const SPEED = 2.4 // rad/s: one full rise-and-fall every ~2.6 s
 const FADE_IN = 24 // wave grows from flat over the first 24px
 const FADE_OUT = 18 // and eases back to flat into the playhead
 
@@ -78,7 +79,10 @@ export function Waveform({
     if (a > 0.05) {
       for (let x = 2; x <= px; x += 2) {
         const env = Math.min(1, x / FADE_IN) * Math.min(1, (px - x) / FADE_OUT)
-        d += ` L${x} ${(mid + Math.sin((x / WAVELENGTH) * Math.PI * 2 - s.phase) * a * env).toFixed(2)}`
+        // standing wave: crests and troughs stay where they are; every crest sinks to an
+        // equally deep trough while the troughs next to it rise into crests, and back
+        const y = Math.sin((x / WAVELENGTH) * Math.PI * 2) * Math.cos(s.phase)
+        d += ` L${x} ${(mid + y * a * env).toFixed(2)}`
       }
     }
     d += ` L${px.toFixed(1)} ${mid}`
@@ -99,7 +103,7 @@ export function Waveform({
 
   // Animation loop while playing or settling.
   useEffect(() => {
-    // The drift runs whenever music plays, even with reduced motion on (Ivan, Oct 20).
+    // The wave moves whenever music plays, even with reduced motion on (Ivan, Oct 20).
     if (!motion && !playing) return
     let raf = 0
     let last = performance.now()
