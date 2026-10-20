@@ -6,6 +6,12 @@
  * Reload". `apply()` lets the waiting worker take over and reloads the page once it has.
  * A long-running window also checks for a new worker every hour and whenever it becomes visible.
  *
+ * Chrome only hands over once the old worker has no requests in flight, and the Drive audio stream
+ * runs through it (open even while paused), so `apply()` first closes the player's streams
+ * (position saved). If the hand-over still hasn't happened after a few seconds the page reloads
+ * anyway with a flag in sessionStorage; the next boot finishes the job (activate + one more reload),
+ * so the user never ends up on old code whose assets the new worker has already dropped.
+ *
  * Install: Chrome/Edge fire `beforeinstallprompt` when the app can be installed; we keep the event
  * so the account menu can offer "Install Pelagic app". Already installed → `installed` is true.
  *
@@ -15,6 +21,7 @@
 import { useSyncExternalStore } from 'react'
 import { initDriveStream } from './driveStream'
 import { isNative } from '../native/bridge'
+import { playerStore } from '../state/player'
 
 declare global {
   /** "YYYY-MM-DD · <commit>", set in vite.config.ts */
@@ -56,8 +63,32 @@ let waiting: ServiceWorker | null = null
 let installEvent: BeforeInstallPromptEvent | null = null
 let reloading = false
 let started = false
+let registration: ServiceWorkerRegistration | null = null
+const PENDING = 'pelagic:update-pending'
+/** how long apply() waits for the new worker before reloading anyway */
+const FALLBACK_MS = 6000
+
+function takePending(): boolean {
+  try {
+    const v = sessionStorage.getItem(PENDING)
+    sessionStorage.removeItem(PENDING)
+    return v === '1'
+  } catch {
+    return false
+  }
+}
+
+function reloadPending() {
+  try {
+    sessionStorage.setItem(PENDING, '1')
+  } catch {
+    /* ignore: plain reload */
+  }
+  window.location.reload()
+}
 
 function track(reg: ServiceWorkerRegistration) {
+  registration = reg
   const markWaiting = (w: ServiceWorker | null) => {
     // only an *update* waits; the first install takes over straight away
     if (!w || !navigator.serviceWorker.controller) return
@@ -104,9 +135,20 @@ export function initPwa() {
       if (!reloading) return
       window.location.reload()
     })
+    const pending = takePending()
     void initDriveStream().then(async () => {
       const reg = await navigator.serviceWorker.getRegistration()
-      if (reg) track(reg)
+      if (!reg) return
+      track(reg)
+      if (!pending) return
+      // a Reload whose hand-over timed out: nothing is playing yet on this fresh page, so finish it now
+      if (reg.waiting && navigator.serviceWorker.controller) {
+        reloading = true
+        reg.waiting.postMessage({ type: 'pelagic:skip-waiting' })
+      } else if (reg.active) {
+        // the new worker took over while this page was loading (maybe from the old cache): reload once more
+        window.location.reload()
+      }
     })
   }
 }
@@ -114,9 +156,14 @@ export function initPwa() {
 export const appUpdate = {
   /** Activate the waiting version and reload into it. */
   apply() {
-    if (!waiting) return window.location.reload()
+    if (reloading) return
+    // a newer deploy may have replaced the worker we saw first
+    const w = registration?.waiting ?? (waiting?.state === 'installed' ? waiting : null)
+    if (!w) return window.location.reload()
     reloading = true
-    waiting.postMessage({ type: 'pelagic:skip-waiting' })
+    playerStore.suspendForReload()
+    w.postMessage({ type: 'pelagic:skip-waiting' })
+    window.setTimeout(reloadPending, FALLBACK_MS)
   },
   /** Show the browser's install dialog. Resolves true if the user installed. */
   async install(): Promise<boolean> {

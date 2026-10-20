@@ -105,6 +105,8 @@ const listeners = new Set<() => void>()
 const noticeListeners = new Set<(n: PlayerNotice) => void>()
 const movedListeners = new Set<(from: number, to: number) => void>()
 let persistTimer = 0
+/** set by suspendForReload(): the page is about to reload, keep the saved position as it is */
+let frozen = false
 /** `go()` loads the track first and tells the engine about the next one afterwards */
 let holdPreload = false
 let lastPreload: string | null | undefined
@@ -112,6 +114,7 @@ let lastPreload: string | null | undefined
 function persist() {
   window.clearTimeout(persistTimer)
   persistTimer = 0
+  if (frozen) return
   const { queue, index, context, position, volume, muted, shuffle, unshuffled, repeat } = state
   try {
     localStorage.setItem(KEY, JSON.stringify({ queue, index, context, position, volume, muted, shuffle, unshuffled, repeat } satisfies Persisted))
@@ -317,6 +320,16 @@ export const playerStore = {
   cycleRepeat() {
     if (state.context?.kind === 'dj' || state.context?.kind === 'radio') return
     set({ repeat: state.repeat === 'off' ? 'all' : state.repeat === 'all' ? 'one' : 'off' })
+  },
+  /**
+   * App update (lib/pwa.ts): save the queue + position, then close the audio streams. A Drive
+   * stream goes through the service worker, and Chrome won't retire the old worker while one is
+   * open (even paused), so the new version couldn't take over. The reloaded page restores paused.
+   */
+  suspendForReload() {
+    persist()
+    frozen = true
+    engine?.unload()
   },
   clear() {
     engine?.unload()
