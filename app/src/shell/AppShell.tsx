@@ -28,6 +28,7 @@ import { albumHref, go, href, navKeyOf, releaseHref, type Route } from './routes
 import { albumOffline, downloadsStore, qualityOf, trackOffline } from '../state/downloads'
 import { fmtBytes, plural } from '../state/views'
 import { onAlbumAdded, useUpload } from '../state/upload'
+import { onLyricsRun } from '../state/health'
 import { uploadSummary } from '../state/uploadViews'
 import { onReleasesEvent, releasesStore, useReleases } from '../state/releases'
 import { buildFeed, fmtClock } from '../state/releaseViews'
@@ -136,6 +137,16 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
           meta: r.failed ? `${plural(r.added, 'TRACK')} · ${r.failed} FAILED` : `${plural(r.added, 'TRACK')} ADDED`,
           action: { label: 'View', onClick: () => go(albumHref(r.albumId)) },
         })
+      }),
+    [toast],
+  )
+
+  // Library health (step 35): lyrics found for freshly uploaded songs
+  useEffect(
+    () =>
+      onLyricsRun((e) => {
+        if (!e.auto || !e.saved) return
+        toast.show({ icon: 'lyrics', text: `Lyrics saved for ${plural(e.saved, 'song', 'songs')}.`, meta: e.tried > e.saved ? `${e.tried - e.saved} NOT ON LRCLIB` : 'FROM LRCLIB', action: { label: 'Health', onClick: () => go(href('health')) } })
       }),
     [toast],
   )

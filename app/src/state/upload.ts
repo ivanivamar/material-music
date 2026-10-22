@@ -28,6 +28,7 @@ import { readFlac, toMeta, idsFor, safeName, type FlacInfo, type TrackMeta } fro
 import { canEncodeOpus, flacToOpus } from '../upload/opus'
 import { prepareArtist, type ArtistPatch, type ArtistSources } from '../upload/artistImages'
 import { putFile, resetFolders, updateCatalogue, type Uploaded } from '../upload/driveWrite'
+import { autoFetchLyrics } from './health'
 import { libraryStore, type Album, type Catalogue, type Track } from './library'
 import { onAccountReset } from './session'
 import { canCommit, hasHeldDup, releaseQuality, uploadable } from './uploadViews'
@@ -795,6 +796,8 @@ function finishAlbum(key: string): Promise<void> {
         libraryStore.adopt(w.data, w.fileId, w.version)
         for (const it of ready) patchItem(it.id, { state: 'done' })
         ok = true
+        // songs that came without lyrics in their tags: look them up (LRCLIB) and save them next to the song
+        autoFetchLyrics(ready.map((it) => it.trackId!))
       } catch (e) {
         for (const it of ready) patchItem(it.id, { state: 'error', error: `Uploaded, but library.json wasn’t updated: ${errorText(e)}` })
       }

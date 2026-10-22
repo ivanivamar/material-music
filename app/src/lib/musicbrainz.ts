@@ -266,3 +266,30 @@ export const bandcampSearchUrl = (artist: string, title: string) => `https://ban
 
 /** MusicBrainz's "Various Artists" and other placeholders: never swept. */
 export const SPECIAL_ARTISTS = new Set(['89ad4ac3-39f7-470e-963a-56509c546377', 'f731ccc4-e22a-43af-a747-64213329e088', '33cf029c-63b0-41a0-9855-be2a3665fb3b'])
+
+/* ── Library health: find an album's year / cover ───── */
+
+export interface MbAlbumHit {
+  id: string
+  title: string
+  artist: string
+  /** year of the first release, when MusicBrainz knows it */
+  year: number | null
+  /** search score 0–100 */
+  score: number
+}
+
+const lucene = (s: string) => s.replace(/(["\\])/g, '\\$1')
+
+/** Release groups matching an artist + title (best first). Titles are compared by the caller. */
+export async function searchReleaseGroups(artist: string, title: string, priority = 2): Promise<MbAlbumHit[]> {
+  const q = `releasegroup:"${lucene(title)}" AND artist:"${lucene(artist)}"`
+  const r = await mbGet<{ 'release-groups'?: { id: string; title: string; score?: number; 'first-release-date'?: string; 'artist-credit'?: { name?: string }[] }[] }>(
+    `release-group?query=${encodeURIComponent(q)}&limit=6`,
+    priority,
+  )
+  return (r['release-groups'] ?? []).map((g) => {
+    const y = Number((g['first-release-date'] ?? '').slice(0, 4))
+    return { id: g.id, title: g.title, artist: (g['artist-credit'] ?? []).map((a) => a.name ?? '').join(''), year: y >= 1900 && y < 2100 ? y : null, score: g.score ?? 0 }
+  })
+}

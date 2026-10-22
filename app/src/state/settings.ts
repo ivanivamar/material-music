@@ -26,6 +26,8 @@ export interface Settings {
   driveFallback: boolean
   /** New Releases: the daily sweep runs after this local hour */
   sweepHour: number
+  /** Upload: look up lyrics (LRCLIB) for songs that arrive without them */
+  fetchLyrics: boolean
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -38,6 +40,7 @@ export const DEFAULT_SETTINGS: Settings = {
   streamQuality: isNative ? 'opus' : 'original',
   driveFallback: true,
   sweepHour: 6,
+  fetchLyrics: true,
 }
 
 const KEY = 'pelagic.settings.v1'

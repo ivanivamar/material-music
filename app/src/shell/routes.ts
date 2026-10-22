@@ -1,12 +1,12 @@
 /**
  * Hash routes: #/home, #/library[/artists|albums|playlists|songs], #/album/<id>, #/artist/<id>,
- * #/playlist/<id>, #/mix/<id>, #/stats[/<year>|/<year>-<month>] …
+ * #/playlist/<id>, #/mix/<id>, #/stats[/<year>|/<year>-<month>], #/health (Library health, opened from Settings) …
  * plus the dev reference pages (#/dev/components, #/dev/foundations).
  */
 import { useSyncExternalStore } from 'react'
 import type { IconName } from '../design/icons'
 
-export type RouteKey = 'home' | 'library' | 'new' | 'upload' | 'downloads' | 'settings' | 'album' | 'artist' | 'playlist' | 'stats' | 'mix'
+export type RouteKey = 'home' | 'library' | 'new' | 'upload' | 'downloads' | 'settings' | 'health' | 'album' | 'artist' | 'playlist' | 'stats' | 'mix'
 export type DevRoute = 'dev/components' | 'dev/foundations'
 export type LibraryTab = 'albums' | 'artists' | 'playlists' | 'songs'
 export const LIBRARY_TABS: LibraryTab[] = ['artists', 'albums', 'playlists', 'songs']
@@ -29,7 +29,7 @@ export const NAV: NavItem[] = [
 export const SETTINGS_NAV: NavItem = { key: 'settings', label: 'Settings', icon: 'gear' }
 
 type SimpleKey = Exclude<RouteKey, 'library' | 'album' | 'artist' | 'playlist' | 'stats' | 'mix'>
-const KEYS = new Set<string>(['home', 'new', 'upload', 'downloads', 'settings'])
+const KEYS = new Set<string>(['home', 'new', 'upload', 'downloads', 'settings', 'health'])
 const DEV = new Set<string>(['dev/components', 'dev/foundations'])
 
 export type Route =
@@ -102,7 +102,7 @@ export function go(to: string) {
 }
 
 /** Sidebar item lit for a route: album / artist / playlist pages live under Library. */
-export const navKeyOf = (r: Route): RouteKey => (r.kind === 'app' ? (r.key === 'album' || r.key === 'artist' || r.key === 'playlist' ? 'library' : r.key === 'mix' ? 'home' : r.key) : 'home')
+export const navKeyOf = (r: Route): RouteKey => (r.kind === 'app' ? (r.key === 'album' || r.key === 'artist' || r.key === 'playlist' ? 'library' : r.key === 'mix' ? 'home' : r.key === 'health' ? 'settings' : r.key) : 'home')
 
 /** In-app history depth (hash changes since load), so Back can fall back to a page when there's none. */
 let depth = 0

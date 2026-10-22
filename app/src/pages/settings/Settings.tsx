@@ -26,6 +26,7 @@ import { back, go, href } from '../../shell/routes'
 import { checkDrive } from '../../state/checkDrive'
 import { djLearned, djStore, useDj } from '../../state/dj'
 import { downloadsStore, libraryBytes, useDownloads, type DownloadQuality } from '../../state/downloads'
+import { issueCount, ISSUE_KINDS, useHealth } from '../../state/health'
 import { useLibrary, type Catalogue } from '../../state/library'
 import { useMotion, useSystemReducedMotion } from '../../state/motion'
 import { nextSweepAt, releasesStore, sweepTargets, useReleases } from '../../state/releases'
@@ -356,6 +357,8 @@ function LibrarySection() {
   const expired = useSession().status === 'expired'
   const desktopFolder = !isNative && localFolder.supported
   const linked = local.status !== 'none' && local.status !== 'unsupported' && local.status !== 'loading'
+  const health = useHealth()
+  const issues = health ? ISSUE_KINDS.reduce((n, k) => n + issueCount(health)[k], 0) : null
 
   const link = async () => {
     if (!lib.data) return
@@ -415,6 +418,17 @@ function LibrarySection() {
           </Act>
         }
         below={lib.refreshing ? <div className="st-prog pg-anim" aria-hidden /> : undefined}
+      />
+      <Row
+        label="Library health"
+        hint={issues === null ? 'LOOKING…' : issues ? `${fmtN(issues)} TO FIX · COVERS, LYRICS, GENRE, YEAR, DUPLICATES, BITRATE` : 'ALL CLEAR'}
+        dot={issues === 0}
+        control={<Act onClick={() => go(href('health'))}>Open</Act>}
+      />
+      <Row
+        label="Look up lyrics for new uploads"
+        hint={s.fetchLyrics ? 'SONGS WITHOUT LYRICS GET THEM FROM LRCLIB AFTER UPLOAD' : 'ONLY LYRICS FROM THE FILE TAGS'}
+        control={<Tog label="Look up lyrics for new uploads" checked={s.fetchLyrics} onChange={(v) => settingsStore.set('fetchLyrics', v)} />}
       />
     </>
   )

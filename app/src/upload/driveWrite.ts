@@ -238,15 +238,24 @@ export interface CatalogueWrite {
   version: string | null
 }
 
+type Cached = { data: Catalogue | null; version: string | null }
+
+/** One catalogue write at a time in this tab (Upload, Remove, Library health…). */
+let writeChain: Promise<unknown> = Promise.resolve()
+
 /**
  * Read the newest library.json, apply `change`, write it back. Starts from `cached` when Drive's
  * version still matches it, otherwise downloads (the importer or another device may have written).
  * If Drive's version moved while we were writing, does it again on top of the newer copy.
+ * `cached` may be a function, read when this write's turn comes (writes are queued).
  */
-export async function updateCatalogue(
-  change: (c: Catalogue) => void,
-  cached: { data: Catalogue | null; version: string | null },
-): Promise<CatalogueWrite> {
+export function updateCatalogue(change: (c: Catalogue) => void, cached: Cached | (() => Cached)): Promise<CatalogueWrite> {
+  const run = writeChain.then(() => writeCatalogue(change, typeof cached === 'function' ? cached() : cached))
+  writeChain = run.catch(() => undefined)
+  return run
+}
+
+async function writeCatalogue(change: (c: Catalogue) => void, cached: Cached): Promise<CatalogueWrite> {
   const rootId = await folder([])
   for (let attempt = 1; ; attempt++) {
     const meta = await findChild(CATALOGUE_NAME, rootId, false)
