@@ -510,8 +510,8 @@ function LyricsBar({ songs }: { songs: Track[] }) {
           </>
         ) : job.offline ? (
           <>
-            <b>Couldn’t reach LRCLIB.</b>
-            <span>CHECK THE CONNECTION AND TRY AGAIN</span>
+            <b>LRCLIB isn’t answering.</b>
+            <span>SEVERAL REQUESTS IN A ROW FAILED · TRY AGAIN IN A MINUTE</span>
           </>
         ) : job.error ? (
           <>

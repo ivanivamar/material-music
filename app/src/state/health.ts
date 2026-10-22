@@ -333,6 +333,7 @@ export function fetchLyrics(trackIds: string[], opts: { auto?: boolean; force?: 
 async function runJobs(): Promise<void> {
   const pending = new Map<string, { text: string; synced: boolean }>()
   let stop = false
+  let failStreak = 0
   let writing: Promise<void> = Promise.resolve()
   const flush = () => {
     if (!pending.size) return
@@ -365,6 +366,7 @@ async function runJobs(): Promise<void> {
       try {
         const r = await lookupLyrics({ title: t.title, artist: t.artist, album: album?.title, duration: t.duration })
         runTried++
+        failStreak = 0
         if (r.kind === 'found') {
           pending.set(id, { text: r.text, synced: r.synced })
           patchLyric(id, 'found')
@@ -379,14 +381,15 @@ async function runJobs(): Promise<void> {
         }
       } catch (e) {
         if (e instanceof LyricsOffline) {
-          // LRCLIB / the connection is down: put this one back and stop, nothing is marked as missing
-          jobQueue.unshift(id)
+          // a request failed even after retries: skip this song (not marked as missing, "Fetch" tries it
+          // again); only give up the whole run when several in a row fail, i.e. LRCLIB / the network is down
           patchLyric(id, 'error')
-          stop = true
-          set({ job: { ...state.job, offline: true } })
-          return
-        }
-        patchLyric(id, 'error')
+          if (++failStreak >= 5) {
+            stop = true
+            set({ job: { ...state.job, offline: true } })
+            return
+          }
+        } else patchLyric(id, 'error')
       }
       set({ job: { ...state.job, done: state.job.done + 1 } })
     }

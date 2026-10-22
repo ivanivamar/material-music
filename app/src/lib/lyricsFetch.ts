@@ -46,22 +46,44 @@ const fold = (s: string) =>
     .replace(/[^\p{L}\p{N}]+/gu, ' ')
     .trim()
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
+const TIMEOUT_MS = 15_000
+const RETRIES = 3
+
+/** One request, retried on timeouts, network errors, 429 and 5xx (LRCLIB is often slow or briefly overloaded). */
 async function getJson<T>(path: string, signal?: AbortSignal): Promise<T | null> {
-  let res: Response
-  try {
-    res = await fetch(`${BASE}/${path}`, { signal, headers: { Accept: 'application/json' } })
-  } catch (e) {
-    if (e instanceof DOMException && e.name === 'AbortError') throw e
-    throw new LyricsOffline()
+  let reason = 'Could not reach LRCLIB'
+  for (let attempt = 0; attempt < RETRIES; attempt++) {
+    if (attempt) await sleep(1200 * attempt + Math.random() * 600)
+    signal?.throwIfAborted()
+    const ctl = new AbortController()
+    const timer = setTimeout(() => ctl.abort(), TIMEOUT_MS)
+    const onAbort = () => ctl.abort()
+    signal?.addEventListener('abort', onAbort, { once: true })
+    try {
+      const res = await fetch(`${BASE}/${path}`, { signal: ctl.signal })
+      if (res.status === 404) return null
+      if (res.status === 429 || res.status >= 500) {
+        reason = `LRCLIB answered ${res.status}`
+        const wait = Number(res.headers.get('retry-after'))
+        if (wait > 0 && wait < 30) await sleep(wait * 1000)
+        continue
+      }
+      if (!res.ok) return null
+      try {
+        return (await res.json()) as T
+      } catch {
+        return null
+      }
+    } catch (e) {
+      if (signal?.aborted) throw e
+      reason = ctl.signal.aborted ? 'LRCLIB took too long to answer' : 'Could not reach LRCLIB'
+    } finally {
+      clearTimeout(timer)
+      signal?.removeEventListener('abort', onAbort)
+    }
   }
-  if (res.status === 404) return null
-  if (res.status === 429 || res.status >= 500) throw new LyricsOffline(`LRCLIB answered ${res.status}`)
-  if (!res.ok) return null
-  try {
-    return (await res.json()) as T
-  } catch {
-    return null
-  }
+  throw new LyricsOffline(reason)
 }
 
 const hasText = (s: string | null | undefined): s is string => !!s && /\S/.test(s)
