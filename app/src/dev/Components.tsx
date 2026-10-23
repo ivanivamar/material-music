@@ -13,9 +13,14 @@ import {
 import { settingsStore, useSettings } from '../state/settings'
 import { useMotion, useSystemReducedMotion } from '../state/motion'
 import type { MotionSetting, ParticleSetting } from '../design/tokens'
-import underBlue from '../../../design_handoff_pelagic/art/eve-under-blue.jpg'
-import rotoscope from '../../../design_handoff_pelagic/art/spiritbox-rotoscope.jpg'
-import tsunami from '../../../design_handoff_pelagic/art/spiritbox-tsunami-sea.jpg'
+/** Sample covers drawn in code (no image files, so the build doesn't depend on any handoff folder). */
+function sampleCover(a: string, b: string, c: string): string {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></linearGradient></defs><rect width="400" height="400" fill="url(#g)"/><circle cx="270" cy="140" r="90" fill="${c}" fill-opacity=".35"/><circle cx="130" cy="300" r="140" fill="#000" fill-opacity=".25"/></svg>`
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`
+}
+const underBlue = sampleCover('#1d4a7a', '#06121f', '#6fb3ff')
+const rotoscope = sampleCover('#5a2a3a', '#120609', '#ff8aa8')
+const tsunami = sampleCover('#1f6f6a', '#04100f', '#8af0e0')
 import './components.css'
 
 const ROWS: { n: number; t: string; d: string; label: string; dl: DownloadState }[] = [

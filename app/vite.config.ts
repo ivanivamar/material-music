@@ -1,6 +1,6 @@
 import { execSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { readdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join, relative, sep } from 'node:path'
 import react from '@vitejs/plugin-react'
 import { defineConfig, type Plugin } from 'vite'
@@ -32,6 +32,8 @@ function pelagicServiceWorker(): Plugin {
       outDir = c.build.outDir
     },
     closeBundle() {
+      // a failed build never wrote the folder: stay quiet so the real build error is what gets reported
+      if (!existsSync(outDir)) return
       const walk = (dir: string): string[] =>
         readdirSync(dir, { withFileTypes: true }).flatMap((d) => (d.isDirectory() ? walk(join(dir, d.name)) : [join(dir, d.name)]))
       const files = walk(outDir)
