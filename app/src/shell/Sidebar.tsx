@@ -10,6 +10,7 @@
 import { useState, type DragEvent } from 'react'
 import { useToast } from '../components/ui'
 import { Icon } from '../design/icons'
+import { PortholeMark } from '../components/Logo'
 import { actions, DRAG_MIME, draggedTracks } from '../actions/actions'
 import { addToPlaylist } from '../actions/ops'
 import { PlaylistCover } from '../pages/playlists/PlaylistCover'
@@ -38,11 +39,7 @@ export function Sidebar({ active, activePlaylist, badges }: { active: RouteKey; 
   return (
     <aside className="sb">
       <a className="sb-brand" href={href('home')} aria-label="Pelagic home">
-        <span className="sb-mark" aria-hidden>
-          <span className="sb-mark-top" />
-          <span className="sb-mark-bottom" />
-          <span className="sb-mark-line" />
-        </span>
+        <PortholeMark size={28} className="sb-mark" />
         <span className="sb-word">Pelagic</span>
       </a>
 

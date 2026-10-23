@@ -12,14 +12,10 @@
 }
 .sb::-webkit-scrollbar { display: none; }
 
-/* ── Brand: 22px aperture + wordmark ───────────────── */
+/* ── Brand: 28px porthole + wordmark ───────────────── */
 .sb-brand { display: flex; align-items: center; gap: 12px; padding: 0 14px; color: var(--ink-primary); text-decoration: none; }
 .sb-brand:hover { color: var(--ink-primary); }
-.sb-mark { position: relative; width: 22px; height: 22px; flex: none; }
-.sb-mark-top, .sb-mark-bottom { position: absolute; inset: 0; border-radius: 50%; border: 1.5px solid; }
-.sb-mark-top { border-color: rgba(255, 255, 255, .9); clip-path: inset(0 0 50% 0); }
-.sb-mark-bottom { border-color: rgba(255, 255, 255, .22); clip-path: inset(50% 0 0 0); }
-.sb-mark-line { position: absolute; left: -5px; right: -5px; top: 10.5px; height: 1px; background: #fff; }
+.sb-mark { flex: none; display: block; margin: -3px 0 -3px -3px; }
 .sb-word { font-size: 14px; font-weight: 500; letter-spacing: var(--ls-wordmark); text-transform: uppercase; }
 
 /* ── Nav items ─────────────────────────────────────── */

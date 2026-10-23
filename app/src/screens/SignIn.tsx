@@ -3,7 +3,7 @@
  */
 import { useEffect } from 'react'
 import { Atmosphere } from '../components/Atmosphere'
-import { Aperture } from '../components/Logo'
+import { PortholeMark } from '../components/Logo'
 import { preloadGoogle, sessionStore, useSession } from '../state/session'
 import './screens.css'
 
@@ -19,9 +19,7 @@ export function SignIn({ expired = false }: { expired?: boolean }) {
         {expired ? (
           <>
             <div className="expired-mark" aria-hidden>
-              <span className="em-top" />
-              <span className="em-bottom" />
-              <span className="em-line" />
+              <PortholeMark size={104} />
             </div>
             <div className="scr-copy">
               <h1 className="scr-title">You drifted out of range.</h1>
@@ -30,7 +28,7 @@ export function SignIn({ expired = false }: { expired?: boolean }) {
           </>
         ) : (
           <div className="signin-lockup">
-            <Aperture size={132} />
+            <PortholeMark size={132} />
             <h1 className="signin-word">Pelagic</h1>
             <p className="signin-tagline">Your own library, from far below the surface.</p>
           </div>
