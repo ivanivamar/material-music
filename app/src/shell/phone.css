@@ -602,6 +602,61 @@ html[data-phone] .toast-meta { display: none; }
 .shell.is-phone .shelf-one > .recap-card { width: 288px; flex: none; scroll-snap-align: start; min-height: 220px; }
 .shell.is-phone .recap-num { font-size: 46px; }
 .shell.is-phone .recap-count { display: none; }
-/* New Releases → From artists like yours (phone) */
-.shell.is-phone .nr-row .nr-because { font-size: var(--fs-mono-xs); }
+/* New Releases pass 2 (phone): segmented tabs, filter chips, Upcoming rows, Discover cards, artist sheet */
 .shell.is-phone .nrp-unfollow { height: 34px; }
+
+.shell.is-phone .nr-seg {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px; padding: 3px; border-radius: 14px; margin-top: -8px;
+  border: var(--bw-control) solid rgba(255, 255, 255, .1);
+}
+.shell.is-phone .nr-seg-b {
+  height: 40px; border-radius: 11px; border: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;
+  font-family: inherit; font-size: 14px; font-weight: 500; background: transparent; color: var(--ink-secondary); transition: background .3s, color .3s;
+}
+.shell.is-phone .nr-seg-b.is-on { background: var(--ink-primary); color: var(--bg-1); }
+.shell.is-phone .nr-seg-b .nr-mono { color: var(--ink-tertiary); }
+.shell.is-phone .nr-filters { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: -6px -20px 0; padding: 0 20px; gap: 8px; }
+.shell.is-phone .nr-filters::-webkit-scrollbar { display: none; }
+.shell.is-phone .nr-filters .nr-chip { flex: none; gap: 7px; }
+.shell.is-phone .nr-filters .nr-chip-art { padding: 0 10px 0 14px; gap: 6px; }
+.shell.is-phone .nr-artpop-wrap { flex: none; }
+.shell.is-phone .nr-weeks { gap: 14px; margin: 0 -20px; }
+.shell.is-phone .nr-week-head { display: flex; align-items: center; gap: 10px; height: auto; padding: 6px 20px; }
+.shell.is-phone .nr-week-head .nr-glabel { font-size: var(--fs-mono-sm); }
+.shell.is-phone .nr-week-range { font-size: var(--fs-mono-xs); letter-spacing: .12em; }
+.shell.is-phone .nr-uprow {
+  display: grid; grid-template-columns: 40px 60px minmax(0, 1fr) 44px; align-items: center; gap: 12px; padding: 10px 16px 10px 20px; cursor: pointer; outline: none;
+}
+.shell.is-phone .nr-uprow:focus-visible { box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, .5); }
+.nr-uprow-cd { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.nr-uprow-n { font-size: 26px; letter-spacing: -0.03em; line-height: 1; color: #bdbdbd; }
+.nr-uprow-n.is-month { font-size: 17px; letter-spacing: -0.01em; }
+.nr-uprow-cd .nr-mono { font-size: var(--fs-mono-xs); letter-spacing: .12em; color: var(--ink-secondary); }
+.nr-uprow-cover { position: relative; width: 60px; height: 60px; border-radius: 8px; overflow: hidden; background: var(--surface-1); }
+.nr-uprow-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.nr-uprow-trow { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.nr-uprow-t { font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nr-uprow-t.is-seen { color: var(--ink-secondary); }
+.nr-uprow-a { font-size: 13px; color: var(--ink-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nr-uprow-m { letter-spacing: .1em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.shell.is-phone .nr-disc { gap: 12px; }
+.shell.is-phone .nr-disc-intro { margin: 0; font-size: 14px; line-height: 1.5; }
+.shell.is-phone .nr-sg { display: flex; flex-direction: column; align-items: stretch; gap: 14px; padding: 16px; background: rgba(18, 18, 20, .8); }
+.nr-sg-head { display: flex; align-items: center; gap: 14px; }
+.shell.is-phone .nr-sg-av { width: 48px; height: 48px; font-size: 11px; }
+.shell.is-phone .nr-sg-info { gap: 3px; }
+.shell.is-phone .nr-sg-name { font-size: 19px; letter-spacing: -0.01em; }
+.shell.is-phone .nr-sg-because { font-size: 13px; }
+.shell.is-phone .nr-sg-plays { font-size: var(--fs-mono-xs); }
+.shell.is-phone .nr-sg-rel { display: flex; }
+.shell.is-phone .nr-sg-r { height: 32px; }
+.shell.is-phone .nr-sg-acts { flex-direction: row; gap: 8px; }
+.shell.is-phone .nr-sg-add { flex: 1; }
+.nr-sg-sq {
+  width: 44px; height: 44px; flex: none; border-radius: var(--r-button); box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-size: 20px; cursor: pointer;
+  background: transparent; color: var(--ink-secondary); border: var(--bw-control) solid rgba(255, 255, 255, .14);
+}
+.nr-sg-sq:disabled { color: var(--ink-ghost); border-color: rgba(255, 255, 255, .06); }
+.shell.is-phone .nr-artsheet { padding-bottom: calc(24px + env(safe-area-inset-bottom)); gap: 12px; }
+.nr-artsheet-list { display: flex; flex-direction: column; margin: 0 -8px; }
+.shell.is-phone .nr-artsheet .nr-artrow { height: 56px; padding: 0 8px; font-size: 16px; }

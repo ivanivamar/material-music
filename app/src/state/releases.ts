@@ -144,11 +144,17 @@ export interface SweepError {
   manual: boolean
 }
 
+/** Out now: which releases the status filter shows */
+export type StatusFilter = 'all' | 'new' | 'seen'
+
+/** This device's filters (pass 2: shared by Upcoming and Out now). */
 export interface ReleasePrefs {
-  types: Record<RelType, boolean>
-  showSeen: boolean
-  /** show "From artists like yours" */
-  discover: boolean
+  /** Out now only */
+  status: StatusFilter
+  /** only this library artist's releases (null = all artists) */
+  artist: string | null
+  /** Upcoming: furthest first */
+  reversed: boolean
 }
 
 export interface ReleasesState {
@@ -184,7 +190,8 @@ const sweepHour = () => settingsStore.get().sweepHour
 const RETRY_MS = 30 * 60_000
 const RESOLVE_AGAIN_MS = 30 * DAY
 
-export const DEFAULT_TYPES: Record<RelType, boolean> = { album: true, ep: true, single: true, live: false, other: false }
+/** Release types the feed shows (the type chips are gone since pass 2; live / other stay out unless owned). */
+export const SHOWN_TYPES: Record<RelType, boolean> = { album: true, ep: true, single: true, live: false, other: false }
 
 const emptyDoc = (): ReleasesDoc => ({
   sweep: { at: null, by: null },
@@ -310,12 +317,16 @@ export function followedExternal(doc: ReleasesDoc): (FollowedExt & { id: string 
 
 function loadPrefs(): ReleasePrefs {
   try {
-    const raw = JSON.parse(localStorage.getItem(PREFS_KEY) ?? 'null') as Partial<ReleasePrefs> | null
-    if (raw) return { types: { ...DEFAULT_TYPES, ...raw.types }, showSeen: raw.showSeen ?? true, discover: raw.discover ?? true }
+    const raw = JSON.parse(localStorage.getItem(PREFS_KEY) ?? 'null') as (Partial<ReleasePrefs> & { showSeen?: boolean }) | null
+    if (raw) {
+      // pass 1 stored "Show seen": off → only New
+      const status: StatusFilter = raw.status === 'new' || raw.status === 'seen' || raw.status === 'all' ? raw.status : raw.showSeen === false ? 'new' : 'all'
+      return { status, artist: typeof raw.artist === 'string' ? raw.artist : null, reversed: !!raw.reversed }
+    }
   } catch {
     /* ignore */
   }
-  return { types: { ...DEFAULT_TYPES }, showSeen: true, discover: true }
+  return { status: 'all', artist: null, reversed: false }
 }
 function savePrefs(p: ReleasePrefs) {
   try {
@@ -772,7 +783,7 @@ export const releasesStore = {
   /* ── Local filters ── */
 
   setPrefs(patch: Partial<ReleasePrefs>) {
-    const prefs = { ...state.prefs, ...patch, types: { ...state.prefs.types, ...patch.types } }
+    const prefs = { ...state.prefs, ...patch }
     savePrefs(prefs)
     set({ prefs })
   },

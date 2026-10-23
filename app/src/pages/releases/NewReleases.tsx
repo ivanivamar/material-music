@@ -1,32 +1,30 @@
 /**
- * New Releases (step 11, handoff 12 → NewReleases.dc.html): the daily MusicBrainz sweep of every
- * artist in the library. Nothing here plays until it matches files you own; each release moves
- * new → seen → acquired → in library (or is dismissed).
+ * New Releases (step 11, pass 2 = step 35 → design_handoff_new_releases): the daily MusicBrainz sweep
+ * of every artist in the library. Nothing here plays until it matches files you own; a release that's
+ * complete in the library never shows. Three tabs:
+ *   Upcoming  a timeline by week with day countdowns; the one action is Remind me
+ *   Out now   hero (newest from your most played) + groups, as a card grid (phone: swipe rows)
+ *   Discover  artists related to your most played who aren't in the library: Add to sweep
+ * Filters (Upcoming + Out now): status (Out now), artist, hide reissues, furthest first (Upcoming).
+ * Clicking a release opens the detail panel (460px; phone: bottom sheet); the cog opens Followed artists.
  *
- * Desktop: header with the sonar line + Followed artists + refresh (sonar rings while sweeping),
- * type chips · Show seen · counts, a hero card (newest from your most played artist), then time
- * groups (Upcoming / This week / Earlier this month / Older) as a 4-column card grid. Clicking a
- * card opens the detail panel (460px); the gear opens Followed artists in the same panel.
- * Phone: compact hero, rows you drag right (seen) or left (dismiss), tap = bottom sheet.
- *
- * Data: state/releases.ts (sweep + Drive sync), state/releaseViews.ts (feed, matching).
+ * Data: state/releases.ts (sweep + Drive sync), state/releaseViews.ts (feed, matching, suggestions).
  */
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent } from 'react'
-import { Skeleton, Toggle } from '../../components/ui'
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent } from 'react'
+import { Skeleton } from '../../components/ui'
 import { Icon } from '../../design/icons'
 import { useOnline } from '../../state/downloads'
 import { useHistory } from '../../state/history'
 import { useLibrary, type Catalogue } from '../../state/library'
 import { nowPlayingStore } from '../../state/nowPlaying'
-import { DEFAULT_TYPES, releasesStore, sweepTargets, useReleases, type ReleasesState } from '../../state/releases'
-import { buildDiscover, buildFeed, countdown, fmtClock, fmtStamp, isOwned, nextSweepClock, type DiscoverItem, type Feed, type FeedItem } from '../../state/releaseViews'
+import { releasesStore, sweepTargets, useReleases, type ReleasesState, type StatusFilter } from '../../state/releases'
+import { TOP_ARTISTS, buildFeed, buildSuggestions, countdown, fmtClock, fmtRelDate, fmtStamp, isOwned, nextSweepClock, type ArtistOpt, type Feed, type FeedItem, type UpWeek } from '../../state/releaseViews'
 import { refreshDiscover } from '../../state/discover'
-import { DiscoverDetail, DiscoverSection, useDiscoverActions } from './Discover'
+import { DiscoverTab } from './Discover'
 import { useIsPhone } from '../../state/viewport'
 import { useMotion } from '../../state/motion'
 import { artistHref, go, href, replace } from '../../shell/routes'
 import { registerBack } from '../../native/backButton'
-import type { RelType } from '../../lib/musicbrainz'
 import { PageHeader } from '../PageHeader'
 import { FollowedArtists, ReleaseDetail, ReleasePanel, type PanelState } from './ReleasePanel'
 import {
@@ -50,13 +48,14 @@ import {
 } from './parts'
 import './releases.css'
 
-const TYPES: [RelType, string][] = [
-  ['album', 'Albums'],
-  ['ep', 'EPs'],
-  ['single', 'Singles'],
-  ['live', 'Live'],
-  ['other', 'Other'],
+type Tab = 'up' | 'out' | 'disc'
+const TABS: [Tab, string][] = [
+  ['up', 'Upcoming'],
+  ['out', 'Out now'],
+  ['disc', 'Discover'],
 ]
+/** the selected tab lasts for the session (not across launches) */
+let sessionTab: Tab = 'up'
 
 export function NewReleases() {
   const { data } = useLibrary()
@@ -84,8 +83,13 @@ function Page({ c }: { c: Catalogue }) {
   const phone = useIsPhone()
   const online = useOnline()
   const feed = buildFeed(rs.doc, c, history.plays, rs.prefs)
-  const discover = buildDiscover(rs.doc, c, rs.prefs)
+  const suggestions = buildSuggestions(rs.doc, c, history.plays)
   const artistsN = useMemo(() => sweepTargets(c, rs.doc).length, [c, rs.doc])
+  const [tab, setTabState] = useState<Tab>(sessionTab)
+  const setTab = (t: Tab) => {
+    sessionTab = t
+    setTabState(t)
+  }
 
   // #/new?artists (Settings → Followed artists) opens with the Followed artists panel;
   // #/new?rel=<id> (a reminder toast / notification) with that release's detail
@@ -152,23 +156,13 @@ function Page({ c }: { c: Catalogue }) {
     setPanel({ kind: 'rel', id: it.rel.id })
   }
   const detailItem = shown?.kind === 'rel' ? feed.byId.get(shown.id) : undefined
-  // a Discover release keeps its panel content while it slides out after Follow / Dismiss
-  const lastDz = useRef<DiscoverItem | undefined>(undefined)
-  const dzFound = shown?.kind === 'dz' ? discover.find((d) => d.key === shown.key) : undefined
-  useEffect(() => {
-    if (dzFound) lastDz.current = dzFound
-  })
-  // eslint-disable-next-line react-hooks/refs -- the last shown item, while the panel slides out
-  const dzItem = shown?.kind === 'dz' ? (dzFound ?? lastDz.current) : undefined
-  const dzAct = useDiscoverActions((key) => setPanel((p) => (p?.kind === 'dz' && p.key === key ? null : p)))
-  const openDz = (it: DiscoverItem) => {
-    dzAct.seen(it)
-    setPanel({ kind: 'dz', key: it.key })
-  }
 
   const firstSweep = !rs.doc.sweep.at
-  const visibleCount = (feed.hero ? 1 : 0) + feed.groups.reduce((s, g) => s + g.items.length, 0)
-  const caughtUp = !firstSweep && visibleCount === 0 && !rs.sweeping
+  const showTabs = !firstSweep || feed.all.length > 0
+  const discN = suggestions.filter((s) => !s.followed).length
+  const counts: Record<Tab, number> = { up: feed.tabs.up, out: feed.tabs.out, disc: discN }
+  const filtered = (tab === 'out' && rs.prefs.status !== 'all') || rs.prefs.artist !== null
+  const empty = showTabs && !rs.sweeping && ((tab === 'up' && !feed.weeks.length) || (tab === 'out' && !feed.outShown))
 
   return (
     <div className={`nr ${phone ? 'is-phone' : ''}`}>
@@ -184,43 +178,53 @@ function Page({ c }: { c: Catalogue }) {
       {rs.error && <SweepErrorPanel rs={rs} />}
       {firstSweep && (rs.sweeping || !rs.error) && <FirstSweep rs={rs} feed={feed} artistsN={artistsN} online={online} />}
 
-      {(!firstSweep || feed.all.length > 0) && <Chips rs={rs} feed={feed} phone={phone} />}
+      {showTabs && <Tabs tab={tab} counts={counts} phone={phone} onTab={setTab} />}
+      {showTabs && tab !== 'disc' && <Filters key={tab} tab={tab} rs={rs} feed={feed} c={c} phone={phone} onArtistSheet={() => setPanel({ kind: 'artistFilter' })} />}
 
-      {feed.hero && <Hero item={feed.hero} line={phone ? feed.heroLine.phone : feed.heroLine.desktop} phone={phone} act={act} online={online} onOpen={open} />}
+      {tab === 'out' && feed.hero && <Hero item={feed.hero} line={phone ? feed.heroLine.phone : feed.heroLine.desktop} phone={phone} act={act} online={online} onOpen={open} />}
 
-      {caughtUp && <CaughtUp rs={rs} feed={feed} artistsN={artistsN} />}
+      {empty && <CaughtUp rs={rs} tab={tab} artistsN={artistsN} filtered={filtered} />}
 
-      {feed.groups.map((g) => (
-        <section key={g.key} className="nr-group">
-          <div className="nr-ghead">
-            <span className="nr-gring" />
-            <span className="nr-glabel">{g.label}</span>
-            {!phone && <span className="nr-gcount">{String(g.items.length).padStart(2, '0')}</span>}
-            <span className="nr-gline" />
-            <span className="nr-grange">{phone ? String(g.items.length).padStart(2, '0') : g.range}</span>
-          </div>
-          {phone ? (
-            <div className="nr-rows">
-              {g.items.map((it) => (
-                <PhoneRow key={it.rel.id} item={it} act={act} onOpen={open} />
-              ))}
+      {tab === 'up' && feed.weeks.length > 0 && (
+        <div className="nr-weeks">
+          {feed.weeks.map((w) => (
+            <UpcomingWeek key={w.key} week={w} phone={phone} act={act} onOpen={open} />
+          ))}
+        </div>
+      )}
+
+      {tab === 'out' &&
+        feed.groups.map((g) => (
+          <section key={g.key} className="nr-group">
+            <div className="nr-ghead">
+              <span className="nr-gring" />
+              <span className="nr-glabel">{g.label}</span>
+              {!phone && <span className="nr-gcount">{String(g.items.length).padStart(2, '0')}</span>}
+              <span className="nr-gline" />
+              <span className="nr-grange">{phone ? String(g.items.length).padStart(2, '0') : g.range}</span>
             </div>
-          ) : (
-            <div className="nr-grid">
-              {g.items.map((it) => (
-                <Card key={it.rel.id} item={it} act={act} online={online} onOpen={open} />
-              ))}
-            </div>
-          )}
-        </section>
-      ))}
+            {phone ? (
+              <div className="nr-rows">
+                {g.items.map((it) => (
+                  <PhoneRow key={it.rel.id} item={it} act={act} onOpen={open} />
+                ))}
+              </div>
+            ) : (
+              <div className="nr-grid">
+                {g.items.map((it) => (
+                  <Card key={it.rel.id} item={it} act={act} online={online} onOpen={open} />
+                ))}
+              </div>
+            )}
+          </section>
+        ))}
 
-      <DiscoverSection items={discover} rs={rs} phone={phone} online={online} onOpen={openDz} />
+      {tab === 'disc' && <DiscoverTab items={suggestions} phone={phone} online={online} topN={TOP_ARTISTS} />}
 
-      <ReleasePanel open={!!panel} phone={phone} onClose={close} contentKey={shown?.kind === 'rel' ? shown.id : shown?.kind === 'dz' ? shown.key : (shown?.kind ?? '')}>
+      <ReleasePanel open={!!panel} phone={phone} onClose={close} contentKey={shown?.kind === 'rel' ? shown.id : (shown?.kind ?? '')}>
         {shown?.kind === 'artists' && <FollowedArtists c={c} phone={phone} onClose={close} />}
         {detailItem && <ReleaseDetail item={detailItem} c={c} phone={phone} online={online} act={act} onClose={close} />}
-        {dzItem && <DiscoverDetail item={dzItem} c={c} phone={phone} online={online} act={dzAct} onClose={close} />}
+        {shown?.kind === 'artistFilter' && <ArtistSheet options={feed.artistOpts} current={rs.prefs.artist} onPick={(id) => { releasesStore.setPrefs({ artist: id }); close() }} />}
       </ReleasePanel>
     </div>
   )
@@ -290,49 +294,338 @@ function Header({ rs, artistsN, phone, online, onArtists }: { rs: ReleasesState;
   )
 }
 
-/* ── Chips · Show seen · counts ───────────────────────── */
+/* ── Tabs ────────────────────────────────────────────── */
 
-function Chips({ rs, feed, phone }: { rs: ReleasesState; feed: Feed; phone: boolean }) {
-  const { types, showSeen } = rs.prefs
+function Tabs({ tab, counts, phone, onTab }: { tab: Tab; counts: Record<Tab, number>; phone: boolean; onTab: (t: Tab) => void }) {
+  if (phone)
+    return (
+      <div className="nr-seg" role="tablist">
+        {TABS.map(([id, label]) => (
+          <button key={id} type="button" role="tab" aria-selected={tab === id} className={`nr-seg-b ${tab === id ? 'is-on' : ''}`} onClick={() => onTab(id)}>
+            {label}
+            <span className="nr-mono">{counts[id]}</span>
+          </button>
+        ))}
+      </div>
+    )
   return (
-    <div className="nr-chips">
-      {TYPES.map(([t, label]) => (
-        <button key={t} type="button" className="chip nr-chip" aria-pressed={types[t]} onClick={() => releasesStore.setPrefs({ types: { ...types, [t]: !types[t] } })}>
+    <div className="nr-tabs" role="tablist">
+      {TABS.map(([id, label]) => (
+        <button key={id} type="button" role="tab" aria-selected={tab === id} className={`nr-tab ${tab === id ? 'is-on' : ''}`} onClick={() => onTab(id)}>
           {label}
-          {!phone && <span className="nr-chip-n">{feed.typeCounts[t]}</span>}
+          <span className="nr-mono">{counts[id]}</span>
+          <i />
         </button>
       ))}
-      <button type="button" className="chip nr-chip nr-chip-disc" aria-pressed={rs.prefs.discover} onClick={() => releasesStore.setPrefs({ discover: !rs.prefs.discover })} title="From artists like yours">
-        <span className="nr-chip-ic">
-          <Icon name="radio" />
-        </span>
-        {phone ? 'Like yours' : 'Artists like yours'}
+      <span className="nr-chips-fill" />
+      {tab === 'disc' && <span className="nr-mono nr-tabnote">FROM YOUR {TOP_ARTISTS} MOST-PLAYED ARTISTS</span>}
+    </div>
+  )
+}
+
+/* ── Filters (Upcoming + Out now) ─────────────────────── */
+
+function Filters({ tab, rs, feed, c, phone, onArtistSheet }: { tab: Tab; rs: ReleasesState; feed: Feed; c: Catalogue; phone: boolean; onArtistSheet: () => void }) {
+  const { status, artist, reversed } = rs.prefs
+  const hideRe = rs.doc.hideReissues[0]
+  const [pop, setPop] = useState(false)
+  const wrap = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!pop) return
+    const down = (e: PointerEvent) => {
+      if (!wrap.current?.contains(e.target as Node)) setPop(false)
+    }
+    const key = (e: globalThis.KeyboardEvent) => {
+      if (e.key === 'Escape') setPop(false)
+    }
+    window.addEventListener('pointerdown', down)
+    window.addEventListener('keydown', key)
+    return () => {
+      window.removeEventListener('pointerdown', down)
+      window.removeEventListener('keydown', key)
+    }
+  }, [pop])
+
+  const artistName = artist ? (c.artists[artist]?.name ?? 'Artist') : 'All artists'
+  const anyFilter = (tab === 'out' && status !== 'all') || artist !== null
+  const set = (s: StatusFilter) => releasesStore.setPrefs({ status: s })
+  const statusOpts: [StatusFilter, string, number][] = [
+    ['all', 'All', feed.status.all],
+    ['new', 'New', feed.status.new],
+    ['seen', 'Seen', feed.status.seen],
+  ]
+
+  const artistChip = (
+    <button type="button" className="chip nr-chip nr-chip-art" aria-pressed={artist !== null} aria-haspopup="listbox" aria-expanded={pop} onClick={() => (phone ? onArtistSheet() : setPop((p) => !p))}>
+      <span className="nr-chip-lbl">{artistName}</span>
+      <span className="nr-chip-ic">
+        <Icon name="chevD" />
+      </span>
+    </button>
+  )
+
+  return (
+    <div className="nr-filters">
+      {tab === 'out' &&
+        (phone ? (
+          statusOpts.map(([id, label]) => (
+            <button key={id} type="button" className="chip nr-chip" aria-pressed={status === id} onClick={() => set(id)}>
+              {label}
+            </button>
+          ))
+        ) : (
+          <>
+            <div className="nr-segc" role="radiogroup" aria-label="Status">
+              {statusOpts.map(([id, label, n]) => (
+                <button key={id} type="button" role="radio" aria-checked={status === id} className={`nr-segc-b ${status === id ? 'is-on' : ''}`} onClick={() => set(id)}>
+                  {label}
+                  <span className="nr-mono">{n}</span>
+                </button>
+              ))}
+            </div>
+            <span className="nr-chips-sep" />
+          </>
+        ))}
+      <div className="nr-artpop-wrap" ref={wrap}>
+        {artistChip}
+        {pop && !phone && (
+          <div className="nr-artpop" role="listbox">
+            <ArtistRows
+              options={feed.artistOpts}
+              current={artist}
+              onPick={(id) => {
+                releasesStore.setPrefs({ artist: id })
+                setPop(false)
+              }}
+            />
+          </div>
+        )}
+      </div>
+      <button type="button" className="chip nr-chip" aria-pressed={hideRe} onClick={() => releasesStore.setHideReissues(!hideRe)}>
+        {phone ? 'No reissues' : 'Hide reissues & deluxe'}
       </button>
-      {phone ? (
-        <button type="button" className="chip nr-chip" aria-pressed={showSeen} onClick={() => releasesStore.setPrefs({ showSeen: !showSeen })}>
-          <span className="nr-chip-ic">
-            <Icon name="eye" />
-          </span>
-          Seen
+      {tab === 'up' && (
+        <button type="button" className="chip nr-chip" aria-pressed={reversed} onClick={() => releasesStore.setPrefs({ reversed: !reversed })}>
+          Furthest first
         </button>
-      ) : (
+      )}
+      {!phone && anyFilter && (
+        <button type="button" className="nr-clear" onClick={() => releasesStore.setPrefs({ status: 'all', artist: null })}>
+          Clear filters
+        </button>
+      )}
+      {!phone && (
         <>
-          <span className="nr-chips-sep" />
-          <label className="nr-seen" onClick={() => releasesStore.setPrefs({ showSeen: !showSeen })}>
-            Show seen
-            <span onClick={(e) => e.stopPropagation()}>
-              <Toggle checked={showSeen} onChange={(v) => releasesStore.setPrefs({ showSeen: v })} label="Show seen" />
-            </span>
-          </label>
           <span className="nr-chips-fill" />
           <span className="nr-mono nr-countline">
-            {feed.counts.new} NEW · {feed.counts.seen} SEEN · {feed.counts.hidden} HIDDEN
+            {tab === 'up' ? `${feed.upLine.upcoming} UPCOMING · ${feed.upLine.reminders} REMINDERS` : `${feed.status.new} NEW · ${feed.status.seen} SEEN`}
           </span>
         </>
       )}
     </div>
   )
 }
+
+function ArtistRows({ options, current, onPick }: { options: ArtistOpt[]; current: string | null; onPick: (id: string | null) => void }) {
+  return (
+    <>
+      <button type="button" role="option" aria-selected={current === null} className="nr-artrow" onClick={() => onPick(null)}>
+        <span className="nr-artrow-n">All artists</span>
+        <span className="nr-artrow-ic">{current === null && <Icon name="check" />}</span>
+      </button>
+      {options.map((o) => (
+        <button key={o.id} type="button" role="option" aria-selected={current === o.id} className="nr-artrow" onClick={() => onPick(o.id)}>
+          <span className="nr-artrow-n">{o.name}</span>
+          {o.plays > 0 && <span className="nr-mono nr-artrow-c">{o.plays.toLocaleString('en-US')} PLAYS</span>}
+          <span className="nr-artrow-ic">{current === o.id && <Icon name="check" />}</span>
+        </button>
+      ))}
+    </>
+  )
+}
+
+/** Phone: "Filter by artist" bottom sheet. */
+function ArtistSheet({ options, current, onPick }: { options: ArtistOpt[]; current: string | null; onPick: (id: string | null) => void }) {
+  return (
+    <div className="nrp nr-artsheet">
+      <div className="nrp-titles">
+        <h2 className="nrp-title">Filter by artist</h2>
+      </div>
+      <div className="nr-artsheet-list" role="listbox">
+        <ArtistRows options={options} current={current} onPick={onPick} />
+      </div>
+    </div>
+  )
+}
+
+/* ── Upcoming timeline ───────────────────────────────── */
+
+const WEEKDAYS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']
+const hasDay = (it: FeedItem) => it.rel.date.split('-').length >= 3
+
+/** "FRI 16 OCT" (exact day) · "NOV 2026" (month only) */
+function whenLabel(it: FeedItem): string {
+  if (!hasDay(it)) return fmtRelDate(it.rel.date)
+  const d = fmtRelDate(it.rel.date).replace(/ \d{4}$/, '').replace(/^0/, '')
+  return `${WEEKDAYS[new Date(it.day).getDay()]} ${d}`
+}
+
+/** The big countdown: days (exact day) or the month. */
+function countParts(it: FeedItem): { n: string; u: string } {
+  if (!hasDay(it)) {
+    const [m, y] = fmtRelDate(it.rel.date).split(' ')
+    return { n: m, u: y ?? '' }
+  }
+  return { n: String(it.daysTo), u: it.daysTo === 1 ? 'DAY' : 'DAYS' }
+}
+
+/** "FRI 16 OCT · 12 TRK · LABEL" (pre-release: with the songs you already have) */
+function upMeta(it: FeedItem, phone: boolean): string {
+  const n = it.detail?.tracks.length
+  return [
+    it.status === 'pre' ? `PRE-RELEASE ${ownedCount(it, true)}` : null,
+    whenLabel(it),
+    n ? `${n} TRK` : null,
+    !phone && it.detail?.label ? it.detail.label.toUpperCase() : null,
+  ]
+    .filter(Boolean)
+    .join(' · ')
+}
+
+function UpcomingWeek({ week, phone, act, onOpen }: { week: UpWeek; phone: boolean; act: ReleaseActions; onOpen: (it: FeedItem) => void }) {
+  const n = String(week.items.length).padStart(2, '0')
+  return (
+    <section className="nr-week">
+      <div className="nr-week-head">
+        {phone ? (
+          <>
+            <span className="nr-gring" />
+            <span className="nr-glabel">{week.label}</span>
+            <span className="nr-mono nr-week-range">{week.range}</span>
+            <span className="nr-gline" />
+            <span className="nr-gcount">{n}</span>
+          </>
+        ) : (
+          <>
+            <span className="nr-week-label">{week.label}</span>
+            <span className="nr-week-node">
+              <span />
+            </span>
+            <span className="nr-week-meta">
+              <span className="nr-mono">{week.range}</span>
+              <span className="nr-gline" />
+              <span className="nr-gcount">{n}</span>
+            </span>
+          </>
+        )}
+      </div>
+      {week.items.map((it) => (phone ? <UpPhoneRow key={it.rel.id} item={it} act={act} onOpen={onOpen} /> : <UpRow key={it.rel.id} item={it} act={act} onOpen={onOpen} />))}
+    </section>
+  )
+}
+
+function RemindButton({ item, act, icon }: { item: FeedItem; act: ReleaseActions; icon?: boolean }) {
+  const on = item.reminded
+  const label = on ? 'Reminder set' : 'Remind me'
+  return (
+    <button
+      type="button"
+      className={`nr-rem ${on ? 'is-on' : ''} ${icon ? 'is-icon' : ''}`}
+      aria-pressed={on}
+      aria-label={label}
+      title={label}
+      onClick={(e: MouseEvent) => {
+        e.stopPropagation()
+        act.remind(item)
+      }}
+    >
+      <Icon name={on ? 'bellF' : 'bell'} />
+      {!icon && label}
+    </button>
+  )
+}
+
+function UpRow({ item, act, onOpen }: { item: FeedItem; act: ReleaseActions; onOpen: (it: FeedItem) => void }) {
+  const near = hasDay(item) && item.daysTo <= 4
+  const seen = item.status === 'seen'
+  const cd = countParts(item)
+  const key = (e: ReactKeyboardEvent) => {
+    if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
+      e.preventDefault()
+      onOpen(item)
+    }
+  }
+  return (
+    <div className={`nr-up ${near ? 'is-near' : ''}`} role="button" tabIndex={0} onClick={() => onOpen(item)} onKeyDown={key}>
+      <div className="nr-up-cd">
+        <span className={`nr-up-n ${hasDay(item) ? '' : 'is-month'}`}>{cd.n}</span>
+        <span className="nr-mono nr-up-u">{cd.u}</span>
+      </div>
+      <div className="nr-up-rail">
+        <i />
+        <span />
+      </div>
+      <div className="nr-up-cover">
+        <ReleaseCover item={item} />
+      </div>
+      <div className="nr-up-info">
+        <div className="nr-up-trow">
+          {item.status === 'new' && <Dot />}
+          <span className={`nr-up-t ${seen ? 'is-seen' : ''}`}>{item.rel.t}</span>
+        </div>
+        <button
+          type="button"
+          className="nr-up-a"
+          onClick={(e) => {
+            e.stopPropagation()
+            if (!item.external) go(artistHref(item.owners[0].id))
+          }}
+        >
+          {item.rel.a}
+        </button>
+        <div className="nr-up-meta">
+          <TypeBadge item={item} />
+          <span className="nr-mono nr-up-m">{upMeta(item, false)}</span>
+        </div>
+      </div>
+      <RemindButton item={item} act={act} />
+    </div>
+  )
+}
+
+function UpPhoneRow({ item, act, onOpen }: { item: FeedItem; act: ReleaseActions; onOpen: (it: FeedItem) => void }) {
+  const seen = item.status === 'seen'
+  const cd = countParts(item)
+  const key = (e: ReactKeyboardEvent) => {
+    if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
+      e.preventDefault()
+      onOpen(item)
+    }
+  }
+  return (
+    <div className="nr-uprow" role="button" tabIndex={0} onClick={() => onOpen(item)} onKeyDown={key}>
+      <div className="nr-uprow-cd">
+        <span className={`nr-uprow-n ${hasDay(item) ? '' : 'is-month'}`}>{cd.n}</span>
+        <span className="nr-mono">{cd.u}</span>
+      </div>
+      <div className="nr-uprow-cover">
+        <ReleaseCover item={item} size="xs" />
+      </div>
+      <div className="nr-uprow-text">
+        <div className="nr-uprow-trow">
+          {item.status === 'new' && <Dot />}
+          <span className={`nr-uprow-t ${seen ? 'is-seen' : ''}`}>{item.rel.t}</span>
+        </div>
+        <span className="nr-uprow-a">{item.rel.a}</span>
+        <span className="nr-mono nr-uprow-m">
+          {typeLabel(item)} · {upMeta(item, true)}
+        </span>
+      </div>
+      <RemindButton item={item} act={act} icon />
+    </div>
+  )
+}
+
 
 /* ── Hero ────────────────────────────────────────────── */
 
@@ -659,37 +952,25 @@ function SweepErrorPanel({ rs }: { rs: ReleasesState }) {
   )
 }
 
-function CaughtUp({ rs, feed, artistsN }: { rs: ReleasesState; feed: Feed; artistsN: number }) {
-  const gone = feed.all.filter((it) => it.status === 'gone')
-  const anyHidden = feed.counts.hidden > 0
+function CaughtUp({ rs, tab, artistsN, filtered }: { rs: ReleasesState; tab: Tab; artistsN: number; filtered: boolean }) {
   return (
     <div className="nr-caught">
       <BigSonar motion={false} />
       <div className="nr-caught-text">
         <div className="nr-caught-title">Nothing new on the sonar.</div>
         <div className="nr-caught-body">
-          {anyHidden ? 'Every release has been sorted.' : `All ${artistsN} artists are quiet for now.`} The next sweep runs at {nextSweepClock()}.
+          {filtered
+            ? 'Nothing matches these filters.'
+            : tab === 'up'
+              ? 'No announced releases from your artists right now.'
+              : `All ${artistsN} artists are quiet for now.`}{' '}
+          The next sweep runs at {nextSweepClock()}.
         </div>
       </div>
-      {rs.doc.sweep.at && (
-        <span className="nr-mono">
-          LAST SONAR · {fmtStamp(rs.doc.sweep.at)}
-          {feed.counts.seen ? ` · ${feed.counts.seen} SEEN` : ''}
-        </span>
-      )}
-      {anyHidden && (
-        <button
-          type="button"
-          className="btn btn-secondary btn-sm"
-          onClick={() => {
-            releasesStore.setPrefs({ types: { ...DEFAULT_TYPES }, showSeen: true })
-            releasesStore.markMany(
-              gone.map((it) => it.rel.id),
-              'seen',
-            )
-          }}
-        >
-          Bring everything back
+      {rs.doc.sweep.at && <span className="nr-mono">LAST SONAR · {fmtStamp(rs.doc.sweep.at)}</span>}
+      {filtered && (
+        <button type="button" className="btn btn-secondary btn-sm" onClick={() => releasesStore.setPrefs({ status: 'all', artist: null })}>
+          Clear filters
         </button>
       )}
     </div>

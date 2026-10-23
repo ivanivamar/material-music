@@ -1,7 +1,9 @@
 /**
- * New Releases views (step 11): the feed as the page shows it, derived from the synced releases doc,
- * the catalogue (what's already in the library), the play history (hero pick) and this device's
- * filters. Memoised on those inputs.
+ * New Releases views (step 11, pass 2 = step 35): the feed as the page shows it, derived from the
+ * synced releases doc, the catalogue (what's already in the library), the play history (hero pick,
+ * Discover) and this device's filters. Memoised on those inputs. Tabs: Upcoming (a weekly timeline),
+ * Out now (hero + groups), Discover (artists related to your most played). A release that's complete
+ * in the library is never shown.
  *
  * A release's status:
  *   gone  — dismissed
@@ -12,12 +14,12 @@
  *   acq   — "I've got it": watching the catalogue for it (MATCHING)
  *   seen / new
  */
-import { foldTitle, type RelDetail, type RelType } from '../lib/musicbrainz'
+import { foldTitle, type RelDetail } from '../lib/musicbrainz'
 import { qualityLabel } from '../components/ui/Status'
 import { albumTrackIds } from '../pages/library/playback'
 import type { Play } from './history'
 import { tracksByAlbum, type Artist, type Catalogue } from './library'
-import { dayOf, followedExternal, inWindow, isUpcoming, nextSweepAt, setMatcher, sweepTargets, releasesStore, type DzRel, type Mark, type Rel, type ReleasePrefs, type ReleasesDoc } from './releases'
+import { SHOWN_TYPES, dayOf, followedExternal, isUpcoming, nextSweepAt, setMatcher, sweepTargets, releasesStore, type Mark, type Rel, type ReleasePrefs, type ReleasesDoc } from './releases'
 import { artistInfos } from './views'
 
 export type RelStatus = 'new' | 'seen' | 'acq' | 'lib' | 'pre' | 'part' | 'gone'
@@ -59,21 +61,49 @@ export interface FeedItem {
 }
 
 export interface FeedGroup {
-  key: 'upcoming' | 'week' | 'month' | 'older'
+  key: 'week' | 'month' | 'older'
   label: string
   range: string
   items: FeedItem[]
+}
+
+/** One week (or month) of the Upcoming timeline. */
+export interface UpWeek {
+  key: string
+  label: string
+  range: string
+  items: FeedItem[]
+}
+
+export interface ArtistOpt {
+  id: string
+  name: string
+  plays: number
 }
 
 export interface Feed {
   /** every release in the window, dismissed included */
   all: FeedItem[]
   byId: Map<string, FeedItem>
+  /** Out now only */
   hero: FeedItem | null
   heroLine: { desktop: string; phone: string }
+  /** Out now groups, after the filters (hero excluded) */
   groups: FeedGroup[]
-  counts: { new: number; seen: number; hidden: number }
-  typeCounts: Record<RelType, number>
+  /** Upcoming timeline, after the filters */
+  weeks: UpWeek[]
+  /** the sidebar / tab badge: Out now releases still marked new */
+  counts: { new: number }
+  /** tab counts: visible upcoming · Out now new */
+  tabs: { up: number; out: number }
+  /** Out now status filter counts (after the artist filter) */
+  status: { all: number; new: number; seen: number }
+  /** "n UPCOMING · n REMINDERS" */
+  upLine: { upcoming: number; reminders: number }
+  /** artists with a release on either tab, most played first */
+  artistOpts: ArtistOpt[]
+  /** Out now releases passing the filters (hero included) */
+  outShown: number
 }
 
 const DAY = 86_400_000
@@ -255,19 +285,20 @@ export function trackMatches(c: Catalogue, item: FeedItem): TrackMatch[] {
 
 /* ── Feed ────────────────────────────────────────────── */
 
-export function isVisible(item: Pick<FeedItem, 'status' | 'mark' | 'rel' | 'muted'>, prefs: ReleasePrefs, hideReissues: boolean): boolean {
-  if (item.status === 'gone') return false
+/** In the feed unless dismissed, muted, complete in the library, or filtered out by type / reissue. */
+export function isVisible(item: Pick<FeedItem, 'status' | 'rel' | 'muted'>, hideReissues: boolean): boolean {
+  if (item.status === 'gone' || item.status === 'lib') return false // in the library: never on this page
   if (item.muted) return false
-  if (item.status === 'acq') return true
-  // in the library: past the type filters, but a seen one still follows Show seen
-  if (isOwned(item.status)) return prefs.showSeen || item.mark !== 'seen'
-  if (!prefs.types[item.rel.type]) return false
-  if (hideReissues && item.rel.re) return false
-  return prefs.showSeen || item.status !== 'seen'
+  if (item.status === 'acq' || item.status === 'pre' || item.status === 'part') return true
+  if (!SHOWN_TYPES[item.rel.type]) return false
+  return !(hideReissues && item.rel.re)
 }
 
+/** Seen by the user (a release that's partly in the library follows its stored mark). */
+const isSeen = (it: Pick<FeedItem, 'status' | 'mark'>) => it.status === 'seen' || (isOwned(it.status) && it.mark === 'seen')
+
 let playsCache: { c: Catalogue; plays: readonly Play[]; out: Map<string, number> } | null = null
-function artistPlays(c: Catalogue, plays: readonly Play[]): Map<string, number> {
+export function artistPlays(c: Catalogue, plays: readonly Play[]): Map<string, number> {
   if (playsCache && playsCache.c === c && playsCache.plays === plays) return playsCache.out
   const out = new Map<string, number>()
   for (const p of plays) {
@@ -275,6 +306,60 @@ function artistPlays(c: Catalogue, plays: readonly Play[]): Map<string, number> 
     if (a) out.set(a, (out.get(a) ?? 0) + 1)
   }
   playsCache = { c, plays, out }
+  return out
+}
+
+/** How many of the most played artists Discover is based on. */
+export const TOP_ARTISTS = 5
+
+/** The artists you play most (with at least one play), most played first. */
+export function topPlayedArtists(c: Catalogue, plays: readonly Play[], n = TOP_ARTISTS): { artist: Artist; plays: number }[] {
+  return [...artistPlays(c, plays)]
+    .filter(([id]) => c.artists[id])
+    .sort((a, b) => b[1] - a[1] || c.artists[a[0]].name.localeCompare(c.artists[b[0]].name))
+    .slice(0, n)
+    .map(([id, n]) => ({ artist: c.artists[id], plays: n }))
+}
+
+const MONTH_NAMES = ['JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE', 'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER']
+/** "19 – 25 OCT" · "29 OCT – 1 NOV" · "26 OCT" */
+function span(a: number, b: number): string {
+  const x = new Date(a)
+  const y = new Date(b)
+  const m = (d: Date) => MONTHS[d.getMonth()]
+  if (x.getMonth() === y.getMonth() && x.getFullYear() === y.getFullYear()) return a === b ? `${x.getDate()} ${m(x)}` : `${x.getDate()} – ${y.getDate()} ${m(y)}`
+  return `${x.getDate()} ${m(x)} – ${y.getDate()} ${m(y)}`
+}
+
+/** Upcoming timeline: THIS WEEK · NEXT WEEK · LATER IN OCT · NOVEMBER … (weeks run Monday to Sunday). */
+function upcomingWeeks(items: FeedItem[], t0: number, reversed: boolean): UpWeek[] {
+  const today = new Date(t0)
+  const dow = (today.getDay() + 6) % 7
+  const endThis = t0 + (6 - dow) * DAY
+  const endNext = endThis + 7 * DAY
+  const weeks = new Map<string, UpWeek & { sort: number }>()
+  const put = (key: string, sort: number, label: string, range: string, it: FeedItem) => {
+    const w = weeks.get(key)
+    if (w) w.items.push(it)
+    else weeks.set(key, { key, sort, label, range, items: [it], })
+  }
+  for (const it of [...items].sort((a, b) => a.day - b.day || a.rel.t.localeCompare(b.rel.t))) {
+    const d = new Date(it.day)
+    if (it.day <= endThis) put('this', 0, 'THIS WEEK', span(t0 + DAY, endThis), it)
+    else if (it.day <= endNext) put('next', 1, 'NEXT WEEK', span(endThis + DAY, endNext), it)
+    else if (d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth())
+      put('later', 2, `LATER IN ${MONTHS[d.getMonth()]}`, span(endNext + DAY, new Date(d.getFullYear(), d.getMonth() + 1, 0).getTime()), it)
+    else {
+      const first = new Date(d.getFullYear(), d.getMonth(), 1).getTime()
+      const label = d.getFullYear() === today.getFullYear() ? MONTH_NAMES[d.getMonth()] : `${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()}`
+      put(`m${d.getFullYear()}-${d.getMonth()}`, 3 + first / DAY / 1000, label, span(first, new Date(d.getFullYear(), d.getMonth() + 1, 0).getTime()), it)
+    }
+  }
+  const out = [...weeks.values()].sort((a, b) => a.sort - b.sort).map(({ sort: _s, ...w }) => w)
+  if (reversed) {
+    out.reverse()
+    for (const w of out) w.items.reverse()
+  }
   return out
 }
 
@@ -338,14 +423,28 @@ export function buildFeed(doc: ReleasesDoc, c: Catalogue, plays: readonly Play[]
       it.total = p.total
     }
     it.status = mark === 'gone' ? 'gone' : it.match ? ownedStatus(it.upcoming, it) : mark
-    it.visible = isVisible(it, prefs, hideRe)
+    it.visible = isVisible(it, hideRe)
   }
   const all = [...items.values()].sort((a, b) => b.day - a.day || a.rel.t.localeCompare(b.rel.t))
 
-  // hero: the newest release (last 30 days) from the artist you play most
+  // what the page can show at all, before the artist / status filters
+  const base = all.filter((it) => it.visible)
+  const upBase = base.filter((it) => it.upcoming)
+  const outBase = base.filter((it) => !it.upcoming)
+  const byArtist = (it: FeedItem) => !prefs.artist || it.owners.some((a) => a.id === prefs.artist)
+  const upShown = upBase.filter(byArtist)
+  const outArtist = outBase.filter(byArtist)
+  const status = {
+    all: outArtist.length,
+    new: outArtist.filter((it) => !isSeen(it)).length,
+    seen: outArtist.filter(isSeen).length,
+  }
+  const outShown = outArtist.filter((it) => it.status === 'acq' || prefs.status === 'all' || (prefs.status === 'seen') === isSeen(it))
+
+  // hero (Out now only): the newest release (last 30 days) from the artist you play most
   const plays_ = artistPlays(c, plays)
   const playsOf = (it: FeedItem) => it.owners.reduce((s, a) => s + (plays_.get(a.id) ?? 0), 0)
-  const recent = all.filter((it) => it.visible && !it.upcoming && it.day >= t0 - 30 * DAY)
+  const recent = outShown.filter((it) => it.day >= t0 - 30 * DAY)
   const ranked = [...recent].sort((a, b) => playsOf(b) - playsOf(a) || Number(b.status === 'new') - Number(a.status === 'new') || b.day - a.day)
   const hero = ranked[0] ?? null
   const heroPlays = hero ? playsOf(hero) : 0
@@ -356,99 +455,106 @@ export function buildFeed(doc: ReleasesDoc, c: Catalogue, plays: readonly Play[]
       : { desktop: `NEWEST ON THE SONAR · ${heroArtist}`, phone: 'NEWEST' }
     : { desktop: '', phone: '' }
 
-  // time groups (the hero isn't repeated below)
+  // Out now groups (the hero isn't repeated below)
   const weekStart = t0 - 6 * DAY
   const monthStart = new Date(today.getFullYear(), today.getMonth(), 1).getTime()
   const d = (ms: number) => {
     const x = new Date(ms)
     return `${pad(x.getDate())} ${MONTHS[x.getMonth()]}`
   }
-  const feed = all.filter((it) => it.visible && it !== hero)
-  const upcoming = feed.filter((it) => it.upcoming).sort((a, b) => a.day - b.day)
-  const week = feed.filter((it) => !it.upcoming && it.day >= weekStart)
-  const month = feed.filter((it) => !it.upcoming && it.day < weekStart && it.day >= monthStart)
-  const older = feed.filter((it) => !it.upcoming && it.day < Math.min(weekStart, monthStart))
+  const feed = outShown.filter((it) => it !== hero)
+  const week = feed.filter((it) => it.day >= weekStart)
+  const month = feed.filter((it) => it.day < weekStart && it.day >= monthStart)
+  const older = feed.filter((it) => it.day < Math.min(weekStart, monthStart))
   const groups: FeedGroup[] = [
-    { key: 'upcoming' as const, label: 'UPCOMING', range: `FROM ${d(t0 + DAY)}`, items: upcoming },
     { key: 'week' as const, label: 'THIS WEEK', range: `${d(weekStart)} – ${d(t0)}`, items: week },
     { key: 'month' as const, label: 'EARLIER THIS MONTH', range: `${d(monthStart)} – ${d(weekStart - DAY)}`, items: month },
     { key: 'older' as const, label: 'OLDER', range: `BEFORE ${monthStart < weekStart ? MONTHS[today.getMonth()] : d(weekStart)}`, items: older },
   ].filter((g) => g.items.length)
 
-  const live = all.filter((it) => it.status !== 'gone')
-  const typeCounts: Record<RelType, number> = { album: 0, ep: 0, single: 0, live: 0, other: 0 }
-  for (const it of live) typeCounts[it.rel.type]++
+  // artists for the filter: whoever has a release on either tab, most played first
+  const owners = new Map<string, ArtistOpt>()
+  for (const it of base)
+    for (const a of it.owners)
+      if (!owners.has(a.id)) owners.set(a.id, { id: a.id, name: a.name, plays: plays_.get(a.id) ?? 0 })
+  const artistOpts = [...owners.values()].sort((a, b) => b.plays - a.plays || a.name.localeCompare(b.name))
+
   const out: Feed = {
     all,
     byId: items,
     hero,
     heroLine,
     groups,
-    counts: {
-      new: live.filter((it) => it.visible && it.status === 'new').length,
-      seen: live.filter((it) => it.status === 'seen').length,
-      hidden: live.filter((it) => !it.visible).length,
-    },
-    typeCounts,
+    weeks: upcomingWeeks(upShown, t0, prefs.reversed),
+    counts: { new: outBase.filter((it) => it.status === 'new').length },
+    tabs: { up: upBase.length, out: outBase.filter((it) => it.status === 'new').length },
+    status,
+    upLine: { upcoming: upShown.length, reminders: upShown.filter((it) => it.reminded).length },
+    artistOpts,
+    outShown: outShown.length,
   }
   feedCache = { doc, c, plays, prefs, day: t0, out }
   return out
 }
 
-/* ── Discover: from artists like yours ───────────────── */
+/* ── Discover: artists like your most played ─────────── */
 
-export interface DiscoverItem {
-  /** mark key: "dz:<deezer album id>" */
-  key: string
-  rel: DzRel
-  /** the Discover artist */
+export interface Suggestion {
+  /** Deezer artist id */
   dz: number
-  artist: string
-  pic: string | null
-  /** library artists it's related to (most related first) */
+  name: string
+  /** your most played artists this one is related to (most related first) */
   because: Artist[]
-  status: 'new' | 'seen' | 'gone'
-  /** RelType for the type chips (Deezer "compile" → other) */
-  type: RelType
-  day: number
+  /** their play counts, same order */
+  plays: number[]
+  /** up to three recent releases (year) — or, when the last 6 months are empty, popular songs (no year) */
+  rel: { t: string; y: string }[]
+  /** `rel` are songs, not releases */
+  songs: boolean
+  /** in the sweep (Add to sweep) */
+  followed: boolean
+  /** all their Deezer album titles (kept when added to the sweep, to verify the MusicBrainz match) */
   titles: string[]
 }
 
-let discoverCache: { doc: ReleasesDoc; c: Catalogue; prefs: ReleasePrefs; out: DiscoverItem[] } | null = null
+let suggestCache: { doc: ReleasesDoc; c: Catalogue; plays: readonly Play[]; out: Suggestion[] } | null = null
 
-/** Discover releases, newest first, following the type chips and Show seen (dismissed ones out). */
-export function buildDiscover(doc: ReleasesDoc, c: Catalogue, prefs: ReleasePrefs, now = Date.now()): DiscoverItem[] {
-  if (discoverCache && discoverCache.doc === doc && discoverCache.c === c && discoverCache.prefs === prefs) return discoverCache.out
-  const out: DiscoverItem[] = []
-  const seenIds = new Set<number>()
+/**
+ * Suggestions: artists who aren't in the library, related to your most played ones. Not-interested
+ * artists are out; ones you added stay (as "In the sweep") until their entry ages out.
+ */
+export function buildSuggestions(doc: ReleasesDoc, c: Catalogue, plays: readonly Play[]): Suggestion[] {
+  if (suggestCache && suggestCache.doc === doc && suggestCache.c === c && suggestCache.plays === plays) return suggestCache.out
+  const top = new Map(topPlayedArtists(c, plays).map((t) => [t.artist.id, t.plays]))
+  const out: (Suggestion & { score: number })[] = []
   for (const [k, e] of Object.entries(doc.discover)) {
-    const dz = Number(k)
-    if (doc.dzMuted[k]?.[0] || doc.follow[`dz:${k}`]?.[0]) continue
-    const because = e.because.map((id) => c.artists[id]).filter((a): a is Artist => !!a)
+    if (doc.dzMuted[k]?.[0]) continue
+    const because = e.because.filter((id) => top.has(id) && c.artists[id])
     if (!because.length) continue
-    for (const rel of e.rel) {
-      if (seenIds.has(rel.id) || !inWindow(rel.date, now)) continue
-      seenIds.add(rel.id)
-      const key = `dz:${rel.id}`
-      const day = dayOf(rel.date)
-      const mark = doc.marks[key]?.[0]
-      const status = mark === 'gone' ? 'gone' : mark === 'seen' || mark === 'acq' ? 'seen' : day < now - 30 * DAY ? 'seen' : 'new'
-      const type: RelType = rel.type === 'compile' ? 'other' : rel.type
-      out.push({ key, rel, dz, artist: e.name, pic: e.pic, because, status, type, day, titles: e.titles })
-    }
+    const rel = [...e.rel].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 3)
+    const songs = !rel.length
+    out.push({
+      dz: Number(k),
+      name: e.name,
+      because: because.map((id) => c.artists[id]),
+      plays: because.map((id) => top.get(id) ?? 0),
+      rel: songs ? e.titles.slice(0, 3).map((t) => ({ t, y: '' })) : rel.map((r) => ({ t: r.t, y: r.date.slice(0, 4) })),
+      songs,
+      followed: !!doc.follow[`dz:${k}`]?.[0],
+      titles: e.titles,
+      score: e.score,
+    })
   }
-  const shown = out
-    .filter((it) => it.status !== 'gone' && prefs.types[it.type] && (prefs.showSeen || it.status !== 'seen'))
-    .sort((a, b) => b.day - a.day || a.rel.t.localeCompare(b.rel.t))
-  discoverCache = { doc, c, prefs, out: shown }
-  return shown
+  out.sort((a, b) => b.because.length - a.because.length || b.score - a.score || a.name.localeCompare(b.name))
+  const res = out.map(({ score: _s, ...s }) => s)
+  suggestCache = { doc, c, plays, out: res }
+  return res
 }
 
-/** "BECAUSE YOU HAVE SPIRITBOX, PERIPHERY" (+ N) */
-export function becauseLine(it: DiscoverItem, max = 2): string {
-  const names = it.because.slice(0, max).map((a) => a.name.toUpperCase())
-  const more = it.because.length - names.length
-  return `BECAUSE YOU HAVE ${names.join(', ')}${more > 0 ? ` +${more}` : ''}`
+/** "Spiritbox", "Spiritbox and Periphery", "A, B and C" */
+export function listNames(names: string[]): string {
+  if (names.length <= 1) return names[0] ?? ''
+  return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`
 }
 
 /* ── Followed artists ────────────────────────────────── */

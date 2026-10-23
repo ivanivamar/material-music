@@ -1,24 +1,26 @@
 /**
- * New Releases → Discover ("From artists like yours"): recent releases by artists who aren't in the
- * library but come up as related to several that are.
+ * New Releases → Discover tab: artists who aren't in the library but are related to your most
+ * played ones (the top 5 by play count).
  *
  * Once a day (the New Releases sweep cycle, after the MusicBrainz sweep or when the page opens):
- *  1. Deezer related artists of every library artist (lib/deezer.ts, cached 30 days, ~1/s — the
- *     first run takes about a second per artist; the radio shares the cache).
- *  2. Candidates: related artists not in the library, not "Not interested", not followed. Score =
- *     how many of yours list them (and how high). The top 20 listed by two or more of yours, topped
- *     up to 12 with the best single-link ones.
- *  3. Their releases of the last ~6 months (`/api/deezer/releases`, ~1/s), stored in releases.json
- *     `discover` (shared with the other device, so it skips artists already checked today).
+ *  1. Deezer related artists of your most played artists (lib/deezer.ts, cached 30 days, ~1/s; the
+ *     radio shares the cache).
+ *  2. Candidates: related artists not in the library, not "Not interested", not added to the sweep.
+ *     Score = how many of the top artists list them (and how high). The top 20 listed by two or
+ *     more, topped up to 12 with the best single-link ones.
+ *  3. Their recent releases (last ~6 months, `/api/deezer/releases`, ~1/s), stored in releases.json
+ *     `discover` (shared with the other device, so it skips artists already checked today). The tab
+ *     lists three of them per artist.
  *
  * Offline / no proxy (local dev) → nothing changes; the section shows what it has.
  */
 import { useSyncExternalStore } from 'react'
 import { fetchDzReleases, inLibrary, relatedLoaded, relatedRaw, requestRelated } from '../lib/deezer'
+import { historyStore } from './history'
 import { libraryStore, type Catalogue } from './library'
 import { cycleStart, onReleasesEvent, releasesStore, type DiscoverEntry, type DzRel } from './releases'
 import { onAccountReset } from './session'
-import { artistsByName } from './views'
+import { topPlayedArtists } from './releaseViews'
 
 const GAP_MS = 1000
 const PER_ARTIST = 20
@@ -47,20 +49,22 @@ interface Cand {
   because: string[]
 }
 
-/** Related artists of the library that aren't in it, best first. */
+/** Your most played artists (Discover's starting points). */
+const topArtists = (c: Catalogue) => topPlayedArtists(c, historyStore.get().plays).filter((t) => !VARIOUS.test(t.artist.name.trim()))
+
+/** Related artists of your most played that aren't in the library, best first. */
 export function discoverCandidates(c: Catalogue): Cand[] {
   const doc = releasesStore.get().doc
   const map = new Map<number, Cand>()
-  for (const info of artistsByName(c)) {
-    if (VARIOUS.test(info.artist.name.trim())) continue
-    const raw = relatedRaw(info.artist.id)
+  for (const { artist } of topArtists(c)) {
+    const raw = relatedRaw(artist.id)
     if (!raw) continue
     raw.slice(0, PER_ARTIST).forEach((a, i) => {
       if (inLibrary(c, a)) return
       if (doc.dzMuted[String(a.id)]?.[0] || doc.follow[`dz:${a.id}`]?.[0]) return
       const e = map.get(a.id) ?? { id: a.id, name: a.name, score: 0, because: [] }
       e.score += 1 - i / PER_ARTIST
-      if (!e.because.includes(info.artist.id)) e.because.push(info.artist.id)
+      if (!e.because.includes(artist.id)) e.because.push(artist.id)
       map.set(a.id, e)
     })
   }
@@ -85,15 +89,14 @@ export function refreshDiscover(force = false): Promise<void> {
     const c = libraryStore.get().data
     if (!c || typeof navigator === 'undefined' || !navigator.onLine) return
     const cutoff = cycleStart()
-    // 1. related artists of the library (cached; only missing / stale ones are fetched)
-    const artists = artistsByName(c).filter((i) => !VARIOUS.test(i.artist.name.trim()))
-    const missing = artists.filter((i) => relatedRaw(i.artist.id) === null)
+    // 1. related artists of your most played (cached; only missing / stale ones are fetched)
+    const missing = topArtists(c).filter((t) => relatedRaw(t.artist.id) === null)
     set({ running: true, done: 0, total: missing.length })
     let done = 0
-    for (const i of missing) {
+    for (const t of missing) {
       if (gen !== generation) return
       // no answer (offline / no proxy in local dev): stop, the next run tries again
-      if (!(await requestRelated(c, i.artist.id))) break
+      if (!(await requestRelated(c, t.artist.id))) break
       set({ done: ++done })
     }
     // 2. + 3. candidates and their releases

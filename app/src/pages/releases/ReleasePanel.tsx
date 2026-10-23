@@ -18,7 +18,7 @@ import { Countdown, Dot, MatchingVeil, ReleaseCover, actionsFor, openExternal, o
 /** "14 Nov" */
 const niceDay = (date: string) => fmtRelShort(date).replace(/^0/, '').replace(/ ([A-Z])([A-Z]+)/, (_, a: string, b: string) => ` ${a}${b.toLowerCase()}`)
 
-export type PanelState = { kind: 'rel'; id: string } | { kind: 'dz'; key: string } | { kind: 'artists' } | null
+export type PanelState = { kind: 'rel'; id: string } | { kind: 'artists' } | { kind: 'artistFilter' } | null
 
 /* ── Container ───────────────────────────────────────── */
 
@@ -343,7 +343,7 @@ export function FollowedArtists({ c, phone, onClose }: { c: Catalogue; phone: bo
           {rows.length} ARTISTS · {mutedN} MUTED
         </span>
       </div>
-      {!phone && <p className="nrp-explain">Every artist in your library is followed automatically, plus the ones you follow from From artists like yours (NOT IN LIBRARY). Muted artists are still swept, just kept out of the feed.</p>}
+      {!phone && <p className="nrp-explain">Every artist in your library is followed automatically, plus the ones you added from Discover (NOT IN LIBRARY). Muted artists are still swept, just kept out of the feed.</p>}
       <div className="nrp-card" onClick={() => releasesStore.setHideReissues(!hideRe)}>
         <div className="nrp-card-text">
           <span>Hide reissues and deluxe editions</span>
