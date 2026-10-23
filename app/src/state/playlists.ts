@@ -57,6 +57,8 @@ export interface Stamps {
   deleted: number
   /** smart playlists: the rules (step 20) */
   smart: number
+  /** sidebar position (missing in older files = 0) */
+  order?: number
 }
 
 export interface Playlist {
@@ -76,6 +78,11 @@ export interface Playlist {
    * device from the catalogue + play history; `entries` stays empty. null / missing = a normal playlist.
    */
   smart?: SmartRules | null
+  /**
+   * Position in the sidebar list (fractional index, step 37). null / missing = never placed by hand:
+   * those playlists sit after the placed ones, A–Z (see `sidebarOrder`).
+   */
+  order?: number | null
 }
 
 export const isSmart = (p: Playlist | undefined | null): boolean => !!p?.smart
@@ -146,6 +153,7 @@ function normalise(raw: Partial<PlaylistFile>, id: string): Playlist {
     deleted: !!raw.deleted,
     stamps,
     smart: normaliseSmart(raw.smart),
+    order: typeof raw.order === 'number' && Number.isFinite(raw.order) ? raw.order : null,
     entries: (Array.isArray(raw.entries) ? raw.entries : [])
       .filter((e): e is Entry => !!e && typeof e.entryId === 'string' && typeof e.trackId === 'string')
       .map((e) => ({ ...e, pos: Number.isFinite(e.pos) ? e.pos : 0, movedAt: e.movedAt || 0 })),
@@ -160,6 +168,7 @@ export function mergePlaylists(a: Playlist, b: Playlist): Playlist {
   const c = pick('cover')
   const del = pick('deleted')
   const sm = pick('smart')
+  const ord = (b.stamps.order ?? 0) > (a.stamps.order ?? 0) ? b : a
   const entries = new Map<string, Entry>()
   for (const e of a.entries) entries.set(e.entryId, e)
   for (const e of b.entries) {
@@ -180,10 +189,20 @@ export function mergePlaylists(a: Playlist, b: Playlist): Playlist {
     deleted: del.deleted,
     createdAt: a.createdAt < b.createdAt ? a.createdAt : b.createdAt,
     updatedAt: a.updatedAt > b.updatedAt ? a.updatedAt : b.updatedAt,
-    stamps: { name: n.stamps.name, description: d.stamps.description, cover: c.stamps.cover, deleted: del.stamps.deleted, smart: sm.stamps.smart },
+    stamps: { name: n.stamps.name, description: d.stamps.description, cover: c.stamps.cover, deleted: del.stamps.deleted, smart: sm.stamps.smart, order: ord.stamps.order ?? 0 },
     entries: [...entries.values()],
     smart: sm.smart ?? null,
+    order: ord.order ?? null,
   }
+}
+
+/**
+ * The sidebar order: playlists placed by hand first (by `order`), then the rest A–Z.
+ * `list` itself stays A–Z for every other picker and page.
+ */
+export function sidebarOrder(list: Playlist[]): Playlist[] {
+  const placed = list.filter((p) => p.order != null).sort((a, b) => a.order! - b.order!)
+  return [...placed, ...list.filter((p) => p.order == null)]
 }
 
 /** Order positions for `count` new entries at the end. */
@@ -504,6 +523,37 @@ export const playlistsStore = {
   /** Change a smart playlist's rules (Undo: call again with the old ones). */
   setSmart(id: string, smart: SmartRules) {
     edit(id, (p, t) => (!p.smart || JSON.stringify(p.smart) === JSON.stringify(smart) ? null : { ...p, smart, stamps: { ...p.stamps, smart: t } }))
+  },
+
+  /**
+   * Drag in the sidebar: put playlist `id` at index `to` of the sidebar list (as it is without it).
+   * Only the moved playlist is written, unless the list has to be numbered first (first drag, or
+   * playlists created since) or the gap ran out.
+   */
+  moveInSidebar(id: string, to: number) {
+    const cur = sidebarOrder(state.list)
+    const from = cur.findIndex((p) => p.id === id)
+    if (from < 0) return
+    const rest = cur.filter((p) => p.id !== id)
+    const at = Math.max(0, Math.min(to, rest.length))
+    if (at === from) return
+    const prev = rest[at - 1]
+    const next = rest[at]
+    let pos: number | null = null
+    if (rest.every((p) => p.order != null)) {
+      if (prev && next) pos = (prev.order! + next.order!) / 2
+      else if (prev) pos = prev.order! + GAP
+      else if (next) pos = next.order! - GAP
+      else pos = GAP
+      if (prev && next && !(pos > prev.order! && pos < next.order!)) pos = null // gap used up
+    }
+    const set1 = (pid: string, order: number) => edit(pid, (p, t) => (p.order === order ? null : { ...p, order, stamps: { ...p.stamps, order: t } }))
+    if (pos != null) {
+      set1(id, pos)
+      return
+    }
+    const next_ = [...rest.slice(0, at), cur[from], ...rest.slice(at)]
+    next_.forEach((p, i) => set1(p.id, (i + 1) * GAP))
   },
 
   /** Delete (Undo: `restore`). */
