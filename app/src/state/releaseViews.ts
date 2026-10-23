@@ -503,6 +503,8 @@ export interface Suggestion {
   /** Deezer artist id */
   dz: number
   name: string
+  /** Deezer artist photo, null when unknown */
+  pic: string | null
   /** your most played artists this one is related to (most related first) */
   because: Artist[]
   /** their play counts, same order */
@@ -536,6 +538,7 @@ export function buildSuggestions(doc: ReleasesDoc, c: Catalogue, plays: readonly
     out.push({
       dz: Number(k),
       name: e.name,
+      pic: e.pic ?? null,
       because: because.map((id) => c.artists[id]),
       plays: because.map((id) => top.get(id) ?? 0),
       rel: songs ? e.titles.slice(0, 3).map((t) => ({ t, y: '' })) : rel.map((r) => ({ t: r.t, y: r.date.slice(0, 4) })),

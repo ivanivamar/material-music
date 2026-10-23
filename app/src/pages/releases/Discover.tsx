@@ -1,12 +1,12 @@
 /**
  * New Releases → Discover tab (pass 2): artists who aren't in the library but are related to your
- * most played ones (state/discover.ts picks them from the top 5). A card per artist: monogram, name,
+ * most played ones (state/discover.ts picks them from the top 5). A card per artist: photo (monogram fallback), name,
  * "Because you play A and B", plays, MusicBrainz / Bandcamp links, three of their releases, then
  * Add to sweep (the artist joins the daily MusicBrainz sweep, so their releases show up in Upcoming
  * and Out now) and Not interested.
  * Phone: stacked cards, actions in a row (Add to sweep · Not interested · MusicBrainz).
  */
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useToast } from '../../components/ui'
 import { Icon } from '../../design/icons'
 import { useDiscover } from '../../state/discover'
@@ -50,6 +50,16 @@ export function useSuggestionActions() {
   }, [toast])
 }
 export type SuggestionActions = ReturnType<typeof useSuggestionActions>
+
+/** Deezer photo, or the monogram when there is none / it fails to load */
+function Avatar({ s }: { s: Suggestion }) {
+  const [bad, setBad] = useState(false)
+  return (
+    <div className="nr-sg-av">
+      {s.pic && !bad ? <img src={s.pic} alt="" loading="lazy" referrerPolicy="no-referrer" onError={() => setBad(true)} /> : monogram(s.name)}
+    </div>
+  )
+}
 
 function Releases({ s }: { s: Suggestion }) {
   return (
@@ -96,7 +106,7 @@ export function DiscoverTab({ items, phone, online, topN }: { items: Suggestion[
         return phone ? (
           <div key={s.dz} className={`nr-sg is-phone ${s.followed ? 'is-on' : ''}`}>
             <div className="nr-sg-head">
-              <div className="nr-sg-av">{monogram(s.name)}</div>
+              <Avatar s={s} />
               <div className="nr-sg-info">
                 <div className="nr-sg-name">{s.name}</div>
                 <div className="nr-sg-because">{because}</div>
@@ -118,7 +128,7 @@ export function DiscoverTab({ items, phone, online, topN }: { items: Suggestion[
           </div>
         ) : (
           <div key={s.dz} className={`nr-sg ${s.followed ? 'is-on' : ''}`}>
-            <div className="nr-sg-av">{monogram(s.name)}</div>
+            <Avatar s={s} />
             <div className="nr-sg-info">
               <div className="nr-sg-name">{s.name}</div>
               <div className="nr-sg-because">{because}</div>

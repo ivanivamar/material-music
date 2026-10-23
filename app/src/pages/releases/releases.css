@@ -478,6 +478,8 @@ button.nrp-tr:hover .nrp-tr-t { color: #fff; }
   width: 64px; height: 64px; flex: none; border-radius: 50%; box-sizing: border-box; display: flex; align-items: center; justify-content: center;
   background: var(--surface-1); border: var(--bw-control) solid rgba(255, 255, 255, .14); font-family: var(--font-mono); font-size: 13px; letter-spacing: .08em;
 }
+.nr-sg-av { overflow: hidden; }
+.nr-sg-av img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .nr-sg-info { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .nr-sg-name { font-size: 24px; letter-spacing: -0.02em; overflow-wrap: anywhere; }
 .nr-sg-because { font-size: 14px; color: #bdbdbd; }
