@@ -24,7 +24,7 @@ import { isTouch, useIsPhone } from '../../state/viewport'
 import { ArtistAvatar, LibAlbumCard, SectionHead } from '../library/common'
 import { useWindow } from '../library/useWindow'
 import { albumTrackIds, artistTrackIds, playList, useContextState, useNowPlaying, usePlayingAlbumId } from '../library/playback'
-import { actions, trackDrag } from '../../actions/actions'
+import { actions, trackDrag, type ActionTarget } from '../../actions/actions'
 import { NAV, playTracks } from './results'
 import '../library/library.css'
 import './search.css'
@@ -253,6 +253,16 @@ function TopCard({ c, top, r, remember }: { c: Catalogue; top: TopHit; r: Search
     playing = active && now.playing
   }
 
+  // right-click / long-press: the same menu as the matching row or card elsewhere
+  const menuTarget: ActionTarget =
+    top.kind === 'artist'
+      ? { kind: 'artist', artistId: top.item.id }
+      : top.kind === 'album'
+        ? { kind: 'album', albumId: top.item.id }
+        : top.kind === 'playlist'
+          ? { kind: 'playlist', playlistId: top.item.id }
+          : { kind: 'track', trackId: top.item.id }
+
   // phone: "TOP RESULT · ARTIST" inside the card (its section label is hidden there)
   if (art_ === 60) meta = `TOP RESULT · ${meta.split(' · ')[0]}`
 
@@ -262,6 +272,7 @@ function TopCard({ c, top, r, remember }: { c: Catalogue; top: TopHit; r: Search
       role="link"
       tabIndex={0}
       data-nav
+      onContextMenu={(e) => actions.menu(menuTarget, e)}
       onClick={() => {
         remember()
         open()
