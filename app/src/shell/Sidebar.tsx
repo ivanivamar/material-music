@@ -17,7 +17,7 @@ import { PlaylistCover } from '../pages/playlists/PlaylistCover'
 import { useLibrary } from '../state/library'
 import { useMotion } from '../state/motion'
 import { playlistInfo } from '../state/playlistViews'
-import { playlistsStore, sidebarOrder, usePlaylists, type Playlist } from '../state/playlists'
+import { usePlaylists, type Playlist } from '../state/playlists'
 import { usePlayer } from '../state/player'
 import { plural } from '../state/views'
 import { NAV, href, playlistHref, type NavItem, type RouteKey } from './routes'
@@ -39,7 +39,7 @@ export function Sidebar({ active, activePlaylist, badges }: { active: RouteKey; 
   return (
     <aside className="sb">
       <a className="sb-brand" href={href('home')} aria-label="Pelagic home">
-        <PortholeMark size={28} className="sb-mark" />
+        <PortholeMark size={26} className="sb-mark" />
         <span className="sb-word">Pelagic</span>
       </a>
 
@@ -66,19 +66,8 @@ export function Sidebar({ active, activePlaylist, badges }: { active: RouteKey; 
  * Playlists (handoff 09): 30px cover (greyscale until active), name, N TRACKS. The open playlist
  * is lit white. Each row is a drop target: drag songs (or an album card) onto it to add them.
  */
-/** Drag payload of a sidebar playlist being reordered (not a track drag: those use DRAG_MIME). */
-const REORDER_MIME = 'application/x-pelagic-playlist-order'
-
 function SidebarPlaylists({ active }: { active: string | null }) {
   const { list, loaded } = usePlaylists()
-  const ordered = sidebarOrder(list)
-  // reordering: which playlist is being dragged, and the gap it would drop into (index in `ordered`)
-  const [drag, setDrag] = useState<{ id: string } | null>(null)
-  const [drop, setDrop] = useState<{ index: number } | null>(null)
-  const endDrag = () => {
-    setDrag(null)
-    setDrop(null)
-  }
   return (
     <section className="sb-playlists" aria-label="Playlists">
       <div className="sb-section-head">
@@ -92,56 +81,15 @@ function SidebarPlaylists({ active }: { active: string | null }) {
           </button>
         </span>
       </div>
-      {/* only this list scrolls; the brand, nav and header above stay put */}
-      <div className="sb-pl-list">
-        {ordered.map((p, i) => (
-          <SidebarPlaylist
-            key={p.id}
-            p={p}
-            on={p.id === active}
-            dragging={drag?.id === p.id}
-            dropMark={drag && drop?.index === i ? 'before' : drag && drop?.index === i + 1 && i === ordered.length - 1 ? 'after' : null}
-            onReorderStart={() => setDrag({ id: p.id })}
-            onReorderOver={(before) => {
-              const index = before ? i : i + 1
-              if (drop?.index !== index) setDrop({ index })
-            }}
-            onReorderDrop={() => {
-              if (!drag || !drop) return
-              const from = ordered.findIndex((x) => x.id === drag.id)
-              playlistsStore.moveInSidebar(drag.id, drop.index > from ? drop.index - 1 : drop.index)
-              endDrag()
-            }}
-            onReorderEnd={endDrag}
-          />
-        ))}
-        {loaded && !list.length && <div className="sb-pl-none">No playlists yet</div>}
-      </div>
+      {list.map((p) => (
+        <SidebarPlaylist key={p.id} p={p} on={p.id === active} />
+      ))}
+      {loaded && !list.length && <div className="sb-pl-none">No playlists yet</div>}
     </section>
   )
 }
 
-function SidebarPlaylist({
-  p,
-  on,
-  dragging,
-  dropMark,
-  onReorderStart,
-  onReorderOver,
-  onReorderDrop,
-  onReorderEnd,
-}: {
-  p: Playlist
-  on: boolean
-  /** this row is the one being dragged */
-  dragging: boolean
-  /** a playlist is being dragged over the gap above / below this row */
-  dropMark: 'before' | 'after' | null
-  onReorderStart: () => void
-  onReorderOver: (before: boolean) => void
-  onReorderDrop: () => void
-  onReorderEnd: () => void
-}) {
+function SidebarPlaylist({ p, on }: { p: Playlist; on: boolean }) {
   const { data } = useLibrary()
   const toast = useToast()
   const player = usePlayer()
@@ -153,27 +101,11 @@ function SidebarPlaylist({
   return (
     <a
       href={playlistHref(p.id)}
-      className={`sb-pl ${on ? 'is-active' : ''} ${over ? 'is-drop' : ''} ${dragging ? 'is-dragging' : ''} ${dropMark ? `is-mark-${dropMark}` : ''}`}
+      className={`sb-pl ${on ? 'is-active' : ''} ${over ? 'is-drop' : ''}`}
       aria-current={on ? 'page' : undefined}
-      draggable
-      onDragStart={(e) => {
-        e.dataTransfer.effectAllowed = 'move'
-        e.dataTransfer.setData(REORDER_MIME, p.id)
-        e.dataTransfer.setData('text/plain', p.name)
-        onReorderStart()
-      }}
-      onDragEnd={onReorderEnd}
       onContextMenu={(e) => actions.menu({ kind: 'playlist', playlistId: p.id }, e)}
       onDragEnter={(e) => accepts(e) && setOver(true)}
       onDragOver={(e) => {
-        if (e.dataTransfer.types.includes(REORDER_MIME)) {
-          // a playlist being reordered: the gap above or below, by which half the pointer is in
-          e.preventDefault()
-          e.dataTransfer.dropEffect = 'move'
-          const r = e.currentTarget.getBoundingClientRect()
-          onReorderOver(e.clientY < r.top + r.height / 2)
-          return
-        }
         if (!accepts(e)) return
         e.preventDefault()
         e.dataTransfer.dropEffect = 'copy'
@@ -184,11 +116,6 @@ function SidebarPlaylist({
       }}
       onDrop={(e) => {
         setOver(false)
-        if (e.dataTransfer.types.includes(REORDER_MIME)) {
-          e.preventDefault()
-          onReorderDrop()
-          return
-        }
         const ids = draggedTracks(e)
         if (!ids) return
         e.preventDefault()

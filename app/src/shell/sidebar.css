@@ -7,15 +7,15 @@
   display: flex; flex-direction: column; gap: 36px;
   background: rgba(11, 11, 12, 0.7);
   border-right: 1px solid var(--hairline);
-  /* the sidebar itself doesn't scroll: only the playlist list does (.sb-pl-list) */
-  overflow: hidden;
+  overflow-y: auto; overscroll-behavior: contain;
+  scrollbar-width: none;
 }
-.sb > * { flex: none; }
+.sb::-webkit-scrollbar { display: none; }
 
-/* ── Brand: 28px porthole + wordmark ───────────────── */
+/* ── Brand: 26px porthole + wordmark ───────────────── */
 .sb-brand { display: flex; align-items: center; gap: 12px; padding: 0 14px; color: var(--ink-primary); text-decoration: none; }
 .sb-brand:hover { color: var(--ink-primary); }
-.sb-mark { flex: none; display: block; margin: -3px 0 -3px -3px; }
+.sb-mark { flex: none; display: block; }
 .sb-word { font-size: 14px; font-weight: 500; letter-spacing: var(--ls-wordmark); text-transform: uppercase; }
 
 /* ── Nav items ─────────────────────────────────────── */
@@ -86,16 +86,7 @@
 .sb-item.no-motion .sb-badge { transition: none; }
 
 /* ── Playlists ─────────────────────────────────────── */
-.sb-playlists { display: flex; flex-direction: column; gap: 6px; flex: 1 1 auto; min-height: 0; }
-/* the scrolling part; the 4px margin/padding pair keeps focus rings and drop glows from being clipped */
-.sb-pl-list {
-  display: flex; flex-direction: column; gap: 6px;
-  flex: 1 1 auto; min-height: 0;
-  margin: -4px; padding: 4px;
-  overflow-y: auto; overscroll-behavior: contain;
-  scrollbar-width: none;
-}
-.sb-pl-list::-webkit-scrollbar { display: none; }
+.sb-playlists { display: flex; flex-direction: column; gap: 6px; }
 .sb-section-head { display: flex; align-items: center; justify-content: space-between; padding: 0 12px 8px; }
 .sb-section-label { font-family: var(--font-mono); font-size: var(--fs-mono-sm); letter-spacing: .16em; color: var(--ink-tertiary); }
 .sb-plus {
@@ -119,17 +110,9 @@
 .sb-pl.is-active, .sb-pl.is-active:hover { background: var(--ink-primary); color: var(--bg-1); }
 /* songs dragged over it */
 .sb-pl.is-drop { background: rgba(255, 255, 255, .08); box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, .55), 0 0 22px -6px rgba(255, 255, 255, .4); }
-/* reordering: the dragged row dims, a white line shows where it lands */
-.sb-pl.is-dragging { opacity: .4; }
-.sb-pl.is-mark-before::before, .sb-pl.is-mark-after::after {
-  content: ''; position: absolute; left: 8px; right: 8px; height: 2px; border-radius: 1px;
-  background: var(--ink-primary); box-shadow: 0 0 10px rgba(255, 255, 255, .6);
-  pointer-events: none;
-}
-.sb-pl.is-mark-before::before { top: -4px; }
-.sb-pl.is-mark-after::after { bottom: -4px; }
 html[data-dragging-tracks] .sb-pl:not(.is-drop):not(.is-active) { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .08); }
-.sb-pl-cover { width: 30px; height: 30px; border-radius: 6px !important; }
+.sb-pl-cover { width: 30px; height: 30px; border-radius: 6px !important; filter: grayscale(1) brightness(.8); transition: filter .4s ease; }
+.sb-pl:hover .sb-pl-cover, .sb-pl.is-active .sb-pl-cover, .sb-pl.is-drop .sb-pl-cover { filter: none; }
 .sb-pl-none { padding: 0 12px; font-size: 13px; color: var(--ink-tertiary); }
 .sb-pl-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
 .sb-pl-name { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
