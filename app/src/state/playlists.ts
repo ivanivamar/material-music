@@ -80,7 +80,7 @@ export interface Playlist {
   smart?: SmartRules | null
   /**
    * Position in the sidebar list (fractional index, step 37). null / missing = never placed by hand:
-   * those playlists sit after the placed ones, A–Z (see `sidebarOrder`).
+   * those playlists sit after the placed ones, by last update (see `sidebarOrder`).
    */
   order?: number | null
 }
@@ -162,7 +162,7 @@ function normalise(raw: Partial<PlaylistFile>, id: string): Playlist {
 
 /** Field-by-field, entry-by-entry merge (commutative: either side may be "ours"). */
 export function mergePlaylists(a: Playlist, b: Playlist): Playlist {
-  const pick = <K extends keyof Stamps>(k: K) => (b.stamps[k] > a.stamps[k] ? b : a)
+  const pick = <K extends keyof Stamps>(k: K) => ((b.stamps[k] ?? 0) > (a.stamps[k] ?? 0) ? b : a)
   const n = pick('name')
   const d = pick('description')
   const c = pick('cover')
@@ -197,12 +197,13 @@ export function mergePlaylists(a: Playlist, b: Playlist): Playlist {
 }
 
 /**
- * The sidebar order: playlists placed by hand first (by `order`), then the rest A–Z.
- * `list` itself stays A–Z for every other picker and page.
+ * The sidebar order: playlists placed by hand first (by `order`), then the rest by last update,
+ * newest first (the default). `list` itself stays A–Z for every other picker and page.
  */
 export function sidebarOrder(list: Playlist[]): Playlist[] {
   const placed = list.filter((p) => p.order != null).sort((a, b) => a.order! - b.order!)
-  return [...placed, ...list.filter((p) => p.order == null)]
+  const rest = list.filter((p) => p.order == null).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt) || collator.compare(a.name, b.name))
+  return [...placed, ...rest]
 }
 
 /** Order positions for `count` new entries at the end. */
