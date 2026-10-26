@@ -192,7 +192,10 @@ export function WaveSeek({
   className?: string
 }) {
   const [drag, setDrag] = useState<number | null>(null)
+  /** mouse hover: where the pointer is (0..1), for the time tooltip */
+  const [hover, setHover] = useState<number | null>(null)
   const f = drag ?? (duration > 0 ? position / duration : 0)
+  const tip = drag ?? hover
   const handlers = useDrag(
     (v) => duration > 0 && setDrag(v),
     (v) => {
@@ -211,6 +214,13 @@ export function WaveSeek({
       aria-valuenow={Math.round(f * duration)}
       aria-valuetext={`${clock(f * duration)} of ${clock(duration)}`}
       {...handlers}
+      onPointerMove={(e) => {
+        handlers.onPointerMove(e)
+        if (e.pointerType !== 'mouse' || !duration) return
+        const r = e.currentTarget.getBoundingClientRect()
+        setHover(Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)))
+      }}
+      onPointerLeave={() => setHover(null)}
       onKeyDown={(e) => {
         if (!duration) return
         if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
@@ -220,6 +230,11 @@ export function WaveSeek({
       }}
     >
       <WaveProgress fraction={f} moving={playing && drag === null} height={height} />
+      {tip !== null && duration > 0 && (
+        <span className="mm-seek-tip" style={{ left: `${tip * 100}%` }} aria-hidden>
+          {clock(tip * duration)}
+        </span>
+      )}
     </div>
   )
   if (below)

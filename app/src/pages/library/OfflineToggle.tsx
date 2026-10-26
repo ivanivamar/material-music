@@ -9,13 +9,13 @@
  * stored album keeps the old copy playable until the new one has arrived (`plan.keep`).
  * Phone layout: a full-width card under Play / Shuffle (`phone.css`).
  */
-import { Segmented, Toggle, useToast } from '../../components/ui'
+import { Segmented, useToast } from '../../components/ui'
+import { OfflineBlock } from './detail'
 import { albumBytes, albumOffline, downloadsStore, qualityOf, storedFileOf, useDownloads, type DownloadQuality } from '../../state/downloads'
 import { tracksByAlbum, type Catalogue } from '../../state/library'
 import { fmtBytes } from '../../state/views'
 import { waitingReason } from './DownloadButton'
 
-const pad2 = (n: number) => String(n).padStart(2, '0')
 const Q_NAME: Record<DownloadQuality, string> = { opus: 'Opus 160', flac: 'the original FLAC' }
 
 export function AlbumOfflineToggle({ c, albumId, name }: { c: Catalogue; albumId: string; name: string }) {
@@ -34,13 +34,14 @@ export function AlbumOfflineToggle({ c, albumId, name }: { c: Catalogue; albumId
   // only some songs wanted: through playlist downloads, or songs downloaded on their own (track menu)
   const viaPlaylist = dl.prefs.pins.some((p) => p.kind === 'playlist')
   const viaSongs = tracks.some((t) => dl.prefs.pins.some((p) => p.kind === 'track' && p.id === t.id))
-  const from = viaSongs && !viaPlaylist ? 'SONGS ONLY' : viaSongs ? 'SONGS · PLAYLISTS' : 'FROM PLAYLISTS'
-  if (!on) status = off.partial && off.done ? `${pad2(off.done)}/${pad2(tracks.length)} · ${from}` : `NOT ON THIS PHONE · ${fmtBytes(size[hasOpus ? q : 'flac'])}`
-  else if (off.complete) status = `${pad2(off.count)}/${pad2(off.count)} · STORED · ${fmtBytes(off.bytesDone)}`
+  const from = viaSongs && !viaPlaylist ? 'songs only' : viaSongs ? 'songs and playlists' : 'from playlists'
+  const of = (a: number, b: number) => `${a} of ${b} ${b === 1 ? 'track' : 'tracks'}`
+  if (!on) status = off.partial && off.done ? `${of(off.done, tracks.length)} · ${from}` : `Stream only · ${fmtBytes(size[hasOpus ? q : 'flac'])}`
+  else if (off.complete) status = `${of(off.count, off.count)} · stored · ${fmtBytes(off.bytesDone)}`
   else {
     const why = waitingReason(dl)
     const switching = playable > off.done
-    status = `${pad2(off.done)}/${pad2(off.count)} · ${why ?? (switching ? `SWITCHING TO ${q === 'flac' ? 'FLAC' : 'OPUS'}` : 'DOWNLOADING')}`
+    status = `${of(off.done, off.count)} · ${why ? why.charAt(0) + why.slice(1).toLowerCase() : switching ? `switching to ${q === 'flac' ? 'FLAC' : 'Opus'}` : `downloading track ${off.done + 1}`}`
   }
 
   const toggle = (next: boolean) => {
@@ -73,25 +74,52 @@ export function AlbumOfflineToggle({ c, albumId, name }: { c: Catalogue; albumId
   }
 
   return (
-    <div className={`offl ${on ? 'is-on' : ''}`}>
-      <label className="offl-main">
-        <span className="offl-text">
-          <span className="offl-title">Available offline</span>
-          <span className="offl-status">{status}</span>
-        </span>
-        <Toggle checked={on} onChange={toggle} label={`Keep ${name} on this phone`} />
-      </label>
-      {hasOpus && (
-        <Segmented
-          value={q}
-          options={[
-            { value: 'opus', label: 'Opus 160', meta: fmtBytes(size.opus) },
-            { value: 'flac', label: 'FLAC', meta: fmtBytes(size.flac) },
-          ]}
-          onChange={setQuality}
-          label={`Offline quality for ${name}`}
-        />
-      )}
-    </div>
+    <OfflineBlock
+      status={status}
+      checked={on}
+      onChange={toggle}
+      label={`Keep ${name} on this phone`}
+      extra={
+        hasOpus && (
+          <Segmented
+            value={q}
+            options={[
+              { value: 'opus', label: 'Opus 160', meta: fmtBytes(size.opus) },
+              { value: 'flac', label: 'FLAC', meta: fmtBytes(size.flac) },
+            ]}
+            onChange={setQuality}
+            label={`Offline quality for ${name}`}
+          />
+        )
+      }
+    />
   )
+}
+
+/** Playlist / artist "Available offline": the switch pins it, switching off removes it (with Undo). */
+export function PinOfflineToggle({ state, name, onPin, onRemove }: { state: import('../../state/downloads').AlbumOffline; name: string; onPin: () => void; onRemove: () => void }) {
+  const toast = useToast()
+  const dl = useDownloads()
+  const of = (a: number, b: number) => `${a} of ${b} ${b === 1 ? 'track' : 'tracks'}`
+  const why = waitingReason(dl)
+  const status = !state.wanted
+    ? state.done
+      ? `${of(state.done, state.count)} stored`
+      : 'Stream only'
+    : state.complete
+      ? `${of(state.count, state.count)} · stored · ${fmtBytes(state.bytesDone)}`
+      : `${of(state.done, state.count)} · ${why ? why.charAt(0) + why.slice(1).toLowerCase() : `downloading track ${state.done + 1}`}`
+  const toggle = (next: boolean) => {
+    if (next) return onPin()
+    const before = downloadsStore.get().prefs
+    onRemove()
+    toast.show({
+      icon: 'x',
+      mutedIcon: true,
+      text: `Removed ${name} from this phone.`,
+      meta: state.bytesDone ? `${fmtBytes(state.bytesDone)} FREED` : undefined,
+      action: { label: 'Undo', onClick: () => downloadsStore.restore(before) },
+    })
+  }
+  return <OfflineBlock status={status} checked={state.wanted} onChange={toggle} label={`Keep ${name} on this phone`} />
 }

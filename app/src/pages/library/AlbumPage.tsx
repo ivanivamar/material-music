@@ -1,28 +1,36 @@
 /**
- * Album (handoff 04 Desktop Album): tinted wash from the cover, 264px cover, hero title,
- * artist · track count · length · quality badge, Play / Shuffle, tracklist
- * (disc headers when there's more than one), then more by the same artist.
- * Android app: "Available offline" toggle + Opus / FLAC switch for this album where the release info sits on PC.
+ * Album (Material redesign, AlbumMaterial.dc.html):
+ *
+ *   ← Library › Albums
+ *   [264 cover, album-hue glow]   Album · 2025 · Metalcore (coral)
+ *                                 Tsunami Sea (57px)
+ *                                 (●) Spiritbox   11 tracks · 41:18   (FLAC 16/44.1)
+ *   [▶ Play] [⤮ Shuffle] ⋮                       Available offline ⏽  (✓ Opus 160 74 MB | FLAC 286 MB)
+ *   ┌ 1  Fata Morgana                                              ✓   3:50  ⋮ ┐  (segmented list,
+ *   │ …                                                                        │   playing row coral)
+ *   More by Spiritbox ▸
+ *
+ * Browser: the right side shows when it was released / added and the size. Rows: click plays from
+ * there (again: pause / resume), right-click / ⋮ = track menu, drag onto a sidebar playlist.
  */
 import type { CSSProperties } from 'react'
-import { Button, EmptyState, IconButton, QualityBadge, TrackRow, qualityKind, qualityLabel } from '../../components/ui'
+import { EmptyState, formatTime, qualityLabel } from '../../components/ui'
 import { actions, trackDrag } from '../../actions/actions'
-import { rgba, sceneBackground, useArtTint } from '../../design/tint'
+import { useArtTint } from '../../design/tint'
 import { useCover } from '../../lib/covers'
 import { playerStore } from '../../state/player'
 import { albumGenresOf, useGenres } from '../../state/genres'
 import { useLibrary, type Track } from '../../state/library'
 import { artistHref, libraryHref } from '../../shell/routes'
-import { RELEASE_LABEL, albumInfos, artistInfos, fmtAdded, fmtBytes, fmtTotal, plural } from '../../state/views'
-import { formatTime } from '../../components/ui'
-import { Crumbs, LibAlbumCard, SectionHead } from './common'
+import { RELEASE_LABEL, albumInfos, artistInfos, fmtAdded, fmtBytes, fmtTotal } from '../../state/views'
 import { trackDownload } from './DownloadButton'
 import { AlbumOfflineToggle } from './OfflineToggle'
 import { useDownloadProgress, useDownloads } from '../../state/downloads'
-import { playList, useContextState, useNowPlaying, usePlayingAlbumId } from './playback'
-import './library.css'
+import { playList, useContextState, useNowPlaying } from './playback'
+import { ActBtn, DetailBack, DetailHero, DiscHead, DtList, DtRow, MoreBtn, softDate } from './detail'
+import { LibCard, albumItem } from './libgrid'
+import { initials } from '../home/art'
 
-/** Hero size steps down for long titles so they stay on ≤ 2 lines. */
 function released(date?: string, year?: number): string {
   if (date && /^\d{4}-\d{2}-\d{2}/.test(date)) {
     const d = new Date(`${date.slice(0, 10)}T12:00:00`)
@@ -31,7 +39,7 @@ function released(date?: string, year?: number): string {
   return year ? `Released ${year}` : 'In your library'
 }
 
-const heroSize = (t: string) => (t.length <= 18 ? 80 : t.length <= 30 ? 64 : t.length <= 48 ? 52 : 40)
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase()
 
 export function AlbumPage({ id }: { id: string }) {
   const { data } = useLibrary()
@@ -41,21 +49,23 @@ export function AlbumPage({ id }: { id: string }) {
   const tint = useArtTint(cover)
   const ctx = useContextState('album', id)
   const now = useNowPlaying()
-  const playingAlbum = usePlayingAlbumId(data)
   const dl = useDownloads()
   const dlNow = useDownloadProgress()
   const { doc: genreDoc } = useGenres()
   const genres = albumGenresOf(genreDoc, album).genres
+  const artist = album && data ? data.artists[album.artistId] : undefined
+  const artistImg = useCover(artist?.image?.id, artist?.image?.v)
+  const back = <DetailBack fallback={libraryHref('albums')} parts={[{ label: 'Library', href: libraryHref('all') }, { label: 'Albums', href: libraryHref('albums') }]} />
 
   if (!data) return null
   if (!info || !album) {
     return (
-      <>
-        <Crumbs fallback={libraryHref('albums')} parts={['LIBRARY', 'ALBUMS']} />
+      <div className="dt-page">
+        {back}
         <div className="placeholder">
-          <EmptyState icon="library" title="This album isn’t in your library." body="It may have been renamed or removed in the last import." />
+          <EmptyState icon="album" title="This album isn’t in your library." body="It may have been renamed or removed in the last import." />
         </div>
-      </>
+      </div>
     )
   }
 
@@ -68,118 +78,103 @@ export function AlbumPage({ id }: { id: string }) {
   }
   const context = { kind: 'album' as const, id: album.id, label: album.title }
   const others = (artistInfos(data).get(album.artistId)?.albums ?? []).filter((a) => a.id !== album.id)
-  const kind = RELEASE_LABEL[info.kind].one
+  const kind = cap(RELEASE_LABEL[info.kind].one)
   const variousArtists = info.tracks.some((t) => t.artist !== album.artist)
-  const size = heroSize(album.title)
+  const n = info.tracks.length
 
-  const onPlay = () => {
-    if (ctx.active) playerStore.toggle()
-    else playList(ids, context)
-  }
-  const playAt = (i: number) => {
-    if (ctx.active && ctx.currentId === ids[i]) playerStore.toggle()
-    else playList(ids, context, { start: i })
-  }
+  const onPlay = () => (ctx.active ? playerStore.toggle() : playList(ids, context))
+  const playAt = (i: number) => playList(ids, context, { start: i })
+  const hue = tint ? tint.hue : 40
+  const hc = tint ? tint.chroma : 0
 
   return (
-    <div className="album-page">
-      <div
-        className={`scene-tint ${tint ? 'is-on' : ''}`}
-        style={tint ? ({ background: sceneBackground(tint).replace(/, #0B0B0C$/, '') } as CSSProperties) : undefined}
-        aria-hidden
-      />
-      <Crumbs fallback={libraryHref('albums')} parts={[<a key="l" href={libraryHref('albums')}>LIBRARY</a>, <a key="a" href={libraryHref('albums')}>ALBUMS</a>]} />
+    <div className="dt-page hue-scope" style={{ '--h': hue, '--hc': hc } as CSSProperties}>
+      <div className="dt-wash" aria-hidden />
+      {back}
 
-      <header className="hero">
-        {cover ? (
-          <img
-            className="hero-cover"
-            src={cover}
-            alt=""
-            style={tint ? { boxShadow: `0 0 0 1px rgba(255,255,255,0.08), 0 40px 80px -30px ${rgba(tint.glow, 0.9)}` } : undefined}
-          />
-        ) : (
-          <div className="hero-cover hero-cover-empty" />
-        )}
-        <div className="hero-text">
-          <div className="hero-meta">{[kind, album.year, genres.slice(0, 2).join(' / ').toUpperCase() || null].filter(Boolean).join(' · ')}</div>
-          <h1 className="hero-title" style={{ '--hs': `${size}px` } as CSSProperties} title={album.title}>
-            {album.title}
-          </h1>
-          <div className="hero-line">
-            <a className="hero-artist ln" href={artistHref(album.artistId)}>
-              {album.artist}
-            </a>
-            <span className="hero-dash" />
-            <span className="hero-stats">
-              {plural(info.tracks.length, 'TRACK')} · {fmtTotal(info.seconds)}
-            </span>
-            {info.tracks.length > 0 && (
-              <QualityBadge kind={qualityKind('flac', info.bitDepth, info.sampleRate)}>{qualityLabel('flac', { bitDepth: info.bitDepth, sampleRate: info.sampleRate })}</QualityBadge>
-            )}
-          </div>
+      <DetailHero
+        art={cover ? <img className="dt-hero-cover" src={cover} alt="" /> : <div className="dt-hero-cover" />}
+        kicker={[kind, album.year, genres.slice(0, 2).join(' / ') || null].filter(Boolean).join(' · ')}
+        title={album.title}
+      >
+        <div className="dt-line">
+          <a className="dt-artist" href={artistHref(album.artistId)}>
+            <span className="dt-artist-img">{artistImg ? <img src={artistImg} alt="" /> : initials(album.artist)}</span>
+            {album.artist}
+          </a>
+          <span className="dt-stats">
+            {n} {n === 1 ? 'track' : 'tracks'} · {fmtTotal(info.seconds)}
+          </span>
+          {n > 0 && <span className="dt-qpill">{qualityLabel('flac', { bitDepth: info.bitDepth, sampleRate: info.sampleRate })}</span>}
         </div>
-      </header>
+      </DetailHero>
 
-      <div className="actions">
-        <Button icon={ctx.playing ? 'pauseF' : 'playF'} onClick={onPlay} disabled={!ids.length} className="actions-play">
+      <div className="dt-actions">
+        <ActBtn kind="filled" icon={ctx.playing ? 'pauseF' : 'playF'} onClick={onPlay} disabled={!ids.length}>
           {ctx.playing ? 'Pause' : ctx.active ? 'Resume' : 'Play'}
-        </Button>
-        <Button variant="secondary" icon="shuffle" onClick={() => playList(ids, context, { shuffle: true })} disabled={!ids.length}>
+        </ActBtn>
+        <ActBtn kind="tonal" icon="shuffle" onClick={() => playList(ids, context, { shuffle: true })} disabled={!ids.length}>
           Shuffle
-        </Button>
-        <IconButton icon="more" label="More" shape="square" className="actions-more" onClick={(e) => actions.menu({ kind: 'album', albumId: album.id }, e)} />
-        <span className="actions-spacer" />
+        </ActBtn>
+        <MoreBtn onClick={(e) => actions.menu({ kind: 'album', albumId: album.id }, e)} />
+        <span className="dt-flex" />
         {dl.available ? (
           <AlbumOfflineToggle c={data} albumId={album.id} name={album.title} />
         ) : (
-          <div className="actions-info">
-            <div className="actions-info-main">{released(album.date, album.year)}</div>
-            <div className="actions-info-meta">
-              ADDED {fmtAdded(album.addedAt)} · {fmtBytes(info.bytes)} FLAC
+          <div className="dt-info">
+            <div className="dt-info-t">{released(album.date, album.year)}</div>
+            <div className="dt-info-s">
+              Added {softDate(fmtAdded(album.addedAt))} · {fmtBytes(info.bytes)} FLAC
             </div>
           </div>
         )}
       </div>
 
-      <div className={`tracklist ${dl.available ? 'has-dl' : ''}`} role="table">
-        <div className="tl-head" role="row">
-          <span className="tl-h-n">NO</span>
-          <span>TITLE</span>
-          {dl.available && <span />}
-          <span className="tl-h-r">TIME</span>
+      {n === 0 ? (
+        <div className="dt-empty">
+          <EmptyState icon="album" title="No tracks found" body={`Drive has no files for ${album.title} right now. Run the importer again, or upload the tracks.`} />
         </div>
-        {discs.map((d) => (
-          <div key={d.disc} role="rowgroup">
-            {discs.length > 1 && <div className="tl-disc">DISC {d.disc}</div>}
-            {d.tracks.map((t) => {
-              const i = ids.indexOf(t.id)
-              return (
-                <TrackRow
-                  key={t.id}
-                  className="trow-album"
-                  n={t.track ?? i + 1}
-                  title={t.title}
-                  subtitle={variousArtists || t.artist !== album.artist ? t.artist : undefined}
-                  duration={t.duration ? formatTime(t.duration) : '—'}
-                  playing={now.id === t.id}
-                  download={dl.available ? trackDownload(dl, t, dlNow) : undefined}
-                  onPlay={() => playAt(i)}
-                  onMore={(e) => actions.menu({ kind: 'track', trackId: t.id }, e)}
-                  rowProps={trackDrag(() => [t.id], `${t.title} · ${t.artist}`)}
-                />
-              )
-            })}
+      ) : (
+        discs.map((d) => (
+          <div key={d.disc}>
+            {discs.length > 1 && <DiscHead label={`Disc ${d.disc}`} />}
+            <DtList>
+              {d.tracks.map((t) => {
+                const i = ids.indexOf(t.id)
+                return (
+                  <DtRow
+                    key={t.id}
+                    n={t.track ?? i + 1}
+                    title={t.title}
+                    sub={variousArtists || t.artist !== album.artist ? <span className="dt-s-t">{t.artist}</span> : undefined}
+                    current={now.id === t.id}
+                    playing={now.playing}
+                    hasDl={dl.available}
+                    dl={dl.available ? (trackDownload(dl, t, dlNow) ?? { kind: 'none' }) : undefined}
+                    duration={t.duration ? formatTime(t.duration) : '—'}
+                    onPlay={() => playAt(i)}
+                    onMore={(e) => actions.menu({ kind: 'track', trackId: t.id }, e)}
+                    rowProps={trackDrag(() => [t.id], `${t.title} · ${t.artist}`)}
+                  />
+                )
+              })}
+            </DtList>
           </div>
-        ))}
-      </div>
+        ))
+      )}
 
       {others.length > 0 && (
-        <section className="more-by">
-          <SectionHead label={`MORE BY ${album.artist.toUpperCase()}`} right={<a className="sect-link" href={artistHref(album.artistId)}>VIEW ARTIST</a>} />
-          <div className="lib-grid lib-grid-sm">
+        <section className="hs dt-section">
+          <div className="hs-head">
+            <h2 className="hs-title">More by {album.artist}</h2>
+            <span className="hs-flex" />
+            <a className="hs-more" href={artistHref(album.artistId)}>
+              View artist
+            </a>
+          </div>
+          <div className="hs-row">
             {others.slice(0, 12).map((a) => (
-              <LibAlbumCard key={a.id} c={data} album={a} subtitle={a.year ? String(a.year) : a.artist} playingAlbumId={playingAlbum} />
+              <LibCard key={a.id} c={data} item={albumItem(a, a.year ? `${a.year}` : a.artist)} size={168} />
             ))}
           </div>
         </section>

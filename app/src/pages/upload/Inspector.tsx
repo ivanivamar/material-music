@@ -9,7 +9,7 @@
  * shared tags and Skip selected.
  */
 import { useState, type FormEvent } from 'react'
-import { Button, QualityBadge } from '../../components/ui'
+import { TextField, Button, QualityBadge } from '../../components/ui'
 import { Icon } from '../../design/icons'
 import type { Catalogue } from '../../state/library'
 import {
@@ -222,23 +222,11 @@ function EditTags({ a, s, onDone }: { a: UploadAlbum; s: UploadState; onDone: ()
   }
   return (
     <form className="ub-edit" onSubmit={save}>
-      <label className="ub-field">
-        <span>ALBUM ARTIST</span>
-        <input value={artist} onChange={(e) => setArtist(e.target.value)} autoFocus spellCheck={false} />
-      </label>
-      <label className="ub-field">
-        <span>ALBUM</span>
-        <input value={album} onChange={(e) => setAlbum(e.target.value)} spellCheck={false} />
-      </label>
+      <TextField className="ub-tf" label="Album artist" value={artist} onChange={setArtist} inputProps={{ autoFocus: true, spellCheck: false }} />
+      <TextField className="ub-tf" label="Album" value={album} onChange={setAlbum} inputProps={{ spellCheck: false }} />
       <div className="ub-field-pair">
-        <label className={`ub-field ${yearOk ? '' : 'is-bad'}`}>
-          <span>YEAR</span>
-          <input value={year} onChange={(e) => setYear(e.target.value)} inputMode="numeric" maxLength={4} placeholder="—" />
-        </label>
-        <label className="ub-field">
-          <span>GENRE</span>
-          <input value={genre} onChange={(e) => setGenre(e.target.value)} placeholder="—" />
-        </label>
+        <TextField className="ub-tf" label="Year" value={year} onChange={setYear} error={!yearOk} inputProps={{ inputMode: 'numeric', maxLength: 4, placeholder: '—' }} />
+        <TextField className="ub-tf" label="Genre" value={genre} onChange={setGenre} inputProps={{ placeholder: '—' }} />
       </div>
       <p className="ub-note">Changes go into your library and the Opus copies. The FLAC files keep the tags they have.</p>
       <div className="ub-insp-btns">
@@ -363,19 +351,10 @@ function EditShared({ sel, s, onDone }: { sel: UploadAlbum[]; s: UploadState; on
   }
   return (
     <form className="ub-edit" onSubmit={save}>
-      <label className="ub-field">
-        <span>ALBUM ARTIST</span>
-        <input value={artist} onChange={(e) => setArtist(e.target.value)} placeholder={artist0 === undefined ? 'Mixed' : '—'} autoFocus spellCheck={false} />
-      </label>
+      <TextField className="ub-tf" label="Album artist" value={artist} onChange={setArtist} inputProps={{ placeholder: artist0 === undefined ? 'Mixed' : '—', autoFocus: true, spellCheck: false }} />
       <div className="ub-field-pair">
-        <label className={`ub-field ${yearOk ? '' : 'is-bad'}`}>
-          <span>YEAR</span>
-          <input value={year} onChange={(e) => setYear(e.target.value)} inputMode="numeric" maxLength={4} placeholder={year0 === undefined ? 'Mixed' : '—'} />
-        </label>
-        <label className="ub-field">
-          <span>GENRE</span>
-          <input value={genre} onChange={(e) => setGenre(e.target.value)} placeholder={genre0 === undefined ? 'Mixed' : '—'} />
-        </label>
+        <TextField className="ub-tf" label="Year" value={year} onChange={setYear} error={!yearOk} inputProps={{ inputMode: 'numeric', maxLength: 4, placeholder: year0 === undefined ? 'Mixed' : '—' }} />
+        <TextField className="ub-tf" label="Genre" value={genre} onChange={setGenre} inputProps={{ placeholder: genre0 === undefined ? 'Mixed' : '—' }} />
       </div>
       <p className="ub-note">
         Empty fields stay as they are. Album titles stay per release.

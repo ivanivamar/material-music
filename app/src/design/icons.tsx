@@ -90,6 +90,15 @@ export const ICON_SYMBOLS = {
   arrowR: 'arrow_forward',
   sensors: 'sensors',
   searchOff: 'search_off',
+  checkCircle: 'check_circle',
+  arrowDrop: 'arrow_drop_down',
+  following: 'how_to_reg',
+  person_add: 'person_add',
+  sync: 'sync',
+  calendar: 'calendar_month',
+  timer: 'timer',
+  filter: 'filter_list',
+  label: 'sell',
   dj: '',
 } as const
 

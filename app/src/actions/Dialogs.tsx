@@ -7,7 +7,7 @@
  *                                      Cancel  [Create]
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useToast } from '../components/ui'
+import { TextField, useToast } from '../components/ui'
 import { Icon } from '../design/icons'
 import { useCover } from '../lib/covers'
 import { MosaicTiles, PlaylistCover } from '../pages/playlists/PlaylistCover'
@@ -30,7 +30,7 @@ export function Shell({ label, children, onClose, wide }: { label: string; child
       <div className={`dlg-scrim pg-anim ${on ? 'is-on' : ''}`} onClick={onClose} />
       <div className={`dlg pg-anim ${on ? 'is-on' : ''} ${wide ? 'is-wide' : ''}`} role="dialog" aria-modal="true" aria-label={label}>
         <div className="dlg-top">
-          <div className="dlg-label">{label.toUpperCase()}</div>
+          <div className="dlg-label">{label}</div>
           <button type="button" className="dlg-x" aria-label="Close" onClick={onClose}>
             <Icon name="x" />
           </button>
@@ -82,8 +82,7 @@ export function NewPlaylistDialog({ trackIds, hint, open, name: initial }: { tra
             {covers.length > 1 ? <MosaicTiles covers={covers} /> : covers.length ? <MiniTile id={covers[0]} /> : <Icon name="playlist" />}
           </div>
           <div className="dlg-new-field">
-            <input className="dlg-input dlg-input-lg" value={name} onChange={(e) => setName(e.target.value)} placeholder="Name it" autoFocus maxLength={120} enterKeyHint="done" />
-            <div className="dlg-hint">{trackIds.length ? hint : 'EMPTY · ADD SONGS FROM ANY ALBUM'}</div>
+            <TextField label="Name" value={name} onChange={setName} supporting={trackIds.length ? hint : 'Empty for now · add songs from any album'} inputProps={{ autoFocus: true, maxLength: 120, enterKeyHint: 'done' }} />
           </div>
         </div>
         <div className="dlg-buttons">
@@ -186,14 +185,8 @@ export function EditPlaylistDialog({ playlistId }: { playlistId: string }) {
           <input ref={file} type="file" accept="image/*" hidden onChange={(e) => void pick(e.target.files?.[0])} />
         </div>
         <div className="dlg-edit-fields">
-          <label className="dlg-field">
-            <span className="dlg-hint">NAME</span>
-            <input className="dlg-input" value={name} onChange={(e) => setName(e.target.value)} maxLength={120} autoFocus />
-          </label>
-          <label className="dlg-field">
-            <span className="dlg-hint">DESCRIPTION</span>
-            <textarea className="dlg-input dlg-textarea" value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="Add a description" rows={3} maxLength={300} />
-          </label>
+          <TextField label="Name" value={name} onChange={setName} inputProps={{ maxLength: 120, autoFocus: true }} />
+          <TextField label="Description" value={desc} onChange={setDesc} multiline rows={3} supporting={`${desc.length} / 300`} areaProps={{ maxLength: 300 }} />
         </div>
         <div className="dlg-buttons">
           <button type="button" className="dlg-cancel" onClick={() => actions.closeDialog()}>
@@ -274,7 +267,7 @@ export function RemoveDialog({ target }: { target: RemoveTarget }) {
           {alsoArtists.length ? <>. {alsoArtists.length === 1 ? <b>{alsoArtists[0]}</b> : plural(alsoArtists.length, 'artist', 'artists')} leaves your artists too</> : null}
           . The files go to the Google Drive trash, where they stay for 30 days. Undo right after, or re-add them from the Upload page; the import script skips them from now on.
         </p>
-        {!online && <div className="dlg-hint">NEEDS A CONNECTION TO DRIVE</div>}
+        {!online && <div className="dlg-hint">Needs a connection to Drive</div>}
         <div className="dlg-buttons">
           <button type="button" className="dlg-cancel" onClick={() => actions.closeDialog()} autoFocus>
             Cancel

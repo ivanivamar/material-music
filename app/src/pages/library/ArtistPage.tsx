@@ -1,154 +1,202 @@
 /**
- * Artist (handoff 06 Desktop Artist): photo (or mono monogram) in a 180px circle, hero name,
- * release / track / length counts, Play + Shuffle; songs on the left, discography grouped by
- * release type on the right. The artist banner (artist_background, else the blurred photo)
- * sits faintly behind the header.
+ * Artist (Material redesign, ArtistMaterial.dc.html):
+ *
+ *   ← Library › Artists
+ *   (188 photo)  Artist · Metalcore (coral)
+ *                Spiritbox (57px)
+ *                3 releases · 20 tracks · 1:12:40 · 7 offline
+ *                [▶ Play] [⤮ Shuffle] [✓ Following] (Download) ⋮
+ *   Most played here (from your history; "Songs" in album order when nothing was played yet)   | Albums 1
+ *   ┌ 1 [cover] Black Rainbow · Tsunami Sea ✓     64 plays  3:48 ⋮ ┐                          | EPs 2 …
+ *   Show all 20
+ *
+ * Following = new-release alerts for this artist (state/releases.ts: not muted). The banner
+ * (artist_background, else the blurred photo) sits faintly behind the header.
  */
-import { useState, type CSSProperties } from 'react'
-import { Button, EmptyState, IconButton, TrackRow, formatTime } from '../../components/ui'
+import { useMemo, useState } from 'react'
+import { EmptyState, formatTime } from '../../components/ui'
 import { actions, trackDrag } from '../../actions/actions'
+import { Icon } from '../../design/icons'
 import { useCover } from '../../lib/covers'
 import { artistGenresOf, useGenres } from '../../state/genres'
+import { useHistory } from '../../state/history'
 import { useLibrary } from '../../state/library'
 import { playerStore } from '../../state/player'
-import { libraryHref } from '../../shell/routes'
-import { RELEASE_LABEL, albumInfos, artistInfos, fmtTotal, plural, type ReleaseKind } from '../../state/views'
-import { ArtistAvatar, Crumbs, LibAlbumCard, SectionHead } from './common'
+import { releasesStore, useReleases } from '../../state/releases'
+import { albumHref, libraryHref } from '../../shell/routes'
+import { RELEASE_LABEL, albumInfos, artistInfos, fmtTotal, type ReleaseKind } from '../../state/views'
 import { DownloadButton, trackDownload } from './DownloadButton'
 import { artistOffline, downloadsStore, useDownloadProgress, useDownloads } from '../../state/downloads'
-import { playList, useContextState, useNowPlaying, usePlayingAlbumId } from './playback'
-import './library.css'
+import { playList, useContextState, useNowPlaying } from './playback'
+import { ActBtn, DetailBack, DtList, DtRow, MoreBtn, titleSize } from './detail'
+import { LibCard, albumItem } from './libgrid'
+import { initials } from '../home/art'
+import { nameHue } from '../../lib/mixing'
 
 const ORDER: ReleaseKind[] = ['album', 'ep', 'single', 'live']
 const SONGS_COLLAPSED = 10
-const heroSize = (t: string) => (t.length <= 16 ? 84 : t.length <= 26 ? 64 : t.length <= 40 ? 52 : 40)
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase()
 
 export function ArtistPage({ id }: { id: string }) {
   const { data } = useLibrary()
   const now = useNowPlaying()
   const ctx = useContextState('artist', id)
-  const playingAlbum = usePlayingAlbumId(data)
   const [allSongs, setAllSongs] = useState(false)
   const dl = useDownloads()
   const dlNow = useDownloadProgress()
+  const history = useHistory()
+  const releases = useReleases()
   const { doc: genreDoc } = useGenres()
   const info = data ? artistInfos(data).get(id) : undefined
   const artist = info?.artist
+  const photo = useCover(artist?.image?.id, artist?.image?.v)
   // banner: artist_background, else the photo blurred (not the generated mosaic)
   const bgId = artist?.background?.id ?? (artist?.image && artist.image.source !== 'mosaic' ? artist.image.id : undefined)
   const bg = useCover(bgId, artist?.background ? artist.background.v : artist?.image?.v)
   const blurred = !artist?.background
+  const counts = useMemo(() => {
+    const m = new Map<string, number>()
+    for (const p of history.plays) m.set(p.trackId, (m.get(p.trackId) ?? 0) + 1)
+    return m
+  }, [history.plays])
+  const back = <DetailBack fallback={libraryHref('artists')} parts={[{ label: 'Library', href: libraryHref('all') }, { label: 'Artists', href: libraryHref('artists') }]} />
 
   if (!data) return null
   if (!info || !artist) {
     return (
-      <>
-        <Crumbs fallback={libraryHref('artists')} parts={['LIBRARY', 'ARTISTS']} />
+      <div className="dt-page">
+        {back}
         <div className="placeholder">
-          <EmptyState icon="library" title="This artist isn’t in your library." body="They may have been renamed in the last import." />
+          <EmptyState icon="artist" title="This artist isn’t in your library." body="They may have been renamed in the last import." />
         </div>
-      </>
+      </div>
     )
   }
 
   const infos = albumInfos(data)
   const groups = ORDER.map((k) => ({ kind: k, albums: info.albums.filter((a) => infos.get(a.id)?.kind === k) })).filter((g) => g.albums.length)
-  const songs = info.albums.flatMap((a) => infos.get(a.id)?.tracks ?? [])
-  const ids = songs.map((t) => t.id)
+  const inOrder = info.albums.flatMap((a) => infos.get(a.id)?.tracks ?? [])
+  const played = inOrder.some((t) => counts.get(t.id))
+  const songs = played ? inOrder.map((t, i) => ({ t, i })).sort((a, b) => (counts.get(b.t.id) ?? 0) - (counts.get(a.t.id) ?? 0) || a.i - b.i).map((x) => x.t) : inOrder
+  const ids = inOrder.map((t) => t.id)
   const context = { kind: 'artist' as const, id: artist.id, label: artist.name }
   const shown = allSongs ? songs : songs.slice(0, SONGS_COLLAPSED)
-  const meta = ['ARTIST', ...artistGenresOf(genreDoc, data, artist.id).genres.slice(0, 2).map((g) => g.toUpperCase())].join(' · ')
+  const genres = artistGenresOf(genreDoc, data, artist.id).genres.slice(0, 2)
+  const off = dl.available ? artistOffline(dl, data, artist.id) : null
+  const following = !releases.doc.muted[artist.id]?.[0]
+  const H = nameHue(artist.name)
+  const stats = [
+    `${info.albums.length} ${info.albums.length === 1 ? 'release' : 'releases'}`,
+    `${info.tracks} ${info.tracks === 1 ? 'track' : 'tracks'}`,
+    fmtTotal(info.seconds),
+    off && off.done ? `${off.done} offline` : null,
+  ]
+    .filter(Boolean)
+    .join(' · ')
 
-  const onPlay = () => {
-    if (ctx.active) playerStore.toggle()
-    else playList(ids, context)
-  }
-  const playAt = (trackId: string) => {
-    if (ctx.active && ctx.currentId === trackId) playerStore.toggle()
-    else playList(ids, context, { start: Math.max(0, ids.indexOf(trackId)) })
-  }
+  const onPlay = () => (ctx.active ? playerStore.toggle() : playList(ids, context))
+  const playTrack = (trackId: string) => playList(ids, context, { start: Math.max(0, ids.indexOf(trackId)) })
 
   return (
-    <div className="artist-page">
-      {bg && <div className={`artist-banner ${blurred ? 'is-blurred' : ''}`} style={{ backgroundImage: `url(${bg})` }} aria-hidden />}
-      <Crumbs fallback={libraryHref('artists')} parts={[<a key="l" href={libraryHref('artists')}>LIBRARY</a>, <a key="a" href={libraryHref('artists')}>ARTISTS</a>]} />
+    <div className="dt-page">
+      {bg && <div className={`dt-banner ${blurred ? 'is-blurred' : ''}`} style={{ backgroundImage: `url(${bg})` }} aria-hidden />}
+      {back}
 
-      <header className="hero hero-artist">
-        <ArtistAvatar artist={artist} size={180} lazy={false} className="hero-avatar" />
-        <div className="hero-text">
-          <div className="hero-meta">{meta}</div>
-          <h1 className="hero-title" style={{ '--hs': `${heroSize(artist.name)}px` } as CSSProperties} title={artist.name}>
-            {artist.name}
-          </h1>
-          <div className="hero-stats">
-            {plural(info.albums.length, 'RELEASE')} · {plural(info.tracks, 'TRACK')} · {fmtTotal(info.seconds)}
+      <header className="dt-hero is-artist">
+        <div className="dt-art">
+          <div className="dt-avatar" style={photo ? undefined : { background: `oklch(0.42 0.08 ${H})`, color: `oklch(0.92 0.04 ${H})` }}>
+            {photo ? <img src={photo} alt="" /> : initials(artist.name)}
           </div>
         </div>
-        <div className="hero-buttons">
-          <Button icon={ctx.playing ? 'pauseF' : 'playF'} onClick={onPlay} disabled={!ids.length}>
-            {ctx.playing ? 'Pause' : ctx.active ? 'Resume' : 'Play'}
-          </Button>
-          <Button variant="secondary" icon="shuffle" onClick={() => playList(ids, context, { shuffle: true })} disabled={!ids.length}>
-            Shuffle
-          </Button>
-          {dl.available && (
-            <DownloadButton
-              state={artistOffline(dl, data, artist.id)}
-              name={artist.name}
-              onPin={() => downloadsStore.pin('artist', artist.id)}
-              onRemove={() => downloadsStore.removeArtist(artist.id)}
-            />
-          )}
-          <IconButton icon="more" label="More" shape="square" className="actions-more" onClick={(e) => actions.menu({ kind: 'artist', artistId: artist.id }, e)} />
+        <div className="dt-hero-text">
+          <div className="dt-kicker">{['Artist', ...genres.map(cap)].join(' · ')}</div>
+          <h1 className="dt-title" style={{ '--ts': `${titleSize(artist.name)}px` } as React.CSSProperties} title={artist.name}>
+            {artist.name}
+          </h1>
+          <div className="dt-line">
+            <span className="dt-stats">{stats}</span>
+          </div>
+          <div className="dt-actions dt-artist-actions">
+            <ActBtn kind="filled" icon={ctx.playing ? 'pauseF' : 'playF'} onClick={onPlay} disabled={!ids.length}>
+              {ctx.playing ? 'Pause' : ctx.active ? 'Resume' : 'Play'}
+            </ActBtn>
+            <ActBtn kind="tonal" icon="shuffle" onClick={() => playList(ids, context, { shuffle: true })} disabled={!ids.length}>
+              Shuffle
+            </ActBtn>
+            <ActBtn
+              kind="outlined"
+              icon={following ? 'done' : 'bell'}
+              className={following ? 'is-on' : undefined}
+              title={following ? 'You get new-release alerts for this artist · click to stop' : 'Get new-release alerts for this artist'}
+              onClick={() => releasesStore.setMuted(artist.id, following)}
+            >
+              {following ? 'Following' : 'Follow'}
+            </ActBtn>
+            {off && <DownloadButton state={off} name={artist.name} onPin={() => downloadsStore.pin('artist', artist.id)} onRemove={() => downloadsStore.removeArtist(artist.id)} />}
+            <MoreBtn onClick={(e) => actions.menu({ kind: 'artist', artistId: artist.id }, e)} />
+          </div>
         </div>
       </header>
 
-      <div className="artist-cols">
-        <section className={`artist-songs ${dl.available ? 'has-dl' : ''}`}>
-          <SectionHead label="SONGS" right={plural(songs.length, 'TRACK')} />
-          <div>
+      <div className="dt-cols">
+        <section className="dt-section">
+          <div className="hs-head">
+            <h2 className="hs-title">{played ? 'Most played here' : 'Songs'}</h2>
+            <span className="hs-sub">{songs.length}</span>
+          </div>
+          <DtList className="has-cover">
             {shown.map((t, i) => {
               const album = data.albums[t.albumId]
+              const d = dl.available ? trackDownload(dl, t, dlNow) : undefined
+              const c = counts.get(t.id) ?? 0
               return (
-                <TrackRow
+                <DtRow
                   key={t.id}
-                  className="trow-artist"
                   n={i + 1}
+                  showCover
+                  cover={album?.cover}
                   title={t.title}
-                  subtitle={album?.title}
+                  sub={
+                    <>
+                      {album && (
+                        <a href={albumHref(album.id)} draggable={false}>
+                          {album.title}
+                        </a>
+                      )}
+                      {d?.kind === 'done' && <Icon name="checkCircle" filled />}
+                    </>
+                  }
+                  stat={played ? `${c} ${c === 1 ? 'play' : 'plays'}` : album?.year ? String(album.year) : ''}
+                  current={now.id === t.id}
+                  playing={now.playing}
                   duration={t.duration ? formatTime(t.duration) : '—'}
-                  label={album?.year ?? ''}
-                  playing={now.id === t.id}
-                  download={dl.available ? trackDownload(dl, t, dlNow) : undefined}
-                  onPlay={() => playAt(t.id)}
+                  onPlay={() => playTrack(t.id)}
                   onMore={(e) => actions.menu({ kind: 'track', trackId: t.id }, e)}
                   rowProps={trackDrag(() => [t.id], `${t.title} · ${t.artist}`)}
                 />
               )
             })}
-          </div>
+          </DtList>
           {songs.length > SONGS_COLLAPSED && (
-            <button type="button" className="more-btn" onClick={() => setAllSongs((v) => !v)}>
-              {allSongs ? 'SHOW FEWER' : `SHOW ALL ${songs.length}`}
+            <button type="button" className="btn btn-secondary dt-more-btn" onClick={() => setAllSongs((v) => !v)}>
+              {allSongs ? 'Show fewer' : `Show all ${songs.length}`}
             </button>
           )}
         </section>
 
-        <div className="artist-disco">
-          {groups.map((g, gi) => (
-            <section key={g.kind} className="disco-group">
-              <SectionHead label={RELEASE_LABEL[g.kind].many} right={String(gi + 1).padStart(2, '0')} />
-              <div className="disco-grid">
-                {g.albums.map((a) => (
-                  <div className="disco-card" key={a.id}>
-                    <LibAlbumCard
-                      c={data}
-                      album={a}
-                      subtitle={[a.year, plural(infos.get(a.id)?.tracks.length ?? 0, 'TRACK')].filter(Boolean).join(' · ')}
-                      playingAlbumId={playingAlbum}
-                    />
-                  </div>
-                ))}
+        <div className="dt-disco">
+          {groups.map((g) => (
+            <section key={g.kind} className="dt-section">
+              <div className="hs-head">
+                <h2 className="hs-title">{cap(RELEASE_LABEL[g.kind].many)}</h2>
+                <span className="hs-sub">{g.albums.length}</span>
+              </div>
+              <div className="dt-disco-grid">
+                {g.albums.map((a) => {
+                  const ai = infos.get(a.id)
+                  const nt = ai?.tracks.length ?? 0
+                  return <LibCard key={a.id} c={data} item={albumItem(a, [a.year, cap(RELEASE_LABEL[g.kind].one), `${nt} ${nt === 1 ? 'track' : 'tracks'}`].filter(Boolean).join(' · '))} size={170} />
+                })}
               </div>
             </section>
           ))}

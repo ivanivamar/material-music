@@ -1,19 +1,23 @@
 /**
- * Playlist (handoff 09 Desktop Playlist): 200px cover (custom image or 2×2 mosaic),
- * PLAYLIST · BY YOU · UPDATED …, hero name, description, N TRACKS · length (· N OFFLINE),
- * Play · Shuffle · (Download, Android) · ⋯, then the table:
+ * Playlist + smart playlist (Material redesign, PlaylistMaterial / SmartPlaylistMaterial.dc.html):
  *
- *   #  TITLE (cover · title / artist)   ALBUM   QUALITY   ADDED   🕒   ⋯
+ *   ← Library › Playlists
+ *   [264 cover / mosaic, click = edit]   Playlist · By you · Updated 2 days ago (coral; smart: ✦ yellow)
+ *                                        Heavy water (57px, double-click = edit) · description
+ *                                        42 tracks · 2:51:10 · 38 offline
+ *   (smart) [⟳ Rules  (history Never played) (calendar Added in the last 3 months) …      ✎ Edit rules]
+ *   [▶ Play] [⤮ Shuffle] ⋮                                        Available offline ⏽ (Android)
+ *   ┌ 1 [cover] Wildfire · Periphery · Periphery V            ✓  6:59 ⋮ ┐ (segmented rows)
  *
- * Rows: double-click (tap on touch) plays the playlist from there, right-click / ⋯ = track menu
- * with "Remove from <playlist>", drag to reorder (desktop: the whole row, which can also be dropped
- * on another playlist in the sidebar; phone: the grip). Songs that left the library stay as dimmed
- * "not in your library" rows until removed.
+ * Rows: click plays the playlist from there, right-click / ⋮ = track menu with "Remove from …",
+ * drag to reorder (desktop: the whole row, which can also be dropped on a sidebar playlist; phone:
+ * the grip). Songs that left the library stay as dimmed rows with ✕ until removed.
  */
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type DragEvent, type PointerEvent as ReactPointerEvent } from 'react'
-import { Button, DownloadIcon, EmptyState, Eq, IconButton, QualityBadge, formatTime, qualityKind, qualityLabel, useToast, type DownloadState } from '../../components/ui'
-import { Icon } from '../../design/icons'
-import { useLazyCover } from '../../lib/covers'
+import { Button, EmptyState, formatTime, useToast, type DownloadState } from '../../components/ui'
+import { Icon, type IconName } from '../../design/icons'
+import { useArtTint } from '../../design/tint'
+import { useCover } from '../../lib/covers'
 import { actions, DRAG_MIME } from '../../actions/actions'
 import { playPlaylist, removeFromPlaylist } from '../../actions/ops'
 import { albumHref, artistHref, libraryHref } from '../../shell/routes'
@@ -23,17 +27,17 @@ import { playerStore } from '../../state/player'
 import { fmtAgo, playlistInfo, type PlaylistRow } from '../../state/playlistViews'
 import { playlistsStore, usePlaylists, type Playlist } from '../../state/playlists'
 import { focusLibrarySearch } from '../../state/search'
-import { describeSmart, describeSort } from '../../state/smart'
-import { isTouch, useIsPhone } from '../../state/viewport'
-import { fmtTotal, plural } from '../../state/views'
-import { Crumbs } from '../library/common'
-import { DownloadButton, trackDownload } from '../library/DownloadButton'
+import { describeRule, describeSort, type Rule } from '../../state/smart'
+import { useIsPhone } from '../../state/viewport'
+import { fmtTotal } from '../../state/views'
+import { trackDownload } from '../library/DownloadButton'
+import { PinOfflineToggle } from '../library/OfflineToggle'
+import { ActBtn, DetailBack, DtList, DtRow, MoreBtn, softDate, titleSize } from '../library/detail'
 import { useContextState, useNowPlaying } from '../library/playback'
 import { PlaylistCover } from './PlaylistCover'
-import '../library/library.css'
 import './playlists.css'
 
-const heroSize = (t: string) => (t.length <= 16 ? 72 : t.length <= 28 ? 60 : t.length <= 44 ? 48 : 40)
+const RULE_ICON: Record<Rule['field'], IconName> = { added: 'calendar', lastPlayed: 'history', plays: 'history', playsIn: 'stats', genre: 'label', artist: 'artist', album: 'album', title: 'song', decade: 'calendar', year: 'calendar' }
 const ENTRY_MIME = 'application/x-pelagic-entry'
 
 export function PlaylistPage({ id }: { id: string }) {
@@ -43,14 +47,14 @@ export function PlaylistPage({ id }: { id: string }) {
   if (!data) return null
   if (!p)
     return (
-      <>
-        <Crumbs fallback={libraryHref('playlists')} parts={[<a key="l" href={libraryHref('playlists')}>LIBRARY</a>, <a key="p" href={libraryHref('playlists')}>PLAYLISTS</a>]} />
+      <div className="dt-page">
+        <DetailBack fallback={libraryHref('playlists')} parts={[{ label: 'Library', href: libraryHref('all') }, { label: 'Playlists', href: libraryHref('playlists') }]} />
         {loaded && (
           <div className="placeholder">
             <EmptyState icon="playlist" title="This playlist isn’t here." body="It may have been deleted on another device." />
           </div>
         )}
-      </>
+      </div>
     )
   return <PlaylistView c={data} p={p} />
 }
@@ -81,76 +85,112 @@ function PlaylistView({ c, p }: { c: Catalogue; p: Playlist }) {
   }
 
   const smart = p.smart ?? null
-  const meta = (smart ? ['SMART PLAYLIST', 'UPDATES ITSELF'] : ['PLAYLIST', 'BY YOU', `UPDATED ${fmtAgo(p.updatedAt)}`]).join(' · ')
-  const stats = [plural(info.ids.length, 'TRACK'), info.seconds ? fmtTotal(info.seconds) : null, off && off.done ? `${off.done} OFFLINE` : null, info.missing ? `${info.missing} NOT IN LIBRARY` : null]
+  const n = info.ids.length
+  const stats = [`${n} ${n === 1 ? 'track' : 'tracks'}`, info.seconds ? fmtTotal(info.seconds) : null, off && off.done ? `${off.done} offline` : null, info.missing ? `${info.missing} not in your library` : null]
     .filter(Boolean)
     .join(' · ')
+  const firstCover = info.rows.find((r) => r.track)?.track
+  const coverUrl = useCover(p.cover ? null : firstCover ? c.albums[firstCover.albumId]?.cover : null)
+  const tint = useArtTint(coverUrl)
 
   return (
-    <div className="pl-page">
-      <Crumbs fallback={libraryHref('playlists')} parts={[<a key="l" href={libraryHref('playlists')}>LIBRARY</a>, <a key="p" href={libraryHref('playlists')}>PLAYLISTS</a>]} />
+    <div className="dt-page hue-scope" style={{ '--h': tint?.hue ?? 40, '--hc': tint?.chroma ?? 0 } as CSSProperties}>
+      <div className="dt-wash" aria-hidden />
+      <DetailBack fallback={libraryHref('playlists')} parts={[{ label: 'Library', href: libraryHref('all') }, { label: 'Playlists', href: libraryHref('playlists') }]} />
 
-      <header className="pl-hero">
-        <button type="button" className="pl-hero-cover" onClick={() => actions.editPlaylist(p.id)} aria-label="Edit cover and details" title="Edit details">
-          <PlaylistCover playlist={p} className="pl-cover-200" />
-        </button>
-        <div className="pl-hero-text">
-          <div className="hero-meta">{meta}</div>
-          <h1 className="hero-title pl-title" style={{ '--hs': `${heroSize(p.name)}px` } as CSSProperties} title={p.name} onDoubleClick={() => actions.editPlaylist(p.id)}>
+      <header className="dt-hero">
+        <div className="dt-art">
+          <button type="button" className="dt-art-btn" onClick={() => actions.editPlaylist(p.id)} aria-label="Edit cover and details" title="Edit details">
+            <PlaylistCover playlist={p} className="dt-hero-cover" />
+          </button>
+        </div>
+        <div className="dt-hero-text">
+          {smart ? (
+            <div className="dt-kicker is-smart">
+              <Icon name="smart" />
+              Smart playlist · Updates itself
+            </div>
+          ) : (
+            <div className="dt-kicker">Playlist · By you · Updated {softDate(fmtAgo(p.updatedAt))}</div>
+          )}
+          <h1 className="dt-title" style={{ '--ts': `${titleSize(p.name)}px` } as CSSProperties} title={p.name} onDoubleClick={() => actions.editPlaylist(p.id)}>
             {p.name}
           </h1>
-          {p.description && <div className="pl-desc">{p.description}</div>}
-          {smart && (
-            <button type="button" className="pl-rules" onClick={() => actions.smartPlaylist(p.id)} title="Edit rules">
-              <Icon name="smart" />
-              <span className="pl-rules-t">
-                {describeSmart(smart)}
-                <span className="pl-rules-sort">
-                  {' · '}
-                  {describeSort(smart.sort)}
-                  {smart.limit ? ` · first ${smart.limit}` : ''}
-                </span>
-              </span>
-              <span className="pl-rules-edit">Edit rules</span>
-            </button>
-          )}
-          <div className="hero-stats">{stats}</div>
-        </div>
-        <div className="pl-buttons">
-          <Button icon={ctx.playing ? 'pauseF' : 'playF'} onClick={onPlay} disabled={!info.ids.length} className="actions-play">
-            {ctx.playing ? 'Pause' : ctx.active ? 'Resume' : 'Play'}
-          </Button>
-          <Button variant="secondary" icon="shuffle" onClick={() => playPlaylist(p.id, { shuffle: true })} disabled={!info.ids.length}>
-            Shuffle
-          </Button>
-          {off && info.ids.length > 0 && (
-            <DownloadButton state={off} name={p.name} onPin={() => downloadsStore.pin('playlist', p.id)} onRemove={() => downloadsStore.removePlaylist(p.id)} />
-          )}
-          <IconButton icon="more" label="More" shape="square" className="pl-more" onClick={(e) => actions.menu({ kind: 'playlist', playlistId: p.id }, e)} />
+          {p.description && <div className="dt-desc">{p.description}</div>}
+          <div className="dt-line">
+            <span className="dt-stats">{stats}</span>
+          </div>
         </div>
       </header>
 
+      {smart && (
+        <div className="dt-rules">
+          <div className="dt-rules-k">
+            <Icon name="sync" />
+            Rules
+          </div>
+          <div className="dt-rules-list">
+            {smart.rules.length === 0 && (
+              <span className="dt-rule">
+                <Icon name="library" />
+                <span className="dt-rule-t">Your whole library</span>
+              </span>
+            )}
+            {smart.rules.map((r, i) => (
+              <span key={r.id} className="dt-rule">
+                <Icon name={RULE_ICON[r.field] ?? 'tune'} />
+                <span className="dt-rule-t">
+                  {i > 0 && <span className="dt-rule-k">{smart.match === 'all' ? 'and ' : 'or '}</span>}
+                  {describeRule(r)}
+                </span>
+              </span>
+            ))}
+            <span className="dt-rule">
+              <Icon name="filter" />
+              <span className="dt-rule-t">
+                <span className="dt-rule-k">{smart.limit ? 'Limit ' : 'Sort '}</span>
+                {smart.limit ? `${smart.limit} songs · ` : ''}
+                {describeSort(smart.sort)}
+              </span>
+            </span>
+          </div>
+          <Button variant="secondary" icon="edit" onClick={() => actions.smartPlaylist(p.id)}>
+            Edit rules
+          </Button>
+        </div>
+      )}
+
+      <div className="dt-actions">
+        <ActBtn kind="filled" icon={ctx.playing ? 'pauseF' : 'playF'} onClick={onPlay} disabled={!n}>
+          {ctx.playing ? 'Pause' : ctx.active ? 'Resume' : 'Play'}
+        </ActBtn>
+        <ActBtn kind="tonal" icon="shuffle" onClick={() => playPlaylist(p.id, { shuffle: true })} disabled={!n}>
+          Shuffle
+        </ActBtn>
+        <MoreBtn onClick={(e) => actions.menu({ kind: 'playlist', playlistId: p.id }, e)} />
+        <span className="dt-flex" />
+        {off && n > 0 && <PinOfflineToggle state={off} name={p.name} onPin={() => downloadsStore.pin('playlist', p.id)} onRemove={() => downloadsStore.removePlaylist(p.id)} />}
+      </div>
+
       {info.rows.length === 0 && smart ? (
-        <div className="pl-empty">
-          <div className="pl-empty-k">SMART PLAYLIST · NO TRACKS RIGHT NOW</div>
+        <div className="dt-empty">
           <EmptyState
             icon="smart"
-            title="Nothing matches yet."
+            title="Nothing matches yet"
             body="The list fills itself as you add music and listen. Loosen the rules to see more now."
             actions={
-              <Button icon="smart" onClick={() => actions.smartPlaylist(p.id)}>
+              <Button icon="tune" onClick={() => actions.smartPlaylist(p.id)}>
                 Edit rules
               </Button>
             }
           />
         </div>
       ) : info.rows.length === 0 ? (
-        <div className="pl-empty">
-          <div className="pl-empty-k">PLAYLIST · NO TRACKS</div>
+        <div className="dt-empty">
           <EmptyState
             icon="playlist"
             title={`${p.name} is empty`}
-            body={phone ? 'Add songs from any album: long-press a song or tap ⋯, then Add to playlist.' : 'Add songs from any album, or drag tracks onto the playlist in the sidebar.'}
+            body={phone ? 'Add songs from any album: long-press a song or tap ⋮, then Add to playlist.' : 'Add songs from any album, or drag tracks onto the playlist in the sidebar.'}
             actions={
               <Button icon="search" onClick={focusLibrarySearch}>
                 Find songs
@@ -163,10 +203,10 @@ function PlaylistView({ c, p }: { c: Catalogue; p: Playlist }) {
           c={c}
           p={p}
           rows={info.rows}
-          statLabel={info.statLabel ?? 'ADDED'}
+          showStat={(info.statLabel ?? 'ADDED') !== 'ADDED' || !phone}
           nowId={now.id}
           playing={now.playing}
-          dl={dl.available ? (r) => (r.track ? trackDownload(dl, r.track, dlNow) : undefined) : null}
+          dl={dl.available ? (r) => (r.track ? (trackDownload(dl, r.track, dlNow) ?? { kind: 'none' }) : undefined) : null}
           onPlay={playRow}
           onRemove={(r) => removeFromPlaylist(toast, p.id, [r.entry.entryId])}
           phone={phone}
@@ -189,7 +229,7 @@ function Table({
   c,
   p,
   rows,
-  statLabel,
+  showStat,
   nowId,
   playing,
   dl,
@@ -200,10 +240,10 @@ function Table({
   c: Catalogue
   p: Playlist
   rows: PlaylistRow[]
-  statLabel: string
+  showStat: boolean
   nowId: string | null
   playing: boolean
-  dl: ((r: PlaylistRow) => ReturnType<typeof trackDownload>) | null
+  dl: ((r: PlaylistRow) => DownloadState | undefined) | null
   onPlay: (r: PlaylistRow, i: number) => void
   onRemove: (r: PlaylistRow) => void
   phone: boolean
@@ -269,7 +309,7 @@ function Table({
     }
     const move = (ev: PointerEvent) => {
       lastY = ev.clientY
-      const el = document.elementFromPoint(ev.clientX, ev.clientY)?.closest<HTMLElement>('.pl-row[data-i]')
+      const el = document.elementFromPoint(ev.clientX, ev.clientY)?.closest<HTMLElement>('.dt-row[data-i]')
       if (el) {
         const box = el.getBoundingClientRect()
         const over = Number(el.dataset.i)
@@ -299,24 +339,15 @@ function Table({
   }
 
   return (
-    <div className={`pl-table ${dl ? 'has-dl' : ''} ${drag ? 'is-dragging' : ''}`} role="table" onDragOver={(e) => drag && e.preventDefault()} onDrop={(e) => {
-      if (!e.dataTransfer.types.includes(ENTRY_MIME)) return
-      e.preventDefault()
-      drop(dragRef.current)
-    }}>
-      {!phone && (
-        <div className="pl-head" role="row">
-          <span className="pl-h-n">#</span>
-          <span>TITLE</span>
-          <span>ALBUM</span>
-          <span>QUALITY</span>
-          <span>{statLabel}</span>
-          <span className="pl-h-r">
-            <Icon name="clock" />
-          </span>
-          <span />
-        </div>
-      )}
+    <DtList
+      className={`has-cover ${drag ? 'is-dragging' : ''}`}
+      onDragOver={(e) => drag && e.preventDefault()}
+      onDrop={(e) => {
+        if (!e.dataTransfer.types.includes(ENTRY_MIME)) return
+        e.preventDefault()
+        drop(dragRef.current)
+      }}
+    >
       {rows.map((r, i) => (
         <Row
           key={r.entry.entryId}
@@ -328,6 +359,7 @@ function Table({
           playing={playing}
           hasDl={!!dl}
           download={dl?.(r)}
+          showStat={showStat}
           dropLine={drag && drag.over === i && drag.from !== i ? (drag.after ? 'after' : 'before') : null}
           dragging={drag?.from === i}
           phone={phone}
@@ -340,13 +372,13 @@ function Table({
                 ? null
                 : { draggable: true, onDragStart: onDragStart(r, i), onDragOver: () => {}, onDragEnd }
               : phone
-              ? null
-              : { draggable: true, onDragStart: onDragStart(r, i), onDragOver: onDragOver(i), onDragEnd }
+                ? null
+                : { draggable: true, onDragStart: onDragStart(r, i), onDragOver: onDragOver(i), onDragEnd }
           }
           onGripDown={onGripDown(r, i)}
         />
       ))}
-    </div>
+    </DtList>
   )
 }
 
@@ -359,6 +391,7 @@ function Row({
   playing,
   hasDl,
   download,
+  showStat,
   dropLine,
   dragging,
   phone,
@@ -375,6 +408,7 @@ function Row({
   playing: boolean
   hasDl: boolean
   download: DownloadState | undefined
+  showStat: boolean
   dropLine: 'before' | 'after' | null
   dragging: boolean
   phone: boolean
@@ -385,84 +419,63 @@ function Row({
 }) {
   const t = r.track
   const album = t ? c.albums[t.albumId] : undefined
-  const [ref, cover] = useLazyCover<HTMLDivElement>(album?.cover)
   const target = t ? (p.smart ? ({ kind: 'track', trackId: t.id } as const) : ({ kind: 'track', trackId: t.id, playlistId: p.id, entryId: r.entry.entryId } as const)) : null
-  const added = useMemo(() => r.stat || fmtAgo(r.entry.addedAt), [r.stat, r.entry.addedAt])
+  const stat = useMemo(() => r.stat || softDate(fmtAgo(r.entry.addedAt)), [r.stat, r.entry.addedAt])
   const missing = !t
 
   return (
-    <div
-      className={['pl-row', current && 'is-playing', missing && 'is-missing', dragging && 'is-drag', dropLine && `drop-${dropLine}`].filter(Boolean).join(' ')}
-      data-i={i}
-      role="row"
-      onDoubleClick={onPlay}
-      onClick={(e) => {
-        if (isTouch() && !(e.target as HTMLElement).closest('a, button')) onPlay()
-      }}
-      onContextMenu={(e) => {
-        if (target) actions.menu(target, e)
-        else e.preventDefault()
-      }}
-      {...(dragProps ?? {})}
-    >
-      <div className="pl-n">
-        {current && playing ? <Eq /> : <span className="pl-n-t">{String(i + 1).padStart(2, '0')}</span>}
-        {t && (
-          <button type="button" className="pl-play" onClick={onPlay} aria-label={`Play ${t.title}`}>
-            <Icon name="playF" />
-          </button>
-        )}
-      </div>
-      <div className="pl-main">
-        <div ref={ref} className="pl-cover">
-          {cover && <img src={cover} alt="" decoding="async" draggable={false} />}
-        </div>
-        <div className="pl-text">
-          <div className="pl-t">{t?.title ?? r.entry.title}</div>
-          <div className="pl-a">
-            {t ? (
-              <a className="ln" href={artistHref(t.artistId)} draggable={false}>
-                {t.artist}
-              </a>
-            ) : (
-              r.entry.artist
+    <DtRow
+      n={i + 1}
+      showCover
+      cover={album?.cover}
+      title={t?.title ?? r.entry.title}
+      sub={
+        t ? (
+          <>
+            <a href={artistHref(t.artistId)} draggable={false}>
+              {t.artist}
+            </a>
+            {album && (
+              <>
+                <span>·</span>
+                <a href={albumHref(album.id)} draggable={false}>
+                  {album.title}
+                </a>
+              </>
             )}
-          </div>
-        </div>
-      </div>
-      {!phone && (
-        <>
-          <div className="pl-album">
-            {album ? (
-              <a className="ln" href={albumHref(album.id)} draggable={false}>
-                {album.title}
-              </a>
-            ) : (
-              <span className="pl-gone">NOT IN YOUR LIBRARY</span>
-            )}
-          </div>
-          <div className="pl-q">{t && <QualityBadge kind={qualityKind('flac', t.flac?.bitDepth, t.flac?.sampleRate)}>{qualityLabel('flac', { bitDepth: t.flac?.bitDepth, sampleRate: t.flac?.sampleRate })}</QualityBadge>}</div>
-          <div className="pl-added">{added}</div>
-        </>
-      )}
-      <div className="pl-d">{t?.duration ? formatTime(t.duration) : phone && missing ? '' : '—'}</div>
-      {hasDl && <div className="pl-dl">{t && <DownloadIcon state={download ?? { kind: 'none' }} />}</div>}
-      <div className="pl-act">
-        {missing ? (
-          <button type="button" className="pl-x" aria-label="Remove from playlist" title="Remove from playlist" onClick={onRemove}>
+          </>
+        ) : (
+          <>
+            <span className="dt-s-t">{r.entry.artist}</span>
+            <span className="dt-gone">· not in your library</span>
+          </>
+        )
+      }
+      current={current}
+      playing={playing}
+      dim={missing}
+      hasDl={hasDl}
+      dl={t ? download : undefined}
+      stat={showStat && !phone ? stat : undefined}
+      duration={t?.duration ? formatTime(t.duration) : phone && missing ? '' : '—'}
+      onPlay={t ? onPlay : undefined}
+      onMore={target ? (e) => actions.menu(target, e) : undefined}
+      end={
+        missing ? (
+          <button type="button" className="dt-x" aria-label="Remove from playlist" title="Remove from playlist" onClick={(e) => (e.stopPropagation(), onRemove())}>
             <Icon name="x" />
           </button>
-        ) : (
-          <button type="button" className="pl-dots" aria-label="More" onClick={(e) => target && actions.menu(target, e)}>
-            <Icon name="more" />
-          </button>
-        )}
-        {phone && !p.smart && (
-          <span className="pl-grip" aria-label="Drag to reorder" role="button" tabIndex={-1} onPointerDown={onGripDown}>
+        ) : undefined
+      }
+      grip={
+        phone && !p.smart ? (
+          <span className="dt-grip" aria-label="Drag to reorder" role="button" tabIndex={-1} onPointerDown={onGripDown}>
             <Icon name="drag" />
           </span>
-        )}
-      </div>
-    </div>
+        ) : undefined
+      }
+      className={[dragging && 'is-drag', dropLine && `drop-${dropLine}`].filter(Boolean).join(' ')}
+      rowProps={{ ...(dragProps ?? {}), 'data-i': i }}
+    />
   )
 }
