@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Widget 2×1, nothing playing: NOT PLAYING, last album, Tap to resume, play -->
+<!-- Widget 2×1, nothing playing (iPill): 56dp resume art + 28dp play badge, Resume, album -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@android:id/background"
     android:layout_width="match_parent"
@@ -19,35 +19,32 @@
         android:layout_height="match_parent"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingStart="16dp"
-        android:paddingEnd="12dp">
+        android:padding="12dp">
+
+        <ImageView
+            android:id="@+id/wg_art"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:importantForAccessibility="no" />
 
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
             android:layout_weight="1"
             android:orientation="vertical">
 
             <TextView
-                style="@style/WgMono"
-                android:text="NOT PLAYING" />
-
-            <TextView
                 android:id="@+id/wg_title"
                 style="@style/WgText.Medium"
-                android:layout_marginTop="4dp"
+                android:text="Resume"
                 android:textSize="14dp" />
 
             <TextView
                 android:id="@+id/wg_sub"
                 style="@style/WgText.Muted"
-                android:layout_marginTop="4dp"
+                android:layout_marginTop="2dp"
                 android:textSize="12dp" />
         </LinearLayout>
-
-        <ImageView
-            android:id="@+id/wg_play"
-            style="@style/WgPlay"
-            android:layout_marginStart="10dp" />
     </LinearLayout>
 </FrameLayout>

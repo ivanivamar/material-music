@@ -1,5 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Pelagic mark for the widget: the Porthole icon (small variant), square, centred in whatever box it gets -->
-<bitmap xmlns:android="http://schemas.android.com/apk/res/android"
-    android:src="@drawable/ic_wg_porthole"
-    android:gravity="center" />
+<!-- Material Music mark for notifications: the eighth note in white -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="376"
+    android:viewportHeight="376">
+    <group
+        android:pivotX="146"
+        android:pivotY="265"
+        android:rotation="-22">
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:pathData="M84,265a62,53 0,1 0,124 0a62,53 0,1 0,-124 0z" />
+    </group>
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M191,70A15,15 0,0 1,206 85V255A15,15 0,0 1,176 255V85A15,15 0,0 1,191 70Z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M191,70A90,104 0,0 1,281 174L191,174Z" />
+</vector>

@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Widget queue row (player + queue sizes): art 32, title, artist, NEXT / +2 / +3. Tap = play it. -->
+<!-- Widget queue row (mPlayer + hasUp): art 36 (radius 8), title 14, artist 12. Tap = play it. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/wg_row"
     android:layout_width="match_parent"
-    android:layout_height="44dp"
+    android:layout_height="48dp"
     android:gravity="center_vertical"
-    android:orientation="horizontal">
+    android:orientation="horizontal"
+    android:paddingStart="8dp"
+    android:paddingEnd="8dp">
 
     <ImageView
         android:id="@+id/wg_row_art"
@@ -22,19 +24,13 @@
 
         <TextView
             android:id="@+id/wg_row_title"
-            style="@style/WgText"
-            android:textSize="13dp" />
+            style="@style/WgText.Medium"
+            android:textSize="14dp" />
 
         <TextView
             android:id="@+id/wg_row_artist"
             style="@style/WgText.Muted"
             android:layout_marginTop="1dp"
-            android:textSize="11dp" />
+            android:textSize="12dp" />
     </LinearLayout>
-
-    <TextView
-        android:id="@+id/wg_row_n"
-        style="@style/WgMono"
-        android:layout_marginStart="12dp"
-        android:textColor="@color/wg_faint" />
 </LinearLayout>

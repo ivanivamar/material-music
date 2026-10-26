@@ -153,7 +153,7 @@ export function onLibraryUpdated(l: (r: SyncResult) => void) {
 function validate(x: unknown): Catalogue {
   const c = x as Catalogue
   if (!c || typeof c !== 'object' || !c.tracks || !c.albums || !c.artists) {
-    throw new Error('library.json is not a Pelagic catalogue (missing artists / albums / tracks).')
+    throw new Error('library.json is not a Material Music catalogue (missing artists / albums / tracks).')
   }
   return c
 }

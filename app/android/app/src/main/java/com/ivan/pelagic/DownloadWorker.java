@@ -132,7 +132,7 @@ public class DownloadWorker extends Worker {
         conn.setConnectTimeout(15_000);
         conn.setReadTimeout(30_000);
         conn.setRequestProperty("Authorization", "Bearer " + token);
-        conn.setRequestProperty("User-Agent", "Pelagic");
+        conn.setRequestProperty("User-Agent", "Material Music");
         if (have > 0) conn.setRequestProperty("Range", "bytes=" + have + "-");
         try {
             int code = conn.getResponseCode();

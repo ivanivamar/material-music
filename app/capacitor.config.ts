@@ -9,7 +9,7 @@ const config: CapacitorConfig = {
   appId: 'com.ivan.materialmusic',
   appName: 'Material Music',
   webDir: 'dist',
-  backgroundColor: '#0b0b0c',
+  backgroundColor: '#141110',
   plugins: {
     SystemBars: {
       // edge-to-edge: the page pads itself with env(safe-area-inset-*) (index.html has viewport-fit=cover)
@@ -17,10 +17,10 @@ const config: CapacitorConfig = {
       initialViewportFitValueHint: 'cover',
       style: 'DARK', // light status-bar icons on the dark UI
     },
-    // New Releases reminders (native/releaseNotify.ts): the Pelagic mark in the status bar
+    // New Releases reminders (native/releaseNotify.ts): the Material Music mark in the status bar
     LocalNotifications: {
       smallIcon: 'ic_wg_mark',
-      iconColor: '#EDEDED',
+      iconColor: '#FEA387',
     },
   },
 }
