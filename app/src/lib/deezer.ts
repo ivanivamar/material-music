@@ -1,6 +1,6 @@
 /**
  * Deezer related artists for the radio (step 26), through the site's Deezer proxy
- * (`/api/deezer/related` on Firebase; the Android app calls https://pelagic-sound.web.app).
+ * (`/api/deezer/related` on Firebase; the Android app calls https://material-music-app.web.app).
  *
  * Only artists that are in the library are kept (matched by Deezer id, else by folded name), most
  * related first. Cached in IndexedDB `kv.related` for 30 days, fetched lazily when a radio needs an
@@ -14,7 +14,7 @@ import { foldKey } from '../dj/engine'
 import type { Catalogue } from '../state/library'
 import { onAccountReset } from '../state/session'
 
-const API_BASE: string = isNative ? ((import.meta.env.VITE_PELAGIC_API as string | undefined) ?? 'https://pelagic-sound.web.app/') : import.meta.env.BASE_URL
+const API_BASE: string = isNative ? ((import.meta.env.VITE_PELAGIC_API as string | undefined) ?? 'https://material-music-app.web.app/') : import.meta.env.BASE_URL
 const KEY = 'related'
 const TTL = 30 * 86_400_000
 const GAP_MS = 1000

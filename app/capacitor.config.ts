@@ -6,8 +6,8 @@ import type { CapacitorConfig } from '@capacitor/cli'
  * (android/app/src/main/java/com/ivan/pelagic/PelagicNativePlugin.kt).
  */
 const config: CapacitorConfig = {
-  appId: 'com.ivan.pelagic',
-  appName: 'Pelagic',
+  appId: 'com.ivan.materialmusic',
+  appName: 'Material Music',
   webDir: 'dist',
   backgroundColor: '#0b0b0c',
   plugins: {

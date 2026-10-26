@@ -3,7 +3,7 @@
  * override it with VITE_GOOGLE_CLIENT_ID in app/.env.local if the client is ever recreated.
  */
 export const GOOGLE_CLIENT_ID: string =
-  import.meta.env.VITE_GOOGLE_CLIENT_ID ?? '807400953813-0rf6g4jn7ompfise7pkgn6pou2dmofrh.apps.googleusercontent.com'
+  import.meta.env.VITE_GOOGLE_CLIENT_ID ?? '1053700895476-6jafnagm34rs2fpv87b9oh9oogbjvm3c.apps.googleusercontent.com'
 
 /** Full Drive scope: the app reads the library and (later) writes playlists, history and settings. */
 export const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive'

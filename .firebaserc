@@ -1,6 +1,6 @@
 {
   "projects": {
-    "pelagic": "pelagic-sound"
+    "default": "material-music-app"
   },
   "targets": {},
   "etags": {}

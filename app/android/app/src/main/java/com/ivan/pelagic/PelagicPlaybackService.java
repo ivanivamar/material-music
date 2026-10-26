@@ -65,7 +65,7 @@ public class PelagicPlaybackService extends MediaSessionService {
     static final String EXTRA_INTRO = "pelagic.intro";
     static final String EXTRA_VOLUME = "pelagic.volume";
     /** "Skip session": the notification / lock-screen action while the DJ plays */
-    static final String ACTION_SKIP_SESSION = "com.ivan.pelagic.SKIP_SESSION";
+    static final String ACTION_SKIP_SESSION = "com.ivan.materialmusic.SKIP_SESSION";
     private static final SessionCommand SKIP_SESSION = new SessionCommand(ACTION_SKIP_SESSION, Bundle.EMPTY);
     private CommandButton skipButton;
     private boolean djShown = false;

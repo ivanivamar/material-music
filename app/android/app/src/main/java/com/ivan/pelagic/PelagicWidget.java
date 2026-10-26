@@ -40,9 +40,9 @@ import java.util.concurrent.Executors;
  */
 public class PelagicWidget extends AppWidgetProvider {
     private static final String TAG = "PelagicWidget";
-    static final String ACTION_COMMAND = "com.ivan.pelagic.widget.COMMAND";
+    static final String ACTION_COMMAND = "com.ivan.materialmusic.widget.COMMAND";
     /** MainActivity intent action for widget launches (not MAIN, so a running app gets onNewIntent) */
-    static final String ACTION_OPEN = "com.ivan.pelagic.widget.OPEN";
+    static final String ACTION_OPEN = "com.ivan.materialmusic.widget.OPEN";
     private static final String EXTRA_CMD = "cmd";
     private static final String EXTRA_INDEX = "index";
     private static final String EXTRA_ID = "id";

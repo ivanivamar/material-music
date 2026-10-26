@@ -1,7 +1,7 @@
 {
   "id": "./",
-  "name": "Pelagic",
-  "short_name": "Pelagic",
+  "name": "Material Music",
+  "short_name": "Material Music",
   "description": "Your own music library: FLAC from your PC or Google Drive.",
   "start_url": "./#/home",
   "scope": "./",

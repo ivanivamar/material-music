@@ -18,7 +18,7 @@
  *        The artist's albums / EPs / singles released in the last `days` (default 183, max 400),
  *        newest first, and all their album titles (the app uses them to find the artist on MusicBrainz).
  *
- * The Android app calls it on https://pelagic-sound.web.app from https://localhost, so that origin gets CORS headers.
+ * The Android app calls it on https://material-music-app.web.app from https://localhost, so that origin gets CORS headers.
  *
  * Needs the `X-Pelagic: 1` header (same as the sign-in helper), so other sites can't borrow it.
  * Nothing is stored.
