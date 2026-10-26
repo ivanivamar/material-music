@@ -6,8 +6,8 @@
   "start_url": "./#/home",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#0b0b0c",
-  "theme_color": "#0b0b0c",
+  "background_color": "#141110",
+  "theme_color": "#141110",
   "categories": ["music", "entertainment"],
   "launch_handler": { "client_mode": ["focus-existing", "auto"] },
   "icons": [

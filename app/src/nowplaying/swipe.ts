@@ -17,7 +17,7 @@ import { useEffect, type RefObject } from 'react'
 
 const CLOSE_PX = 140
 const FLICK = 0.6 // px per ms
-const EXCLUDE = '.np-seek, .np-ly-seek, .np-vol, .slider, .seekrow, .ly-viewport, .ly-plain, input, textarea'
+const EXCLUDE = '.np-seek, .np-ly-seek, .np-vol, .slider, .seekrow, .ly-viewport, .ly-plain, .np-panel, .np-scrim, input, textarea'
 const SCROLLERS = '.np-main, .np-ly'
 
 export function useSwipeDown(ref: RefObject<HTMLElement | null>, enabled: boolean, onClose: () => void) {

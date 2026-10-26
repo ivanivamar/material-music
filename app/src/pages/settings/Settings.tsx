@@ -1,20 +1,18 @@
 /**
- * Settings (handoff `Settings.dc.html`, DJ section from the DJ handoff). Everything saves the moment
+ * Settings (Material 3 Expressive redesign, SettingsMaterial.dc.html). Everything saves the moment
  * it changes; there is no Save button.
  *
- * Desktop: a 200px sticky column (SAVED AUTOMATICALLY · Settings · section list with a glowing dot on
- * the section in view) beside a 720px column of sections. Each section: 22px title + mono note over
- * a 1px rule, then 68px rows (label + mono hint left, control right).
- * Phone: a sticky header (‹ Settings · SAVED), mono section labels, segmented controls and sliders
+ * Desktop: a 200px sticky column ("Settings" + "Saved automatically" + pill subnav) beside a 740px
+ * column of rounded 28px section cards.
+ * Phone: a sticky header (← Settings · Saved), coral section labels, segmented controls and sliders
  * full width under their row.
  *
- * Only rows that do something real are here. Not built yet (so not shown): Opus 320, gapless /
- * normalisation / crossfade / output device, release notifications, lyric romaji / translation
- * (the lyric files carry neither), lock-screen controls (always on), and "Stop the DJ when I play
- * an album" (it always stops).
+ * Only rows that do something real are here. Unbuilt features (Opus 320, normalisation, crossfade,
+ * output device, release notifications, lyric romaji / translation, lock-screen toggle, "Stop the DJ
+ * when I play an album") remain hidden.
  */
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { Segmented, Slider, Toggle, useToast, type SegOption } from '../../components/ui'
+import { Toggle, useToast, type SegOption } from '../../components/ui'
 import { Icon } from '../../design/icons'
 import type { MotionSetting, ParticleSetting } from '../../design/tokens'
 import { DJ_TYPES, TYPE_LABEL, type DjType } from '../../dj/engine'
@@ -63,7 +61,7 @@ export function Settings() {
     { id: 'library', label: 'Library', render: () => <LibrarySection /> },
     { id: 'playback', label: 'Playback', render: () => <PlaybackSection /> },
     ...(isNative ? [{ id: 'downloads', label: 'Downloads', render: () => <DownloadsSection /> }] : []),
-    { id: 'new', label: 'New Releases', render: () => <ReleasesSection /> },
+    { id: 'new', label: 'New releases', render: () => <ReleasesSection /> },
     { id: 'dj', label: 'DJ', render: () => <DjSection /> },
     { id: 'atmos', label: 'Atmosphere', render: () => <AtmosphereSection /> },
     { id: 'about', label: 'About', render: () => <AboutSection /> },
@@ -133,10 +131,10 @@ export function Settings() {
         <div className="st st-phone">
           <header className="st-phead">
             <button type="button" className="st-back" aria-label="Back" onClick={() => back(href('home'))}>
-              <Icon name="chevL" />
+              <Icon name="back" />
             </button>
             <h1 className="st-ptitle">Settings</h1>
-            <span className="st-saved">SAVED</span>
+            <span className="st-saved">Saved</span>
           </header>
           <div className="st-secs">{body}</div>
         </div>
@@ -144,13 +142,12 @@ export function Settings() {
         <div className="st">
           <aside className="st-side">
             <div className="st-head">
-              <div className="st-meta">SAVED AUTOMATICALLY</div>
               <h1 className="st-title">Settings</h1>
+              <div className="st-meta">Saved automatically</div>
             </div>
             <nav className="st-subnav" aria-label="Settings sections">
               {sections.map((s) => (
                 <button key={s.id} type="button" className={`st-sublink ${active === s.id ? 'is-on' : ''}`} aria-current={active === s.id ? 'true' : undefined} onClick={() => jump(s.id)}>
-                  <span className="st-subdot" aria-hidden />
                   {s.label}
                 </button>
               ))}
@@ -165,21 +162,29 @@ export function Settings() {
 
 /* ── Building blocks ────────────────────────────────── */
 
-function SectionHead({ label, note }: { label: string; note?: string }) {
+function SectionGroup({ label, note, children }: { label: string; note?: string; children: ReactNode }) {
   const { phone } = useContext(SettingsCtx)
-  if (phone) return <div className="st-plabel">{label.toUpperCase()}</div>
   return (
-    <div className="st-shead">
-      <h2 className="st-slabel">{label}</h2>
-      {note && <span className="st-snote">{note}</span>}
-    </div>
+    <>
+      {phone ? (
+        <div className="st-plabel">{label}</div>
+      ) : (
+        <div className="st-shead">
+          <h2 className="st-slabel">{label}</h2>
+          {note && <span className="st-snote">{note}</span>}
+        </div>
+      )}
+      <div className="st-card">
+        <div className="st-card-in">{children}</div>
+      </div>
+    </>
   )
 }
 
 interface RowProps {
   label: ReactNode
   hint?: ReactNode
-  /** glowing status dot before the hint */
+  /** coral status dot before the hint */
   dot?: boolean
   muted?: boolean
   tile?: ReactNode
@@ -243,19 +248,75 @@ function Tog({ label, checked, onChange, disabled }: { label: string; checked: b
 }
 
 function Seg<T extends string>({ label, value, options, onChange }: { label: string; value: T; options: SegOption<T>[]; onChange: (v: T) => void }) {
-  return <Segmented label={label} value={value} options={options} onChange={onChange} />
+  return (
+    <div className="st-seg" role="group" aria-label={label}>
+      {options.map((o, i) => {
+        const on = value === o.value
+        const first = i === 0
+        const last = i === options.length - 1
+        return (
+          <button
+            key={o.value}
+            type="button"
+            className={`st-seg-btn ${on ? 'is-on' : ''} ${first ? 'is-first' : ''} ${last ? 'is-last' : ''}`}
+            aria-pressed={on}
+            onPointerDown={(e) => {
+              if (e.button === 0 && e.pointerType === 'mouse') onChange(o.value)
+            }}
+            onClick={() => onChange(o.value)}
+          >
+            {on && <Icon name="done" size={16} />}
+            {o.label}
+          </button>
+        )
+      })}
+    </div>
+  )
 }
 
-function SliderCtl({ label, value, shown, onChange, disabled, step }: { label: string; value: number; shown: string; onChange: (v: number) => void; disabled?: boolean; step?: number }) {
+function SliderCtl({ label, value, shown, onChange, disabled }: { label: string; value: number; shown: string; onChange: (v: number) => void; disabled?: boolean; step?: number }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const at = (x: number) => {
+    const r = ref.current!.getBoundingClientRect()
+    return Math.round(Math.max(0, Math.min(1, (x - r.left) / r.width)) * 100) / 100
+  }
   return (
     <div className={`st-slider ${disabled ? 'is-off' : ''}`}>
-      <Slider label={label} value={value} knob={12} height={24} step={step} onChange={onChange} valueText={() => shown} />
+      <div
+        ref={ref}
+        className="st-slider-track"
+        role="slider"
+        tabIndex={disabled ? -1 : 0}
+        aria-label={label}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.round(value * 100)}
+        aria-valuetext={shown}
+        aria-disabled={disabled}
+        onPointerDown={(e) => {
+          if (disabled) return
+          e.currentTarget.setPointerCapture(e.pointerId)
+          onChange(at(e.clientX))
+        }}
+        onPointerMove={(e) => {
+          if (disabled || !e.currentTarget.hasPointerCapture(e.pointerId)) return
+          onChange(at(e.clientX))
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') onChange(Math.max(0, Math.round((value - 0.05) * 100) / 100))
+          if (e.key === 'ArrowRight' || e.key === 'ArrowUp') onChange(Math.min(1, Math.round((value + 0.05) * 100) / 100))
+        }}
+      >
+        <span className="st-slider-line">
+          <span className="st-slider-fill" style={{ width: `${value * 100}%` }} />
+        </span>
+        <span className="st-slider-knob" style={{ left: `${value * 100}%` }} />
+      </div>
       <span className="st-sval">{shown}</span>
     </div>
   )
 }
 
-/** Inline "are you sure" under a row (handoff: red outline, Cancel · red button). */
 function useConfirm(id: string) {
   const { conf, setConf } = useContext(SettingsCtx)
   return {
@@ -265,7 +326,7 @@ function useConfirm(id: string) {
       conf === id ? (
         <div className="st-conf" role="alertdialog" aria-label={text}>
           <span className="st-conf-ic">
-            <Icon name="alert" />
+            <Icon name="warning" filled />
           </span>
           <span className="st-conf-text">{text}</span>
           <span className="st-conf-btns">
@@ -297,9 +358,9 @@ const initials = (s: string) =>
     .map((w) => w[0]!.toUpperCase())
     .join('') || '?'
 
-const MON = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
+const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const clock = (d: Date) => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
-/** "21:40" today, else "14 OCT 21:40" */
+/** "21:40" today, else "14 Oct 21:40" */
 function stamp(ms: number): string {
   const d = new Date(ms)
   return d.toDateString() === new Date().toDateString() ? clock(d) : `${d.getDate()} ${MON[d.getMonth()]} ${clock(d)}`
@@ -313,13 +374,12 @@ function AccountSection() {
   const c = useConfirm('signout')
   const expired = status === 'expired'
   return (
-    <>
-      <SectionHead label="Account" note="GOOGLE" />
+    <SectionGroup label="Account" note="Google">
       <Row
         tile={account?.photo ? <img src={account.photo} alt="" referrerPolicy="no-referrer" /> : initials(account?.name || account?.email || '?')}
         round
         label={account?.email ?? 'Signed in'}
-        hint={expired ? 'GOOGLE · SESSION EXPIRED' : `GOOGLE · SIGNED IN${account?.name ? ` AS ${account.name.toUpperCase()}` : ''}`}
+        hint={expired ? 'Google · session expired' : `Google · signed in${account?.name ? ` as ${account.name}` : ''}`}
         dot={!expired}
         control={
           <>
@@ -329,13 +389,18 @@ function AccountSection() {
             </Act>
           </>
         }
-        below={c.box('Sign out? Pelagic forgets this library on this device until you sign in again.', 'Sign out', () => {
+        below={c.box('Sign out? Material Music forgets this library on this device until you sign in again.', 'Sign out', () => {
           sessionStore.signOut()
           toast.show({ icon: 'check', text: 'Signed out.' })
         })}
       />
-      <Row label="Switch account" hint="SIGN IN WITH ANOTHER GOOGLE ACCOUNT" control={<Act onClick={() => void sessionStore.signIn({ switchAccount: true })}>Switch</Act>} />
-    </>
+      <Row
+        tile={<Icon name="account" size={22} />}
+        label="Switch account"
+        hint="Sign in with another Google account"
+        control={<Act onClick={() => void sessionStore.signIn({ switchAccount: true })}>Switch</Act>}
+      />
+    </SectionGroup>
   )
 }
 
@@ -364,22 +429,21 @@ function LibrarySection() {
     if (!lib.data) return
     try {
       const r = await localFolder.link(lib.data)
-      if (r) toast.show({ icon: 'check', text: `FLAC now plays from “${r.name}”.`, meta: `${r.found} OF ${r.probed} SAMPLE TRACKS FOUND` })
+      if (r) toast.show({ icon: 'check', text: `FLAC now plays from “${r.name}”.`, meta: `${r.found} of ${r.probed} sample tracks found` })
     } catch (e) {
-      toast.show({ icon: 'alert', tone: 'danger', text: (e as Error).message, meta: 'LOCAL FOLDER', duration: 8000 })
+      toast.show({ icon: 'alert', tone: 'danger', text: (e as Error).message, meta: 'Local folder', duration: 8000 })
     }
   }
 
-  const albums = counts ? `${fmtN(counts.albums)} ALBUMS` : ''
-  const folderState = local.status === 'prompt' ? 'ASKS FOR ACCESS ON PLAY' : local.status === 'denied' ? 'ACCESS DENIED' : 'CONNECTED'
+  const albums = counts ? `${fmtN(counts.albums)} albums` : ''
+  const folderState = local.status === 'prompt' ? 'Asks for access on play' : local.status === 'denied' ? 'Access denied' : 'Connected'
 
   return (
-    <>
-      <SectionHead label="Library" note={desktopFolder && linked ? 'LOCAL FOLDER' : 'GOOGLE DRIVE'} />
+    <SectionGroup label="Library" note={desktopFolder && linked ? 'Local folder' : 'Google Drive'}>
       {desktopFolder && linked ? (
         <>
           <Row
-            tile={<Icon name="library" size={20} />}
+            tile={<Icon name="folderClosed" size={22} />}
             label={local.name}
             hint={`${folderState} · ${albums}${counts ? ` · ${fmtBytes(counts.flac)} FLAC` : ''}`}
             dot={local.status === 'granted'}
@@ -395,23 +459,25 @@ function LibrarySection() {
             }
           />
           <Row
+            tile={<Icon name="cloud" size={22} />}
             label="Stream from Drive when the folder is missing"
-            hint={s.driveFallback ? 'KEEPS PLAYING IF THE DISK IS UNPLUGGED' : 'TRACKS NOT IN THE FOLDER WON’T PLAY'}
+            hint={s.driveFallback ? 'Keeps playing if the disk is unplugged' : 'Tracks not in the folder won’t play'}
             control={<Tog label="Stream from Drive when the folder is missing" checked={s.driveFallback} onChange={(v) => settingsStore.set('driveFallback', v)} />}
           />
         </>
       ) : (
         <Row
-          tile={<Icon name="cloud" size={20} />}
+          tile={<Icon name="cloud" size={22} />}
           label="Google Drive"
-          hint={`MY DRIVE / PELAGIC${counts ? ` · ${fmtN(counts.tracks)} TRACKS` : ''}`}
+          hint={`My Drive / Pelagic${counts ? ` · ${fmtN(counts.tracks)} tracks` : ''}`}
           dot={!expired}
           control={desktopFolder ? <Act onClick={() => void link()}>Use a local folder</Act> : undefined}
         />
       )}
       <Row
+        tile={<Icon name="sync" size={22} />}
         label="Check Drive for changes"
-        hint={lib.refreshing ? 'CHECKING DRIVE…' : lib.syncedAt ? `LAST CHECKED ${stamp(lib.syncedAt)}` : 'NOT CHECKED YET'}
+        hint={lib.refreshing ? 'Checking Drive…' : lib.syncedAt ? `Last checked ${stamp(lib.syncedAt)}` : 'Not checked yet'}
         control={
           <Act disabled={lib.refreshing || expired} onClick={checkDrive}>
             {lib.refreshing ? 'Checking…' : 'Check now'}
@@ -420,17 +486,19 @@ function LibrarySection() {
         below={lib.refreshing ? <div className="st-prog pg-anim" aria-hidden /> : undefined}
       />
       <Row
+        tile={<Icon name="health" size={22} />}
         label="Library health"
-        hint={issues === null ? 'LOOKING…' : issues ? `${fmtN(issues)} TO FIX · COVERS, LYRICS, GENRE, YEAR, DUPLICATES, BITRATE` : 'ALL CLEAR'}
+        hint={issues === null ? 'Looking…' : issues ? `${fmtN(issues)} to fix · covers, lyrics, genre, year, duplicates, bitrate` : 'All clear'}
         dot={issues === 0}
         control={<Act onClick={() => go(href('health'))}>Open</Act>}
       />
       <Row
+        tile={<Icon name="lyrics" size={22} />}
         label="Look up lyrics for new uploads"
-        hint={s.fetchLyrics ? 'SONGS WITHOUT LYRICS GET THEM FROM LRCLIB AFTER UPLOAD' : 'ONLY LYRICS FROM THE FILE TAGS'}
+        hint={s.fetchLyrics ? 'Songs without lyrics get them from LRCLIB after upload' : 'Only lyrics from the file tags'}
         control={<Tog label="Look up lyrics for new uploads" checked={s.fetchLyrics} onChange={(v) => settingsStore.set('fetchLyrics', v)} />}
       />
-    </>
+    </SectionGroup>
   )
 }
 
@@ -445,16 +513,16 @@ function PlaybackSection() {
   const s = useSettings()
   const local = useLocalFolder()
   const linked = !isNative && local.status !== 'none' && local.status !== 'unsupported' && local.status !== 'loading'
-  const hint = s.streamQuality === 'opus' ? '~1.2 MB / MIN · FLAC WHEN A SONG HAS NO OPUS COPY' : 'FLAC AS STORED · ~6–30 MB / MIN'
+  const hint = s.streamQuality === 'opus' ? '~1.2 MB / min · FLAC when a song has no Opus copy' : 'FLAC as stored · ~6–30 MB / min'
   return (
-    <>
-      <SectionHead label="Playback" note="FROM THE NEXT SONG" />
+    <SectionGroup label="Playback" note="From the next song">
       <Row
+        tile={<Icon name="highQuality" size={22} />}
         label="Streaming quality"
-        hint={linked ? `FROM DRIVE · THE LOCAL FOLDER ALWAYS PLAYS FLAC` : hint}
+        hint={linked ? 'From Drive · the local folder always plays FLAC' : hint}
         wide={<Seg label="Streaming quality" value={s.streamQuality} options={STREAM} onChange={(v) => settingsStore.set('streamQuality', v)} />}
       />
-    </>
+    </SectionGroup>
   )
 }
 
@@ -485,22 +553,31 @@ function DownloadsSection() {
       toast.show({
         icon: 'download',
         text: q === 'flac' ? 'Downloads switch to the original FLAC.' : 'Downloads switch to Opus 160.',
-        meta: 'THE OTHER COPIES GO ONCE THESE ARE STORED',
+        meta: 'The other copies go once these are stored',
         action: { label: 'Undo', onClick: () => downloadsStore.setQuality(before) },
       })
   }
   const clear = () => {
     const before = dl.prefs
     downloadsStore.removeAll()
-    toast.show({ icon: 'x', mutedIcon: true, text: 'Removed all downloads from this phone.', meta: used ? `${fmtBytes(used)} FREED` : undefined, action: { label: 'Undo', onClick: () => downloadsStore.restore(before) } })
+    toast.show({ icon: 'x', mutedIcon: true, text: 'Removed all downloads from this phone.', meta: used ? `${fmtBytes(used)} freed` : undefined, action: { label: 'Undo', onClick: () => downloadsStore.restore(before) } })
   }
 
   return (
-    <>
-      <SectionHead label="Downloads" note={used ? `${fmtBytes(used)} STORED` : 'NOTHING STORED'} />
-      <Row label="Download quality" hint={whole ? `WHOLE LIBRARY ≈ ${fmtBytes(whole)}` : undefined} wide={<Seg label="Download quality" value={dl.prefs.quality} options={DQ} onChange={setQuality} />} />
-      <Row label="Download on Wi-Fi only" control={<Tog label="Download on Wi-Fi only" checked={dl.prefs.wifiOnly} onChange={(v) => downloadsStore.setWifiOnly(v)} />} />
+    <SectionGroup label="Downloads" note={used ? `${fmtBytes(used)} stored` : 'Nothing stored'}>
       <Row
+        tile={<Icon name="cloudDownload" size={22} />}
+        label="Download quality"
+        hint={whole ? `Whole library ≈ ${fmtBytes(whole)}` : undefined}
+        wide={<Seg label="Download quality" value={dl.prefs.quality} options={DQ} onChange={setQuality} />}
+      />
+      <Row
+        tile={<Icon name="wifi" size={22} />}
+        label="Download on Wi-Fi only"
+        control={<Tog label="Download on Wi-Fi only" checked={dl.prefs.wifiOnly} onChange={(v) => downloadsStore.setWifiOnly(v)} />}
+      />
+      <Row
+        tile={<Icon name="sdStorage" size={22} />}
         label="Storage"
         control={
           <Act danger disabled={!hasPins && !used} onClick={c.ask}>
@@ -512,12 +589,16 @@ function DownloadsSection() {
             {n && (
               <div className="st-store">
                 <div className="st-bar">
-                  <span className="st-bar-me" style={{ width: pct(used) }} />
+                  <span className="st-bar-me" style={{ width: pct(used), minWidth: used ? 6 : 0 }} />
                   <span className="st-bar-other" style={{ width: pct(other) }} />
+                  <span className="st-bar-free" />
                 </div>
                 <div className="st-store-line">
-                  <span>PELAGIC {used ? fmtBytes(used) : '0 MB'}</span>
-                  <span>{fmtBytes(n.free)} FREE</span>
+                  <span>
+                    <i className="st-sdot st-sdot-me" />
+                    Material Music {used ? fmtBytes(used) : '0 MB'}
+                  </span>
+                  <span>{fmtBytes(n.free)} free</span>
                 </div>
               </div>
             )}
@@ -525,8 +606,12 @@ function DownloadsSection() {
           </>
         }
       />
-      <Row label="Downloaded music" control={<ValueBtn onClick={() => go(href('downloads'))}>Manage</ValueBtn>} />
-    </>
+      <Row
+        tile={<Icon name="folder" size={22} />}
+        label="Downloaded music"
+        control={<ValueBtn onClick={() => go(href('downloads'))}>Manage</ValueBtn>}
+      />
+    </SectionGroup>
   )
 }
 
@@ -545,21 +630,26 @@ function ReleasesSection() {
   const followed = useMemo(() => (data ? sweepTargets(data, rs.doc) : []), [data, rs.doc])
   const muted = followed.filter((t) => rs.doc.muted[t.artistId]?.[0]).length
   const next = new Date(nextSweepAt())
-  const nextLabel = rs.sweeping ? 'SWEEPING NOW' : `NEXT · ${next.getDate()} ${MON[next.getMonth()]} ${clock(next)}`
+  const nextLabel = rs.sweeping ? 'Sweeping now' : `Next · ${next.getDate()} ${MON[next.getMonth()]} ${clock(next)}`
   return (
-    <>
-      <SectionHead label="New Releases" note="MUSICBRAINZ" />
+    <SectionGroup label="New releases" note="MusicBrainz">
       <Row
+        tile={<Icon name="radar" size={22} />}
         label="Daily sonar sweep"
         hint={nextLabel}
         wide={<Seg label="Daily sonar sweep" value={String(s.sweepHour)} options={SWEEP} onChange={(v) => settingsStore.set('sweepHour', Number(v))} />}
       />
       <Row
+        tile={<Icon name="album" size={22} />}
         label="Hide reissues and deluxe editions"
         control={<Tog label="Hide reissues and deluxe editions" checked={rs.doc.hideReissues[0]} onChange={(v) => releasesStore.setHideReissues(v)} />}
       />
-      <Row label="Followed artists" control={<ValueBtn onClick={() => go(`${href('new')}?artists`)}>{`${fmtN(followed.length)} · ${muted ? `${fmtN(muted)} muted` : 'none muted'}`}</ValueBtn>} />
-    </>
+      <Row
+        tile={<Icon name="artist" size={22} />}
+        label="Followed artists"
+        control={<ValueBtn onClick={() => go(`${href('new')}?artists`)}>{`${fmtN(followed.length)} · ${muted ? `${fmtN(muted)} muted` : 'none muted'}`}</ValueBtn>}
+      />
+    </SectionGroup>
   )
 }
 
@@ -573,7 +663,9 @@ function DjSection() {
   const p = doc.prefs
   const learned = djLearned()
   const has = learned.more.length + learned.less.length > 0
-  const learnedHint = has ? [learned.more.length ? `MORE · ${learned.more.join(', ')}` : '', learned.less.length ? `LESS · ${learned.less.join(', ')}` : ''].filter(Boolean).join(' · ').toUpperCase() : 'NOTHING YET'
+  const learnedHint = has
+    ? [learned.more.length ? `More · ${learned.more.join(', ')}` : '', learned.less.length ? `Less · ${learned.less.join(', ')}` : ''].filter(Boolean).join(' · ')
+    : 'Nothing yet'
   const toggleType = (t: DjType) => {
     const on = p.types.includes(t)
     if (on && p.types.length === 1) return
@@ -581,21 +673,22 @@ function DjSection() {
   }
   const typesValue = p.types.length === DJ_TYPES.length ? 'All four' : p.types.map((t) => TYPE_LABEL[t]).join(', ')
   return (
-    <>
-      <SectionHead label="DJ" note="SESSIONS AND VOICE" />
+    <SectionGroup label="DJ" note="Sessions and voice">
       <Row
+        tile={<Icon name="recordVoiceOver" size={22} />}
         label="Voice intros"
-        hint={p.voice ? 'MALE ENGLISH VOICE BEFORE EACH SESSION' : 'INTROS APPEAR AS TEXT FOR 5 SECONDS'}
+        hint={p.voice ? 'Male English voice before each session' : 'Intros appear as text for 5 seconds'}
         control={<Tog label="Voice intros" checked={p.voice} onChange={(v) => djStore.setPref('voice', v)} />}
       />
       <Row
+        tile={<Icon name="volume" size={22} />}
         label="Voice volume"
-        hint="RELATIVE TO THE MUSIC"
+        hint="Relative to the music"
         wide={
           <SliderCtl
             label="Voice volume"
             value={p.voice ? p.voiceVolume : 0}
-            shown={p.voice ? `${Math.round(p.voiceVolume * 100)}%` : 'OFF'}
+            shown={p.voice ? `${Math.round(p.voiceVolume * 100)}%` : 'Off'}
             disabled={!p.voice}
             step={0.05}
             onChange={(v) => p.voice && djStore.setPref('voiceVolume', Math.round(v * 100) / 100)}
@@ -603,8 +696,9 @@ function DjSection() {
         }
       />
       <Row
+        tile={<Icon name="tune" size={22} />}
         label="Session types"
-        hint="WHAT START DJ MIXES"
+        hint="What Start DJ mixes"
         control={
           <ValueBtn open={typesOpen} label={`Session types: ${typesValue}`} onClick={() => setTypesOpen((o) => !o)}>
             {typesValue}
@@ -616,7 +710,8 @@ function DjSection() {
               {DJ_TYPES.map((t) => {
                 const on = p.types.includes(t)
                 return (
-                  <button key={t} type="button" className="chip st-chip" aria-pressed={on} disabled={on && p.types.length === 1} onClick={() => toggleType(t)}>
+                  <button key={t} type="button" className={`st-chip ${on ? 'is-on' : ''}`} aria-pressed={on} disabled={on && p.types.length === 1} onClick={() => toggleType(t)}>
+                    {on && <Icon name="done" size={16} />}
                     {TYPE_LABEL[t]}
                   </button>
                 )
@@ -627,12 +722,14 @@ function DjSection() {
       />
       {isNative && (
         <Row
+          tile={<Icon name="cloudDownload" size={22} />}
           label="Only downloaded songs on mobile data"
-          hint="OFFLINE ALWAYS USES DOWNLOADED SONGS"
+          hint="Offline always uses downloaded songs"
           control={<Tog label="Only downloaded songs on mobile data" checked={p.dataSaver} onChange={(v) => djStore.setPref('dataSaver', v)} />}
         />
       )}
       <Row
+        tile={<Icon name="psychology" size={22} />}
         label="What the DJ has learned"
         hint={learnedHint}
         control={
@@ -645,7 +742,7 @@ function DjSection() {
           toast.show({ icon: 'dj', tone: 'dj', text: 'The DJ starts learning again from now.' })
         })}
       />
-    </>
+    </SectionGroup>
   )
 }
 
@@ -667,20 +764,25 @@ function AtmosphereSection() {
   const s = useSettings()
   const sysReduced = useSystemReducedMotion()
   return (
-    <>
-      <SectionHead label="Atmosphere" note="THIS PAGE CHANGES LIVE" />
+    <SectionGroup label="Atmosphere" note="This page changes live">
       <Row
+        tile={<Icon name="spark" size={22} />}
         label="Motion"
-        hint={s.motion === 'system' ? (sysReduced ? 'SYSTEM ASKS FOR REDUCED MOTION' : 'SYSTEM ALLOWS MOTION') : undefined}
+        hint={s.motion === 'system' ? (sysReduced ? 'System asks for reduced motion' : 'System allows motion') : undefined}
         wide={<Seg label="Motion" value={s.motion} options={MOTION} onChange={(v) => settingsStore.set('motion', v)} />}
       />
       <Row
+        tile={<Icon name="palette" size={22} />}
         label="Drifting particles"
-        hint="MARINE SNOW · FADES OUT WITH REDUCED MOTION"
+        hint="Marine snow · fades out with reduced motion"
         wide={<Seg label="Drifting particles" value={s.particles} options={PARTICLES} onChange={(v) => settingsStore.set('particles', v)} />}
       />
-      <Row label="Stone, grain and contour texture" control={<Tog label="Stone, grain and contour texture" checked={s.texture} onChange={(v) => settingsStore.set('texture', v)} />} />
-    </>
+      <Row
+        tile={<Icon name="grid" size={22} />}
+        label="Stone, grain and contour texture"
+        control={<Tog label="Stone, grain and contour texture" checked={s.texture} onChange={(v) => settingsStore.set('texture', v)} />}
+      />
+    </SectionGroup>
   )
 }
 
@@ -701,11 +803,11 @@ function AboutSection() {
   const [keys, setKeys] = useState(false)
   const version = isNative ? `${apk.current?.versionName ?? 'Android'} · ${APP_VERSION}` : `${APP_VERSION}${pwa.installed ? ' · App' : ''}`
   return (
-    <>
-      <SectionHead label="About" />
+    <SectionGroup label="About">
       <Row
+        tile={<Icon name="info" size={22} />}
         label="Version"
-        hint={pwa.updateReady ? 'A NEW VERSION IS READY' : apk.available ? `PELAGIC ${apk.available.versionName} IS AVAILABLE` : undefined}
+        hint={pwa.updateReady ? 'A new version is ready' : apk.available ? `Material Music ${apk.available.versionName} is available` : undefined}
         dot={pwa.updateReady || !!apk.available}
         control={
           pwa.updateReady ? (
@@ -717,9 +819,17 @@ function AboutSection() {
           )
         }
       />
-      {pwa.canInstall && !pwa.installed && !isNative && <Row label="Install Pelagic as an app" hint="OPENS IN ITS OWN WINDOW" control={<Act onClick={() => void appUpdate.install()}>Install</Act>} />}
+      {pwa.canInstall && !pwa.installed && !isNative && (
+        <Row
+          tile={<Icon name="install" size={22} />}
+          label="Install Material Music as an app"
+          hint="Opens in its own window"
+          control={<Act onClick={() => void appUpdate.install()}>Install</Act>}
+        />
+      )}
       {!phone && (
         <Row
+          tile={<Icon name="keyboard" size={22} />}
           label="Keyboard shortcuts"
           control={
             <ValueBtn open={keys} label="Keyboard shortcuts" onClick={() => setKeys((k) => !k)}>
@@ -740,8 +850,7 @@ function AboutSection() {
           }
         />
       )}
-      <Row label="Catalogue data" hint="MUSICBRAINZ · COVER ART ARCHIVE · DEEZER ARTIST PHOTOS" />
-    </>
+      <Row tile={<Icon name="cloud" size={22} />} label="Catalogue data" hint="MusicBrainz · Cover Art Archive · Deezer artist photos" />
+    </SectionGroup>
   )
 }
-

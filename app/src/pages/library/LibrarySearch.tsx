@@ -1,24 +1,24 @@
 /**
- * Library + Search merge (design_handoff_library_search): the search field under the Library header,
- * the recent-searches row (focused and empty), and the browse context kept while a query is typed.
+ * Library search field + Recent searches (Material redesign, LibraryMaterial.dc.html).
  *
- * Field at rest: "/" key cap + TO SEARCH (no hint on touch). Focused and empty: ESC · CLOSE.
- * Typing: "22 RESULTS · 2 MS" (desktop; the phone shows it in the header) and ✕.
+ * Desktop: a 56px pill in the Library header (coral cookie search mark · input · ✕). Focused and empty:
+ * a Recent searches panel drops below it (each with ✕, Clear all, "Matches titles, artists and albums.
+ * Esc clears."). Phone: a 48px pill in the search bar (back arrow on its left), Recent searches as a list.
  * Keys: Enter opens the top result · Esc clears (then blurs) · ↓ moves into the results.
  */
-import { forwardRef, type KeyboardEvent } from 'react'
+import { forwardRef, type KeyboardEvent, type ReactNode } from 'react'
 import { Icon } from '../../design/icons'
+import { SHAPE_PLAYING } from '../../design/shapes'
 import { searchStore } from '../../state/search'
 
-/** Clicks on these keep the field focused (the Recent row would otherwise hide before the click lands). */
+/** Clicks on these keep the field focused (the Recent panel would otherwise hide before the click lands). */
 const keepFocus = (e: React.MouseEvent) => e.preventDefault()
 
 interface FieldProps {
   query: string
   focused: boolean
-  /** "22 RESULTS · 2 MS", or null while empty */
-  meta: string | null
   touch: boolean
+  phone: boolean
   onQuery: (q: string) => void
   /** ✕: clear and keep the field focused */
   onClear: () => void
@@ -26,9 +26,11 @@ interface FieldProps {
   onEnter: () => void
   /** ↓: focus the first result; false when there is none */
   onDown: () => boolean
+  /** the Recent searches panel (desktop, focused + empty) */
+  recent?: ReactNode
 }
 
-export const LibrarySearchField = forwardRef<HTMLInputElement, FieldProps>(function LibrarySearchField({ query, focused, meta, touch, onQuery, onClear, onFocused, onEnter, onDown }, ref) {
+export const LibrarySearchField = forwardRef<HTMLInputElement, FieldProps>(function LibrarySearchField({ query, focused, phone, onQuery, onClear, onFocused, onEnter, onDown, recent }, ref) {
   const onKey = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault()
@@ -42,67 +44,71 @@ export const LibrarySearchField = forwardRef<HTMLInputElement, FieldProps>(funct
     }
   }
   return (
-    <div className={`srch-field lib-field ${focused ? 'is-focused' : ''}`}>
-      <span className="srch-ic" aria-hidden>
-        <Icon name="search" />
-      </span>
-      <input
-        ref={ref}
-        className="srch-input"
-        type="search"
-        enterKeyHint="search"
-        value={query}
-        placeholder="Search your library"
-        aria-label="Search your library"
-        autoComplete="off"
-        spellCheck={false}
-        onChange={(e) => onQuery(e.target.value)}
-        onKeyDown={onKey}
-        onFocus={() => onFocused(true)}
-        onBlur={() => onFocused(false)}
-      />
-      {query ? (
-        <>
-          {meta && (
-            <span className="srch-meta" aria-live="polite">
-              {meta}
-            </span>
-          )}
-          <button type="button" className="srch-clear lib-field-clear" aria-label="Clear search" onMouseDown={keepFocus} onClick={onClear}>
+    <div className={`lb-field-wrap ${phone ? 'is-phone' : ''}`}>
+      <div className={`lb-field ${focused ? 'is-focused' : ''}`}>
+        {!phone && (
+          <span className="lb-field-ic" style={{ clipPath: SHAPE_PLAYING }} aria-hidden>
+            <Icon name="search" />
+          </span>
+        )}
+        <input
+          ref={ref}
+          className="lb-input"
+          type="search"
+          enterKeyHint="search"
+          value={query}
+          placeholder="Search your library"
+          aria-label="Search your library"
+          autoComplete="off"
+          spellCheck={false}
+          onChange={(e) => onQuery(e.target.value)}
+          onKeyDown={onKey}
+          onFocus={() => onFocused(true)}
+          onBlur={() => onFocused(false)}
+        />
+        {query && (
+          <button type="button" className="lb-field-x" aria-label="Clear search" onMouseDown={keepFocus} onClick={onClear}>
             <Icon name="x" />
           </button>
-        </>
-      ) : touch ? null : focused ? (
-        <span className="lib-field-hint">ESC · CLOSE</span>
-      ) : (
-        <span className="lib-field-hint" aria-hidden>
-          <kbd className="lib-kbd">/</kbd>
-          TO SEARCH
-        </span>
-      )}
+        )}
+      </div>
+      {recent}
     </div>
   )
 })
 
-/** RECENT · chips · CLEAR, under the focused empty field. */
-export function RecentSearches({ recent, onPick }: { recent: string[]; onPick: (q: string) => void }) {
-  if (!recent.length) return null
+/** Recent searches: a panel under the desktop field, a list on the phone. */
+export function RecentSearches({ recent, onPick, phone }: { recent: string[]; onPick: (q: string) => void; phone?: boolean }) {
   return (
-    <div className="lib-recent" role="group" aria-label="Recent searches">
-      <span className="lib-recent-k">RECENT</span>
-      <div className="lib-recent-list">
-        {recent.map((q) => (
-          <button key={q} type="button" className="lib-recent-chip" onMouseDown={keepFocus} onClick={() => onPick(q)}>
-            <span className="lib-recent-ic" aria-hidden>
-              <Icon name="clock" />
-            </span>
-            {q}
+    <div className={phone ? 'lb-recent is-phone' : 'lb-recent'} role="group" aria-label="Recent searches" onMouseDown={phone ? undefined : keepFocus}>
+      <div className="lb-recent-head">
+        <span className="lb-recent-k">Recent searches</span>
+        {recent.length > 0 && (
+          <button type="button" className="lb-recent-clear" onClick={() => searchStore.clearRecent()}>
+            Clear all
           </button>
-        ))}
+        )}
       </div>
-      <button type="button" className="lib-recent-clear" onMouseDown={keepFocus} onClick={() => searchStore.clearRecent()}>
-        CLEAR
-      </button>
+      {recent.map((q) => (
+        <div key={q} className="lb-recent-it" role="button" tabIndex={0} onClick={() => onPick(q)} onKeyDown={(e) => e.key === 'Enter' && onPick(q)}>
+          <Icon name="history" className="lb-recent-ic" />
+          <span className="lb-recent-t">{q}</span>
+          <button
+            type="button"
+            className="lb-recent-x"
+            aria-label={`Remove ${q}`}
+            onClick={(e) => {
+              e.stopPropagation()
+              searchStore.forget(q)
+            }}
+          >
+            <Icon name="x" />
+          </button>
+        </div>
+      ))}
+      {!recent.length && <div className="lb-recent-none">Your searches will show up here.</div>}
+      {!phone && <div className="lb-recent-sep" />}
+      <div className="lb-recent-help">{phone ? 'Matches titles, artists and albums in your library.' : 'Matches titles, artists and albums. Esc clears.'}</div>
     </div>
   )
 }

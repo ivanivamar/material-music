@@ -1,11 +1,13 @@
 /**
- * Desktop app shell: 232px sidebar · scrolling main area · 84px player bar,
- * over the Atmosphere layers. Keeps the library in sync and surfaces session / sync events as toasts.
+ * App shell (Material redesign). Desktop: sidebar on the app background, then the main panel
+ * (rounded 28px, 10px inset) holding the scrolling page, the brand decoration (coral dot grid and
+ * rings) and the floating player bar. Phone: top bar on the top-level pages, mini player, tab bar.
+ * Keeps the library in sync and surfaces session / sync events as toasts.
  */
 import { useEffect, useLayoutEffect, useRef, type ReactNode } from 'react'
-import { Atmosphere } from '../components/Atmosphere'
 import { Icon } from '../design/icons'
-import { AccountMenu } from '../pages/AccountMenu'
+import { SHAPE_PLAYING } from '../design/shapes'
+import { playList } from '../pages/library/playback'
 import { useToast } from '../components/ui'
 import { libraryStore, onLibraryUpdated, useLibrary } from '../state/library'
 import { NowPlaying } from '../nowplaying/NowPlaying'
@@ -15,7 +17,7 @@ import { onPlayerNotice, playerStore, usePlayer } from '../state/player'
 import { focusLibrarySearch } from '../state/search'
 import { sessionStore, useSession } from '../state/session'
 import { PlayerBar } from './PlayerBar'
-import { MiniPlayer, TabBar } from './PhoneBars'
+import { MiniPlayer, PhoneTopBar, TabBar } from './PhoneBars'
 import { useIsPhone } from '../state/viewport'
 import { appUpdate, usePwa } from '../lib/pwa'
 import { nativeUpdates, useNativeUpdates } from '../native/updates'
@@ -190,7 +192,7 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
     if (!updateReady) return
     const id = toast.show({
       icon: 'refresh',
-      text: 'A new version of Pelagic is ready.',
+      text: 'A new version of Material Music is ready.',
       meta: 'UPDATE',
       action: { label: 'Reload', onClick: () => appUpdate.apply() },
       duration: 0,
@@ -204,7 +206,7 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
     if (!apk) return
     const id = toast.show({
       icon: 'download',
-      text: `Pelagic ${apk.versionName} is available.`,
+      text: `Material Music ${apk.versionName} is available.`,
       meta: 'ANDROID UPDATE',
       action: { label: 'Install', onClick: () => nativeUpdates.install() },
       duration: 0,
@@ -383,50 +385,96 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
     if (y) requestAnimationFrame(() => main.scrollTo({ top: y }))
   }, [route.path])
 
+  const key = route.kind === 'app' ? route.key : null
+  const deskSearch = key !== null && ['home', 'new', 'upload', 'downloads', 'stats', 'settings', 'health'].includes(key)
+  const phoneTop = key === 'home' || key === 'library' || key === 'downloads'
+  const phoneTitle = key === 'library' ? 'Library' : key === 'downloads' ? 'Downloads' : undefined
+  const shuffleAll = () => {
+    const c = libraryStore.get().data
+    if (!c) return
+    const ids = Object.keys(c.tracks)
+    playList(ids, { kind: 'library', id: 'songs', label: 'Library · Songs' }, { shuffle: true })
+    toast.show({ icon: 'shuffle', text: `Shuffling your library · ${ids.length.toLocaleString('en-GB')} songs` })
+  }
+
+  const page = <div className="shell-page">{children}</div>
+
   return (
-    <div className={`shell ${phone ? 'is-phone' : ''} ${phone && hasTrack ? 'has-mini' : ''}`}>
-      {/* frozen while the full-screen player (with its own atmosphere) covers the shell */}
-      <Atmosphere fixed seed={17} paused={np.open} />
+    <div className={`shell ${phone ? 'is-phone' : ''} ${phone && hasTrack ? 'has-mini' : ''} ${phone && phoneTop ? 'has-ptb' : ''} ${phone && phoneTitle ? 'has-ptb-title' : ''}`}>
       {/* the full-screen player is modal: everything behind it is inert */}
       <div className="shell-layer" inert={np.open}>
-        {!phone && (
-          <Sidebar
-            active={navKeyOf(route)}
-            activePlaylist={route.kind === 'app' && route.key === 'playlist' ? route.id : null}
-            badges={{
-              ...(upRun.badge ? { upload: upRun.badge } : {}),
-              ...(newReleases ? { new: String(newReleases) } : {}),
-            }}
-          />
-        )}
-        <main className="shell-main" ref={mainRef} id="main" tabIndex={-1}>
-          {!phone && (
-            <div className="topbar">
-              {!(route.kind === 'app' && route.key === 'library') && (
-                <button
-                  type="button"
-                  className="search-pill"
-                  onClick={focusLibrarySearch}
-                >
-                  <span className="sp-ic">
-                    <Icon name="search" />
-                  </span>
-                  <span className="sp-text">Search your library</span>
-                  <kbd className="sp-kbd">/</kbd>
-                </button>
-              )}
-              <AccountMenu />
-            </div>
-          )}
-          <div className="shell-page">{children}</div>
-        </main>
         {phone ? (
           <>
+            <div className="shell-deco" aria-hidden>
+              <i className="sd-dots" />
+              <i className="sd-ring sd-r1" />
+              <i className="sd-ring sd-r2" />
+              <i className="sd-ring sd-r3" />
+            </div>
+            <main className="shell-main" ref={mainRef} id="main" tabIndex={-1}>
+              {phoneTop && (
+                <PhoneTopBar
+                  title={phoneTitle}
+                  actions={
+                    <>
+                      {key === 'library' && (
+                        <button type="button" className="ptb-ib" aria-label="Shuffle library" onClick={shuffleAll}>
+                          <Icon name="shuffle" />
+                        </button>
+                      )}
+                      <button type="button" className="ptb-ib" aria-label="Search your library" onClick={focusLibrarySearch}>
+                        <Icon name="search" />
+                      </button>
+                    </>
+                  }
+                />
+              )}
+              {page}
+            </main>
             <MiniPlayer />
-            <TabBar active={navKeyOf(route)} dots={{ new: newReleases > 0 }} />
+            <TabBar active={navKeyOf(route)} counts={{ new: newReleases }} />
           </>
         ) : (
-          <PlayerBar />
+          <>
+            <Sidebar
+              active={navKeyOf(route)}
+              activePlaylist={route.kind === 'app' && route.key === 'playlist' ? route.id : null}
+              badges={{
+                ...(upRun.badge ? { upload: upRun.badge } : {}),
+                ...(newReleases ? { new: String(newReleases) } : {}),
+              }}
+            />
+            <div className="shell-panel">
+              <div className="shell-deco" aria-hidden>
+                <i className="sd-dots" />
+                <i className="sd-ring sd-r1" />
+                <i className="sd-ring sd-r2" />
+                <i className="sd-ring sd-r3" />
+              </div>
+              <main className="shell-main" ref={mainRef} id="main" tabIndex={-1}>
+                {deskSearch && (
+                  <div className="topbar">
+                    <button type="button" className="search-pill" onClick={focusLibrarySearch}>
+                      <span className="sp-ic" style={{ clipPath: SHAPE_PLAYING }}>
+                        <Icon name="search" />
+                      </span>
+                      <span className="sp-text">Songs, albums, artists</span>
+                      <kbd className="sp-kbd">Ctrl K</kbd>
+                    </button>
+                    <span className="topbar-gap" />
+                    {key === 'home' && (
+                      <button type="button" className="shuffle-all" onClick={shuffleAll}>
+                        <Icon name="shuffle" />
+                        Shuffle all
+                      </button>
+                    )}
+                  </div>
+                )}
+                {page}
+              </main>
+              <PlayerBar />
+            </div>
+          </>
         )}
       </div>
       <NowPlaying />

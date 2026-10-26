@@ -43,6 +43,7 @@ import { releasesStore } from './state/releases'
 import { initDiscover } from './state/discover'
 import { initPlayTracker } from './player/playTracker'
 import { useSession } from './state/session'
+import { NowPlayingHue } from './design/NowPlayingHue'
 
 // Liked songs were dropped (Oct 2026): clear the old local store once.
 try {
@@ -141,5 +142,10 @@ export default function App() {
   else if (lib.status === 'error') screen = <LibraryError />
   else screen = <LoadingLibrary onDone={() => setCharting(false)} />
 
-  return <ToastProvider className={inShell ? 'toasts-shell' : undefined}>{screen}</ToastProvider>
+  return (
+    <ToastProvider className={inShell ? 'toasts-shell' : undefined}>
+      <NowPlayingHue />
+      {screen}
+    </ToastProvider>
+  )
 }

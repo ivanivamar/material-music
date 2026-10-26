@@ -1,8 +1,12 @@
 /**
- * Desktop player bar, 84px (handoff 04 Desktop):
- * grid  [now playing | 560px transport + seek | quality · lyrics · queue · volume]
+ * Desktop player bar (Material redesign, HomeMaterial.dc.html): a 96px floating glass bar inside the
+ * main panel, 28px from its edges. Neutral glass (no album tint); the album colour only on the cookie
+ * play button, the wavy progress and the active shuffle / repeat toggles.
+ *   [ tilted 64px cover · title (+ DJ / Radio chip) · artist ]
+ *   [ shuffle · prev · play · next · repeat  /  time · wave · time ]
+ *   [ FLAC 16/44.1 · lyrics · DJ · queue · volume ]
  */
-import { IconButton, PlayButton, QualityBadge, SeekBar, Slider, qualityKind, qualityLabel, useToast } from '../components/ui'
+import { CookieButton, ModeToggle, ThinSlider, WaveSeek, useToast } from '../components/ui'
 import { useCover } from '../lib/covers'
 import { useLibrary, type Track } from '../state/library'
 import { nowPlayingStore, useNowPlayingUi } from '../state/nowPlaying'
@@ -35,7 +39,7 @@ export function PlayerBar() {
   const duration = intro ? (introAudio?.duration ?? 0) : (track?.duration ?? 0)
   const empty = !track && !intro
   const radio = p.context?.kind === 'radio'
-  const djChip = dj.on ? <span className="dj-chip">{intro ? 'DJ · INTRO' : 'DJ'}</span> : radio ? <span className="radio-chip">RADIO</span> : null
+  const djChip = dj.on ? <span className="pb-chip is-dj">{intro ? 'DJ · intro' : 'DJ'}</span> : radio ? <span className="pb-chip">Radio</span> : null
   // shuffle / repeat: not used by the DJ or a radio
   const fixed = dj.on || radio
   const offLabel = dj.on ? 'Not used by the DJ' : 'Not used by the radio'
@@ -52,6 +56,10 @@ export function PlayerBar() {
   const opusStream = p.source === 'drive' && streamQuality === 'opus' && !!track?.mobile?.id
   const sourceLabel = p.source === 'local' ? (isNative ? 'Stored on this phone' : 'Playing from your local folder') : p.source === 'drive' ? 'Streaming from Google Drive' : undefined
 
+  const fmtQ = opusStream
+    ? { kind: 'OPUS', detail: track?.mobile?.bitrate ? `${Number.parseInt(track.mobile.bitrate, 10)}` : '160' }
+    : { kind: 'FLAC', detail: `${track?.flac?.bitDepth ?? 16}/${((track?.flac?.sampleRate ?? 44100) / 1000).toString().replace(/\.0$/, '')}` }
+
   return (
     <footer
       className={`pb ${empty ? 'is-empty' : ''}`}
@@ -65,23 +73,22 @@ export function PlayerBar() {
       <div className="pb-now">
         {empty ? (
           <>
-            <span className="pb-cover pb-cover-empty" aria-hidden />
+            <span className="pb-cover pb-cover-empty" aria-hidden>
+              <Icon name="song" />
+            </span>
             <div className="pb-text">
-              <div className="pb-title pb-title-empty">Nothing playing</div>
-              <div className="pb-sub t-mono">PICK AN ALBUM TO START</div>
+              <div className="pb-title">Nothing playing</div>
+              <div className="pb-sub">Pick an album to start</div>
             </div>
           </>
         ) : intro && id && dj.session ? (
           <>
             <button type="button" className="pb-expand" onClick={() => nowPlayingStore.open('np')} aria-label="Open Now Playing" title="Now Playing">
-              <LiveMark item={id} size={52} />
-              <span className="pb-expand-ic" aria-hidden>
-                <Icon name="chevU" />
-              </span>
+              <LiveMark item={id} size={64} />
             </button>
             <div className="pb-text">
-              <div className="pb-title pb-dj-title" title={dj.session.title}>
-                <Marquee text={dj.session.title} />
+              <div className="pb-title-row" title={dj.session.title}>
+                <Marquee className="pb-title" text={dj.session.title} />
                 {djChip}
               </div>
               <div className="pb-sub">
@@ -90,98 +97,88 @@ export function PlayerBar() {
             </div>
           </>
         ) : (
-          track && <>
-            <button type="button" className="pb-expand" onClick={() => nowPlayingStore.open('np')} aria-label="Open Now Playing" title="Now Playing">
-              {cover ? <img className="pb-cover" src={cover} alt="" /> : <span className="pb-cover pb-cover-empty" aria-hidden />}
-              <span className="pb-expand-ic" aria-hidden>
-                <Icon name="chevU" />
-              </span>
-            </button>
-            <div className="pb-text">
-              <div className="pb-dj-title">
-                <a className="pb-title pb-link" href={albumHref(track.albumId)} title={album ? `${track.title} — ${album.title}` : track.title}>
-                  <Marquee text={track.title} />
+          track && (
+            <>
+              <button type="button" className="pb-expand" onClick={() => nowPlayingStore.open('np')} aria-label="Open Now Playing" title="Now Playing">
+                {cover ? <img className="pb-cover" src={cover} alt="" /> : <span className="pb-cover pb-cover-empty" aria-hidden />}
+              </button>
+              <div className="pb-text">
+                <div className="pb-title-row">
+                  <a className="pb-link pb-title" href={albumHref(track.albumId)} title={album ? `${track.title} · ${album.title}` : track.title}>
+                    <Marquee text={track.title} />
+                  </a>
+                  {djChip}
+                </div>
+                <a className="pb-sub pb-link" href={artistHref(track.artistId)} title={track.artist}>
+                  <Marquee text={album ? `${track.artist} · ${album.title}` : track.artist} />
                 </a>
-                {djChip}
               </div>
-              <a className="pb-sub pb-link" href={artistHref(track.artistId)} title={track.artist}>
-                <Marquee text={track.artist} />
-              </a>
-            </div>
-          </>
+            </>
+          )
         )}
       </div>
 
       <div className="pb-center">
         <div className="pb-transport">
-          <IconButton
-            icon="shuffle"
-            label={fixed ? offLabel : p.shuffle ? 'Shuffle on' : 'Shuffle'}
-            bare
-            size="sm"
-            pressed={!fixed && p.shuffle}
-            className={`pb-mode ${!fixed && p.shuffle ? 'is-on' : ''} ${fixed ? 'is-dj-off' : ''}`}
-            onClick={() => !fixed && playerStore.toggleShuffle()}
+          <ModeToggle icon="shuffle" on={!fixed && p.shuffle} disabled={fixed} label={fixed ? offLabel : p.shuffle ? 'Shuffle on' : 'Shuffle'} onClick={() => playerStore.toggleShuffle()} />
+          <button type="button" className="pb-skip" aria-label="Previous" title="Previous" disabled={empty} onClick={() => playerStore.prev()}>
+            <Icon name="prev" filled />
+          </button>
+          <CookieButton
+            size={46}
+            iconSize={26}
+            playing={p.playing && !empty}
+            icon={p.playing || p.buffering ? 'pauseF' : 'playF'}
+            label={p.playing ? 'Pause' : 'Play'}
+            disabled={empty}
+            onClick={empty ? undefined : onPlay}
+            loading={p.buffering && !empty}
           />
-          <IconButton icon="prev" label="Previous" bare size="sm" className="pb-skip" disabled={empty} onClick={() => playerStore.prev()} />
-          <PlayButton size={38} state={p.buffering ? 'buffering' : p.playing ? 'playing' : 'paused'} onClick={empty ? undefined : onPlay} />
-          <IconButton icon="next" label="Next" bare size="sm" className="pb-skip" disabled={empty} onClick={() => playerStore.next()} />
-          <span className="pb-repeat-wrap">
-            <IconButton
-              icon="repeat"
-              label={fixed ? offLabel : p.repeat === 'off' ? 'Repeat' : p.repeat === 'all' ? 'Repeat all' : 'Repeat one'}
-              bare
-              size="sm"
-              pressed={!fixed && p.repeat !== 'off'}
-              className={`pb-mode ${!fixed && p.repeat !== 'off' ? 'is-on' : ''} ${fixed ? 'is-dj-off' : ''}`}
-              onClick={() => !fixed && playerStore.cycleRepeat()}
-            />
-            {!fixed && p.repeat === 'one' && <span className="pb-repeat-one" aria-hidden>1</span>}
-          </span>
+          <button type="button" className="pb-skip" aria-label="Next" title="Next" disabled={empty} onClick={() => playerStore.next()}>
+            <Icon name="next" filled />
+          </button>
+          <ModeToggle
+            icon={p.repeat === 'one' ? 'repeatOne' : 'repeat'}
+            on={!fixed && p.repeat !== 'off'}
+            disabled={fixed}
+            label={fixed ? offLabel : p.repeat === 'off' ? 'Repeat' : p.repeat === 'all' ? 'Repeat all' : 'Repeat one'}
+            onClick={() => playerStore.cycleRepeat()}
+          />
         </div>
-        <SeekBar compact position={empty ? 0 : p.position} duration={duration} onSeek={(s) => playerStore.seek(s)} />
+        <WaveSeek position={empty ? 0 : p.position} duration={duration} playing={p.playing && !empty} onSeek={(s) => playerStore.seek(s)} />
       </div>
 
       <div className="pb-right">
         {track && !intro && (
           <span className="pb-quality" title={sourceLabel}>
-            {p.source && <span className="pb-source t-mono">{p.source === 'local' ? (isNative ? 'OFFLINE' : 'LOCAL') : 'DRIVE'}</span>}
-            {opusStream ? (
-              <QualityBadge kind="opus">{qualityLabel('opus', { bitrate: Number.parseInt(track.mobile?.bitrate ?? '', 10) * 1000 || undefined })}</QualityBadge>
-            ) : (
-              <QualityBadge kind={qualityKind('flac', track.flac?.bitDepth, track.flac?.sampleRate)}>
-                {qualityLabel('flac', { bitDepth: track.flac?.bitDepth, sampleRate: track.flac?.sampleRate })}
-              </QualityBadge>
-            )}
+            <b>{fmtQ.kind}</b>
+            <span>{fmtQ.detail}</span>
           </span>
         )}
-        <IconButton icon="lyrics" label="Lyrics" bare size="sm" disabled={empty} className={`pb-panel ${ui.open && ui.view === 'lyrics' ? 'is-on' : ''}`} onClick={() => nowPlayingStore.toggleLyrics()} />
+        <button type="button" className={`pb-ib ${ui.open && ui.view === 'lyrics' ? 'is-on' : ''}`} aria-label="Lyrics" title="Lyrics" disabled={empty} onClick={() => nowPlayingStore.toggleLyrics()}>
+          <Icon name="lyrics" />
+        </button>
+        <DjButton variant="bar" />
         {dj.on ? (
           <span className="dj-off-wrap">
-            <IconButton icon="queue" label="Queue: not available while the DJ plays" bare size="sm" className="pb-panel is-dj-off" onClick={() => {}} />
+            <button type="button" className="pb-ib is-dj-off" aria-label="Queue: not available while the DJ plays">
+              <Icon name="queue" />
+            </button>
             <span className="dj-off-tip" role="tooltip">
               Not available while the DJ plays
             </span>
           </span>
         ) : (
-          <IconButton icon="queue" label="Queue" bare size="sm" disabled={empty} pressed={ui.queue} className={`pb-panel ${ui.queue ? 'is-on' : ''}`} onClick={() => nowPlayingStore.toggleQueue()} />
+          <button type="button" className={`pb-ib ${ui.queue ? 'is-on' : ''}`} aria-label="Queue" title="Queue" aria-pressed={ui.queue} disabled={empty} onClick={() => nowPlayingStore.toggleQueue()}>
+            <Icon name="queue" />
+          </button>
         )}
-        <DjButton variant="bar" />
         <span className="pb-volume">
-          <IconButton icon={p.muted || p.volume === 0 ? 'mute' : 'volume'} label={p.muted ? 'Unmute' : 'Mute'} bare size="sm" onClick={() => playerStore.toggleMute()} />
-          <Slider
-            label="Volume"
-            variant="volume"
-            knob={0}
-            height={14}
-            value={p.muted ? 0 : p.volume}
-            onChange={(v) => playerStore.setVolume(v)}
-            valueText={(v) => `${Math.round(v * 100)}%`}
-            step={0.05}
-            className="pb-vol-slider"
-          />
+          <button type="button" className="pb-ib pb-mute" aria-label={p.muted ? 'Unmute' : 'Mute'} onClick={() => playerStore.toggleMute()}>
+            <Icon name={p.muted || p.volume === 0 ? 'mute' : 'volume'} />
+          </button>
+          <ThinSlider label="Volume" value={p.muted ? 0 : p.volume} onChange={(v) => playerStore.setVolume(v)} />
         </span>
-        <IconButton icon="chevU" label="Open Now Playing" bare size="sm" disabled={empty} className="pb-open" onClick={() => nowPlayingStore.open('np')} />
       </div>
       <span className="sr-only" aria-live="polite">
         {intro ? `DJ intro: ${dj.session?.title ?? ''}` : track ? `${p.playing ? 'Playing' : 'Paused'}: ${track.title} by ${track.artist}` : ''}

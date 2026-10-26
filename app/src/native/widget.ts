@@ -28,7 +28,7 @@ function albumArt(c: Catalogue, albumId: string | null | undefined): string | un
   return cover ? media(cover) : undefined
 }
 
-/** The grid's picks after Resume and DJ: Daily Mix 1, a radio, Daily Mix 2, Rediscover (as there are). */
+/** The grid's picks after Resume and DJ: Daily mix 1, a radio, Daily mix 2, Rediscover (as there are). */
 function picks(c: Catalogue): WidgetPick[] {
   const out: WidgetPick[] = []
   const set = mixSet()
@@ -37,17 +37,17 @@ function picks(c: Catalogue): WidgetPick[] {
   const redis = set.items.find((m) => m.kind === 'redis')
   const radio = radioSet(0)?.items[0]
   const mixPick = (m: (typeof set.items)[number], title: string, sub: string): WidgetPick => ({ action: `mix:${m.id}`, title, sub, art: albumArt(c, m.coverAlbums[0]) })
-  if (daily[0]) out.push(mixPick(daily[0], `Daily Mix ${daily[0].n ?? 1}`, 'MADE FOR YOU'))
+  if (daily[0]) out.push(mixPick(daily[0], `Daily mix ${daily[0].n ?? 1}`, 'Made for you'))
   if (radio) {
     const albumId = radio.albumId ?? Object.values(c.albums).find((a) => a.artistId === radio.artistId)?.id
-    out.push({ action: `radio:${radio.id}`, title: radio.title, sub: 'RADIO', art: albumArt(c, albumId) })
+    out.push({ action: `radio:${radio.id}`, title: radio.title, sub: 'Radio', art: albumArt(c, albumId) })
   }
-  if (daily[1]) out.push(mixPick(daily[1], `Daily Mix ${daily[1].n ?? 2}`, 'MADE FOR YOU'))
+  if (daily[1]) out.push(mixPick(daily[1], `Daily mix ${daily[1].n ?? 2}`, 'Made for you'))
   if (redis) {
     const season = /loved in (.+)$/i.exec(redis.sub)?.[1]
-    out.push(mixPick(redis, 'Rediscover', season ? `LOVED IN ${season.toUpperCase()}` : 'REDISCOVER'))
+    out.push(mixPick(redis, 'Rediscover', season ? `Loved in ${season}` : 'Rediscover'))
   }
-  for (const m of daily.slice(2)) if (out.length < 4) out.push(mixPick(m, `Daily Mix ${m.n ?? ''}`.trim(), 'MADE FOR YOU'))
+  for (const m of daily.slice(2)) if (out.length < 4) out.push(mixPick(m, `Daily mix ${m.n ?? ''}`.trim(), 'Made for you'))
   return out
 }
 

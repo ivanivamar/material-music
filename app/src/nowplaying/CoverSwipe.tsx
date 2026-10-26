@@ -294,7 +294,7 @@ function IntroSlot({ item, current }: { item: string; current: boolean }) {
   )
 }
 
-const CoverSlot = memo(function CoverSlot({ trackId, glow }: { trackId: string | null; glow: string | null }) {
+const CoverSlot = memo(function CoverSlot({ trackId }: { trackId: string | null; glow: string | null }) {
   const { data } = useLibrary()
   const t = trackId ? data?.tracks[trackId] : undefined
   const src = useCover(t ? data?.albums[t.albumId]?.cover : null)
@@ -309,7 +309,6 @@ const CoverSlot = memo(function CoverSlot({ trackId, glow }: { trackId: string |
           alt=""
           draggable={false}
           decoding="async"
-          style={glow ? { boxShadow: `0 0 0 1px rgba(255,255,255,0.08), 0 60px 120px -40px ${glow}` } : undefined}
         />
       ) : (
         <span className="np-cover np-cover-empty" aria-hidden />

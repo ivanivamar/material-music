@@ -112,7 +112,7 @@ export function issueCopy(i: Issue): IssueCopy {
     case 'dup': {
       const title = i.count >= i.of ? `Already in your library as ${i.lib.label}.` : `${i.count} of these ${i.of} tracks are already in your library as ${i.lib.label}.`
       const copy = i.mine.label === i.lib.label ? `This copy is also ${i.mine.label}.` : `This copy is ${i.mine.label}.`
-      return { title, text: `${copy} Replacing keeps your plays, likes and playlist positions.` }
+      return { title, text: `${copy} Replacing keeps your plays and playlist positions.` }
     }
     case 'failed': {
       const title = i.count === 1 ? `Track ${i.labels[0]} didn’t upload.` : `${i.count} tracks didn’t upload.`
@@ -165,13 +165,13 @@ export interface RowStatus {
   tone: Tone
 }
 export function statusOf(a: UploadAlbum, s: UploadState, cat: Catalogue | null): RowStatus {
-  if (a.skipped) return { label: 'SKIPPED', word: 'SKIPPED', tone: 'skip' }
+  if (a.skipped) return { label: 'Skipped', word: 'Skipped', tone: 'skip' }
   const issue = issueOf(a, s, cat)
-  if (issue) return issue.kind === 'failed' ? { label: 'FAILED', word: 'FAILED', tone: 'warn' } : { label: 'NEEDS YOU', word: 'NEEDS YOU', tone: 'warn' }
-  if (a.phase === 'added') return { label: 'ADDED', word: 'ADDED', tone: 'added' }
-  if (a.phase === 'adding' || onServer(a, s)) return { label: 'ADDING', word: 'ADDING', tone: 'ready' }
-  if (isActive(a, s)) return { label: `UPLOADING ${Math.floor(releasePct(a, s))}%`, word: 'UPLOADING', tone: 'live' }
-  return { label: 'QUEUED', word: 'QUEUED', tone: 'queued' }
+  if (issue) return issue.kind === 'failed' ? { label: 'Failed', word: 'Failed', tone: 'warn' } : { label: 'Needs you', word: 'Needs you', tone: 'warn' }
+  if (a.phase === 'added') return { label: 'Added', word: 'Added', tone: 'added' }
+  if (a.phase === 'adding' || onServer(a, s)) return { label: 'Adding', word: 'Adding', tone: 'ready' }
+  if (isActive(a, s)) return { label: `Uploading ${Math.floor(releasePct(a, s))}%`, word: 'Uploading', tone: 'live' }
+  return { label: 'Queued', word: 'Queued', tone: 'queued' }
 }
 
 /* ── Page totals ────────────────────────────────────── */
@@ -214,20 +214,20 @@ export function batchView(s: UploadState, cat: Catalogue | null): BatchView {
   const up = live.filter((a) => onServer(a, s)).length
   const allUp = live.length > 0 && up === live.length
   let tail: string
-  if (allUp || (s.started && left < 1e6 && !s.paused)) tail = 'ALL FILES ON SERVER'
-  else if (!s.started) tail = `${fmtBytes(left)} READY TO UPLOAD`
-  else if (s.paused) tail = s.authError ? 'GOOGLE SESSION EXPIRED · SIGN IN, THEN RESUME' : `${fmtBytes(left)} LEFT · PAUSED`
+  if (allUp || (s.started && left < 1e6 && !s.paused)) tail = 'All files on server'
+  else if (!s.started) tail = `${fmtBytes(left)} ready to upload`
+  else if (s.paused) tail = s.authError ? 'Google session expired · sign in, then resume' : `${fmtBytes(left)} left · paused`
   else {
     const eta = s.speed && s.speed > 0 ? left / s.speed : null
-    tail = `${fmtBytes(left)} LEFT${eta == null ? '' : ` · ABOUT ${eta >= 5400 ? `${Math.round(eta / 3600)} H` : eta >= 60 ? `${Math.ceil(eta / 60)} MIN` : `${Math.max(1, Math.ceil(eta))} S`}`}`
+    tail = `${fmtBytes(left)} left${eta == null ? '' : ` · about ${eta >= 5400 ? `${Math.round(eta / 3600)} h` : eta >= 60 ? `${Math.ceil(eta / 60)} min` : `${Math.max(1, Math.ceil(eta))} s`}`}`
   }
-  if (s.reading > 0) tail = `READING ${plural(s.reading, 'FILE')}… · ${tail}`
+  if (s.reading > 0) tail = `Reading ${plural(s.reading, 'file', 'files')}… · ${tail}`
   const pending = live.some((a) => a.phase === 'pending' && !hasHeldDup(a, s) && uploadable(a, s).some((i) => i.state === 'ready'))
   return {
     counts,
-    head: `${plural(live.length, 'RELEASE')} · ${plural(tracks, 'TRACK')} · ${fmtBytes(bytes)}`,
+    head: `${plural(live.length, 'release', 'releases')} · ${plural(tracks, 'track', 'tracks')} · ${fmtBytes(bytes)}`,
     pct: total ? (sent / total) * 100 : 0,
-    foot: `${up} OF ${live.length} ON SERVER · ${tail}`,
+    foot: `${up} of ${live.length} on server · ${tail}`,
     button: !s.started ? 'upload' : s.paused ? 'resume' : 'pause',
     canUpload: pending && s.reading === 0,
     needs: counts.need,

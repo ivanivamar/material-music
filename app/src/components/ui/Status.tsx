@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react'
+import { SHAPE_CLOVER } from '../../design/shapes'
 import { Icon } from '../../design/icons'
 import { quality as Q, type QualityKind } from '../../design/tokens'
 import { useMotion } from '../../state/motion'
@@ -51,10 +52,10 @@ export function ProgressRing({ progress, size = 17 }: { progress: number; size?:
   const on = Math.max(0, Math.min(1, progress)) * c
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden style={{ display: 'block', flex: 'none' }}>
-      <circle cx="12" cy="12" r="8.5" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="1.25" />
+      <circle cx="12" cy="12" r="8.5" fill="none" stroke="var(--track, rgba(255,255,255,0.2))" strokeWidth="2.5" />
       <circle
-        cx="12" cy="12" r="8.5" fill="none" stroke="#FFFFFF" strokeWidth="1.25"
-        strokeDasharray={`${on} ${c}`} transform="rotate(-90 12 12)"
+        cx="12" cy="12" r="8.5" fill="none" stroke="var(--brand, #fff)" strokeWidth="2.5" strokeLinecap="round"
+        strokeDasharray={`${Math.max(on, 2)} ${c}`} transform="rotate(-90 12 12)"
         style={{ transition: 'stroke-dasharray .4s var(--ease)' }}
       />
     </svg>
@@ -65,8 +66,8 @@ export type DownloadState = { kind: 'none' } | { kind: 'downloading'; progress: 
 
 /** Icon-only status for track rows (28px column). */
 export function DownloadIcon({ state }: { state: DownloadState }) {
-  if (state.kind === 'done') return <span style={{ color: 'var(--ink-primary)' }} title="Stored offline"><Icon name="check" /></span>
-  if (state.kind === 'downloading') return <span title={`Downloading ${Math.round(state.progress * 100)}%`}><ProgressRing progress={state.progress} size={16} /></span>
+  if (state.kind === 'done') return <span className="dl-done" title="Stored offline"><Icon name="checkCircle" filled /></span>
+  if (state.kind === 'downloading') return <span className="dl-busy" title={`Downloading ${Math.round(state.progress * 100)}%`}><ProgressRing progress={state.progress} size={22} /></span>
   return <span className="dl-cloud" title="Stream only"><Icon name="cloud" /></span>
 }
 
@@ -140,10 +141,9 @@ interface EmptyStateProps {
 export function EmptyState({ icon, title, body, actions }: EmptyStateProps) {
   return (
     <div className="empty">
-      <div className="empty-rings" aria-hidden>
-        <span />
-        <span />
-        <span><Icon name={icon} /></span>
+      <div className="empty-mark" aria-hidden>
+        <span className="empty-clover" style={{ clipPath: SHAPE_CLOVER }} />
+        <Icon name={icon} className="empty-ic" />
       </div>
       <div className="empty-copy">
         <div className="empty-title">{title}</div>

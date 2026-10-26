@@ -1,10 +1,8 @@
 /**
- * DJ button (handoff_dj §2): after Lyrics and Queue in the full-screen player (42px, lyrics view
- * 40px), the player bar (40×40 icon) and the phone player (40px, Lyrics · DJ · Queue).
- *
- * A rim layer (a slowly turning gold conic gradient, clipped to the button) under a fill inset by
- * 1.5px, then the content. Off → click opens the DJ start view. On → click skips the session
- * straight to the next intro (no Undo); right-click / long-press (520 ms) opens the DJ panel.
+ * DJ button (Material 3 Expressive redesign, DJMaterial.dc.html):
+ * Off → tonal violet outline pill (`border-radius: 20px`, phone `24px`); click opens the DJ start view.
+ * On → solid violet M3 tight pill (`border-radius: 12px`, phone `15px`); click skips the session
+ * straight to the next intro; right-click / long-press (520 ms) or the adjacent tune button opens the DJ panel.
  */
 import { useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
 import { djStore } from '../state/dj'
@@ -52,10 +50,16 @@ export function DjButton({ variant, className }: { variant: Variant; className?:
     setPressed(false)
   }
 
-  // no "3/7": how long a session is stays a surprise
-  const counter = on && view.intro ? 'INTRO' : null
+  const counter = on && view.intro ? 'Intro' : null
   const labelled = variant !== 'bar'
-  const tip = variant === 'phone' ? null : on ? ['Skip this session', 'RIGHT-CLICK · DJ PANEL'] : variant === 'bar' ? ['DJ', 'ENDLESS SESSIONS FROM YOUR LIBRARY'] : null
+  const tip =
+    variant === 'phone'
+      ? null
+      : on
+        ? ['Skip this session', 'Right-click or tune · DJ panel']
+        : variant === 'bar'
+          ? ['DJ', 'Endless sessions from your library']
+          : null
 
   return (
     <button
@@ -80,19 +84,15 @@ export function DjButton({ variant, className }: { variant: Variant; className?:
       onPointerLeave={up}
       onPointerCancel={up}
     >
-      <span className="djb-rim pg-anim" aria-hidden>
-        <span />
-      </span>
-      <span className="djb-fill" aria-hidden />
       <span className="djb-ic">
         <DjIcon on={on} alive={on} />
       </span>
       {labelled && <span className="djb-l">DJ</span>}
-      {labelled && counter && <span className="djb-n t-mono">{counter}</span>}
+      {labelled && counter && <span className="djb-n">{counter}</span>}
       {tip && (
         <span className="djb-tip" role="tooltip">
           <span className="djb-tip-t">{tip[0]}</span>
-          <span className="djb-tip-m t-mono">{tip[1]}</span>
+          <span className="djb-tip-m">{tip[1]}</span>
         </span>
       )}
     </button>

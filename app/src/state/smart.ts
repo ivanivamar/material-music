@@ -170,7 +170,7 @@ export const PRESETS: Preset[] = [
   {
     key: 'never',
     name: 'Never played',
-    description: 'Songs you haven’t heard in Pelagic yet.',
+    description: 'Songs you haven’t heard in Material Music yet.',
     make: () => ({ match: 'all', rules: [{ id: ruleId(), field: 'plays', op: 'eq', value: 0 }], sort: { by: 'random' }, limit: null }),
   },
   {

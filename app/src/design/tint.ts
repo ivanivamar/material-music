@@ -43,12 +43,16 @@ export interface Tint {
   deep: RGB
   glow: RGB
   accent: RGB
+  /** album hue for the Material accents (albumHue.ts); brand coral for grey covers */
+  hue: number
+  /** 0..1: how colourful the cover is (0 → neutral, near-white accents) */
+  chroma: number
 }
 
 export function tintFrom(rgb: RGB): Tint {
   const [, C, H] = toOklch(rgb)
   const at = (k: keyof typeof tintClamp) => fromOklch(tintClamp[k].l, Math.min(C, tintClamp[k].cMax), H)
-  return { wash: at('wash'), deep: at('deep'), glow: at('glow'), accent: at('accent') }
+  return { wash: at('wash'), deep: at('deep'), glow: at('glow'), accent: at('accent'), hue: C < 0.03 ? (C < 0.008 ? 40 : Math.round(H)) : Math.round(H), chroma: C < 0.03 ? 0 : Math.min(1, (C - 0.03) / 0.05) }
 }
 
 export const rgba = (c: RGB, a: number) => `rgba(${c[0]},${c[1]},${c[2]},${a})`
@@ -92,7 +96,10 @@ export function dominantColor(img: HTMLImageElement): RGB {
   let best = -1
   for (let k = 0; k < BUCKETS; k++) if (best < 0 || w[k] > w[best]) best = k
   // Mostly monochrome cover → neutral
-  const colourful = best >= 0 && w[best] > 0.6
+  // a cover that is mostly white / grey / black stays neutral unless its colour part is substantial
+  const total = px.length / 4
+  const greyShare = greyN / total
+  const colourful = best >= 0 && w[best] > 0.6 && (greyShare < 0.7 || w[best] > 12)
   if (!colourful) return greyN ? (grey.map((v) => Math.round(v / greyN)) as RGB) : [20, 20, 20]
   return sum[best].map((v) => Math.round(v / w[best])) as RGB
 }

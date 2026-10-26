@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    Widget 3×2+ / 4×2+, nothing playing: mark + NOTHING PLAYING (+ greeting from 3 rows), a row of
-    three square picks (Resume · DJ · Daily Mix 1; two rows at 4 rows: + radio, Daily Mix 2,
-    Rediscover — widget_idle_pick), and Shuffle library from 3 rows.
+    Widget 3×2+ / 4×2+, nothing playing (iGrid): one or two rows of three quick-start cards
+    (Resume · DJ · Daily mix 1, plus Radio · Daily mix 2 · Rediscover at 4 rows) and Shuffle library.
 -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@android:id/background"
@@ -22,48 +21,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
-        android:padding="16dp">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
-
-            <ImageView
-                android:layout_width="30dp"
-                android:layout_height="20dp"
-                android:layout_marginStart="-5dp"
-                android:importantForAccessibility="no"
-                android:src="@drawable/ic_wg_mark" />
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="5dp"
-                android:layout_weight="1"
-                android:orientation="vertical">
-
-                <TextView
-                    style="@style/WgMono"
-                    android:letterSpacing="0.16"
-                    android:text="NOTHING PLAYING" />
-
-                <TextView
-                    android:id="@+id/wg_greeting"
-                    style="@style/WgText"
-                    android:layout_marginTop="2dp"
-                    android:letterSpacing="-0.015"
-                    android:textSize="20dp"
-                    android:visibility="gone" />
-            </LinearLayout>
-        </LinearLayout>
-
-        <FrameLayout
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:minHeight="10dp" />
+        android:padding="8dp">
 
         <LinearLayout
             android:id="@+id/wg_grid1"
@@ -84,39 +42,44 @@
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
-            android:minHeight="10dp"
             android:visibility="gone" />
 
-        <LinearLayout
+        <FrameLayout
             android:id="@+id/wg_shuffle_all"
             android:layout_width="match_parent"
-            android:layout_height="44dp"
-            android:background="@drawable/wg_row_bg"
+            android:layout_height="56dp"
             android:contentDescription="@string/wg_shuffle_library"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingStart="14dp"
-            android:paddingEnd="14dp"
             android:visibility="gone">
 
             <ImageView
-                android:layout_width="18dp"
-                android:layout_height="18dp"
+                android:id="@+id/wg_shuffle_bg"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
                 android:importantForAccessibility="no"
-                android:src="@drawable/ic_wg_shuffle"
-                android:tint="@color/wg_text" />
+                android:scaleType="fitXY" />
 
-            <TextView
-                style="@style/WgText"
-                android:layout_width="0dp"
-                android:layout_marginStart="12dp"
-                android:layout_weight="1"
-                android:text="@string/wg_shuffle_library"
-                android:textSize="14dp" />
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
 
-            <TextView
-                android:id="@+id/wg_songs"
-                style="@style/WgMono" />
-        </LinearLayout>
+                <ImageView
+                    android:id="@+id/wg_shuffle_ic"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/ic_wg_shuffle" />
+
+                <TextView
+                    android:id="@+id/wg_shuffle_text"
+                    style="@style/WgText.Medium"
+                    android:layout_width="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="@string/wg_shuffle_library"
+                    android:textSize="16dp" />
+            </LinearLayout>
+        </FrameLayout>
     </LinearLayout>
 </FrameLayout>

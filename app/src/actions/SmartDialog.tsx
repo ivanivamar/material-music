@@ -12,7 +12,7 @@
  *                                             Cancel  [Create]
  */
 import { useMemo, useState } from 'react'
-import { Segmented, useToast } from '../components/ui'
+import { Dropdown, Segmented, TextField, useToast } from '../components/ui'
 import { Icon } from '../design/icons'
 import { useCover } from '../lib/covers'
 import { MosaicTiles } from '../pages/playlists/PlaylistCover'
@@ -151,27 +151,25 @@ export function SmartDialog({ playlistId }: { playlistId?: string }) {
             {editing ? (
               <div className="sm-name">{editing.name}</div>
             ) : (
-              <input
-                className="dlg-input dlg-input-lg"
+<TextField
+                label="Name"
                 value={name}
-                onChange={(e) => {
-                  setName(e.target.value)
+                onChange={(v) => {
+                  setName(v)
                   setAutoName(false)
                 }}
-                placeholder="Name it"
-                maxLength={120}
-                enterKeyHint="done"
+                inputProps={{ maxLength: 120, enterKeyHint: 'done' }}
               />
             )}
             <div className="dlg-hint sm-count" aria-live="polite">
-              {count ? `${plural(count, 'SONG')}${seconds ? ` · ${fmtTotal(seconds).toUpperCase()}` : ''} · RIGHT NOW` : 'NO SONGS MATCH RIGHT NOW'}
+              {count ? `${plural(count, 'song', 'songs')}${seconds ? ` · ${fmtTotal(seconds)}` : ''} · right now` : 'No songs match right now'}
             </div>
           </div>
         </div>
 
         <div className="sm-block">
           <div className="sm-match">
-            <span className="dlg-hint">MATCH</span>
+            <span className="dlg-hint">Songs must match</span>
             <Segmented
               label="Match"
               value={draft.match}
@@ -181,7 +179,7 @@ export function SmartDialog({ playlistId }: { playlistId?: string }) {
               ]}
               onChange={(v) => setDraft((d) => ({ ...d, match: v }))}
             />
-            <span className="dlg-hint">OF THESE RULES</span>
+            <span className="dlg-hint">of these rules</span>
           </div>
           <div className="sm-rules">
             {draft.rules.map((r) => (
@@ -201,7 +199,7 @@ export function SmartDialog({ playlistId }: { playlistId?: string }) {
 
         <div className="sm-block sm-order">
           <label className="sm-sort">
-            <span className="dlg-hint">SORT BY</span>
+            <span className="dlg-hint">Sort by</span>
             <Select
               value={draft.sort.by}
               options={SORTS}
@@ -214,7 +212,7 @@ export function SmartDialog({ playlistId }: { playlistId?: string }) {
           </label>
           <label className="sm-limit">
             <input type="checkbox" checked={draft.limit !== null} onChange={(e) => setDraft((d) => ({ ...d, limit: e.target.checked ? 50 : null }))} />
-            <span className="dlg-hint">LIMIT TO</span>
+            <span className="dlg-hint">Limit to</span>
             <input
               className="dlg-input sm-num"
               type="number"
@@ -225,7 +223,7 @@ export function SmartDialog({ playlistId }: { playlistId?: string }) {
               value={draft.limit ?? 50}
               onChange={(e) => setDraft((d) => ({ ...d, limit: Math.max(1, Math.min(9999, Number(e.target.value) || 1)) }))}
             />
-            <span className="dlg-hint">SONGS</span>
+            <span className="dlg-hint">songs</span>
           </label>
         </div>
 
@@ -245,25 +243,7 @@ export function SmartDialog({ playlistId }: { playlistId?: string }) {
 /* ── Pieces ─────────────────────────────────────────── */
 
 function Select<T extends string | number>({ value, options, onChange, label }: { value: T; options: { value: T; label: string }[]; onChange: (v: T) => void; label: string }) {
-  return (
-    <span className="sm-select">
-      <select
-        aria-label={label}
-        value={String(value)}
-        onChange={(e) => {
-          const hit = options.find((o) => String(o.value) === e.target.value)
-          if (hit) onChange(hit.value)
-        }}
-      >
-        {options.map((o) => (
-          <option key={String(o.value)} value={String(o.value)}>
-            {o.label}
-          </option>
-        ))}
-      </select>
-      <Icon name="chevD" />
-    </span>
-  )
+  return <Dropdown compact value={value} options={options} onChange={onChange} label={label} className="sm-dd" />
 }
 
 function Num({ value, onChange, min = 0, label }: { value: number; onChange: (n: number) => void; min?: number; label: string }) {

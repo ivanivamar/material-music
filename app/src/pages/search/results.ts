@@ -11,7 +11,7 @@ import { plural } from '../../state/views'
 import { playList } from '../library/playback'
 
 /** Focusable results for ↑ / ↓ (album cards come from the shared AlbumCard). */
-export const NAV = '[data-nav], .acard'
+export const NAV = '[data-nav], .acard, .hcard'
 
 export function playTracks(ids: string[], start: number, query: string) {
   searchStore.remember(query)

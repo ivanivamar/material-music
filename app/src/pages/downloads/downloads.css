@@ -1,72 +1,164 @@
-/* Downloads (handoff 09 Desktop Downloads / 10 Android Downloads) */
-.downloads { display: flex; flex-direction: column; }
-.downloads .ph { margin-bottom: 32px; }
-.dl-tools { display: flex; align-items: center; gap: 20px; }
-.dl-set { display: flex; align-items: center; gap: 12px; font-size: 14px; color: var(--ink-primary); cursor: pointer; }
+/* Downloads (Material 3 Expressive redesign, DownloadsMaterial.dc.html, neutral surfaces + coral brand). */
+.downloads { display: flex; flex-direction: column; gap: 26px; }
+.downloads .ph { margin-bottom: 0; align-items: center; }
+.dl-tools { display: flex; align-items: center; gap: 24px; }
+.dl-set { display: flex; align-items: center; gap: 12px; font-size: 14px; font-weight: 500; color: var(--ink-primary); cursor: pointer; }
+.dl-set-t { font-size: 15px; font-weight: 600; color: var(--ink-primary); }
+.dl-set-s { font-size: 12px; color: var(--ink-secondary); margin-top: 2px; }
 
-/* storage */
-.dl-storage { display: flex; flex-direction: column; gap: 12px; margin-bottom: 36px; }
-.dl-bar { height: 6px; border-radius: 999px; background: var(--surface-1, #121214); overflow: hidden; display: flex; }
-.dl-bar-me { background: #fff; box-shadow: 0 0 8px rgba(255, 255, 255, .7); transition: width .6s var(--ease); }
-.dl-bar-other { background: #3A3A3E; }
-.dl-legend { display: flex; gap: 28px; font-family: var(--font-mono); font-size: var(--fs-mono-sm); letter-spacing: .14em; color: var(--ink-secondary); }
+/* Segmented quality pill (M3 morphing corners) */
+.dl-seg { display: inline-flex; gap: 2px; }
+.dl-seg.is-full { display: flex; width: 100%; }
+.dl-seg-btn {
+  position: relative; overflow: hidden;
+  height: 44px; padding: 0 18px; border: 0; border-radius: 8px; cursor: pointer;
+  background: oklch(0.28 0.01 40); color: oklch(0.86 0.01 40);
+  font: inherit; font-size: 14px; font-weight: 600; white-space: nowrap;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  transition: border-radius 350ms var(--ease-shape), background-color 200ms var(--ease-std), color 200ms var(--ease-std);
+}
+.dl-seg-btn:hover:not(.is-on) { background: oklch(0.32 0.01 40); color: var(--ink-primary); }
+.dl-seg.is-full .dl-seg-btn { flex: 1; padding: 0 12px; }
+.dl-seg-btn.is-first, .dl-seg-btn:first-child { border-radius: 22px 8px 8px 22px; }
+.dl-seg-btn.is-last, .dl-seg-btn:last-child { border-radius: 8px 22px 22px 8px; }
+.dl-seg-btn.is-on { border-radius: 22px; background: var(--brand); color: var(--on-brand); }
+
+/* Storage bar (3-part 10px bar with 3px gap) */
+.dl-storage { display: flex; flex-direction: column; gap: 10px; }
+.dl-bar { height: 10px; display: flex; gap: 3px; }
+.dl-bar-me { border-radius: 999px; background: var(--brand); transition: width 0.5s var(--ease); }
+.dl-bar-other { border-radius: 999px; background: oklch(0.34 0.012 40); }
+.dl-bar-free { flex: 1; border-radius: 999px; background: oklch(0.24 0.008 40); }
+.dl-legend { display: flex; gap: 24px; font-size: 12px; color: var(--ink-secondary); font-variant-numeric: tabular-nums; }
 .dl-legend span { display: flex; align-items: center; gap: 8px; }
-.dl-legend-phone { justify-content: space-between; gap: 12px; letter-spacing: .12em; }
-.dl-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
-.dl-dot-me { background: #fff; }
-.dl-dot-other { background: #3A3A3E; }
+.dl-legend b { font-weight: 600; color: var(--ink-primary); }
+.dl-legend-phone { justify-content: space-between; gap: 12px; }
+.dl-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex: none; }
+.dl-dot-me { background: var(--brand); }
+.dl-dot-other { background: oklch(0.34 0.012 40); }
+.dl-dot-free { background: oklch(0.24 0.008 40); box-shadow: inset 0 0 0 1px oklch(0.34 0.012 40); }
 
 .dl-alert {
-  display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 28px;
-  padding: 14px 18px; border-radius: 12px; border: 1.5px solid rgba(230, 150, 140, .35); color: var(--ink-primary); font-size: 14px;
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 14px 18px; border-radius: 20px; background: oklch(0.30 0.045 95); color: oklch(0.94 0.04 95); font-size: 14px;
 }
-.dl-alert .sect-link { background: none; border: 0; cursor: pointer; flex: none; }
+.dl-alert-btn {
+  height: 36px; padding: 0 16px; border-radius: 999px; border: 0; cursor: pointer; flex: none;
+  background: oklch(0.84 0.08 95); color: oklch(0.28 0.06 95); font: inherit; font-size: 13px; font-weight: 600;
+}
 
-/* sections */
-.dl-sect { display: flex; flex-direction: column; gap: 4px; margin-bottom: 36px; }
-.dl-sect-head {
-  padding-bottom: 10px; border-bottom: 1px solid rgba(255, 255, 255, .08);
-  font-family: var(--font-mono); font-size: var(--fs-mono-sm); letter-spacing: .16em; color: var(--ink-secondary);
-}
-.dl-row { display: grid; align-items: center; gap: 20px; border-bottom: 1px solid rgba(255, 255, 255, .04); }
-.dl-busy { grid-template-columns: 56px minmax(0, 1fr) 320px 96px; height: 76px; }
-.dl-done { grid-template-columns: 56px minmax(0, 1fr) 150px 130px 100px 40px; height: 72px; }
-.dl-cover { width: 56px; height: 56px; padding: 0; border: 0; border-radius: 8px; overflow: hidden; background: var(--surface-1, #121214); cursor: pointer; }
+/* Sections */
+.dl-sect { display: flex; flex-direction: column; gap: 8px; }
+.dl-sect-head { padding: 0 4px 4px; font-size: 12px; font-weight: 600; color: var(--ink-secondary); }
+.dl-busy-list { display: flex; flex-direction: column; gap: 8px; }
+.dl-done-list { display: flex; flex-direction: column; gap: 4px; }
+
+.dl-row { display: grid; align-items: center; gap: 20px; border-radius: 20px; padding: 0 12px; box-sizing: border-box; }
+.dl-busy { grid-template-columns: 56px minmax(0, 1fr) 320px 104px; height: 80px; background: oklch(0.205 0.008 40); }
+.dl-done { grid-template-columns: 56px minmax(0, 1fr) 140px 150px 90px 44px; height: 76px; transition: background-color 180ms var(--ease-std); }
+.dl-done:hover { background: oklch(0.22 0.008 40); }
+
+.dl-cover { width: 56px; height: 56px; padding: 0; border: 0; border-radius: 12px; overflow: hidden; background: oklch(0.26 0.01 40); cursor: pointer; flex: none; }
 .dl-cover img, .dl-cover span { display: block; width: 100%; height: 100%; object-fit: cover; }
-.dl-busy:not(.is-active) .dl-cover { opacity: .5; transition: opacity .6s var(--ease); }
-.dl-text { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-.dl-title { font-size: 15px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--ink-primary); text-decoration: none; }
+.dl-busy.is-wait .dl-cover { opacity: 0.65; }
+
+.dl-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.dl-title { font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--ink-primary); text-decoration: none; }
+.dl-title:hover { text-decoration: underline; text-underline-offset: 3px; }
 .dl-sub { font-size: 13px; color: var(--ink-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.dl-sub-phone { display: none; }
-.dl-prog { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
-.dl-line { position: relative; height: 1px; background: rgba(255, 255, 255, .12); }
-.dl-line span { position: absolute; left: 0; top: 0; height: 1px; background: #fff; box-shadow: 0 0 6px rgba(255, 255, 255, .7); transition: width .4s var(--ease); }
-.dl-status, .dl-n { font-family: var(--font-mono); font-size: var(--fs-mono-sm); letter-spacing: .12em; color: var(--ink-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dl-sub-row { display: flex; align-items: center; gap: 8px; margin-top: 2px; font-size: 12px; font-variant-numeric: tabular-nums; }
+
+.dl-prog { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.dl-line { position: relative; height: 4px; border-radius: 999px; background: oklch(0.30 0.01 40); overflow: hidden; }
+.dl-line span { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 999px; background: var(--brand); transition: width 0.35s var(--ease); }
+.dl-busy.is-wait .dl-line span { background: oklch(0.55 0.02 40); }
+.dl-status { font-size: 12px; color: var(--ink-secondary); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dl-n { font-size: 13px; color: var(--ink-secondary); font-variant-numeric: tabular-nums; }
 .dl-q { display: flex; }
-.dl-size { font-family: var(--font-mono); font-size: 11px; color: var(--ink-primary); text-align: right; }
-.dl-btns { display: flex; justify-content: flex-end; gap: 8px; }
-.dl-x { color: var(--ink-secondary); }
+.dl-size { font-size: 13px; color: var(--ink-primary); text-align: right; font-variant-numeric: tabular-nums; }
 
-.dl-foot { display: flex; flex-wrap: wrap; gap: 12px; margin: 4px 0 40px; }
-.dl-empty .empty-actions { flex-wrap: wrap; justify-content: center; }
-
-/* phone (handoff 10 Android Downloads) */
-.shell.is-phone .downloads .ph { margin-bottom: 22px; }
-.shell.is-phone .dl-storage { margin-bottom: 22px; gap: 10px; }
-.dl-card {
-  display: flex; flex-direction: column; margin-bottom: 28px; padding: 0 16px;
-  border-radius: 16px; background: var(--surface-1, #121214); border: 1.5px solid rgba(255, 255, 255, .07);
+.dl-btns { display: flex; justify-content: flex-end; gap: 6px; flex: none; }
+.dl-ibtn {
+  width: 44px; height: 44px; border-radius: 999px; border: 0; background: transparent; color: var(--ink-secondary);
+  display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex: none;
+  transition: background-color 180ms var(--ease-std), color 180ms var(--ease-std);
 }
-.dl-card .dl-set { justify-content: space-between; min-height: 54px; font-size: 15px; }
-.dl-card .dl-set + .dl-set { border-top: 1px solid rgba(255, 255, 255, .06); }
-.dl-card .seg-opt { padding: 0 12px; }
-.shell.is-phone .dl-busy { grid-template-columns: 52px minmax(0, 1fr) auto; grid-template-rows: auto auto; height: auto; padding: 12px 0; gap: 8px 14px; }
-.shell.is-phone .dl-busy .dl-cover { grid-row: 1 / 3; width: 52px; height: 52px; }
-.shell.is-phone .dl-busy .dl-prog { grid-column: 2; grid-row: 2; gap: 8px; }
-.shell.is-phone .dl-busy .dl-btns { grid-column: 3; grid-row: 1 / 3; gap: 4px; }
-.shell.is-phone .dl-done { grid-template-columns: 52px minmax(0, 1fr) auto 40px; height: 72px; gap: 14px; }
-.shell.is-phone .dl-done .dl-cover { width: 52px; height: 52px; }
-.shell.is-phone .dl-done .dl-n, .shell.is-phone .dl-done .dl-q { display: none; }
-.shell.is-phone .dl-sub-phone { display: inline; font-family: var(--font-mono); font-size: 10px; letter-spacing: .1em; }
+.dl-ibtn .ms { font-size: 20px; }
+.dl-ibtn:hover { background: oklch(0.28 0.01 40); color: var(--ink-primary); }
+.dl-ibtn.is-tonal { background: oklch(0.36 0.035 38); color: oklch(0.92 0.025 38); }
+.dl-ibtn.is-tonal:hover { background: oklch(0.40 0.04 38); color: oklch(0.95 0.02 38); }
+
+/* More popover menu */
+.dl-more-wrap { position: relative; display: flex; justify-content: flex-end; }
+.dl-menu {
+  position: absolute; right: 0; top: calc(100% + 4px); z-index: 20; min-width: 188px;
+  padding: 6px; border-radius: 16px; background: oklch(0.25 0.01 40);
+  box-shadow: 0 18px 40px -12px rgba(0, 0, 0, 0.75), inset 0 0 0 1px oklch(0.34 0.012 40);
+}
+.dl-menu-item {
+  width: 100%; height: 42px; padding: 0 14px; border-radius: 10px; border: 0; background: none; cursor: pointer;
+  display: flex; align-items: center; gap: 12px; font: inherit; font-size: 14px; font-weight: 500; color: var(--ink-primary);
+}
+.dl-menu-item .ms { font-size: 20px; color: var(--ink-secondary); }
+.dl-menu-item:hover { background: oklch(0.30 0.012 40); }
+
+/* Footer & Empty state */
+.dl-foot { display: flex; flex-wrap: wrap; gap: 12px; margin: 4px 0 32px; }
+.dl-btn-pri {
+  height: 44px; padding: 0 22px 0 16px; border-radius: 999px; border: 0; cursor: pointer;
+  background: var(--brand); color: var(--on-brand); font: inherit; font-size: 14px; font-weight: 600;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+}
+.dl-btn-pri .ms, .dl-btn-sec .ms, .dl-btn-danger .ms { font-size: 18px; }
+.dl-btn-sec {
+  height: 44px; padding: 0 20px 0 16px; border-radius: 999px; border: 0; cursor: pointer;
+  background: transparent; box-shadow: inset 0 0 0 1.5px oklch(0.40 0.02 40); color: var(--brand);
+  font: inherit; font-size: 14px; font-weight: 600;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+}
+.dl-btn-sec:hover { background: oklch(0.80 0.115 38 / 0.1); }
+.dl-btn-danger {
+  height: 44px; padding: 0 20px 0 16px; border-radius: 999px; border: 0; cursor: pointer;
+  background: transparent; box-shadow: inset 0 0 0 1.5px oklch(0.50 0.08 22); color: oklch(0.78 0.11 22);
+  font: inherit; font-size: 14px; font-weight: 600;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+}
+.dl-btn-danger:hover { background: oklch(0.78 0.11 22 / 0.1); }
+
+.dl-empty-card {
+  border-radius: 28px; background: oklch(0.205 0.008 40); box-shadow: inset 0 0 0 2px oklch(0.34 0.015 40);
+  padding: 64px 40px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 18px; margin-top: 8px;
+}
+.dl-empty-ic {
+  width: 72px; height: 72px; border-radius: 28px;
+  background: oklch(0.36 0.035 38); color: oklch(0.92 0.025 38);
+  display: flex; align-items: center; justify-content: center; font-size: 34px;
+}
+.dl-empty-text { display: flex; flex-direction: column; align-items: center; gap: 8px; max-width: 440px; }
+.dl-empty-title { margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.02em; }
+.dl-empty-sub { margin: 0; font-size: 14px; line-height: 1.5; color: var(--ink-secondary); text-wrap: pretty; }
+.dl-empty-btns { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 6px; }
+
+/* Phone layout */
+.shell.is-phone .downloads { gap: 18px; }
+.shell.is-phone .downloads .ph-title { font-size: 36px; }
+.shell.is-phone .downloads .ph-meta { font-size: 13px; }
+.dl-card {
+  display: flex; flex-direction: column; gap: 16px; padding: 16px;
+  border-radius: 28px; background: oklch(0.225 0.008 40);
+}
+.dl-card .dl-set { justify-content: space-between; }
+.shell.is-phone .dl-busy { display: flex; align-items: center; gap: 12px; height: auto; padding: 10px 8px; }
+.shell.is-phone .dl-busy .dl-cover, .shell.is-phone .dl-done .dl-cover { width: 52px; height: 52px; }
+.dl-mid { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.dl-mid .dl-title { font-size: 14px; }
+.dl-mid .dl-status { font-size: 11px; }
+.shell.is-phone .dl-done { display: flex; align-items: center; gap: 12px; height: 72px; padding: 0 4px 0 8px; }
+.shell.is-phone .dl-done .dl-text { flex: 1; min-width: 0; gap: 4px; }
+.shell.is-phone .dl-done .dl-title { font-size: 14px; }
 .shell.is-phone .dl-foot { flex-direction: column; }
-.shell.is-phone .dl-foot .btn { width: 100%; justify-content: center; }
+.shell.is-phone .dl-foot > button { width: 100%; height: 48px; }
+.shell.is-phone .dl-empty-card { padding: 44px 24px; }
+.shell.is-phone .dl-empty-title { font-size: 22px; }
+.shell.is-phone .dl-empty-btns { flex-direction: column; align-self: stretch; }
+.shell.is-phone .dl-empty-btns > button { height: 48px; }

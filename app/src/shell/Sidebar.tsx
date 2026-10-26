@@ -1,21 +1,19 @@
 /**
- * Desktop sidebar, 232px (handoff 04 Desktop).
- *
- * Active item: the white fill clips in as a circle from the icon centre
- * (circle(0 → 160% at 22px 50%), 1.5s cubic-bezier(.22,1,.36,1)); the icon tile turns black
- * after 0.3s; two 1px rings scale 1 → 2.6 over 0.8s, the second 0.18s later.
- * Leaving item: the fill contracts over 1s cubic-bezier(.55,0,.6,.4) and fades, with one faint
- * echo ring (1 → 2). Reduced motion: instant swap, no rings.
+ * Desktop sidebar (Material redesign, HomeMaterial.dc.html): brand row (Ink-on-coral mark,
+ * Material Music, library source), Browse nav (38px rows, active = coral container + filled icon,
+ * coral count badge), Playlists (44px rows, 28px covers, drop targets, drag to reorder) and the
+ * account chip at the bottom (avatar, name, last sync; opens the account menu).
  */
 import { useState, type DragEvent } from 'react'
 import { useToast } from '../components/ui'
 import { Icon } from '../design/icons'
-import { PortholeMark } from '../components/Logo'
+import { AppMark } from '../components/Logo'
+import { AccountChip } from '../pages/AccountMenu'
+import { useLocalFolder } from '../lib/localFolder'
 import { actions, DRAG_MIME, draggedTracks } from '../actions/actions'
 import { addToPlaylist } from '../actions/ops'
 import { PlaylistCover } from '../pages/playlists/PlaylistCover'
 import { useLibrary } from '../state/library'
-import { useMotion } from '../state/motion'
 import { playlistInfo } from '../state/playlistViews'
 import { playlistsStore, sidebarOrder, usePlaylists, type Playlist } from '../state/playlists'
 import { usePlayer } from '../state/player'
@@ -23,41 +21,28 @@ import { plural } from '../state/views'
 import { NAV, href, playlistHref, type NavItem, type RouteKey } from './routes'
 import './sidebar.css'
 
-interface NavEvent {
-  on: RouteKey
-  off: RouteKey | null
-  /** bumps on every change so the rings re-mount and replay */
-  n: number
-}
-
 export function Sidebar({ active, activePlaylist, badges }: { active: RouteKey; activePlaylist?: string | null; badges?: Partial<Record<RouteKey, string>> }) {
-  const motion = useMotion()
-  // "previous value in state" pattern: derive the change event during render, no effect needed
-  const [ev, setEv] = useState<NavEvent>({ on: active, off: null, n: 0 })
-  if (ev.on !== active) setEv({ on: active, off: ev.on, n: ev.n + 1 })
-
+  const local = useLocalFolder()
+  const linked = local.status !== 'none' && local.status !== 'unsupported' && local.status !== 'loading'
   return (
     <aside className="sb">
-      <a className="sb-brand" href={href('home')} aria-label="Pelagic home">
-        <PortholeMark size={26} className="sb-mark" />
-        <span className="sb-word">Pelagic</span>
+      <a className="sb-brand" href={href('home')} aria-label="Material Music home">
+        <AppMark size={36} className="sb-mark" />
+        <span className="sb-brand-text">
+          <span className="sb-word">Material Music</span>
+          <span className="sb-src">{linked ? 'Local library' : 'Google Drive'}</span>
+        </span>
       </a>
 
+      <div className="sb-section-label sb-browse">Browse</div>
       <nav className="sb-nav" aria-label="Main">
         {NAV.map((item) => (
-          <SidebarItem
-            key={item.key}
-            item={item}
-            on={item.key === active}
-            badge={badges?.[item.key]}
-            motion={motion}
-            ping={motion && ev.n > 0 ? (ev.on === item.key ? 'on' : ev.off === item.key ? 'off' : null) : null}
-            pingKey={ev.n}
-          />
+          <SidebarItem key={item.key} item={item} on={item.key === active} badge={badges?.[item.key]} />
         ))}
       </nav>
 
       <SidebarPlaylists active={activePlaylist ?? null} />
+      <AccountChip />
     </aside>
   )
 }
@@ -82,7 +67,7 @@ function SidebarPlaylists({ active }: { active: string | null }) {
   return (
     <section className="sb-playlists" aria-label="Playlists">
       <div className="sb-section-head">
-        <span className="sb-section-label">PLAYLISTS</span>
+        <span className="sb-section-label">Playlists</span>
         <span className="sb-heads">
           <button type="button" className="sb-plus" aria-label="New smart playlist" title="New smart playlist" onClick={() => actions.smartPlaylist()}>
             <Icon name="smart" />
@@ -196,47 +181,20 @@ function SidebarPlaylist({
         addToPlaylist(toast, p.id, ids)
       }}
     >
-      <PlaylistCover playlist={p} size={30} lazy className="sb-pl-cover" />
+      <PlaylistCover playlist={p} size={28} lazy className={`sb-pl-cover ${p.smart ? 'is-smart' : ''}`} />
       <span className="sb-pl-text">
         <span className="sb-pl-name">{p.name}</span>
-        <span className="sb-pl-meta">{p.smart ? `SMART · ${plural(count, 'TRACK')}` : plural(count, 'TRACK')}</span>
+        <span className="sb-pl-meta">{p.smart ? `${plural(count, 'song', 'songs')} · smart` : plural(count, 'track', 'tracks')}</span>
       </span>
       {playing && <span className="sb-pl-dot" aria-label="Playing" role="img" />}
     </a>
   )
 }
 
-interface ItemProps {
-  item: NavItem
-  on: boolean
-  badge?: string
-  motion: boolean
-  ping: 'on' | 'off' | null
-  pingKey: number
-}
-
-function SidebarItem({ item, on, badge, motion, ping, pingKey }: ItemProps) {
+function SidebarItem({ item, on, badge }: { item: NavItem; on: boolean; badge?: string }) {
   return (
-    <a
-      href={href(item.key)}
-      className={`sb-item ${on ? 'is-on' : ''} ${motion ? '' : 'no-motion'}`}
-      aria-current={on ? 'page' : undefined}
-    >
-      <span className="sb-fill" aria-hidden />
-      {ping === 'on' && (
-        <span className="sb-pings" key={`on${pingKey}`} aria-hidden>
-          <span className="sb-ring sb-ring-on pg-anim" />
-          <span className="sb-ring sb-ring-on2 pg-anim" />
-        </span>
-      )}
-      {ping === 'off' && (
-        <span className="sb-pings" key={`off${pingKey}`} aria-hidden>
-          <span className="sb-ring sb-ring-off pg-anim" />
-        </span>
-      )}
-      <span className="sb-ic">
-        <Icon name={item.icon} />
-      </span>
+    <a href={href(item.key)} className={`sb-item ${on ? 'is-on' : ''}`} aria-current={on ? 'page' : undefined}>
+      <Icon name={item.icon} filled={on} className="sb-ic" />
       <span className="sb-label">{item.label}</span>
       {badge && <span className="sb-badge">{badge}</span>}
     </a>

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Widget 3×1 / 4×1 (bar): cover 48, title + EQ, artist, (prev) play / pause, next -->
+<!-- Widget 3×1 / 4×1 (mBar): cover 56, title, artist, prev · play 56 · next -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@android:id/background"
     android:layout_width="match_parent"
@@ -19,8 +19,7 @@
         android:layout_height="match_parent"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingStart="16dp"
-        android:paddingEnd="10dp">
+        android:padding="12dp">
 
         <ImageView
             android:id="@+id/wg_art"
@@ -35,31 +34,15 @@
             android:layout_weight="1"
             android:orientation="vertical">
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:id="@+id/wg_title"
-                    style="@style/WgText.Medium"
-                    android:layout_width="wrap_content"
-                    android:textSize="15dp" />
-
-                <ImageView
-                    android:id="@+id/wg_eq"
-                    android:layout_width="8.5dp"
-                    android:layout_height="11dp"
-                    android:layout_marginStart="8dp"
-                    android:importantForAccessibility="no"
-                    android:src="@drawable/ic_wg_eq" />
-            </LinearLayout>
+            <TextView
+                android:id="@+id/wg_title"
+                style="@style/WgText.Medium"
+                android:textSize="14dp" />
 
             <TextView
                 android:id="@+id/wg_artist"
                 style="@style/WgText.Muted"
-                android:layout_marginTop="4dp"
+                android:layout_marginTop="2dp"
                 android:textSize="12dp" />
         </LinearLayout>
 
@@ -73,18 +56,20 @@
             <ImageView
                 android:id="@+id/wg_prev"
                 style="@style/WgIconBtn"
-                android:layout_marginEnd="2dp"
+                android:layout_marginEnd="4dp"
                 android:contentDescription="@string/wg_prev"
                 android:src="@drawable/ic_wg_prev" />
 
             <ImageView
                 android:id="@+id/wg_play"
-                style="@style/WgPlay" />
+                style="@style/WgPlay"
+                android:layout_width="56dp"
+                android:layout_height="56dp" />
 
             <ImageView
                 android:id="@+id/wg_next"
                 style="@style/WgIconBtn"
-                android:layout_marginStart="2dp"
+                android:layout_marginStart="4dp"
                 android:contentDescription="@string/wg_next"
                 android:src="@drawable/ic_wg_next" />
         </LinearLayout>

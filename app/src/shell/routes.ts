@@ -8,8 +8,8 @@ import type { IconName } from '../design/icons'
 
 export type RouteKey = 'home' | 'library' | 'new' | 'upload' | 'downloads' | 'settings' | 'health' | 'album' | 'artist' | 'playlist' | 'stats' | 'mix'
 export type DevRoute = 'dev/components' | 'dev/foundations'
-export type LibraryTab = 'albums' | 'artists' | 'playlists' | 'songs'
-export const LIBRARY_TABS: LibraryTab[] = ['artists', 'albums', 'playlists', 'songs']
+export type LibraryTab = 'all' | 'albums' | 'artists' | 'playlists' | 'songs'
+export const LIBRARY_TABS: LibraryTab[] = ['all', 'albums', 'artists', 'playlists', 'songs']
 
 export interface NavItem {
   key: RouteKey

@@ -98,7 +98,7 @@ public class PelagicPlaybackService extends MediaSessionService {
         super.onCreate();
 
         DataSource.Factory http = new DefaultHttpDataSource.Factory()
-            .setUserAgent("Pelagic")
+            .setUserAgent("Material Music")
             .setAllowCrossProtocolRedirects(true)
             .setConnectTimeoutMs(15_000)
             .setReadTimeoutMs(20_000);

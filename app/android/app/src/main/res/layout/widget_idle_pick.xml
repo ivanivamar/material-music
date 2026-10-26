@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- A square pick on the idle grid: art + scrim (or the DJ tile) as one bitmap, title and sub on top -->
+<!-- Quick-start card on the idle grid: card bg + top art (or DJ knob) as one bitmap, title and sub at bottom -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
@@ -25,23 +25,21 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="bottom"
-            android:layout_marginStart="10dp"
-            android:layout_marginEnd="8dp"
-            android:layout_marginBottom="9dp"
+            android:layout_marginStart="12dp"
+            android:layout_marginEnd="12dp"
+            android:layout_marginBottom="8dp"
             android:orientation="vertical">
 
             <TextView
                 android:id="@+id/wg_pick_title"
                 style="@style/WgText.Medium"
-                android:textSize="13dp" />
+                android:textSize="14dp" />
 
             <TextView
                 android:id="@+id/wg_pick_sub"
-                style="@style/WgMono"
+                style="@style/WgText.Muted"
                 android:layout_width="match_parent"
-                android:layout_marginTop="2dp"
-                android:textColor="@color/wg_text2"
-                android:textSize="8dp" />
+                android:textSize="11dp" />
         </LinearLayout>
     </FrameLayout>
 </LinearLayout>

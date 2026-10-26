@@ -1,7 +1,7 @@
 /**
- * Account menu: refresh library, listening stats, local FLAC folder, switch account, sign out.
- * Desktop: avatar button in the top bar with a dropdown. Phone: the avatar is the last tab of the
- * bottom bar and opens the same items as a bottom sheet (same look as the action sheets).
+ * Account menu: refresh library, listening stats, settings, local FLAC folder, switch account, sign out.
+ * Desktop (Material redesign): the account chip at the bottom of the sidebar opens it as a menu above.
+ * Phone: the avatar in the top bar opens the same items as a bottom sheet.
  */
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
@@ -59,30 +59,65 @@ function useAccountMenu() {
       disabled: lib.refreshing,
       run: checkDrive,
     })
-  rows.push({ icon: 'clock', label: 'Listening stats', run: () => go(statsHref()) })
+  rows.push({ icon: 'stats', label: 'Listening stats', run: () => go(statsHref()) })
   rows.push({ icon: 'gear', label: 'Settings', run: () => go(href('settings')) })
   if (isNative) rows.push({ icon: 'download', label: 'Downloads', run: () => go(href('downloads')) })
-  if (pwa.canInstall && !pwa.installed) rows.push({ icon: 'download', label: 'Install Pelagic app', run: () => void appUpdate.install() })
-  if (pwa.updateReady) rows.push({ icon: 'refresh', label: 'Reload to update Pelagic', run: () => appUpdate.apply() })
-  if (apk.available) rows.push({ icon: 'download', label: `Install Pelagic ${apk.available.versionName}`, run: () => nativeUpdates.install() })
-  rows.push({ icon: 'ext', label: 'Switch account', run: () => void sessionStore.signIn({ switchAccount: true }) })
-  rows.push({ icon: 'x', label: 'Sign out', danger: true, run: () => sessionStore.signOut() })
+  if (pwa.canInstall && !pwa.installed) rows.push({ icon: 'install', label: 'Install Material Music', run: () => void appUpdate.install() })
+  if (pwa.updateReady) rows.push({ icon: 'update', label: 'Reload to update', run: () => appUpdate.apply() })
+  if (apk.available) rows.push({ icon: 'download', label: `Install version ${apk.available.versionName}`, run: () => nativeUpdates.install() })
+  rows.push({ icon: 'account', label: 'Switch account', run: () => void sessionStore.signIn({ switchAccount: true }) })
+  rows.push({ icon: 'logout', label: 'Sign out', danger: true, run: () => sessionStore.signOut() })
 
-  const foot = isNative ? `PELAGIC ANDROID ${apk.current?.versionName ?? ''} · ${APP_VERSION}`.toUpperCase() : `PELAGIC ${APP_VERSION.toUpperCase()}${pwa.installed ? ' · APP' : ''}`
+  const foot = isNative ? `Material Music for Android ${apk.current?.versionName ?? ''} · ${APP_VERSION}` : `Material Music ${APP_VERSION}${pwa.installed ? ' · app' : ''}`
 
-  return { account, initial, metas, rows, foot }
+  const synced = status === 'expired' ? 'Session expired' : lib.refreshing ? 'Checking Drive…' : `Synced ${ago(lib.syncedAt)}`
+  return { account, initial, metas, rows, foot, synced }
+}
+
+/** "2 min ago" / "just now" / "at 14:05" for the account chip. */
+function ago(ms: number | null) {
+  if (!ms) return 'not yet'
+  const m = Math.round((Date.now() - ms) / 60000)
+  if (m < 1) return 'just now'
+  if (m < 60) return `${m} min ago`
+  return `at ${time(ms)}`
 }
 
 function AvatarFace({ photo, initial }: { photo?: string | null; initial: string }) {
   return photo ? <img src={photo} alt="" referrerPolicy="no-referrer" /> : <>{initial}</>
 }
 
-/** Desktop: avatar + dropdown. */
-export function AccountMenu() {
-  const { account, initial, metas, rows, foot } = useAccountMenu()
+/** Round avatar (photo, else the initial on a warm yellow). */
+export function Avatar({ size = 36 }: { size?: number }) {
+  const { account, initial } = useAccountMenu()
+  return (
+    <span className="mm-avatar" style={{ width: size, height: size, fontSize: Math.round(size * 0.4) }}>
+      <AvatarFace photo={account?.photo} initial={initial} />
+    </span>
+  )
+}
+
+function MenuRows({ rows, onPick }: { rows: Row[]; onPick: (r: Row) => void }) {
+  return (
+    <>
+      {rows.map((r, i) => (
+        <div key={i} style={{ display: 'contents' }}>
+          {r.danger && <div className="menu-sep" />}
+          <button type="button" role="menuitem" className={`menu-item ${r.danger ? 'is-danger' : ''}`} disabled={r.disabled} onClick={() => onPick(r)}>
+            <Icon name={r.icon} className="mi-ic" />
+            {r.label}
+          </button>
+        </div>
+      ))}
+    </>
+  )
+}
+
+/** Desktop: the account chip at the bottom of the sidebar; the menu opens above it. */
+export function AccountChip() {
+  const { account, metas, rows, foot, synced } = useAccountMenu()
   const [open, setOpen] = useState(false)
   const wrap = useRef<HTMLDivElement>(null)
-
   useEffect(() => {
     if (!open) return
     const onDown = (e: PointerEvent) => !wrap.current?.contains(e.target as Node) && setOpen(false)
@@ -94,11 +129,15 @@ export function AccountMenu() {
       document.removeEventListener('keydown', onKey)
     }
   }, [open])
-
   return (
-    <div className="avatar-wrap" ref={wrap}>
-      <button type="button" className="avatar" aria-haspopup="menu" aria-expanded={open} aria-label="Account" onClick={() => setOpen((o) => !o)}>
-        <AvatarFace photo={account?.photo} initial={initial} />
+    <div className="sb-acct" ref={wrap}>
+      <button type="button" className="sb-acct-btn" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+        <Avatar size={36} />
+        <span className="sb-acct-text">
+          <span className="sb-acct-name">{account?.name?.split(' ')[0] || 'Signed in'}</span>
+          <span className="sb-acct-sub">{synced}</span>
+        </span>
+        <Icon name="unfold" />
       </button>
       {open && (
         <div className="menu" role="menu">
@@ -111,24 +150,13 @@ export function AccountMenu() {
               </span>
             ))}
           </div>
-          {rows.map((r, i) => (
-            <button
-              key={i}
-              type="button"
-              role="menuitem"
-              className={`menu-item ${r.danger ? 'is-danger' : ''}`}
-              disabled={r.disabled}
-              onClick={() => {
-                setOpen(false)
-                r.run()
-              }}
-            >
-              <span className="mi-ic">
-                <Icon name={r.icon} />
-              </span>
-              {r.label}
-            </button>
-          ))}
+          <MenuRows
+            rows={rows}
+            onPick={(r) => {
+              setOpen(false)
+              r.run()
+            }}
+          />
           <div className="menu-foot">{foot}</div>
         </div>
       )}
@@ -136,19 +164,13 @@ export function AccountMenu() {
   )
 }
 
-/** Phone: last tab of the bottom bar; opens the account sheet. */
-export function AccountTab() {
-  const { account, initial } = useAccountMenu()
+/** Phone: the avatar in the top bar; opens the account sheet. */
+export function AccountButton() {
   const [open, setOpen] = useState(false)
   return (
     <>
-      <button type="button" className={`tab tab-me ${open ? 'is-on' : ''}`} aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(true)}>
-        <span className="tab-ic">
-          <span className="tab-av">
-            <AvatarFace photo={account?.photo} initial={initial} />
-          </span>
-        </span>
-        <span className="tab-label">YOU</span>
+      <button type="button" className="ptb-av" aria-haspopup="dialog" aria-expanded={open} aria-label="Account" onClick={() => setOpen(true)}>
+        <Avatar size={32} />
       </button>
       {open && createPortal(<AccountSheet onClosed={() => setOpen(false)} />, document.body)}
     </>

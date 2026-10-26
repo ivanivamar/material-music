@@ -367,7 +367,7 @@ export const sessionStore = {
         })
         const t = await helper<HelperTokens>('exchange', { code })
         if (!t.scope.split(' ').includes(DRIVE_SCOPE)) {
-          throw new Error('Pelagic needs access to Google Drive to read your library. Tick the Drive box when Google asks.')
+          throw new Error('Material Music needs access to Google Drive to read your library. Tick the Drive box when Google asks.')
         }
         // no refresh token (Google only issues one per grant): still signed in, renewing by hand as before
         await adopt(t.access_token, Date.now() + Number(t.expires_in) * 1000, true, t.refresh || (await helperHasSession()) ? 'server' : undefined)
@@ -383,7 +383,7 @@ export const sessionStore = {
         })
       })
       if (!google.accounts.oauth2.hasGrantedAllScopes(resp, DRIVE_SCOPE)) {
-        throw new Error('Pelagic needs access to Google Drive to read your library. Tick the Drive box when Google asks.')
+        throw new Error('Material Music needs access to Google Drive to read your library. Tick the Drive box when Google asks.')
       }
       await adopt(resp.access_token, Date.now() + Number(resp.expires_in) * 1000, true)
     } catch (e) {

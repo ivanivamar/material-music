@@ -9,9 +9,9 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.ColorMatrix;
 import android.graphics.ColorMatrixColorFilter;
-import android.graphics.LinearGradient;
 import android.graphics.Matrix;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.RadialGradient;
 import android.graphics.Rect;
 import android.graphics.RectF;
@@ -30,27 +30,30 @@ import java.security.MessageDigest;
 import java.util.Arrays;
 
 /**
- * Pictures for the home screen widget. RemoteViews can't blur, mask or draw gradients over images,
- * so everything that isn't text or an icon button is drawn here into bitmaps (handoff "Background —
- * tinted" + the cover / tile / scrubber details):
+ * Pictures for the home screen widget (Material 3 Expressive redesign, WidgetMaterial.dc.html).
+ * RemoteViews can't blur, mask or draw dynamic M3 shapes/gradients, so non-text visuals are drawn
+ * here into bitmaps:
  *
- *  - background(): transparent (the glass base is the layout's wg_shape, ~80% #1E1E22, so the
- *    wallpaper shows through a little — Oct 20, 2026, was solid #0B0B0C), the blurred "album light" top-left, the dark radial scrim from
- *    the bottom-right, the app's STONE / CONTOUR / GRAIN textures (res/drawable-nodpi/wg_tex_*,
- *    rendered from pelagic-kit.js), the cover glow of the player sizes, full-bleed covers of the
- *    1×1 / 2×2 sizes, the progress hairline and the 1dp inner ring, clipped to the widget radius.
- *  - cover(), pick(), scrubber(): the cover with its radius / ring / paused opacity, the squares of
- *    the "nothing playing" grid, the seek line with its glowing dot.
+ *  - background(): album-tinted surface s.bg, blurred album light top-left, radial scrim from
+ *    bottom-right, dot grid (w >= 176dp) and ring (w >= 320dp, h >= 128dp), cover glow, full-bleed
+ *    1×1 cover, "Up next" card surface (4×3 / 4×4), dual idle cards (2×2 / 4×1), and the 1.5dp rim.
+ *  - cover(), resumePillArt(), pick(), progressBar(), playButton(), shuffleButton(), pillButton(),
+ *    knobBitmap(): M3 Expressive rounded covers, quick-start cards, 4dp progress bar, morphing
+ *    play/pause & shuffle buttons, and the 8-lobe scalloped DJ knob.
  *
  * Covers are Drive files: a downloaded copy (Offline) first, then a small disk cache, then Drive with
  * the account's token (DriveAuth). Runs on PelagicWidget.BG only.
  */
 final class WidgetArt {
-    static final int BASE = 0xFF0B0B0C;
-    /** glass base under the bitmap (drawable/wg_shape, color/wg_glass): #1E1E22 at 80% */
-    static final int GLASS = 0xCC1E1E22;
-    static final int SURFACE = 0xFF141416;
-    static final int LILAC = 0xFFC6B4F2;
+    static final float BRAND_HUE = 38f;
+    static final float DJ_HUE = 290f;
+
+    /** DJ card palette (WidgetMaterial.dc.html: oklch(0.30 0.07 290) etc.) */
+    static final int DJ_CARD_BG = oklch(0.30, 0.07, 290, 1.0);
+    static final int DJ_CARD_RIM = oklch(0.60, 0.10, 290, 0.45);
+    static final int DJ_CARD_FG = oklch(0.95, 0.02, 290, 1.0);
+    static final int DJ_CARD_SUB = oklch(0.82, 0.04, 290, 1.0);
+    static final int DJ_KNOB = oklch(0.84, 0.09, 290, 1.0);
 
     private static final int MAX_DISK = 60;
     private static final LruCache<String, Bitmap> art = new LruCache<>(10);
@@ -58,7 +61,6 @@ final class WidgetArt {
     /** covers that couldn't be fetched lately (offline…): not retried on every redraw */
     private static final LruCache<String, Long> failed = new LruCache<>(32);
     private static final long RETRY_MS = 60_000;
-    private static Bitmap stone, contour, grain;
 
     private WidgetArt() {}
 
@@ -170,26 +172,60 @@ final class WidgetArt {
         return b.toString();
     }
 
-    /* ── Colour ──────────────────────────────────────── */
+    /* ── Colour scheme (WidgetMaterial.dc.html) ──────── */
 
-    /** OKLCH hue (degrees) of a cover's average colour. */
-    static float hueOf(@Nullable Bitmap bm) {
-        if (bm == null) return 235f;
-        Bitmap s = Bitmap.createScaledBitmap(bm, 8, 8, true);
-        double a = 0, b = 0;
-        for (int y = 0; y < 8; y++) {
-            for (int x = 0; x < 8; x++) {
-                double[] lab = oklab(s.getPixel(x, y));
-                // weight by chroma so grey pixels don't decide the hue
-                double c = Math.hypot(lab[1], lab[2]);
-                a += lab[1] * c;
-                b += lab[2] * c;
-            }
+    static final class Scheme {
+        final float hue, hc;
+        final int bg, base, base6, high, on, onVar, primary, onPrimary, track, sec, rim, rim2, glow, dot, ringLine;
+
+        Scheme(float h, float hc) {
+            this.hue = h;
+            this.hc = hc;
+            bg = oklch(0.155, 0.014 * hc, h, 1.0);
+            base = oklch(0.155, 0.014 * hc, h, 1.0);
+            base6 = oklch(0.155, 0.014 * hc, h, 0.6);
+            high = oklch(0.25, 0.035 * hc, h, 0.72);
+            on = oklch(0.95, 0.015 * hc, h, 1.0);
+            onVar = oklch(0.80, 0.03 * hc, h, 1.0);
+            primary = oklch(0.84, 0.09 * hc, h, 1.0);
+            onPrimary = oklch(0.25, 0.06 * hc, h, 1.0);
+            track = oklch(0.40, 0.05 * hc, h, 1.0);
+            sec = oklch(0.40, 0.06 * hc, h, 1.0);
+            rim = oklch(0.62, 0.09 * hc, h, 0.55);
+            rim2 = oklch(0.60, 0.07 * hc, h, 0.28);
+            glow = oklch(0.55, 0.12 * hc, h, 0.9);
+            dot = oklch(0.84, 0.09 * hc, h, 0.38);
+            ringLine = oklch(0.84, 0.09 * hc, h, 0.14);
         }
-        if (s != bm) s.recycle();
-        if (Math.abs(a) + Math.abs(b) < 1e-9) return 235f;
-        double h = Math.toDegrees(Math.atan2(b, a));
-        return (float) (h < 0 ? h + 360 : h);
+
+        static Scheme of(float h) {
+            return new Scheme(h, 1f);
+        }
+
+        /** Cover scheme: white/grey/black covers get near-white accents (hc = 0), missing cover gets coral (38). */
+        static Scheme fromArt(@Nullable Bitmap bm) {
+            if (bm == null) return new Scheme(BRAND_HUE, 1f);
+            Bitmap s = Bitmap.createScaledBitmap(bm, 8, 8, true);
+            double a = 0, b = 0, cSum = 0;
+            int colorful = 0;
+            for (int y = 0; y < 8; y++) {
+                for (int x = 0; x < 8; x++) {
+                    double[] lab = oklab(s.getPixel(x, y));
+                    double c = Math.hypot(lab[1], lab[2]);
+                    cSum += c;
+                    if (c > 0.032) colorful++;
+                    a += lab[1] * c;
+                    b += lab[2] * c;
+                }
+            }
+            if (s != bm) s.recycle();
+            double avgC = cSum / 64.0;
+            if (avgC < 0.018 || colorful < 6 || Math.abs(a) + Math.abs(b) < 1e-9) {
+                return new Scheme(40f, 0f);
+            }
+            double h = Math.toDegrees(Math.atan2(b, a));
+            return new Scheme((float) (h < 0 ? h + 360 : h), 1f);
+        }
     }
 
     private static double[] oklab(int argb) {
@@ -214,7 +250,7 @@ final class WidgetArt {
         return (int) Math.round(v * 255);
     }
 
-    /** oklch(L C h / alpha) → ARGB (the handoff's cover glow: oklch(0.34 0.06 hue / 0.9)). */
+    /** oklch(L C h / alpha) → ARGB. */
     static int oklch(double L, double C, double hDeg, double alpha) {
         double h = Math.toRadians(hDeg);
         double a = C * Math.cos(h), b = C * Math.sin(h);
@@ -232,86 +268,59 @@ final class WidgetArt {
 
     /* ── Background ──────────────────────────────────── */
 
-    /** What the background shows under the content. */
     static final class Bg {
-        /** dp */
         float w, h;
-        /** px per dp for this bitmap */
         float scale;
-        /** corner radius, dp */
-        float radius = 24;
-        /** album light (tinted surface): the cover, its opacity (0 = none) */
+        float radius = 28;
+        Scheme scheme;
         @Nullable Bitmap light;
         float lightAlpha;
-        /** full-bleed cover (1×1 and 2×2+ sizes) and its scrim: 1 = tile, 2 = cover */
         @Nullable Bitmap full;
         float fullAlpha = 1;
-        int fullScrim;
-        /** cover glow under a cover at (gx, gy) of size gs (dp), colour glow (0 = none) */
-        float gx, gy, gs;
-        int glow;
-        /** contour texture offset, dp */
-        float cx, cy;
-        /** progress hairline: fraction (< 0 = none) and accent colours */
-        float hairline = -1;
-        int accent = Color.WHITE;
-        int accentGlow = 0x80FFFFFF;
+        /** cover glow under a cover at (gx, gy) of size gs (dp), corner radius gr (dp) */
+        float gx, gy, gs, gr = 16;
+        /** Up next surface card (mPlayer + hasUp) */
+        boolean hasUp;
+        /** iDual surface cards: 0 = none, 1 = column (2×2+), 2 = row (3×1 / 4×1) */
+        int dualMode;
 
         String key() {
-            return w + "x" + h + "@" + scale + "/" + radius + "/" + System.identityHashCode(light) + ":" + lightAlpha + "/"
-                + System.identityHashCode(full) + ":" + fullAlpha + ":" + fullScrim + "/" + gx + "," + gy + "," + gs + ":" + glow + "/" + cx + "," + cy;
+            return w + "x" + h + "@" + scale + "/" + radius + "/" + scheme.hue + ":" + scheme.hc + "/"
+                + System.identityHashCode(light) + ":" + lightAlpha + "/"
+                + System.identityHashCode(full) + ":" + fullAlpha + "/"
+                + gx + "," + gy + "," + gs + "," + gr + "/" + hasUp + "/" + dualMode;
         }
     }
 
-    static Bitmap background(Context ctx, Bg s) {
+    static Bitmap background(Bg s) {
         int W = Math.max(1, Math.round(s.w * s.scale)), H = Math.max(1, Math.round(s.h * s.scale));
         String key = s.key();
         Bitmap base = bases.get(key);
         if (base == null) {
-            base = drawBase(ctx, s, W, H);
+            base = drawBase(s, W, H);
             bases.put(key, base);
         }
-        if (s.hairline < 0) return base;
-        // the hairline changes with the position: on a copy of the cached layers
-        Bitmap out = base.copy(Bitmap.Config.ARGB_8888, true);
-        Canvas c = new Canvas(out);
-        float k = s.scale;
-        float top = H - 1.5f * k;
-        // clipped to the widget's rounded shape (the base is see-through now, so SRC_ATOP would fade it)
-        android.graphics.Path clip = new android.graphics.Path();
-        clip.addRoundRect(new RectF(0, 0, W, H), s.radius * k, s.radius * k, android.graphics.Path.Direction.CW);
-        c.clipPath(clip);
-        Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
-        p.setColor(0x1FFFFFFF);
-        c.drawRect(0, top, W, H, p);
-        float fw = W * Math.max(0, Math.min(1, s.hairline));
-        if (fw > 0) {
-            Paint g = new Paint(Paint.ANTI_ALIAS_FLAG);
-            g.setColor(s.accentGlow);
-            g.setMaskFilter(new BlurMaskFilter(blurRadius(3 * k), BlurMaskFilter.Blur.NORMAL));
-            c.drawRect(0, top, fw, H, g);
-            p.setColor(s.accent);
-            c.drawRect(0, top, fw, H, p);
-        }
-        out.setDensity(densityOf(k));
-        return out;
+        return base;
     }
 
-    private static Bitmap drawBase(Context ctx, Bg s, int W, int H) {
+    private static Bitmap drawBase(Bg s, int W, int H) {
         float k = s.scale;
+        Scheme sc = s.scheme;
         Bitmap full = Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888);
         Canvas c = new Canvas(full);
-        // 1. base: none here — wg_shape (GLASS) sits under this bitmap, so it stays see-through
         Paint p = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
 
-        // 2. album light: the cover, blurred 48, saturation ×1.3, at (−30%, −60%) 110% × 160%
+        // 1. base surface (s.bg)
+        c.drawColor(sc.bg);
+
+        // 2. album light: cover blurred 48, saturation ×1.3, at (−30%, −60%) 110% × 160%
         if (s.light != null && s.lightAlpha > 0) drawLight(c, s.light, W, H, k, s.lightAlpha);
 
-        // 3. scrim: radial from the bottom-right (120% × 110%), 55% app-dark there (keeps the controls
-        //    readable on light wallpapers), fading out towards the top-left light
+        // 3. radial gradient scrim: 120% × 110% at 100% 100%, s.base 25%, s.base6 60%, transparent 100%
         Paint scrim = new Paint(Paint.ANTI_ALIAS_FLAG);
         RadialGradient rg = new RadialGradient(0, 0, 1f,
-            new int[] { 0x8C0B0B0C, 0x8C0B0B0C, 0x4D0B0B0C, 0x000B0B0C }, new float[] { 0f, 0.25f, 0.6f, 1f }, Shader.TileMode.CLAMP);
+            new int[] { sc.base, sc.base, sc.base6, sc.base & 0x00FFFFFF },
+            new float[] { 0f, 0.25f, 0.6f, 1f }, Shader.TileMode.CLAMP);
         Matrix m = new Matrix();
         m.setScale(1.2f * W, 1.1f * H);
         m.postTranslate(W, H);
@@ -319,42 +328,64 @@ final class WidgetArt {
         scrim.setShader(rg);
         c.drawRect(0, 0, W, H, scrim);
 
-        // 4. textures, as on the app's screens
-        loadTextures(ctx);
-        texture(c, stone, 900f * k / stone.getWidth(), 0, 0, 0.09f, W, H);
-        texture(c, contour, 1600f * k / contour.getWidth(), -s.cx * k, -s.cy * k, 0.075f, W, H);
-        texture(c, grain, 220f * k / grain.getWidth(), 0, 0, 0.035f, W, H);
+        // 4. decorative dot grid (W >= 176dp): right -24dp, top -28dp, 170×140dp, 12dp grid, 1.2dp radius, closest-side mask
+        if (s.w >= 170) {
+            drawDots(c, W, k, sc.dot);
+        }
 
-        // cover glow (player sizes): box-shadow 0 20 40 -20 glow
-        if (s.glow != 0 && s.gs > 0) {
+        // 5. decorative ring (W >= 320dp && H >= 128dp): left -120dp, bottom -150dp, 300×300dp, 1.5dp inset stroke
+        if (s.w >= 320 && s.h >= 128) {
+            Paint ringP = new Paint(Paint.ANTI_ALIAS_FLAG);
+            ringP.setStyle(Paint.Style.STROKE);
+            ringP.setStrokeWidth(1.5f * k);
+            ringP.setColor(sc.ringLine);
+            float cx = (-120f + 150f) * k;
+            float cy = H + (150f - 150f) * k;
+            c.drawCircle(cx, cy, (150f - 0.75f) * k, ringP);
+        }
+
+        // 6. cover glow (0 14dp 26dp -12dp s.glow)
+        if (s.gs > 0) {
             Paint g = new Paint(Paint.ANTI_ALIAS_FLAG);
-            g.setColor(s.glow);
-            g.setMaskFilter(new BlurMaskFilter(blurRadius(20 * k), BlurMaskFilter.Blur.NORMAL));
-            RectF r = new RectF((s.gx + 20) * k, (s.gy + 40) * k, (s.gx + s.gs - 20) * k, (s.gy + s.gs) * k);
-            c.drawRoundRect(r, 14 * k, 14 * k, g);
+            g.setColor(sc.glow);
+            g.setMaskFilter(new BlurMaskFilter(blurRadius(13 * k), BlurMaskFilter.Blur.NORMAL));
+            RectF r = new RectF((s.gx + 12) * k, (s.gy + 26) * k, (s.gx + s.gs - 12) * k, (s.gy + s.gs + 2) * k);
+            c.drawRoundRect(r, s.gr * k, s.gr * k, g);
         }
 
-        // full-bleed cover (1×1, 2×2+) with its scrim
-        if (s.fullScrim != 0) {
-            if (s.full != null) {
-                p.setAlpha(Math.round(255 * s.fullAlpha));
-                c.drawBitmap(s.full, coverCrop(s.full, W, H), new RectF(0, 0, W, H), p);
-                p.setAlpha(255);
-            }
-            Paint lg = new Paint();
-            lg.setShader(s.fullScrim == 1
-                ? new LinearGradient(0, 0, 0, H, new int[] { 0x00050505, 0x00050505, 0x8C050505 }, new float[] { 0f, 0.4f, 1f }, Shader.TileMode.CLAMP)
-                : new LinearGradient(0, 0, 0, H, new int[] { 0x59050505, 0x00050505, 0x0008080A, 0xEB08080A }, new float[] { 0f, 0.3f, 0.42f, 1f }, Shader.TileMode.CLAMP));
-            c.drawRect(0, 0, W, H, lg);
+        // 7. full-bleed cover (1×1 mTiny)
+        if (s.full != null) {
+            p.setAlpha(Math.round(255 * s.fullAlpha));
+            c.drawBitmap(s.full, coverCrop(s.full, W, H), new RectF(0, 0, W, H), p);
+            p.setAlpha(255);
         }
 
-        // inner hairline ring (1dp, 0.08)
-        Paint ring = new Paint(Paint.ANTI_ALIAS_FLAG);
-        ring.setStyle(Paint.Style.STROKE);
-        ring.setStrokeWidth(k);
-        ring.setColor(0x14FFFFFF);
+        // 8. "Up next" card surface (4×3 / 4×4): left 8dp, right 8dp, top 176dp, bottom 8dp, radius 20dp
+        if (s.hasUp && H > 184 * k) {
+            drawSurfaceCard(c, new RectF(8 * k, 176 * k, W - 8 * k, H - 8 * k), 20 * k, sc.high, sc.rim2, k);
+        }
+
+        // 9. iDual cards (Resume + DJ)
+        if (s.dualMode == 1) {
+            // column (2×2+): two stacked cards, 8dp padding and 8dp gap
+            float ch = (H - 24 * k) / 2f;
+            drawSurfaceCard(c, new RectF(8 * k, 8 * k, W - 8 * k, 8 * k + ch), 20 * k, sc.high, sc.rim2, k);
+            drawSurfaceCard(c, new RectF(8 * k, 16 * k + ch, W - 8 * k, H - 8 * k), 20 * k, DJ_CARD_BG, DJ_CARD_RIM, k);
+        } else if (s.dualMode == 2) {
+            // row (3×1 / 4×1): two side-by-side cards, 8dp padding and 8dp gap
+            float cw = (W - 24 * k) / 2f;
+            drawSurfaceCard(c, new RectF(8 * k, 8 * k, 8 * k + cw, H - 8 * k), 20 * k, sc.high, sc.rim2, k);
+            drawSurfaceCard(c, new RectF(16 * k + cw, 8 * k, W - 8 * k, H - 8 * k), 20 * k, DJ_CARD_BG, DJ_CARD_RIM, k);
+        }
+
+        // 10. outer rim: inset 0 0 0 1.5dp s.rim
         float r = s.radius * k;
-        c.drawRoundRect(new RectF(k / 2, k / 2, W - k / 2, H - k / 2), r - k / 2, r - k / 2, ring);
+        Paint rim = new Paint(Paint.ANTI_ALIAS_FLAG);
+        rim.setStyle(Paint.Style.STROKE);
+        rim.setStrokeWidth(1.5f * k);
+        rim.setColor(sc.rim);
+        float inset = 0.75f * k;
+        c.drawRoundRect(new RectF(inset, inset, W - inset, H - inset), r - inset, r - inset, rim);
 
         Bitmap out = rounded(full, r);
         full.recycle();
@@ -362,10 +393,48 @@ final class WidgetArt {
         return out;
     }
 
+    private static void drawSurfaceCard(Canvas c, RectF rect, float r, int fill, int strokeColor, float k) {
+        Paint fp = new Paint(Paint.ANTI_ALIAS_FLAG);
+        fp.setColor(fill);
+        c.drawRoundRect(rect, r, r, fp);
+        Paint sp = new Paint(Paint.ANTI_ALIAS_FLAG);
+        sp.setStyle(Paint.Style.STROKE);
+        sp.setStrokeWidth(k);
+        sp.setColor(strokeColor);
+        float half = k / 2f;
+        c.drawRoundRect(new RectF(rect.left + half, rect.top + half, rect.right - half, rect.bottom - half), r - half, r - half, sp);
+    }
+
+    private static void drawDots(Canvas c, int W, float k, int dotColor) {
+        float boxW = 170f * k, boxH = 140f * k;
+        float left = W + 24f * k - boxW, top = -28f * k;
+        float cx = left + boxW * 0.5f, cy = top + boxH * 0.5f;
+        float rx = boxW * 0.5f, ry = boxH * 0.5f;
+        float step = 12f * k;
+        float dotR = 1.25f * k;
+        int baseAlpha = Color.alpha(dotColor);
+        int rgb = dotColor & 0x00FFFFFF;
+        Paint dp = new Paint(Paint.ANTI_ALIAS_FLAG);
+        for (float y = top + step * 0.5f; y < top + boxH; y += step) {
+            if (y + dotR < 0) continue;
+            for (float x = left + step * 0.5f; x < left + boxW; x += step) {
+                if (x - dotR > W) continue;
+                float dx = (x - cx) / rx, dy = (y - cy) / ry;
+                float dist = (float) Math.hypot(dx, dy);
+                if (dist >= 1f) continue;
+                float mask = dist <= 0.4f ? 1f : (1f - dist) / 0.6f;
+                int a = Math.round(baseAlpha * mask);
+                if (a <= 2) continue;
+                dp.setColor((a << 24) | rgb);
+                c.drawCircle(x, y, dotR, dp);
+            }
+        }
+    }
+
     /** CSS blur(48px) ≈ a gaussian σ 48: blur a small copy (with a transparent margin so the edges fade), then scale it up. */
     private static void drawLight(Canvas c, Bitmap src, int W, int H, float k, float alpha) {
         float L = -0.3f * W, T = -0.6f * H, RW = 1.1f * W, RH = 1.6f * H;
-        float f = 48 * k / 6f; // down-scale factor: σ becomes ~6px
+        float f = 48 * k / 6f;
         int sw = Math.max(2, Math.round(RW / f)), sh = Math.max(2, Math.round(RH / f)), mg = 18;
         Bitmap small = Bitmap.createBitmap(sw + 2 * mg, sh + 2 * mg, Bitmap.Config.ARGB_8888);
         Canvas sc = new Canvas(small);
@@ -414,7 +483,6 @@ final class WidgetArt {
         bm.setPixels(px, 0, w, 0, 0, w, h);
     }
 
-    /** One line of a box blur (edges treated as transparent / zero). */
     private static void boxLine(float[] v, int start, int stride, int len, int r, float[] tmp) {
         float sum = 0;
         float inv = 1f / (2 * r + 1);
@@ -432,30 +500,9 @@ final class WidgetArt {
         return Math.max(0, Math.min(255, Math.round(x)));
     }
 
-    private static void loadTextures(Context ctx) {
-        if (stone != null) return;
-        BitmapFactory.Options o = new BitmapFactory.Options();
-        o.inScaled = false;
-        stone = BitmapFactory.decodeResource(ctx.getResources(), R.drawable.wg_tex_stone, o);
-        contour = BitmapFactory.decodeResource(ctx.getResources(), R.drawable.wg_tex_contour, o);
-        grain = BitmapFactory.decodeResource(ctx.getResources(), R.drawable.wg_tex_grain, o);
-    }
+    /* ── Covers, buttons, progress bar, picks, DJ knob ─ */
 
-    private static void texture(Canvas c, Bitmap tile, float scale, float dx, float dy, float alpha, int W, int H) {
-        BitmapShader sh = new BitmapShader(tile, Shader.TileMode.REPEAT, Shader.TileMode.REPEAT);
-        Matrix m = new Matrix();
-        m.setScale(scale, scale);
-        m.postTranslate(dx, dy);
-        sh.setLocalMatrix(m);
-        Paint p = new Paint(Paint.FILTER_BITMAP_FLAG);
-        p.setShader(sh);
-        p.setAlpha(Math.round(alpha * 255));
-        c.drawRect(0, 0, W, H, p);
-    }
-
-    /* ── Covers, picks, scrubber ─────────────────────── */
-
-    /** A cover: size dp, corner radius dp, 1dp ring (0.08), opacity; a dark square when there's no art. */
+    /** A cover: size dp, corner radius dp, 1dp subtle ring (0.10), opacity; a warm dark square when there's no art. */
     static Bitmap cover(@Nullable Bitmap src, float sizeDp, float radiusDp, float alpha, float k) {
         int S = Math.max(1, Math.round(sizeDp * k));
         Bitmap out = Bitmap.createBitmap(S, S, Bitmap.Config.ARGB_8888);
@@ -471,93 +518,237 @@ final class WidgetArt {
             c.drawRoundRect(all, r, r, p);
             p.setShader(null);
             p.setAlpha(255);
+            sq.recycle();
         } else {
-            p.setColor(0xFF1A1A1D);
+            p.setColor(oklch(0.22, 0.015, BRAND_HUE, 1.0));
             c.drawRoundRect(all, r, r, p);
         }
         Paint ring = new Paint(Paint.ANTI_ALIAS_FLAG);
         ring.setStyle(Paint.Style.STROKE);
         ring.setStrokeWidth(k);
-        ring.setColor(0x14FFFFFF);
+        ring.setColor(0x1AFFFFFF);
         c.drawRoundRect(new RectF(k / 2, k / 2, S - k / 2, S - k / 2), r - k / 2, r - k / 2, ring);
         out.setDensity(densityOf(k));
         return out;
     }
 
-    /** A square of the "nothing playing" grid: cover + scrim + ring, or the DJ tile (lilac light, ring mark). */
-    static Bitmap pick(@Nullable Bitmap src, boolean dj, float sizeDp, float k) {
+    /** 2×1 idle pill art (iPill): 56dp cover (radius 16dp) with a 28dp circular coral play badge at bottom-right. */
+    static Bitmap resumePillArt(@Nullable Bitmap src, Scheme s, float k) {
+        int W = Math.max(1, Math.round(60 * k)), S = Math.max(1, Math.round(56 * k));
+        Bitmap out = Bitmap.createBitmap(W, W, Bitmap.Config.ARGB_8888);
+        Canvas c = new Canvas(out);
+        Bitmap cov = cover(src, 56, 16, 1f, k);
+        c.drawBitmap(cov, 0, 0, null);
+        cov.recycle();
+
+        float cx = 46 * k, cy = 46 * k;
+        Paint ring = new Paint(Paint.ANTI_ALIAS_FLAG);
+        ring.setColor(s.bg);
+        c.drawCircle(cx, cy, 17 * k, ring);
+
+        Paint bg = new Paint(Paint.ANTI_ALIAS_FLAG);
+        bg.setColor(s.primary);
+        c.drawCircle(cx, cy, 14 * k, bg);
+
+        drawPlayPauseGlyph(c, cx, cy, 18 * k, s.onPrimary, false);
+        out.setDensity(densityOf(k));
+        return out;
+    }
+
+    /** Play / pause button bitmap: rounded rect (radiusDp) in `bg` with centered play/pause glyph in `fg`. */
+    static Bitmap playButton(float wDp, float hDp, float radiusDp, float iconDp, int bg, int fg, boolean playing, float k) {
+        int W = Math.max(1, Math.round(wDp * k)), H = Math.max(1, Math.round(hDp * k));
+        Bitmap out = Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888);
+        Canvas c = new Canvas(out);
+        Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
+        p.setColor(bg);
+        float r = radiusDp * k;
+        c.drawRoundRect(new RectF(0, 0, W, H), r, r, p);
+        drawPlayPauseGlyph(c, W * 0.5f, H * 0.5f, iconDp * k, fg, playing);
+        out.setDensity(densityOf(k));
+        return out;
+    }
+
+    private static void drawPlayPauseGlyph(Canvas c, float cx, float cy, float sizePx, int color, boolean pause) {
+        Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
+        p.setColor(color);
+        p.setStyle(Paint.Style.FILL);
+        float u = sizePx / 24f;
+        if (pause) {
+            float bw = 4f * u, bh = 14f * u, br = 2f * u;
+            c.drawRoundRect(new RectF(cx - 4f * u - bw * 0.5f, cy - bh * 0.5f, cx - 4f * u + bw * 0.5f, cy + bh * 0.5f), br, br, p);
+            c.drawRoundRect(new RectF(cx + 4f * u - bw * 0.5f, cy - bh * 0.5f, cx + 4f * u + bw * 0.5f, cy + bh * 0.5f), br, br, p);
+        } else {
+            // Material Symbols Rounded play_arrow (filled, 24×24 viewport)
+            Path path = new Path();
+            float ox = cx - 12f * u, oy = cy - 12f * u;
+            path.moveTo(ox + 8f * u, oy + 6.82f * u);
+            path.lineTo(ox + 8f * u, oy + 17.18f * u);
+            path.cubicTo(ox + 8f * u, oy + 17.97f * u, ox + 8.87f * u, oy + 18.45f * u, ox + 9.54f * u, oy + 18.02f * u);
+            path.lineTo(ox + 17.68f * u, oy + 12.84f * u);
+            path.cubicTo(ox + 18.30f * u, oy + 12.45f * u, ox + 18.30f * u, oy + 11.55f * u, ox + 17.68f * u, oy + 11.15f * u);
+            path.lineTo(ox + 9.54f * u, oy + 5.98f * u);
+            path.cubicTo(ox + 8.87f * u, oy + 5.55f * u, ox + 8f * u, oy + 6.03f * u, ox + 8f * u, oy + 6.82f * u);
+            path.close();
+            c.drawPath(path, p);
+        }
+    }
+
+    /** Shuffle toggle (40×40dp): when active, radius 12dp in `s.sec` + `s.primary` icon; when off, transparent + `s.on` icon. */
+    static Bitmap shuffleButton(boolean active, boolean enabled, Scheme s, float k) {
+        int S = Math.max(1, Math.round(40 * k));
+        Bitmap out = Bitmap.createBitmap(S, S, Bitmap.Config.ARGB_8888);
+        Canvas c = new Canvas(out);
+        if (active && enabled) {
+            Paint bg = new Paint(Paint.ANTI_ALIAS_FLAG);
+            bg.setColor(s.sec);
+            float r = 12 * k;
+            c.drawRoundRect(new RectF(0, 0, S, S), r, r, bg);
+        }
+        int fg = !enabled ? (s.onVar & 0x66FFFFFF) : active ? s.primary : s.on;
+        drawShuffleGlyph(c, S * 0.5f, S * 0.5f, 20 * k, fg);
+        out.setDensity(densityOf(k));
+        return out;
+    }
+
+    private static void drawShuffleGlyph(Canvas c, float cx, float cy, float sizePx, int color) {
+        float u = sizePx / 24f;
+        float ox = cx - 12f * u, oy = cy - 12f * u;
+        Paint stroke = new Paint(Paint.ANTI_ALIAS_FLAG);
+        stroke.setColor(color);
+        stroke.setStyle(Paint.Style.STROKE);
+        stroke.setStrokeWidth(2f * u);
+        stroke.setStrokeCap(Paint.Cap.ROUND);
+        stroke.setStrokeJoin(Paint.Join.ROUND);
+
+        // main diagonal bottom-left to top-right
+        c.drawLine(ox + 5.4f * u, oy + 18.6f * u, ox + 18.5f * u, oy + 5.5f * u, stroke);
+        // top-left to center-left
+        c.drawLine(ox + 5.4f * u, oy + 5.4f * u, ox + 9.8f * u, oy + 9.8f * u, stroke);
+        // center-right to bottom-right
+        c.drawLine(ox + 14.2f * u, oy + 14.2f * u, ox + 18.5f * u, oy + 18.5f * u, stroke);
+        // top-right arrowhead
+        Path p1 = new Path();
+        p1.moveTo(ox + 15.2f * u, oy + 5f * u);
+        p1.lineTo(ox + 19f * u, oy + 5f * u);
+        p1.lineTo(ox + 19f * u, oy + 8.8f * u);
+        c.drawPath(p1, stroke);
+        // bottom-right arrowhead
+        Path p2 = new Path();
+        p2.moveTo(ox + 15.2f * u, oy + 19f * u);
+        p2.lineTo(ox + 19f * u, oy + 19f * u);
+        p2.lineTo(ox + 19f * u, oy + 15.2f * u);
+        c.drawPath(p2, stroke);
+    }
+
+    /** 4dp M3 progress bar: 2dp rounded track in `trackColor`, 2dp rounded fill in `fillColor`. */
+    static Bitmap progressBar(float widthDp, float frac, int trackColor, int fillColor, float k) {
+        int W = Math.max(1, Math.round(widthDp * k)), H = Math.max(1, Math.round(4 * k));
+        Bitmap out = Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888);
+        Canvas c = new Canvas(out);
+        float r = H * 0.5f;
+        Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
+        p.setColor(trackColor);
+        c.drawRoundRect(new RectF(0, 0, W, H), r, r, p);
+        float fw = W * Math.max(0f, Math.min(1f, frac));
+        if (fw > 0.5f) {
+            p.setColor(fillColor);
+            c.drawRoundRect(new RectF(0, 0, Math.max(H, fw), H), r, r, p);
+        }
+        out.setDensity(densityOf(k));
+        return out;
+    }
+
+    /** Full-width pill background (e.g. "Shuffle library" 56dp button on iGrid). */
+    static Bitmap pillButton(float wDp, float hDp, int bg, float k) {
+        int W = Math.max(1, Math.round(wDp * k)), H = Math.max(1, Math.round(hDp * k));
+        Bitmap out = Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888);
+        Canvas c = new Canvas(out);
+        Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
+        p.setColor(bg);
+        float r = H * 0.5f;
+        c.drawRoundRect(new RectF(0, 0, W, H), r, r, p);
+        out.setDensity(densityOf(k));
+        return out;
+    }
+
+    /** Scalloped 8-lobe DJ knob bitmap (16dp in mPlayer, 40dp in iDual). */
+    static Bitmap knobBitmap(float sizeDp, int color, float k) {
         int S = Math.max(1, Math.round(sizeDp * k));
         Bitmap out = Bitmap.createBitmap(S, S, Bitmap.Config.ARGB_8888);
         Canvas c = new Canvas(out);
-        float r = 14 * k;
-        RectF all = new RectF(0, 0, S, S);
-        Paint p = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
-        if (dj) {
-            RadialGradient g = new RadialGradient(S * 0.5f, S * 0.3f, S, new int[] { 0x2EC6B4F2, 0x0AC6B4F2 }, new float[] { 0f, 0.7f }, Shader.TileMode.CLAMP);
-            p.setShader(g);
-            c.drawRoundRect(all, r, r, p);
-            p.setShader(null);
-            float cx = S * 0.5f, cy = S * 0.38f, rr = 14 * k;
-            Paint glow = new Paint(Paint.ANTI_ALIAS_FLAG);
-            glow.setColor(0x73C6B4F2);
-            glow.setStyle(Paint.Style.STROKE);
-            glow.setStrokeWidth(2 * k);
-            glow.setMaskFilter(new BlurMaskFilter(blurRadius(9 * k), BlurMaskFilter.Blur.NORMAL));
-            c.drawCircle(cx, cy, rr, glow);
-            Paint ringP = new Paint(Paint.ANTI_ALIAS_FLAG);
-            ringP.setStyle(Paint.Style.STROKE);
-            ringP.setStrokeWidth(k);
-            ringP.setColor(0x99C6B4F2);
-            c.drawCircle(cx, cy, rr - k / 2, ringP);
-            Paint dot = new Paint(Paint.ANTI_ALIAS_FLAG);
-            dot.setColor(LILAC);
-            c.drawCircle(cx, cy, 3 * k, dot);
-        } else {
-            p.setColor(SURFACE);
-            c.drawRoundRect(all, r, r, p);
-            if (src != null) {
-                Bitmap sq = Bitmap.createBitmap(S, S, Bitmap.Config.ARGB_8888);
-                Canvas q = new Canvas(sq);
-                q.drawBitmap(src, coverCrop(src, S, S), all, new Paint(Paint.FILTER_BITMAP_FLAG));
-                Paint lg = new Paint();
-                lg.setShader(new LinearGradient(0, 0, 0, S, new int[] { 0x0008080A, 0x0008080A, 0xE608080A }, new float[] { 0f, 0.35f, 1f }, Shader.TileMode.CLAMP));
-                q.drawRect(all, lg);
-                p.setShader(new BitmapShader(sq, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP));
-                c.drawRoundRect(all, r, r, p);
-                p.setShader(null);
-            }
-        }
-        Paint ring = new Paint(Paint.ANTI_ALIAS_FLAG);
-        ring.setStyle(Paint.Style.STROKE);
-        ring.setStrokeWidth(k);
-        ring.setColor(dj ? 0x59C6B4F2 : 0x14FFFFFF);
-        c.drawRoundRect(new RectF(k / 2, k / 2, S - k / 2, S - k / 2), r - k / 2, r - k / 2, ring);
+        drawKnob(c, S * 0.5f, S * 0.5f, S, color);
         out.setDensity(densityOf(k));
         return out;
     }
 
+    /** Draw the 8-lobe scalloped DJ knob (`knobPath(8, 0.08, 48)` rotated -55° with indicator cutout). */
+    private static void drawKnob(Canvas c, float cx, float cy, float sizePx, int color) {
+        Path p = new Path();
+        p.setFillType(Path.FillType.EVEN_ODD);
+        int steps = 120;
+        for (int i = 0; i <= steps; i++) {
+            double t = (i / (double) steps) * Math.PI * 2.0;
+            double r = 48.0 * (1.0 - 0.08 + 0.08 * Math.cos(8.0 * t));
+            float x = (float) (50.0 + Math.sin(t) * r);
+            float y = (float) (50.0 - Math.cos(t) * r);
+            if (i == 0) p.moveTo(x, y);
+            else p.lineTo(x, y);
+        }
+        p.close();
+        p.addRoundRect(new RectF(43f, 12f, 57f, 42f), 7f, 7f, Path.Direction.CW);
+
+        Matrix m = new Matrix();
+        m.postTranslate(-50f, -50f);
+        m.postRotate(-55f);
+        float scale = sizePx / 100f;
+        m.postScale(scale, scale);
+        m.postTranslate(cx, cy);
+        p.transform(m);
+
+        Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        paint.setColor(color);
+        paint.setStyle(Paint.Style.FILL);
+        c.drawPath(p, paint);
+    }
+
     /**
-     * The seek line of the player sizes: 1dp track (0.18), accent fill, 5dp dot with a glow. Width
-     * dp of the line; the bitmap adds 10dp each side and 6dp above / below for the glow (the layouts
-     * take that back with negative margins).
+     * Quick-start card of the "nothing playing" grid (iGrid, WidgetMaterial.dc.html):
+     * 20dp rounded card with 1dp inner rim, 8dp padding, top art (radius 12dp) or centered 64dp DJ knob.
      */
-    static Bitmap scrubber(float widthDp, float frac, int accent, int accentGlow, float k) {
-        int W = Math.max(1, Math.round((widthDp + 20) * k)), H = Math.round(21 * k);
+    static Bitmap pick(@Nullable Bitmap src, boolean dj, float cardWDp, float cardHDp, float artHDp, Scheme s, float k) {
+        int W = Math.max(1, Math.round(cardWDp * k)), H = Math.max(1, Math.round(cardHDp * k));
         Bitmap out = Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888);
         Canvas c = new Canvas(out);
-        float x0 = 10 * k, x1 = W - 10 * k, y = 10.5f * k;
-        float x = x0 + (x1 - x0) * Math.max(0, Math.min(1, frac));
-        Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
-        p.setColor(0x2EFFFFFF);
-        c.drawRect(x0, y - k / 2, x1, y + k / 2, p);
-        p.setColor(accent);
-        c.drawRect(x0, y - k / 2, x, y + k / 2, p);
-        Paint g = new Paint(Paint.ANTI_ALIAS_FLAG);
-        g.setColor(accentGlow);
-        g.setMaskFilter(new BlurMaskFilter(blurRadius(4 * k), BlurMaskFilter.Blur.NORMAL));
-        c.drawCircle(x, y, 4.5f * k, g);
-        p.setColor(accent);
-        c.drawCircle(x, y, 2.5f * k, p);
+        RectF cardRect = new RectF(0, 0, W, H);
+        drawSurfaceCard(c, cardRect, 20 * k, dj ? DJ_CARD_BG : s.high, dj ? DJ_CARD_RIM : s.rim2, k);
+
+        float pad = 8 * k;
+        float artW = Math.max(1, W - 2 * pad);
+        float artH = Math.max(1, artHDp * k);
+        RectF artRect = new RectF(pad, pad, pad + artW, pad + artH);
+
+        if (dj) {
+            float knobPx = Math.min(64 * k, Math.min(artW, artH));
+            drawKnob(c, artRect.centerX(), artRect.centerY(), knobPx, DJ_KNOB);
+        } else if (src != null) {
+            int aw = Math.max(1, Math.round(artW)), ah = Math.max(1, Math.round(artH));
+            Bitmap crop = Bitmap.createBitmap(aw, ah, Bitmap.Config.ARGB_8888);
+            new Canvas(crop).drawBitmap(src, coverCrop(src, aw, ah), new RectF(0, 0, aw, ah), new Paint(Paint.FILTER_BITMAP_FLAG));
+            Paint ap = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
+            BitmapShader sh = new BitmapShader(crop, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
+            Matrix m = new Matrix();
+            m.postTranslate(pad, pad);
+            sh.setLocalMatrix(m);
+            ap.setShader(sh);
+            c.drawRoundRect(artRect, 12 * k, 12 * k, ap);
+            crop.recycle();
+        } else {
+            Paint ap = new Paint(Paint.ANTI_ALIAS_FLAG);
+            ap.setColor(oklch(0.20, 0.015, BRAND_HUE, 1.0));
+            c.drawRoundRect(artRect, 12 * k, 12 * k, ap);
+        }
+
         out.setDensity(densityOf(k));
         return out;
     }

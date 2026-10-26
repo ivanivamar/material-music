@@ -30,6 +30,7 @@ import { albumHref, artistHref, replace, statsHref } from '../../shell/routes'
 import { ArtistAvatar, LibAlbumCard, SectionHead } from '../library/common'
 import { playList, useNowPlaying, usePlayingAlbumId } from '../library/playback'
 import { PageHeader } from '../PageHeader'
+import '../library/library.css'
 import './stats.css'
 
 const pad2 = (n: number) => String(n).padStart(2, '0')

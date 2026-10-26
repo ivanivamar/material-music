@@ -153,7 +153,7 @@ public class PelagicNativePlugin extends Plugin {
             return;
         }
         if (!result.getGrantedScopes().contains(DRIVE_SCOPE)) {
-            call.reject("Pelagic needs access to Google Drive to read your library. Allow Drive when Google asks.", "no_drive");
+            call.reject("Material Music needs access to Google Drive to read your library. Allow Drive when Google asks.", "no_drive");
             return;
         }
         JSObject out = new JSObject();

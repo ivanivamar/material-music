@@ -4,6 +4,8 @@ import type { LibraryTab } from '../shell/routes'
 import type { AlbumSort, SongSort } from './views'
 
 export type ArtistSort = 'name' | 'added' | 'albums'
+export type MixedSort = 'added' | 'name'
+export type LibraryView = 'timeline' | 'grid'
 
 export interface LibraryPrefs {
   tab: LibraryTab
@@ -11,12 +13,17 @@ export interface LibraryPrefs {
   artistSort: ArtistSort
   songSort: SongSort
   songDesc: boolean
+  /** All (albums + artists + playlists) and Playlists chips */
+  allSort: MixedSort
+  playlistSort: MixedSort
+  /** Timeline (grouped, with a rail) or a plain grid / list, per chip */
+  views: Partial<Record<LibraryTab, LibraryView>>
   /** Android app: show only what's stored on the phone (Albums / Artists / Songs) */
   offlineOnly: boolean
 }
 
 const KEY = 'pelagic.library.v1'
-const DEFAULTS: LibraryPrefs = { tab: 'albums', albumSort: 'added', artistSort: 'name', songSort: 'added', songDesc: false, offlineOnly: false }
+const DEFAULTS: LibraryPrefs = { tab: 'all', albumSort: 'added', artistSort: 'name', songSort: 'added', songDesc: false, allSort: 'added', playlistSort: 'added', views: {}, offlineOnly: false }
 
 let prefs: LibraryPrefs = (() => {
   try {

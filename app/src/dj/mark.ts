@@ -1,94 +1,46 @@
 /**
- * DJ mark geometry (handoff_dj §1) shared by the React mark (DjMark.tsx) and the PNG used as
- * lock-screen / media-session art. A horizon line that fades at both ends, a glowing dot on it,
- * arcs rising above it at falling opacity and a faint reflection below — all in the DJ violet.
+ * DJ mark geometry (Material 3 Expressive redesign, DJMaterial.dc.html) shared by the React mark
+ * (DjMark.tsx) and the PNG used as lock-screen / media-session art: the scalloped violet dial knob
+ * with five detents and a warm-gold active detent at +30°.
  */
-export const ACCENT = 'rgb(198, 180, 242)'
-export const ACCENT_LIGHT = 'rgb(230,220,252)'
-export const accentA = (a: number) => `rgba(198, 180, 242,${a})`
-export const MARK_TILE = 'radial-gradient(85% 75% at 50% 64%, #1D1726 0%, #100F13 55%, #070708 100%)'
+export const ACCENT = 'oklch(0.84 0.09 290)'
+export const ACCENT_LIGHT = 'oklch(0.93 0.05 290)'
+export const accentA = (a: number) => `oklch(0.84 0.09 290 / ${a})`
+export const MARK_TILE = 'linear-gradient(180deg, oklch(0.34 0.08 290), oklch(0.27 0.07 292))'
 
-export interface MarkGeometry {
-  big: boolean
-  viewBox: string
-  cx: number
-  cy: number
-  horizon: [number, number]
-  arcs: { r: number; op: number }[]
-  reflections: { r: number; op: number }[]
-  dot: number
-  halo: number
-  blur: number
-  stroke: number
-  /** sonar ring radii (start → end) */
-  sonar: [number, number]
-  /** reduced-motion static ring */
-  still: number
-}
-
-export function markGeometry(size: number): MarkGeometry {
-  const big = size >= 100
-  if (big)
-    return {
-      big,
-      viewBox: '0 0 100 100',
-      cx: 50,
-      cy: 60,
-      horizon: [4, 96],
-      arcs: [9, 18, 27, 36, 45].map((r, i) => ({ r, op: [0.95, 0.6, 0.34, 0.17, 0.08][i] })),
-      reflections: [
-        { r: 9, op: 0.16 },
-        { r: 18, op: 0.08 },
-        { r: 27, op: 0.04 },
-      ],
-      dot: 2.2,
-      halo: 6,
-      blur: 2.4,
-      stroke: 1.5,
-      sonar: [9, 62],
-      still: 15,
-    }
-  return {
-    big,
-    viewBox: '0 0 24 24',
-    cx: 12,
-    cy: 15.5,
-    horizon: [1, 23],
-    arcs: [
-      { r: 4.5, op: 1 },
-      { r: 8.5, op: 0.5 },
-    ],
-    reflections: [{ r: 4.5, op: 0.18 }],
-    dot: 1.7,
-    halo: 3.2,
-    blur: 1.1,
-    stroke: size >= 40 ? 1.4 : 1.25,
-    sonar: [4.5, 12],
-    still: 6.5,
+export function knobPath(n = 9, amp = 0.06, R = 30, cx = 50, cy = 54): string {
+  const pts: string[] = []
+  const steps = n * 24
+  for (let i = 0; i < steps; i++) {
+    const t = (i / steps) * Math.PI * 2
+    const r = R * (1 - amp + amp * Math.cos(n * t))
+    pts.push(`${(cx + r * Math.cos(t)).toFixed(2)} ${(cy + r * Math.sin(t)).toFixed(2)}`)
   }
+  return 'M' + pts.join('L') + 'Z'
 }
 
-export const markRadius = (size: number) => (size >= 60 ? 10 : size >= 40 ? 8 : Math.max(4, Math.round(size * 0.24)))
-
-export const arcPath = (cx: number, cy: number, r: number, up: boolean) => `M ${cx - r} ${cy} A ${r} ${r} 0 0 ${up ? 1 : 0} ${cx + r} ${cy}`
+export const markRadius = (size: number) => (size > 100 ? Math.round(size * 0.27) : size > 60 ? 20 : 13)
 
 /** Static mark as an SVG document (for the PNG art). */
 export function markSvg(px: number): string {
-  const g = markGeometry(px)
-  const sw = (g.stroke * 100) / px // non-scaling stroke in a 100-unit viewBox
-  const parts: string[] = []
-  parts.push(
-    `<defs><radialGradient id="t" cx="50%" cy="64%" r="80%"><stop offset="0" stop-color="#1D1726"/><stop offset=".55" stop-color="#100F13"/><stop offset="1" stop-color="#070708"/></radialGradient>` +
-      `<linearGradient id="h" x1="0" x2="1"><stop offset="0" stop-color="${ACCENT}" stop-opacity="0"/><stop offset=".5" stop-color="${ACCENT}" stop-opacity=".75"/><stop offset="1" stop-color="${ACCENT}" stop-opacity="0"/></linearGradient>` +
-      `<filter id="b" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="${g.blur}"/></filter></defs>`,
+  const dots = [-55, -27.5, 0, 30, 55]
+    .map((a) => {
+      const rad = ((a - 90) * Math.PI) / 180
+      const x = (50 + 40 * Math.cos(rad)).toFixed(2)
+      const y = (54 + 40 * Math.sin(rad)).toFixed(2)
+      const active = a === 30
+      return `<circle cx="${x}" cy="${y}" r="${active ? 3.2 : 2.2}" fill="${active ? '#EFE3C2' : '#9678C6'}"/>`
+    })
+    .join('')
+  const knob = `<g transform="rotate(30 50 54)"><path d="${knobPath(9, 0.06, 30, 50, 54)}" fill="#D0BCFF"/><rect x="47.2" y="30" width="5.6" height="15" rx="2.8" fill="#381E72"/></g>`
+  return (
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${px}" height="${px}" viewBox="0 0 100 100">` +
+    `<defs><linearGradient id="t" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#483173"/><stop offset="1" stop-color="#322056"/></linearGradient></defs>` +
+    `<rect width="100" height="100" fill="url(#t)"/>` +
+    dots +
+    knob +
+    `</svg>`
   )
-  parts.push(`<rect width="100" height="100" fill="url(#t)"/>`)
-  parts.push(`<line x1="${g.horizon[0]}" x2="${g.horizon[1]}" y1="${g.cy}" y2="${g.cy}" stroke="url(#h)" stroke-width="${sw}"/>`)
-  for (const a of g.arcs) parts.push(`<path d="${arcPath(g.cx, g.cy, a.r, true)}" fill="none" stroke="${ACCENT}" stroke-opacity="${a.op}" stroke-width="${sw}" stroke-linecap="round"/>`)
-  for (const a of g.reflections) parts.push(`<path d="${arcPath(g.cx, g.cy, a.r, false)}" fill="none" stroke="${ACCENT}" stroke-opacity="${a.op}" stroke-width="${sw}"/>`)
-  parts.push(`<circle cx="${g.cx}" cy="${g.cy}" r="${g.halo}" fill="${ACCENT}" opacity=".4" filter="url(#b)"/>`)
-  parts.push(`<circle cx="${g.cx}" cy="${g.cy}" r="${g.dot}" fill="${ACCENT_LIGHT}"/>`)
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${px}" height="${px}" viewBox="${g.viewBox}">${parts.join('')}</svg>`
 }
 
 let pngMemo: Promise<string | null> | null = null
@@ -106,10 +58,10 @@ export function markPng(): Promise<string | null> {
           const ctx = canvas.getContext('2d')
           if (!ctx) return resolve(null)
           ctx.drawImage(img, 0, 0, px, px)
-          ctx.fillStyle = '#8A8A8E'
-          ctx.font = `${Math.round(px * 0.026)}px "IBM Plex Mono", monospace`
-          ctx.letterSpacing = '0.42em'
-          ctx.fillText('PELAGIC DJ', px * 0.07, px * 0.94)
+          ctx.fillStyle = '#C9B6F2'
+          ctx.font = `600 ${Math.round(px * 0.024)}px "Plus Jakarta Sans", sans-serif`
+          ctx.letterSpacing = '0.3em'
+          ctx.fillText('MATERIAL MUSIC DJ', px * 0.075, px * 0.935)
           resolve(canvas.toDataURL('image/png'))
         } catch {
           resolve(null)

@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Home screen widget icon (pelagic-kit.js: 24-grid line icons, 1.25 stroke) -->
+<!-- Material Symbols Rounded: skip_previous (FILL 1, opsz 24, wght 400) -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
     android:viewportWidth="24"
     android:viewportHeight="24">
-    <path android:fillColor="#FFFFFFFF" android:pathData="M18,6.5v11a0.6,0.6 0,0 1,-0.9 0.5L9,12.5a0.6,0.6 0,0 1,0 -1L17.1,6a0.6,0.6 0,0 1,0.9 0.5z" />
-    <path android:strokeColor="#FFFFFFFF" android:strokeWidth="1.25" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M6,6v12" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M7,6c0.55,0 1,0.45 1,1v10c0,0.55 -0.45,1 -1,1s-1,-0.45 -1,-1V7C6,6.45 6.45,6 7,6zM10.66,12.82l5.77,4.07c0.66,0.47 1.58,-0.01 1.58,-0.82V7.93c0,-0.81 -0.91,-1.28 -1.58,-0.82l-5.77,4.07C10.09,11.58 10.09,12.42 10.66,12.82z" />
 </vector>

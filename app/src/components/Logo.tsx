@@ -1,98 +1,65 @@
 /**
- * The Pelagic "Porthole" mark (final 10c, "Minimal"): a thin light ring around a dark glass window,
- * white equaliser pills rising from a soft waterline. Grayscale, light from the top left. Geometry is
- * the 1024 canvas of design_handoff_app_icon/PortholeMinimal.dc.html variant "i" (copied exactly).
- * `tile` adds the squircle app-icon tile; without it the box hugs the ring. Sizes up to 48 px use the
- * "small" variant (4 wide bars, no waterline / bubbles / glow). The ring and waterline are 2 px at any size.
+ * Material Music app mark: "Ink on coral" (handoff Pelagic Icon v2, option 2b, chosen).
+ * Coral gradient tile oklch(0.82 0.11 40) → oklch(0.75 0.13 34), a lighter 10-point burst
+ * oklch(0.86 0.09 42) rotated 10°, and an eighth note in dark ink oklch(0.24 0.04 35).
+ * Drawn on the handoff's 376-unit tile. Used wherever the logo appears.
  */
 import { useId } from 'react'
 
-interface PortholeProps {
-  /** rendered width/height in px (without `tile` this is the ring's box) */
+const BURST = 'M100.00 50.00L99.46 52.59L97.99 55.04L95.93 57.27L93.77 59.30L91.99 61.25L90.90 63.29L90.58 65.58L90.88 68.20L91.43 71.11L91.79 74.12L91.54 76.98L90.45 79.39L88.49 81.17L85.86 82.29L82.88 82.88L79.94 83.26L77.36 83.78L75.27 84.79L73.67 86.46L72.38 88.75L71.11 91.43L69.63 94.08L67.75 96.24L65.45 97.55L62.82 97.84L60.03 97.20L57.27 95.93L54.68 94.50L52.27 93.41L50.00 93.00L47.73 93.41L45.32 94.50L42.73 95.93L39.97 97.20L37.18 97.84L34.55 97.55L32.25 96.24L30.37 94.08L28.89 91.43L27.63 88.75L26.33 86.46L24.73 84.79L22.64 83.78L20.06 83.26L17.12 82.88L14.14 82.29L11.51 81.17L9.55 79.39L8.46 76.98L8.21 74.12L8.57 71.11L9.12 68.20L9.42 65.58L9.10 63.29L8.01 61.25L6.23 59.30L4.07 57.27L2.01 55.04L0.54 52.59L0.00 50.00L0.54 47.41L2.01 44.96L4.07 42.73L6.23 40.70L8.01 38.75L9.10 36.71L9.42 34.42L9.12 31.80L8.57 28.89L8.21 25.87L8.46 23.02L9.55 20.61L11.51 18.83L14.14 17.71L17.12 17.12L20.06 16.74L22.64 16.22L24.73 15.21L26.33 13.54L27.62 11.25L28.89 8.57L30.37 5.92L32.25 3.76L34.55 2.45L37.18 2.16L39.97 2.80L42.73 4.07L45.32 5.50L47.73 6.59L50.00 7.00L52.27 6.59L54.68 5.50L57.27 4.07L60.03 2.80L62.82 2.16L65.45 2.45L67.75 3.76L69.63 5.92L71.11 8.57L72.38 11.25L73.67 13.54L75.27 15.21L77.36 16.22L79.94 16.74L82.88 17.12L85.86 17.71L88.49 18.83L90.45 20.61L91.54 23.02L91.79 25.87L91.43 28.89L90.88 31.80L90.58 34.42L90.90 36.71L91.99 38.75L93.77 40.70L95.93 42.73L97.99 44.96L99.46 47.41Z'
+
+interface MarkProps {
   size?: number
-  /** squircle tile behind the porthole (app-icon look) */
+  /** rounded tile (sidebar, top bar); false = square full-bleed (launcher masks it) */
   tile?: boolean
   className?: string
 }
 
-const pill = (x: number, y: number, w: number, h: number) => {
-  const r = w / 2
-  const hh = Math.max(h, w)
-  return `M${x} ${y + r}a${r} ${r} 0 0 1 ${w} 0v${hh - w}a${r} ${r} 0 0 1 ${-w} 0Z`
-}
-
-function barsPath(small: boolean) {
-  const hs = small ? [120, 220, 300, 200] : [120, 208, 288, 184, 104]
-  const w = small ? 64 : 36
-  const gap = small ? 40 : 28
-  const x0 = 512 - (hs.length * w + (hs.length - 1) * gap) / 2
-  return hs.map((h, i) => {
-    const x = x0 + i * (w + gap)
-    return small ? pill(x, 512 - h / 2, w, h) : pill(x, 600 - h, w, h + w / 2)
-  }).join('')
-}
-
-const CURVE = 'M140 618 C 260 586, 380 586, 512 618 S 764 650, 884 618'
-const BARS_SMALL = barsPath(true)
-const BARS_FULL = barsPath(false)
-
-export function PortholeMark({ size = 150, tile = false, className }: PortholeProps) {
+export function AppMark({ size = 36, tile = true, className }: MarkProps) {
   const id = useId().replace(/:/g, '')
-  const small = size <= 48
-  const u = (n: string) => `${id}${n}`
-  const ref = (n: string) => `url(#${u(n)})`
-  // tight box around the ring (r 360 + a little for the glow) unless the tile is shown
-  const viewBox = tile ? '0 0 1024 1024' : '132 132 760 760'
   return (
-    <svg className={className} width={size} height={size} viewBox={viewBox} aria-hidden style={{ display: 'block', flex: 'none' }}>
+    <svg className={className} width={size} height={size} viewBox="0 0 376 376" aria-hidden style={{ display: 'block', flex: 'none' }}>
       <defs>
-        <linearGradient id={u('bg')} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#151518" /><stop offset="1" stopColor="#0A0A0C" /></linearGradient>
-        <linearGradient id={u('gl')} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#232428" /><stop offset="1" stopColor="#08080A" /></linearGradient>
-        <filter id={u('glow')} x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="9" result="b" /><feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
-        <clipPath id={u('win')}><circle cx="512" cy="512" r="359" /></clipPath>
-        <clipPath id={u('tile')}><rect width="1024" height="1024" rx="236" /></clipPath>
+        <linearGradient id={`g${id}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="oklch(0.82 0.11 40)" />
+          <stop offset="1" stopColor="oklch(0.75 0.13 34)" />
+        </linearGradient>
+        <clipPath id={`c${id}`}>
+          <rect width="376" height="376" rx={tile ? 125 : 0} />
+        </clipPath>
       </defs>
-      <g clipPath={tile ? ref('tile') : undefined}>
-        {tile && <rect width="1024" height="1024" fill={ref('bg')} />}
-        <circle cx="512" cy="512" r="360" fill={ref('gl')} />
-        <circle cx="512" cy="512" r="360" fill="none" stroke="#D8D8DC" strokeWidth="2" vectorEffect="non-scaling-stroke" />
-        <path d="M232 430 A292 292 0 0 1 430 232" fill="none" stroke="#fff" strokeOpacity="0.2" strokeWidth={small ? 28 : 18} strokeLinecap="round" />
-        {!small && (
-          <>
-            <circle cx="676" cy="336" r="9" fill="none" stroke="#fff" strokeOpacity="0.3" strokeWidth="4" />
-            <circle cx="700" cy="300" r="5" fill="#fff" fillOpacity="0.3" />
-            <g clipPath={ref('win')}>
-              <path d={`${CURVE} L884 884 L140 884 Z`} fill="#fff" fillOpacity="0.05" />
-              <path d={CURVE} fill="none" stroke="#fff" strokeOpacity="0.4" strokeWidth="2" vectorEffect="non-scaling-stroke" />
-            </g>
-          </>
-        )}
-        <path d={small ? BARS_SMALL : BARS_FULL} fill="#fff" filter={small ? undefined : ref('glow')} />
+      <g clipPath={`url(#c${id})`}>
+        <rect width="376" height="376" fill={`url(#g${id})`} />
+        <g transform="translate(62 50) rotate(10 138 138) scale(2.76)">
+          <path d={BURST} fill="oklch(0.86 0.09 42)" />
+        </g>
+        <g fill="oklch(0.24 0.04 35)">
+          <ellipse cx="146" cy="265" rx="62" ry="53" transform="rotate(-22 146 265)" />
+          <rect x="176" y="70" width="30" height="200" rx="15" />
+          <path d="M191 70 A90 104 0 0 1 281 174 L191 174 Z" />
+        </g>
       </g>
-      {tile && <rect x="2" y="2" width="1020" height="1020" rx="234" fill="none" stroke="#fff" strokeOpacity="0.08" strokeWidth="4" />}
     </svg>
   )
 }
 
-interface WordmarkProps {
-  size?: number
-  className?: string
-}
+/** @deprecated Pelagic porthole; kept as an alias while screens move to the redesign. */
+export const PortholeMark = AppMark
 
-export function Wordmark({ size = 30, className }: WordmarkProps) {
+export function Wordmark({ size = 18, className }: { size?: number; className?: string }) {
   return (
-    <span className={`t-wordmark ${className ?? ''}`} style={{ fontSize: size, lineHeight: 1 }}>
-      Pelagic
+    <span className={className} style={{ fontSize: size, lineHeight: 1.1, fontWeight: 600, letterSpacing: '-0.01em' }}>
+      Material Music
     </span>
   )
 }
 
-/** Mark + wordmark stacked (sign-in, first-run, about). */
-export function Lockup({ size = 150 }: { size?: number }) {
+/** Mark + wordmark stacked (sign-in, first run, about). */
+export function Lockup({ size = 96 }: { size?: number }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: size * 0.21 }}>
-      <PortholeMark size={size} />
-      <Wordmark size={size * 0.2} />
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: size * 0.2 }}>
+      <AppMark size={size} />
+      <Wordmark size={size * 0.28} />
     </div>
   )
 }

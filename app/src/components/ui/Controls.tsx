@@ -59,6 +59,9 @@ export function Segmented<T extends string>({ value, options, onChange, label }:
             aria-checked={on}
             tabIndex={on ? 0 : -1}
             className="seg-opt"
+            onPointerDown={(e) => {
+              if (e.button === 0 && e.pointerType === 'mouse') onChange(o.value)
+            }}
             onClick={() => onChange(o.value)}
           >
             {o.label}

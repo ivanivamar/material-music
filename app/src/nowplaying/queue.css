@@ -184,3 +184,139 @@
 
 /* toasts stay clear of the open popover */
 html[data-qp] .toasts.toasts-shell { right: 452px; }
+
+/* ── Material redesign (NowPlayingMaterial queue panel, neutral surfaces) ── */
+.qp-scrim { bottom: 0; background: rgba(5, 5, 5, .35); }
+.qp { top: 20px; right: 38px; bottom: 146px; transition: opacity 500ms cubic-bezier(0.2, 0, 0, 1), transform 500ms cubic-bezier(0.2, 0, 0, 1), visibility 0s linear .5s; }
+.qp.is-open { transition: opacity 500ms cubic-bezier(0.2, 0, 0, 1), transform 500ms cubic-bezier(0.2, 0, 0, 1), visibility 0s; }
+.qp.is-over-np { top: 96px; right: 20px; bottom: 20px; width: min(432px, 36vw); }
+.qp-card {
+  border: 0; border-radius: var(--r-xl); background: var(--glass-panel); color: oklch(0.95 0.006 40);
+  box-shadow: 0 40px 100px -30px rgba(0, 0, 0, .85), inset 0 0 0 1px var(--glass-panel-edge);
+}
+.qp-head { border-bottom: 0; box-shadow: inset 0 -1px 0 rgba(255, 255, 255, .07); }
+.qp-title { font-weight: 600; }
+.qp-count { font-family: var(--font-sans); font-size: 12px; letter-spacing: 0; color: oklch(0.62 0.012 40); font-variant-numeric: tabular-nums; }
+.qp-tool { border: 0; box-shadow: inset 0 0 0 1.5px oklch(0.40 0.01 40 / 0.4); color: oklch(0.95 0.006 40); }
+.qp-tool .ms { font-size: 22px; }
+.qp-tool:hover:not(:disabled) { background: rgba(255, 255, 255, .07); }
+.qp-tool-text { font-size: 12px; font-weight: 600; color: oklch(0.80 0.014 40); }
+.qp-tool-x { box-shadow: none; }
+.qp-tool.is-on, .qp-tool.is-on:hover:not(:disabled) { background: var(--album-hi); color: var(--on-album); box-shadow: none; }
+.qp-tool.is-on .ms { filter: none; }
+.qp-src-k { font-family: var(--font-sans); font-size: 11px; font-weight: 700; letter-spacing: .14em; color: oklch(0.80 0.014 40); }
+.qp-src-name { font-size: 12px; font-weight: 500; }
+.qp-rule-l { font-family: var(--font-sans); font-size: 11px !important; font-weight: 700; letter-spacing: .14em !important; color: oklch(0.95 0.006 40) !important; }
+.qp-rule-r { font-family: var(--font-sans); font-size: 11px !important; letter-spacing: 0 !important; color: oklch(0.62 0.012 40) !important; font-variant-numeric: tabular-nums; }
+.qp-rule-line { background: rgba(255, 255, 255, .07) !important; }
+.qp-t { font-size: 14px; font-weight: 600; }
+.qp-a { font-size: 12px; color: oklch(0.80 0.014 40); }
+.qp-d { font-family: var(--font-sans); font-size: 11px; letter-spacing: 0; color: oklch(0.80 0.014 40); font-variant-numeric: tabular-nums; }
+.qp-pn { font-family: var(--font-sans); letter-spacing: 0; color: oklch(0.62 0.012 40); }
+.qp-cover, .qp-cover .plc { border-radius: 10px; }
+.qp-grip { color: oklch(0.62 0.012 40); }
+.qp-grip .ms { font-size: 18px; }
+.qp-act { color: oklch(0.62 0.012 40); border-radius: 999px; }
+.qp-act:hover:not(:disabled) { background: oklch(0.34 0.01 40); color: #fff; }
+.qp-act .ms { font-size: 20px; }
+
+/* ── Material 3 segmented list rows (matches .dt-list / .dt-row in detail.css) ── */
+.qp-row { border-radius: 8px; }
+.qp-row-in {
+  border-radius: 8px; border: 0;
+  transition: background-color 150ms var(--ease-std), border-radius 350ms var(--ease-shape), opacity 200ms;
+}
+.qp-row.is-first, .qp-row.is-first .qp-row-in, .qp-row.is-first .qp-swipe-bg {
+  border-top-left-radius: 22px; border-top-right-radius: 22px;
+}
+.qp-row.is-last, .qp-row.is-last .qp-row-in, .qp-row.is-last .qp-swipe-bg {
+  border-bottom-left-radius: 22px; border-bottom-right-radius: 22px;
+}
+.qp-row:focus-visible .qp-row-in { box-shadow: inset 0 0 0 2px var(--album-hi); }
+
+/* Next up: raised M3 list surface, 2px apart */
+.qp-nrow { height: 58px; }
+.qp-nrow .qp-row-in {
+  padding: 0 10px 0 8px;
+  background: oklch(0.23 0.008 40);
+}
+.qp-nrow:hover .qp-row-in { background: oklch(0.27 0.01 40); }
+.qp-ncover { width: 42px; height: 42px; border-radius: 10px; }
+
+/* Played: clearly receded M3 surface, check mark + Played pill + desaturated cover */
+.qp-prow { height: 56px; }
+.qp-prow .qp-row-in {
+  padding: 0 12px 0 10px;
+  opacity: 1;
+  background: oklch(0.195 0.006 40);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .035);
+}
+.qp-prow:hover .qp-row-in, .qp-prow:focus-visible .qp-row-in {
+  background: oklch(0.25 0.009 40);
+}
+.qp-pnum {
+  position: relative; width: 22px; height: 22px; flex: none;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 999px; background: rgba(255, 255, 255, .06);
+  color: oklch(0.66 0.012 40);
+  transition: background-color 150ms var(--ease-std), color 150ms var(--ease-std);
+}
+.qp-pnum .ms { font-size: 15px; }
+.qp-pn-play { display: none; }
+.qp-prow:hover .qp-pnum { background: var(--album-hi); color: var(--on-album); }
+.qp-prow:hover .qp-pn-done { display: none; }
+.qp-prow:hover .qp-pn-play { display: inline-flex; }
+.qp-pcover { width: 38px; height: 38px; border-radius: 9px; filter: grayscale(.8) brightness(.78); transition: filter 200ms var(--ease-std); }
+.qp-prow:hover .qp-pcover { filter: none; }
+.qp-prow .qp-t { color: oklch(0.68 0.012 40); font-weight: 500; transition: color 150ms var(--ease-std); }
+.qp-prow .qp-a { color: oklch(0.55 0.01 40); }
+.qp-prow .qp-d { color: oklch(0.55 0.01 40); }
+.qp-prow:hover .qp-t { color: oklch(0.95 0.006 40); }
+.qp-prow:hover .qp-a, .qp-prow:hover .qp-d { color: oklch(0.80 0.014 40); }
+.qp-played-tag {
+  flex: none; height: 20px; padding: 0 7px; border-radius: 999px;
+  display: inline-flex; align-items: center;
+  background: rgba(255, 255, 255, .05);
+  font-size: 10px; font-weight: 600; letter-spacing: .04em; color: oklch(0.62 0.012 40);
+}
+.qp-prow:hover .qp-played-tag { background: rgba(255, 255, 255, .1); color: oklch(0.85 0.01 40); }
+
+/* ── Now playing: distinct M3 Expressive active card ── */
+.qp-now {
+  border: 0; border-radius: 22px; cursor: pointer; user-select: none;
+  background:
+    linear-gradient(125deg, color-mix(in oklch, var(--album-hi) 22%, oklch(0.28 0.012 40)), oklch(0.23 0.009 40) 72%);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in oklch, var(--album-hi) 42%, rgba(255, 255, 255, .12)),
+    0 18px 40px -20px rgba(0, 0, 0, .9);
+  transition: transform 320ms var(--ease-shape), box-shadow 220ms var(--ease-std);
+}
+.qp-now:hover {
+  box-shadow:
+    inset 0 0 0 1.5px color-mix(in oklch, var(--album-hi) 58%, rgba(255, 255, 255, .18)),
+    0 20px 44px -18px rgba(0, 0, 0, .95);
+}
+.qp-now:active { transform: scale(.99); }
+.qp-now-cover-wrap { position: relative; width: 52px; height: 52px; flex: none; border-radius: 14px; overflow: hidden; }
+.qp-now-cover { width: 100%; height: 100%; border-radius: 14px; }
+.qp-now-play {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  background: rgba(0, 0, 0, .48); color: #fff; opacity: 0;
+  transition: opacity 150ms var(--ease-std);
+}
+.qp-now-play .ms { font-size: 26px; }
+.qp-now:hover .qp-now-play, .qp-now:focus-visible .qp-now-play { opacity: 1; }
+.qp-now-eye { font-family: var(--font-sans); font-size: 11px; font-weight: 700; letter-spacing: .14em; color: var(--album-hi); }
+.qp-now-t { font-size: 15px; font-weight: 700; color: var(--album-hi); }
+.qp-now-time { font-family: var(--font-sans); font-size: 11px; letter-spacing: 0; font-variant-numeric: tabular-nums; }
+.qp-now-dur { color: oklch(0.68 0.012 40); }
+.qp-now-bar { height: 3px; background: var(--album-hi); box-shadow: 0 0 10px var(--album-hi); }
+.qp-drop { background: var(--album-hi) !important; box-shadow: 0 0 8px var(--album-hi) !important; }
+.qp-empty-t { font-size: 16px; font-weight: 500; }
+.qp-empty-b { font-size: 12px; color: oklch(0.80 0.014 40); }
+.qp-restore { border: 0; border-radius: 12px; box-shadow: inset 0 0 0 1px oklch(0.40 0.01 40 / 0.4); background: none; font-weight: 600; font-size: 12px; }
+.qp-foot { font-family: var(--font-sans); font-size: 11px; font-weight: 600; letter-spacing: .12em; color: oklch(0.62 0.012 40); border-top: 0; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .07); }
+.qp-swipe-bg { background: oklch(0.55 0.17 25); color: oklch(0.97 0.02 25); border-radius: 8px; }
+
+/* the playing-bars in the Now playing card follow the cover colour */
+.qp-now-eye .eq > span { background: var(--album-hi); box-shadow: none; }

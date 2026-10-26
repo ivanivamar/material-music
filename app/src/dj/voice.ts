@@ -58,7 +58,7 @@ export const setVoiceHost = (h: VoiceHost) => {
 }
 
 /** Where /api lives: the site itself on PC; the Firebase copy of the site from the Android app. */
-const API_BASE: string = isNative ? ((import.meta.env.VITE_PELAGIC_API as string | undefined) ?? 'https://pelagic-sound.web.app/') : import.meta.env.BASE_URL
+const API_BASE: string = isNative ? ((import.meta.env.VITE_PELAGIC_API as string | undefined) ?? 'https://material-music-app.web.app/') : import.meta.env.BASE_URL
 
 const words = (line: string) => line.split(/\s+/).filter(Boolean)
 

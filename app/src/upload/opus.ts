@@ -222,7 +222,7 @@ export function muxOgg(m: MuxInput): Blob {
 
 function opusTags(comments: [string, string][]): Uint8Array {
   const enc = new TextEncoder()
-  const vendor = enc.encode('Pelagic (WebCodecs libopus)')
+  const vendor = enc.encode('Material Music (WebCodecs libopus)')
   const list = comments
     .filter(([k]) => k !== 'METADATA_BLOCK_PICTURE' && k !== 'COVERART' && k !== 'COVERARTMIME')
     .map(([k, v]) => enc.encode(`${k}=${v}`))
