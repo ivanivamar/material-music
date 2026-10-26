@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0..1,0&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:oklch(0.12 0.004 40);-webkit-font-smoothing:antialiased}
+a{color:oklch(0.80 0.115 38)}a:hover{color:oklch(0.88 0.08 38)}
+.ms{font-family:'Material Symbols Rounded';font-weight:normal;font-style:normal;line-height:1;letter-spacing:normal;text-transform:none;white-space:nowrap;direction:ltr;-webkit-font-feature-settings:'liga';font-feature-settings:'liga';user-select:none}
+@keyframes pm-eq{0%,100%{transform:scaleY(.3)}50%{transform:scaleY(1)}}
+@keyframes pm-spin{to{transform:rotate(360deg)}}
+@keyframes pm-wave{from{-webkit-mask-position:0 0;mask-position:0 0}to{-webkit-mask-position:32px 0;mask-position:32px 0}}
+@keyframes pm-drift-a{0%{transform:translate(0,0) scale(1)}100%{transform:translate(18%,14%) scale(1.25)}}
+@keyframes pm-drift-b{0%{transform:translate(0,0) scale(1.1)}100%{transform:translate(-22%,16%) scale(0.9)}}
+@keyframes np-in{from{transform:translateY(6%);opacity:0}to{transform:none;opacity:1}}
+@keyframes np-pop{from{transform:translateY(-10px) scale(0.98);opacity:0}to{transform:none;opacity:1}}
+@keyframes np-sheet{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+@keyframes np-fade{from{opacity:0}to{opacity:1}}
+@keyframes dj-knob{0%{transform:rotate(-55deg);animation-timing-function:cubic-bezier(.42,1.67,.21,.9)}35%{transform:rotate(30deg);animation-timing-function:linear}55%{transform:rotate(30deg);animation-timing-function:cubic-bezier(.42,1.67,.21,.9)}90%,100%{transform:rotate(-55deg)}}
+@media (prefers-reduced-motion: reduce){*{animation:none !important}}
+</style>
+</helmet>
+
+<div onClick="{{ stop }}" style="position:relative; width:{{ W }}px; height:{{ H }}px; border-radius:{{ rad }}px; overflow:hidden; isolation:isolate; background:{{ s.glass }}; backdrop-filter:blur(44px) saturate(1.4); -webkit-backdrop-filter:blur(44px) saturate(1.4); box-shadow:inset 0 0 0 1px {{ s.rim }}, inset 0 1px 0 rgba(255,255,255,0.08); color:{{ s.on }}; font-family:'Google Sans Flex',system-ui,sans-serif; animation:np-in 480ms cubic-bezier(0.38,1.21,0.22,1); transition:background 600ms cubic-bezier(0.31,0.94,0.34,1);">
+
+  <sc-if value="{{ desk }}" hint-placeholder-val="{{ true }}">
+    <div style="position:absolute; inset:0; display:flex; flex-direction:column;">
+      <div style="height:84px; flex:none; padding:0 24px; display:grid; grid-template-columns:minmax(0,1fr) auto minmax(0,1fr); align-items:center;">
+        <div onClick="{{ doClose }}" title="Close · Esc" style="justify-self:start; width:48px; height:48px; border-radius:28px; background:rgba(255,255,255,0.08); display:flex; align-items:center; justify-content:center; cursor:pointer;" style-hover="background:rgba(255,255,255,0.16);"><span class="ms" style="font-size:28px;">keyboard_arrow_down</span></div>
+        <div style="text-align:center; min-width:0; display:flex; flex-direction:column; align-items:center; gap:4px;">
+          <div style="font-size:11px; font-weight:700; letter-spacing:0.12em; color:{{ s.onVar }};">PLAYING FROM</div>
+          <div style="font-size:14px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:480px;">{{ source }}</div>
+        </div>
+        <div style="justify-self:end; display:flex; gap:4px;">
+          <span class="ms" style="font-size:24px; padding:12px; color:{{ s.onVar }};">more_vert</span>
+        </div>
+      </div>
+      <div style="flex:1; min-height:0; display:flex; align-items:center; justify-content:center; gap:56px; padding:0 {{ padM }}px 36px;">
+        <div style="flex:none; transform:rotate(-3deg); filter:drop-shadow(0 30px 40px rgba(0,0,0,0.55));">{{ artEl }}</div>
+        <div style="flex:1; min-width:0; max-width:560px; display:flex; flex-direction:column; gap:28px;">
+          <div style="display:flex; flex-direction:column; gap:12px; min-width:0;">
+            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+              <div style="display:flex; align-items:center; gap:5px; height:24px; padding:0 10px; border-radius:12px; box-shadow:inset 0 0 0 1.5px {{ s.onVar }}; font-size:11px; line-height:1; font-variant-numeric:tabular-nums;"><span style="font-weight:700; letter-spacing:0.04em; color:{{ s.primary }};">FLAC</span><span style="font-weight:500; color:{{ s.onVar }};">{{ q }}</span></div>
+              <sc-if value="{{ hasChip }}"><span style="height:24px; padding:0 10px; border-radius:12px; background:oklch(0.84 0.09 290); color:oklch(0.28 0.08 292); display:flex; align-items:center; font-size:11px; font-weight:700;">{{ chip }}</span></sc-if>
+            </div>
+            <div style="font-size:{{ titleFs }}px; font-weight:700; letter-spacing:-0.025em; line-height:1.08; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; text-wrap:balance;">{{ title }}</div>
+            <div style="font-size:16px; color:{{ s.onVar }}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ by }}</div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:6px;">
+            <div onPointerDown="{{ seekDown }}" onPointerMove="{{ seekMove }}" onPointerUp="{{ seekUp }}" style="padding:8px 0; cursor:pointer; touch-action:none;">{{ waveEl }}</div>
+            <div style="display:flex; justify-content:space-between; font-size:12px; color:{{ s.onVar }}; font-variant-numeric:tabular-nums;"><span>{{ posL }}</span><span>-{{ remL }}</span></div>
+          </div>
+          <div style="display:flex; align-items:center; justify-content:space-between; max-width:460px;">
+            <div style="width:76px; flex:none; display:flex; justify-content:center;"><div onClick="{{ doShuffle }}" title="Shuffle" style="width:{{ shufW }}px; height:56px; border-radius:{{ shufR }}px; background:{{ shufBg }}; color:{{ shufFg }}; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:border-radius 480ms cubic-bezier(0.38,1.21,0.22,1), width 480ms cubic-bezier(0.38,1.21,0.22,1), background 200ms cubic-bezier(0.31,0.94,0.34,1), color 200ms cubic-bezier(0.31,0.94,0.34,1), transform 350ms cubic-bezier(0.42,1.67,0.21,0.9);" style-active="transform:scale(0.9);"><span class="ms" style="font-size:28px;">shuffle</span></div></div>
+            <div onClick="{{ doPrev }}" title="Previous" style="width:64px; height:64px; border-radius:32px; display:flex; align-items:center; justify-content:center; cursor:pointer;" style-hover="background:rgba(255,255,255,0.08);"><span class="ms" style="font-size:36px; font-variation-settings:'FILL' 1;">skip_previous</span></div>
+            <div onClick="{{ doToggle }}" title="Play / pause · Space" style="cursor:pointer; transition:transform 350ms cubic-bezier(0.42,1.67,0.21,0.9);" style-active="transform:scale(0.92);">{{ playEl }}</div>
+            <div onClick="{{ doNext }}" title="Next" style="width:64px; height:64px; border-radius:32px; display:flex; align-items:center; justify-content:center; cursor:pointer;" style-hover="background:rgba(255,255,255,0.08);"><span class="ms" style="font-size:36px; font-variation-settings:'FILL' 1;">skip_next</span></div>
+            <div style="width:76px; flex:none; display:flex; justify-content:center;"><div onClick="{{ doRepeat }}" title="{{ repT }}" style="width:{{ repW }}px; height:56px; border-radius:{{ repR }}px; background:{{ repBg }}; color:{{ repFg }}; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:border-radius 480ms cubic-bezier(0.38,1.21,0.22,1), width 480ms cubic-bezier(0.38,1.21,0.22,1), background 200ms cubic-bezier(0.31,0.94,0.34,1), color 200ms cubic-bezier(0.31,0.94,0.34,1), transform 350ms cubic-bezier(0.42,1.67,0.21,0.9);" style-active="transform:scale(0.9);"><span class="ms" style="font-size:28px;">{{ repIc }}</span></div></div>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; row-gap:12px;">
+            <div onClick="{{ doLyrics }}" style="height:40px; padding:0 16px 0 12px; border-radius:{{ lyR }}px; transition:border-radius 480ms cubic-bezier(0.38,1.21,0.22,1), background 250ms; background:{{ lyBg }}; color:{{ lyFg }}; box-shadow:inset 0 0 0 1px {{ lyBd }}; display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; cursor:pointer;"><span class="ms" style="font-size:22px;">lyrics</span>Lyrics</div>
+            <div onClick="{{ doDj }}" title="{{ djTip }}" style="position:relative; height:40px; padding:0 16px 0 12px; border-radius:{{ djR }}px; transition:border-radius 350ms cubic-bezier(0.42,1.67,0.21,0.9), background 200ms cubic-bezier(0.31,0.94,0.34,1), color 200ms cubic-bezier(0.31,0.94,0.34,1), transform 350ms cubic-bezier(0.42,1.67,0.21,0.9); background:{{ djBg }}; color:{{ djFg }}; box-shadow:{{ djSh }}; display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; cursor:pointer; flex:none;" style-active="transform:scale(0.95);">{{ djGlyph }}DJ<sc-if value="{{ djOn }}"><span style="font-weight:500; opacity:0.8;">On air</span></sc-if></div>
+            <div onClick="{{ doQueue }}" style="height:40px; padding:0 16px 0 12px; border-radius:{{ quR }}px; transition:border-radius 480ms cubic-bezier(0.38,1.21,0.22,1), background 250ms; background:{{ quBg }}; color:{{ quFg }}; box-shadow:inset 0 0 0 1px {{ quBd }}; display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; cursor:pointer;"><span class="ms" style="font-size:22px;">queue_music</span>Queue<span style="font-weight:500; opacity:0.8; font-variant-numeric:tabular-nums;">{{ upCount }}</span></div>
+            <div style="flex:1;"></div>
+            <div style="display:flex; align-items:center; gap:10px;"><span onClick="{{ doMute }}" class="ms" style="font-size:24px; color:{{ s.onVar }}; cursor:pointer;">{{ volIc }}</span><div onPointerDown="{{ volDown }}" onPointerMove="{{ volMove }}" onPointerUp="{{ volUp }}" style="width:132px; padding:10px 0; cursor:pointer; touch-action:none;"><div style="position:relative; height:6px; border-radius:4px; background:{{ s.track }};"><div style="width:{{ volPct }}%; height:100%; border-radius:4px; background:{{ s.on }};"></div><div style="position:absolute; left:{{ volPct }}%; top:-5px; width:16px; height:16px; margin-left:-8px; border-radius:8px; background:{{ s.on }}; box-shadow:0 2px 6px rgba(0,0,0,0.4);"></div></div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <sc-if value="{{ popOn }}"><div onClick="{{ closePanel }}" style="position:absolute; inset:0; z-index:20; background:rgba(5,5,5,0.35); animation:np-fade 300ms ease;"></div></sc-if>
+
+    <sc-if value="{{ isQueue }}">
+      <div onClick="{{ stop }}" style="position:absolute; right:20px; top:96px; bottom:20px; width:{{ popW }}px; z-index:21; border-radius:28px; background:{{ s.pop }}; backdrop-filter:blur(28px) saturate(1.2); -webkit-backdrop-filter:blur(28px) saturate(1.2); box-shadow:0 40px 100px -30px rgba(0,0,0,0.85), inset 0 0 0 1px {{ s.edge }}; display:flex; flex-direction:column; overflow:hidden; transform-origin:top right; animation:np-pop 500ms cubic-bezier(0.2,0,0,1);">
+        <div style="padding:22px 22px 14px; display:flex; flex-direction:column; gap:14px; box-shadow:inset 0 -1px 0 {{ s.hair }};">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <div style="flex:1; min-width:0; display:flex; align-items:baseline; gap:10px;"><div style="font-size:24px; font-weight:600; letter-spacing:-0.015em;">Queue</div><div style="font-size:12px; color:{{ s.dim }}; font-variant-numeric:tabular-nums;">{{ upCount2 }}</div></div>
+            <div onClick="{{ doShuffleUp }}" title="Shuffle up next" style="width:40px; height:40px; border-radius:12px; box-shadow:inset 0 0 0 1.5px {{ s.edge }}; display:flex; align-items:center; justify-content:center; cursor:pointer;" style-hover="background:rgba(255,255,255,0.07);"><span class="ms" style="font-size:22px;">shuffle</span></div>
+            <div onClick="{{ doClear }}" style="height:40px; padding:0 14px; border-radius:12px; box-shadow:inset 0 0 0 1.5px {{ s.edge }}; display:flex; align-items:center; font-size:12px; font-weight:600; color:{{ s.onVar }}; cursor:pointer;" style-hover="background:rgba(255,255,255,0.07);">Clear</div>
+            <div onClick="{{ closePanel }}" title="Close" style="width:40px; height:40px; border-radius:12px; display:flex; align-items:center; justify-content:center; cursor:pointer;" style-hover="background:rgba(255,255,255,0.07);"><span class="ms" style="font-size:22px;">close</span></div>
+          </div>
+          <div style="display:flex; align-items:center; gap:10px; min-width:0;">{{ srcArt }}<div style="flex:none; font-size:11px; font-weight:700; letter-spacing:0.14em; color:{{ s.onVar }};">PLAYING FROM</div><div style="flex:1; min-width:0; font-size:12px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ source }}</div></div>
+        </div>
+        <div ref="{{ qRef }}" style="position:relative; flex:1; min-height:0; overflow-y:auto; padding:14px 12px 16px; scrollbar-width:thin; scrollbar-color:rgba(255,255,255,0.14) transparent;">
+          <sc-if value="{{ hasPlayed }}">
+            <div style="height:40px; padding:0 10px; display:flex; align-items:center; gap:12px;"><div style="font-size:11px; font-weight:700; letter-spacing:0.14em;">PLAYED</div><div style="flex:1; height:1px; background:{{ s.hair }};"></div><div style="font-size:11px; color:{{ s.dim }}; font-variant-numeric:tabular-nums;">{{ playedMeta }}</div></div>
+            <sc-for list="{{ played }}" as="r"><div onClick="{{ r.replay }}" title="Play again" style="height:54px; padding:0 10px; border-radius:12px; display:flex; align-items:center; gap:12px; opacity:0.5; cursor:pointer; transition:opacity 200ms;" style-hover="opacity:1; background:rgba(255,255,255,0.04);"><div style="width:18px; font-size:11px; color:{{ s.dim }}; font-variant-numeric:tabular-nums;">{{ r.n }}</div><div style="filter:grayscale(0.4); display:flex;">{{ r.art }}</div><div style="flex:1; min-width:0;"><div style="font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ r.t }}</div><div style="font-size:12px; color:{{ s.onVar }}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ r.by }}</div></div><div style="font-size:11px; color:{{ s.onVar }}; font-variant-numeric:tabular-nums;">{{ r.d }}</div><span class="ms" style="font-size:16px; font-variation-settings:'FILL' 1;">play_arrow</span></div></sc-for>
+          </sc-if>
+          <div ref="{{ nowRef }}" style="position:relative; margin:10px 0 6px; padding:12px; border-radius:16px; display:flex; align-items:center; gap:14px; overflow:hidden; background:linear-gradient(120deg, {{ s.nowA }}, {{ s.nowB }} 60%), {{ s.card }}; box-shadow:inset 0 0 0 1px {{ s.nowEdge }}, 0 18px 40px -20px rgba(0,0,0,0.9);">
+            <div style="border-radius:12px; overflow:hidden; display:flex; flex:none;">{{ nowArt }}</div>
+            <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:3px;"><div style="display:flex; align-items:center; gap:8px; font-size:11px; font-weight:700; letter-spacing:0.14em; color:{{ s.primary }};">{{ eqSm }}NOW PLAYING</div><div style="font-size:14px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ title }}</div><div style="font-size:12px; color:{{ s.onVar }}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ by }}</div></div>
+            <div style="align-self:flex-end; font-size:11px; font-variant-numeric:tabular-nums; white-space:nowrap;"><span>{{ posL }}</span><span style="color:{{ s.dim }};"> / {{ durL }}</span></div>
+            <div style="position:absolute; left:0; bottom:0; height:2px; width:{{ pct }}%; background:{{ s.primary }}; box-shadow:0 0 10px {{ s.primary }};"></div>
+          </div>
+          <div style="height:40px; padding:0 10px; display:flex; align-items:center; gap:12px;"><div style="font-size:11px; font-weight:700; letter-spacing:0.14em;">NEXT UP</div><div style="flex:1; height:1px; background:{{ s.hair }};"></div><div style="font-size:11px; color:{{ s.dim }}; font-variant-numeric:tabular-nums;">{{ upMeta }}</div></div>
+          <sc-for list="{{ upNext }}" as="r">
+            <div draggable="true" onDragStart="{{ r.dStart }}" onDragOver="{{ r.dOver }}" onDrop="{{ r.dDrop }}" onDragEnd="{{ r.dEnd }}" onClick="{{ r.jump }}" style="position:relative; height:56px; padding:0 6px 0 4px; border-radius:12px; display:flex; align-items:center; gap:12px; cursor:grab; opacity:{{ r.op }}; background:{{ r.bg }}; box-shadow:{{ r.ind }};" style-hover="background:rgba(255,255,255,0.05);">
+              <sc-if value="{{ r.indOn }}"><div style="position:absolute; left:6px; right:6px; top:{{ r.indT }}; height:2px; background:{{ s.primary }}; box-shadow:0 0 8px {{ s.primary }}; pointer-events:none;"></div></sc-if><span class="ms" style="width:22px; font-size:16px; color:{{ s.dim }}; text-align:center;">drag_indicator</span>
+              {{ r.art }}
+              <div style="flex:1; min-width:0;"><div style="font-size:14px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ r.t }}</div><div style="font-size:12px; color:{{ s.onVar }}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ r.by }}</div></div>
+              <div style="width:40px; text-align:right; font-size:11px; color:{{ s.onVar }}; font-variant-numeric:tabular-nums;">{{ r.d }}</div>
+              <div onClick="{{ r.next }}" title="Play next" style="position:relative; width:30px; height:30px; border-radius:8px; display:flex; align-items:center; justify-content:center; color:{{ s.dim }}; cursor:pointer;" style-before="content:''; position:absolute; inset:-9px; border-radius:999px;" style-hover="background:rgba(255,255,255,0.08); color:#fff;"><span class="ms" style="font-size:22px;">keyboard_arrow_up</span></div>
+              <div onClick="{{ r.remove }}" title="Remove" style="position:relative; width:30px; height:30px; border-radius:8px; display:flex; align-items:center; justify-content:center; color:{{ s.dim }}; cursor:pointer;" style-before="content:''; position:absolute; inset:-9px; border-radius:999px;" style-hover="background:rgba(255,255,255,0.08); color:#fff;"><span class="ms" style="font-size:16px;">close</span></div>
+            </div>
+          </sc-for>
+          <sc-if value="{{ upEmpty }}">
+            <div style="padding:48px 0 32px; display:flex; flex-direction:column; align-items:center; gap:10px; text-align:center;">
+              <div style="font-size:16px; font-weight:500;">Still water after this one.</div>
+              <div style="font-size:12px; line-height:1.5; color:{{ s.onVar }}; max-width:260px;">{{ emptyT }}</div>
+              <sc-if value="{{ canRestore }}"><div onClick="{{ doRestore }}" style="position:relative; height:38px; padding:0 16px; margin-top:8px; border-radius:12px; box-shadow:inset 0 0 0 1px {{ s.edge }}; display:flex; align-items:center; font-size:12px; font-weight:600; cursor:pointer;" style-before="content:''; position:absolute; inset:-5px; border-radius:999px;" style-hover="background:rgba(255,255,255,0.07);">Restore queue</div></sc-if>
+            </div>
+          </sc-if>
+        </div>
+        <div style="padding:12px 0 14px; text-align:center; font-size:11px; font-weight:600; letter-spacing:0.12em; color:{{ s.dim }}; box-shadow:inset 0 1px 0 {{ s.hair }};">DRAG TO REORDER · ↑ PLAY NEXT · × REMOVE</div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isLyrics }}">
+      <div onClick="{{ stop }}" style="position:absolute; right:20px; top:96px; bottom:20px; width:{{ popW }}px; z-index:21; border-radius:28px; background:{{ s.pop }}; backdrop-filter:blur(28px) saturate(1.2); -webkit-backdrop-filter:blur(28px) saturate(1.2); box-shadow:0 40px 100px -30px rgba(0,0,0,0.85), inset 0 0 0 1px {{ s.edge }}; display:flex; flex-direction:column; overflow:hidden; transform-origin:top right; animation:np-pop 500ms cubic-bezier(0.2,0,0,1);">
+        <div style="display:flex; align-items:center; gap:8px; padding:22px 14px 14px 22px; box-shadow:inset 0 -1px 0 {{ s.hair }};"><div style="flex:1; min-width:0;"><div style="font-size:24px; font-weight:600; letter-spacing:-0.015em;">Lyrics</div><div style="font-size:12px; color:{{ s.onVar }}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ title }} · {{ by }}</div></div><div onClick="{{ closePanel }}" title="Close" style="width:40px; height:40px; border-radius:12px; display:flex; align-items:center; justify-content:center; cursor:pointer;" style-hover="background:rgba(255,255,255,0.07);"><span class="ms" style="font-size:22px;">close</span></div></div>
+        <div style="flex:1; min-height:0; overflow:hidden; padding:24px 24px 8px; display:flex; flex-direction:column; gap:16px;">
+          <sc-for list="{{ lines }}" as="l"><div style="height:{{ l.h }}px; width:{{ l.w }}%; flex:none; border-radius:{{ l.r }}px; background:{{ l.bg }}; opacity:{{ l.op }}; transition:opacity 400ms, height 350ms cubic-bezier(0.42,1.67,0.21,0.9), background 400ms;"></div></sc-for>
+        </div>
+        <div style="padding:12px 24px 18px; font-size:12px; line-height:1.5; color:{{ s.onVar }}; box-shadow:inset 0 1px 0 {{ s.hair }};">Placeholder lines. Synced lyrics load from the file's embedded tags.</div>
+      </div>
+    </sc-if>
+
+  </sc-if>
+
+  <sc-if value="{{ phone }}">
+    <div style="position:absolute; inset:0; display:flex; flex-direction:column;">
+      <div style="height:36px; flex:none; padding:0 24px; display:flex; align-items:center; justify-content:space-between; font-size:14px; font-weight:500;"><div>9:41</div><div style="display:flex; gap:4px;"><span class="ms" style="font-size:16px;">signal_cellular_4_bar</span><span class="ms" style="font-size:16px;">battery_full</span></div></div>
+      <div style="height:56px; flex:none; padding:0 4px; display:grid; grid-template-columns:48px minmax(0,1fr) 48px; align-items:center;">
+        <span onClick="{{ doClose }}" class="ms" style="font-size:28px; padding:9px; cursor:pointer;">keyboard_arrow_down</span>
+        <div style="text-align:center; min-width:0;"><div style="font-size:11px; font-weight:700; letter-spacing:0.12em; color:{{ s.onVar }};">PLAYING FROM</div><div style="font-size:14px; font-weight:600; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ source }}</div></div>
+        <span class="ms" style="font-size:24px; padding:12px;">more_vert</span>
+      </div>
+      <div style="display:flex; justify-content:center; padding-top:16px;"><div style="transform:rotate(-3deg); filter:drop-shadow(0 22px 30px rgba(0,0,0,0.55));">{{ artEl }}</div></div>
+      <div style="padding:32px 28px 0; display:flex; flex-direction:column; gap:18px;">
+        <div style="display:flex; align-items:flex-end; gap:12px;">
+          <div style="flex:1; min-width:0;"><sc-if value="{{ hasChip }}"><span style="display:inline-flex; height:22px; padding:0 8px; margin-bottom:8px; border-radius:12px; background:oklch(0.84 0.09 290); color:oklch(0.28 0.08 292); align-items:center; font-size:11px; font-weight:700;">{{ chip }}</span></sc-if><div style="font-size:28px; font-weight:700; letter-spacing:-0.02em; line-height:1.15; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ title }}</div><div style="font-size:14px; color:{{ s.onVar }}; margin-top:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ by }}</div></div>
+          <div style="flex:none; display:flex; align-items:center; gap:4px; height:22px; padding:0 8px; margin-bottom:2px; border-radius:12px; box-shadow:inset 0 0 0 1.5px {{ s.onVar }}; font-size:11px; line-height:1;"><span style="font-weight:700; letter-spacing:0.04em; color:{{ s.primary }};">FLAC</span><span style="font-weight:500; color:{{ s.onVar }};">{{ q }}</span></div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:4px;">
+          <div onPointerDown="{{ seekDown }}" onPointerMove="{{ seekMove }}" onPointerUp="{{ seekUp }}" style="padding:8px 0; cursor:pointer; touch-action:none;">{{ waveEl }}</div>
+          <div style="display:flex; justify-content:space-between; font-size:12px; color:{{ s.onVar }}; font-variant-numeric:tabular-nums;"><span>{{ posL }}</span><span>-{{ remL }}</span></div>
+        </div>
+        <div style="display:flex; align-items:center; justify-content:space-between;">
+          <div style="width:64px; flex:none; display:flex; justify-content:center;"><div onClick="{{ doShuffle }}" style="width:{{ shufWP }}px; height:48px; border-radius:{{ shufRP }}px; background:{{ shufBg }}; color:{{ shufFg }}; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:border-radius 480ms cubic-bezier(0.38,1.21,0.22,1), width 480ms cubic-bezier(0.38,1.21,0.22,1), background 200ms cubic-bezier(0.31,0.94,0.34,1), color 200ms cubic-bezier(0.31,0.94,0.34,1), transform 350ms cubic-bezier(0.42,1.67,0.21,0.9);" style-active="transform:scale(0.9);"><span class="ms" style="font-size:24px;">shuffle</span></div></div>
+          <span onClick="{{ doPrev }}" class="ms" style="font-size:36px; padding:6px; font-variation-settings:'FILL' 1; cursor:pointer;">skip_previous</span>
+          <div onClick="{{ doToggle }}" style="cursor:pointer;">{{ playEl }}</div>
+          <span onClick="{{ doNext }}" class="ms" style="font-size:36px; padding:6px; font-variation-settings:'FILL' 1; cursor:pointer;">skip_next</span>
+          <div style="width:64px; flex:none; display:flex; justify-content:center;"><div onClick="{{ doRepeat }}" style="width:{{ repWP }}px; height:48px; border-radius:{{ repRP }}px; background:{{ repBg }}; color:{{ repFg }}; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:border-radius 480ms cubic-bezier(0.38,1.21,0.22,1), width 480ms cubic-bezier(0.38,1.21,0.22,1), background 200ms cubic-bezier(0.31,0.94,0.34,1), color 200ms cubic-bezier(0.31,0.94,0.34,1), transform 350ms cubic-bezier(0.42,1.67,0.21,0.9);" style-active="transform:scale(0.9);"><span class="ms" style="font-size:24px;">{{ repIc }}</span></div></div>
+        </div>
+      </div>
+      <div style="flex:1;"></div>
+      <div style="padding:0 20px 36px; display:flex; align-items:center; justify-content:space-between;">
+        <div onClick="{{ doLyrics }}" style="width:{{ lyWP }}px; height:48px; border-radius:{{ lyRP }}px; transition:border-radius 480ms cubic-bezier(0.38,1.21,0.22,1), width 480ms cubic-bezier(0.38,1.21,0.22,1), background 250ms; background:{{ lyBgP }}; color:{{ lyFgP }}; display:flex; align-items:center; justify-content:center; cursor:pointer;"><span class="ms" style="font-size:24px;">lyrics</span></div>
+        <div onClick="{{ doDj }}" style="position:relative; height:48px; padding:0 18px 0 14px; border-radius:{{ djRP }}px; transition:border-radius 350ms cubic-bezier(0.42,1.67,0.21,0.9), background 200ms cubic-bezier(0.31,0.94,0.34,1), color 200ms cubic-bezier(0.31,0.94,0.34,1), transform 350ms cubic-bezier(0.42,1.67,0.21,0.9); background:{{ djBg }}; color:{{ djFg }}; box-shadow:{{ djSh }}; display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; cursor:pointer;" style-active="transform:scale(0.95);">{{ djGlyph }}DJ</div>
+        <div onClick="{{ doQueue }}" style="width:{{ quWP }}px; height:48px; border-radius:{{ quRP }}px; transition:border-radius 480ms cubic-bezier(0.38,1.21,0.22,1), width 480ms cubic-bezier(0.38,1.21,0.22,1), background 250ms; background:{{ quBgP }}; color:{{ quFgP }}; display:flex; align-items:center; justify-content:center; cursor:pointer;"><span class="ms" style="font-size:24px;">queue_music</span></div>
+      </div>
+      <div style="position:absolute; left:50%; bottom:8px; width:108px; height:4px; margin-left:-54px; border-radius:2px; background:{{ s.onVar }};"></div>
+
+      <sc-if value="{{ popOn }}"><div onClick="{{ closePanel }}" style="position:absolute; inset:0; z-index:20; background:rgba(5,5,5,0.45); animation:np-fade 300ms ease;"></div></sc-if>
+
+      <sc-if value="{{ isQueue }}">
+        <div onClick="{{ stop }}" style="position:absolute; left:8px; right:8px; bottom:8px; top:200px; z-index:21; border-radius:28px; background:{{ s.pop }}; backdrop-filter:blur(28px) saturate(1.2); -webkit-backdrop-filter:blur(28px) saturate(1.2); box-shadow:0 -20px 60px -20px rgba(0,0,0,0.7), inset 0 0 0 1px {{ s.edge }}; display:flex; flex-direction:column; overflow:hidden; animation:np-sheet 450ms cubic-bezier(0.2,0,0,1);">
+          <div style="padding:10px 18px 14px; display:flex; flex-direction:column; gap:12px; box-shadow:inset 0 -1px 0 {{ s.hair }};">
+            <div onClick="{{ closePanel }}" style="width:36px; height:4px; border-radius:2px; background:{{ s.dim }}; margin:0 auto 2px; cursor:pointer;"></div>
+            <div style="display:flex; align-items:center; gap:8px;"><div style="flex:1; min-width:0; display:flex; align-items:baseline; gap:8px;"><div style="font-size:22px; font-weight:600;">Queue</div><div style="font-size:12px; color:{{ s.dim }};">{{ upCount2 }}</div></div><div onClick="{{ doShuffleUp }}" style="width:44px; height:44px; border-radius:12px; box-shadow:inset 0 0 0 1.5px {{ s.edge }}; display:flex; align-items:center; justify-content:center; cursor:pointer;"><span class="ms" style="font-size:22px;">shuffle</span></div><div onClick="{{ doClear }}" style="height:44px; padding:0 14px; border-radius:12px; box-shadow:inset 0 0 0 1.5px {{ s.edge }}; display:flex; align-items:center; font-size:12px; font-weight:600; color:{{ s.onVar }}; cursor:pointer;">Clear</div></div>
+            <div style="display:flex; align-items:center; gap:8px; min-width:0;">{{ srcArtP }}<div style="flex:none; font-size:11px; font-weight:700; letter-spacing:0.14em; color:{{ s.onVar }};">PLAYING FROM</div><div style="flex:1; min-width:0; font-size:12px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ source }}</div></div>
+          </div>
+          <div ref="{{ qRef }}" style="position:relative; flex:1; min-height:0; overflow-y:auto; overflow-x:hidden; padding:12px 10px; scrollbar-width:none;">
+            <sc-if value="{{ hasPlayed }}">
+              <div style="height:36px; padding:0 8px; display:flex; align-items:center; gap:10px;"><div style="font-size:11px; font-weight:700; letter-spacing:0.14em;">PLAYED</div><div style="flex:1; height:1px; background:{{ s.hair }};"></div><div style="font-size:11px; color:{{ s.dim }};">{{ playedMeta }}</div></div>
+              <sc-for list="{{ played }}" as="r"><div onClick="{{ r.replay }}" style="height:56px; padding:0 8px; border-radius:12px; display:flex; align-items:center; gap:12px; opacity:0.5; cursor:pointer;"><div style="filter:grayscale(0.4); display:flex;">{{ r.artP }}</div><div style="flex:1; min-width:0;"><div style="font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ r.t }}</div><div style="font-size:12px; color:{{ s.onVar }}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ r.by }}</div></div><div style="font-size:11px; color:{{ s.onVar }};">{{ r.d }}</div></div></sc-for>
+            </sc-if>
+            <div ref="{{ nowRef }}" style="position:relative; margin:10px 0 6px; padding:12px; border-radius:16px; display:flex; align-items:center; gap:14px; overflow:hidden; background:linear-gradient(120deg, {{ s.nowA }}, {{ s.nowB }} 60%), {{ s.card }}; box-shadow:inset 0 0 0 1px {{ s.nowEdge }}, 0 18px 40px -20px rgba(0,0,0,0.9);">
+              <div style="border-radius:12px; overflow:hidden; display:flex; flex:none;">{{ nowArt }}</div>
+              <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:3px;"><div style="display:flex; align-items:center; gap:8px; font-size:11px; font-weight:700; letter-spacing:0.14em; color:{{ s.primary }};">{{ eqSm }}NOW PLAYING</div><div style="font-size:14px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ title }}</div><div style="font-size:12px; color:{{ s.onVar }}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ by }}</div></div>
+              <div style="align-self:flex-end; font-size:11px; font-variant-numeric:tabular-nums;">{{ posL }}</div>
+              <div style="position:absolute; left:0; bottom:0; height:2px; width:{{ pct }}%; background:{{ s.primary }}; box-shadow:0 0 10px {{ s.primary }};"></div>
+            </div>
+            <div style="height:36px; padding:0 8px; display:flex; align-items:center; gap:10px;"><div style="font-size:11px; font-weight:700; letter-spacing:0.14em;">NEXT UP</div><div style="flex:1; height:1px; background:{{ s.hair }};"></div><div style="font-size:11px; color:{{ s.dim }};">{{ upMeta }}</div></div>
+            <sc-for list="{{ upNext }}" as="r">
+              <div style="position:relative; border-radius:12px; overflow:hidden;">
+                <div style="position:absolute; inset:0; border-radius:12px; background:oklch(0.55 0.17 25); display:flex; align-items:center; justify-content:flex-end; padding-right:18px; gap:6px; font-size:12px; font-weight:700; color:oklch(0.97 0.02 25); opacity:{{ r.swOp }};"><span class="ms" style="font-size:22px;">delete</span>Remove</div>
+                <div draggable="true" onDragStart="{{ r.dStart }}" onDragOver="{{ r.dOver }}" onDrop="{{ r.dDrop }}" onDragEnd="{{ r.dEnd }}" onPointerDown="{{ r.swDown }}" onPointerMove="{{ r.swMove }}" onPointerUp="{{ r.swUp }}" onClick="{{ r.jump }}" style="position:relative; height:60px; padding:0 6px 0 2px; border-radius:12px; display:flex; align-items:center; gap:12px; opacity:{{ r.op }}; background:{{ r.bgP }}; box-shadow:{{ r.ind }}; transform:translateX({{ r.dx }}px); transition:{{ r.tr }}; cursor:pointer; touch-action:pan-y;">
+                  <sc-if value="{{ r.indOn }}"><div style="position:absolute; left:6px; right:6px; top:{{ r.indT }}; height:2px; background:{{ s.primary }}; box-shadow:0 0 8px {{ s.primary }}; pointer-events:none;"></div></sc-if><span class="ms" style="width:24px; font-size:22px; color:{{ s.dim }}; text-align:center;">drag_indicator</span>
+                  {{ r.artP }}
+                  <div style="flex:1; min-width:0;"><div style="font-size:14px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ r.t }}</div><div style="font-size:12px; color:{{ s.onVar }}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ r.by }}</div></div>
+                  <div style="font-size:11px; color:{{ s.onVar }}; padding-right:6px;">{{ r.d }}</div>
+                </div>
+              </div>
+            </sc-for>
+            <sc-if value="{{ upEmpty }}">
+              <div style="padding:40px 0 28px; display:flex; flex-direction:column; align-items:center; gap:10px; text-align:center;">
+                <div style="font-size:16px; font-weight:500;">Still water after this one.</div>
+                <div style="font-size:12px; line-height:1.5; color:{{ s.onVar }}; max-width:260px;">{{ emptyT }}</div>
+                <sc-if value="{{ canRestore }}"><div onClick="{{ doRestore }}" style="height:44px; padding:0 18px; margin-top:8px; border-radius:12px; box-shadow:inset 0 0 0 1px {{ s.edge }}; display:flex; align-items:center; font-size:14px; font-weight:600; cursor:pointer;">Restore queue</div></sc-if>
+              </div>
+            </sc-if>
+          </div>
+          <div style="padding:12px 0 16px; text-align:center; font-size:11px; font-weight:600; letter-spacing:0.12em; color:{{ s.dim }}; box-shadow:inset 0 1px 0 {{ s.hair }};">HOLD AND DRAG TO REORDER · SWIPE LEFT TO REMOVE</div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isLyrics }}">
+        <div onClick="{{ stop }}" style="position:absolute; left:8px; right:8px; bottom:8px; top:200px; z-index:21; border-radius:28px; background:{{ s.pop }}; backdrop-filter:blur(28px) saturate(1.2); -webkit-backdrop-filter:blur(28px) saturate(1.2); box-shadow:inset 0 0 0 1px {{ s.edge }}; display:flex; flex-direction:column; overflow:hidden; animation:np-sheet 450ms cubic-bezier(0.2,0,0,1);">
+          <div onClick="{{ closePanel }}" style="width:36px; height:4px; border-radius:2px; background:{{ s.dim }}; margin:10px auto 6px; cursor:pointer;"></div>
+          <div style="padding:4px 22px 14px; box-shadow:inset 0 -1px 0 {{ s.hair }};"><div style="font-size:22px; font-weight:600;">Lyrics</div><div style="font-size:12px; color:{{ s.onVar }}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ title }} · {{ by }}</div></div>
+          <div style="flex:1; min-height:0; overflow:hidden; padding:20px 22px 8px; display:flex; flex-direction:column; gap:14px;">
+            <sc-for list="{{ lines }}" as="l"><div style="height:{{ l.h }}px; width:{{ l.w }}%; flex:none; border-radius:{{ l.r }}px; background:{{ l.bg }}; opacity:{{ l.op }}; transition:opacity 400ms, height 350ms cubic-bezier(0.42,1.67,0.21,0.9), background 400ms;"></div></sc-for>
+          </div>
+          <div style="padding:10px 22px 20px; font-size:12px; line-height:1.5; color:{{ s.onVar }};">Placeholder lines. Synced lyrics load from the file's embedded tags.</div>
+        </div>
+      </sc-if>
+
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:900},&quot;form&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;desk&quot;,&quot;phone&quot;],&quot;default&quot;:&quot;desk&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;w&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:1440,&quot;tsType&quot;:&quot;number&quot;},&quot;h&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:900,&quot;tsType&quot;:&quot;number&quot;},&quot;panel&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;none&quot;,&quot;queue&quot;,&quot;lyrics&quot;],&quot;default&quot;:&quot;none&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;reduced&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;surface&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;tinted&quot;,&quot;neutral&quot;,&quot;mono&quot;],&quot;default&quot;:&quot;neutral&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;player&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;object&quot;}}">
+const e = React.createElement;
+const F = { tsunami: 'spiritbox-tsunami-sea', zanmu: 'ado-zanmu', under: 'eve-under-blue', roto: 'spiritbox-rotoscope', periphery: 'periphery-v', fear: 'spiritbox-fear-of-fear', evan: 'evanescence-sanctuary', bvb: 'bvb-vindicate', bfmv: 'bfmv-social-apocalypse', wing: 'wing-dopamine' };
+const ART = k => 'art/' + F[k] + '.jpg';
+const DEMO = [
+  ['Soft Spine', 'Spiritbox', 'Tsunami Sea', 'tsunami', 215, '24/48', 245], ['Black Rainbow', 'Spiritbox', 'Tsunami Sea', 'tsunami', 215, '24/48', 228],
+  ['Show', 'Ado', 'Zanmu', 'zanmu', 355, '16/44.1', 190], ['Jaded', 'Spiritbox', 'The Fear of Fear', 'fear', 300, '24/48', 223],
+  ['Wildfire', 'Periphery', 'Periphery V', 'periphery', 40, '24/48', 312], ['Antenna', 'Eve', 'Under Blue', 'under', 230, '16/44.1', 221],
+  ['Sanctuary', 'Evanescence', 'Sanctuary', 'evan', 205, '16/44.1', 236], ['Dopamine', 'Wing', 'Dopamine', 'wing', 330, '16/44.1', 201],
+];
+const LW = [72, 88, 64, 94, 58, 80, 70, 90, 62, 84, 76, 54, 92, 68, 86, 60, 78, 74];
+const fmt = s => { s = Math.floor(s); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = String(s % 60).padStart(2, '0'); return h ? h + ':' + String(m).padStart(2, '0') + ':' + x : m + ':' + x; };
+const DEV = desk => [['self', desk ? 'This computer' : 'This phone', desk ? 'computer' : 'smartphone', desk ? 'Built-in output · bit-perfect' : 'Speaker or headphones'], ['tv', 'Living room TV', 'tv', 'Chromecast'], ['kitchen', 'Kitchen speaker', 'speaker', 'Cast speaker'], ['study', 'Study Hi-Fi', 'speaker_group', 'DLNA renderer · up to 24/192']];
+
+class Component extends DCLogic {
+  state = { qi: 2, order: null, cleared: null, pos: 94, paused: false, shuffle: false, repeat: 'off', vol: 0.7, mutedVol: null, panel: undefined, device: 'self', engaged: false, drag: null, swipe: null };
+  ck = {};
+  componentDidMount() {
+    this.iv = setInterval(() => { if (this.props.player) return; const s = this.state; if (!s.engaged || s.paused) return; const d = DEMO[this.ix(s)][6]; if (s.pos + 1 >= d) this.eng('next', true); else this.setState({ pos: s.pos + 1 }); }, 1000);
+    if (this.props.player) { this.kd = ev => { const t = ev.target && ev.target.tagName; if (t === 'INPUT' || t === 'TEXTAREA') return; const D = this.data(); if (ev.key === 'Escape') { if (D.panel) D.act('panel', D.panel); else D.act('close'); } else if (ev.key === ' ') { ev.preventDefault(); D.act('toggle'); } }; window.addEventListener('keydown', this.kd); }
+    this.syncScroll();
+  }
+  componentDidUpdate() { this.syncScroll(); }
+  componentWillUnmount() { clearInterval(this.iv); if (this.kd) window.removeEventListener('keydown', this.kd); }
+  syncScroll() { const p = this.data().panel; if (p === 'queue' && this._lp !== 'queue' && this.qEl && this.nowEl) this.qEl.scrollTop = Math.max(0, this.nowEl.offsetTop - 12); this._lp = p; }
+  m() { return (this.props.motion ?? 'full') !== 'reduced'; }
+  ordOf(s, n) { return s.order || [...Array(n).keys()]; }
+  ix(s) { const o = s.order; return o ? o[Math.min(s.qi, o.length - 1)] : s.qi; }
+  queueList() { return this._dq || (this._dq = DEMO.map(d => ({ t: d[0], by: d[1] + ' · ' + d[2], hue: d[4], q: d[5], dur: d[6], img: ART(d[3]), art: S => e('img', { src: ART(d[3]), style: { width: S, height: S, borderRadius: Math.max(5, Math.round(S * 0.18)), objectFit: 'cover', display: 'block', flex: 'none' } }) }))); }
+  eng(type, a) {
+    const n = this.queueList().length, sh = r => { for (let i = r.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [r[i], r[j]] = [r[j], r[i]]; } return r; };
+    const up = f => this.setState(s => { const o = this.ordOf(s, n).slice(), r = f(o, s); return r === undefined ? { order: o } : r; });
+    switch (type) {
+      case 'toggle': return this.setState(s => ({ paused: !s.paused, engaged: true }));
+      case 'next': return this.setState(s => { const L = this.ordOf(s, n).length; if (a === true && s.repeat === 'one') return { pos: 0 }; let qi = s.qi + 1; if (qi >= L) { if (s.repeat === 'all') qi = 0; else return { pos: 0, paused: true }; } return { qi, pos: 0, engaged: true }; });
+      case 'prev': return this.setState(s => s.pos > 3 ? { pos: 0 } : { qi: Math.max(0, s.qi - 1), pos: 0, engaged: true });
+      case 'shuffle': return this.setState(s => { const o = this.ordOf(s, n), cur = o[s.qi]; return !s.shuffle ? { shuffle: true, order: [...o.slice(0, s.qi + 1), ...sh(o.slice(s.qi + 1))] } : { shuffle: false, order: null, qi: cur }; });
+      case 'shuffleUp': return up((o, s) => ({ order: [...o.slice(0, s.qi + 1), ...sh(o.slice(s.qi + 1))] }));
+      case 'repeat': return this.setState(s => ({ repeat: { off: 'all', all: 'one', one: 'off' }[s.repeat] }));
+      case 'seek': return this.setState(s => ({ pos: Math.round(a * (this.queueList()[this.ix(s)].dur || 245)), engaged: true }));
+      case 'vol': return this.setState({ vol: a, mutedVol: null });
+      case 'mute': return this.setState(s => s.vol > 0 ? { vol: 0, mutedVol: s.vol } : { vol: s.mutedVol || 0.65, mutedVol: null });
+      case 'replay': return this.setState({ qi: a, pos: 0, paused: false, engaged: true });
+      case 'upJump': return this.setState(s => ({ qi: s.qi + 1 + a, pos: 0, paused: false, engaged: true }));
+      case 'move': return up((o, s) => { const b = s.qi + 1, [it] = o.splice(b + a.from, 1); o.splice(b + a.to, 0, it); });
+      case 'playNext': return up((o, s) => { const b = s.qi + 1, [it] = o.splice(b + a, 1); o.splice(b, 0, it); });
+      case 'remove': return up((o, s) => { o.splice(s.qi + 1 + a, 1); });
+      case 'clear': return up((o, s) => ({ order: o.slice(0, s.qi + 1), cleared: o.slice(s.qi + 1) }));
+      case 'restore': return up((o, s) => ({ order: [...o, ...(s.cleared || [])], cleared: null }));
+      case 'panel': return this.setState(s => { const cur = s.panel !== undefined ? s.panel : this.propPanel(); return { panel: cur === a ? null : a }; });
+      case 'device': return this.setState({ device: a, panel: null });
+    }
+  }
+  propPanel() { const p = this.props.panel; return p && p !== 'none' ? p : null; }
+  data() {
+    const P = this.props.player; if (P) return P;
+    const s = this.state, Q = this.queueList(), o = this.ordOf(s, Q.length), c = Q[this.ix(s)], it = k => ({ t: Q[k].t, by: Q[k].by, dur: Q[k].dur, artFn: Q[k].art });
+    return { t: c.t, by: c.by, hue: c.hue, q: c.q, dur: c.dur, img: c.img, artFn: c.art, pos: s.pos, paused: s.paused, shuffle: s.shuffle, repeat: s.repeat, vol: s.vol, source: 'Album · Tsunami Sea', chip: '',
+      panel: s.panel !== undefined ? s.panel : this.propPanel(), device: s.device, canRestore: !!(s.cleared && s.cleared.length),
+      played: o.slice(0, s.qi).map(it), upNext: o.slice(s.qi + 1).map(it), act: (t, a) => this.eng(t, a) };
+  }
+  flat(s) {
+    const k = this.props.surface ?? 'neutral'; if (k === 'tinted') return s;
+    const N = 'oklch(0.95 0.006 40)';
+    const o = { ...s, track: 'oklch(0.40 0.01 40 / 0.7)', on: N, onVar: 'oklch(0.80 0.014 40)', dim: 'oklch(0.62 0.012 40)', bg2: 'oklch(0.17 0.006 40)', glass: 'oklch(0.14 0.005 40 / 0.9)', rim: 'oklch(0.34 0.01 40 / 0.6)', shade: 'oklch(0.12 0.005 40 / 0.9)',
+      pop: 'oklch(0.18 0.006 40 / 0.95)', edge: 'oklch(0.40 0.01 40 / 0.4)', card: 'oklch(0.22 0.008 40)', nowA: 'oklch(0.26 0.01 40)', nowB: 'oklch(0.26 0.01 40)', nowEdge: 'oklch(0.40 0.01 40 / 0.6)' };
+    if (k === 'mono') Object.assign(o, { primary: N, onPrimary: 'oklch(0.18 0.006 40)', accent2: 'oklch(0.5 0.01 40)', accent3: 'oklch(0.4 0.01 40)' });
+    return o;
+  }
+  scheme(h) {
+    return { primary: `oklch(0.84 0.11 ${h})`, onPrimary: `oklch(0.26 0.06 ${h})`, track: `oklch(0.46 0.04 ${h} / 0.7)`, on: `oklch(0.96 0.02 ${h})`, onVar: `oklch(0.84 0.04 ${h})`, dim: `oklch(0.64 0.03 ${h})`,
+      accent2: `oklch(0.70 0.14 ${(h + 40) % 360})`, accent3: `oklch(0.62 0.13 ${(h + 320) % 360})`, bg2: `oklch(0.19 0.04 ${h})`, glass: `oklch(0.15 0.014 ${h} / 0.66)`, rim: `oklch(0.84 0.11 ${h} / 0.38)`, shade: `oklch(0.13 0.025 ${h} / 0.9)`,
+      pop: `oklch(0.17 0.02 ${h} / 0.92)`, edge: `oklch(0.60 0.04 ${h} / 0.28)`, hair: 'rgba(255,255,255,0.07)', card: `oklch(0.22 0.025 ${h})`,
+      nowA: `oklch(0.84 0.11 ${h} / 0.18)`, nowB: `oklch(0.84 0.11 ${h} / 0.04)`, nowEdge: `oklch(0.84 0.11 ${h} / 0.32)` };
+  }
+  cookie(n, amp) {
+    const key = n + ':' + amp; if (this.ck[key]) return this.ck[key];
+    const p = []; for (let i = 0; i < 120; i++) { const t = i / 120 * Math.PI * 2, r = 50 * (1 - amp + amp * Math.cos(n * t)); p.push((50 + r * Math.cos(t)).toFixed(2) + '% ' + (50 + r * Math.sin(t)).toFixed(2) + '%'); }
+    return (this.ck[key] = 'polygon(' + p.join(',') + ')');
+  }
+  blobs(s, blur) {
+    const m = this.m(), b = (k, st, an) => e('div', { key: k, style: { position: 'absolute', aspectRatio: '1', borderRadius: '50%', filter: 'blur(' + blur + 'px)', animation: m ? an : 'none', ...st } });
+    return e('div', { style: { position: 'absolute', inset: 0, zIndex: -2, overflow: 'hidden', pointerEvents: 'none' } }, [
+      b(1, { left: '-15%', top: '-20%', width: '60%', background: s.primary, opacity: 0.30 }, 'pm-drift-a 18s ease-in-out infinite alternate'),
+      b(2, { right: '-20%', top: '10%', width: '55%', background: s.accent2, opacity: 0.26 }, 'pm-drift-b 22s ease-in-out infinite alternate'),
+      b(3, { left: '20%', bottom: '-35%', width: '55%', background: s.accent3, opacity: 0.24 }, 'pm-drift-a 26s ease-in-out infinite alternate-reverse')]);
+  }
+  cookieEl(s, size, icon, is, spin) {
+    return e('div', { style: { position: 'relative', width: size, height: size, flex: 'none' } }, [
+      e('div', { key: 1, style: { position: 'absolute', inset: 0, background: s.primary, clipPath: spin ? this.cookie(9, 0.06) : this.cookie(9, 0), transition: this.m() ? 'clip-path 520ms cubic-bezier(0.38,1.21,0.22,1)' : 'none', animation: spin && this.m() ? 'pm-spin 14s linear infinite' : 'none' } }),
+      e('span', { key: 2, className: 'ms', style: { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: is, color: s.onPrimary, fontVariationSettings: "'FILL' 1" } }, icon)]);
+  }
+  wave(color, track, pct, hh, anim) {
+    const m = hh / 2, a = hh / 2 - 2, svg = `<svg xmlns='http://www.w3.org/2000/svg' width='32' height='${hh}'><path d='M0 ${m} Q8 ${m - a} 16 ${m} T32 ${m}' fill='none' stroke='black' stroke-width='4' stroke-linecap='round'/></svg>`;
+    const url = 'url("data:image/svg+xml,' + encodeURIComponent(svg) + '")';
+    return e('div', { style: { position: 'relative', height: hh + 6, width: '100%' } }, [
+      e('div', { key: 1, style: { position: 'absolute', left: 0, top: 3, width: pct + '%', height: hh, background: color, WebkitMaskImage: url, maskImage: url, WebkitMaskSize: '32px ' + hh + 'px', maskSize: '32px ' + hh + 'px', WebkitMaskRepeat: 'repeat-x', maskRepeat: 'repeat-x', animation: anim && this.m() ? 'pm-wave 1.6s linear infinite' : 'none' } }),
+      e('div', { key: 2, style: { position: 'absolute', left: 'calc(' + pct + '% + 10px)', right: 0, top: m + 1, height: 4, borderRadius: 2, background: track } }),
+      e('div', { key: 3, style: { position: 'absolute', left: 'calc(' + pct + '% - 3px)', top: -2, width: 6, height: hh + 10, borderRadius: 4, background: color } })]);
+  }
+  eq(color, hh) {
+    const m = this.m();
+    return e('div', { style: { display: 'flex', alignItems: 'flex-end', gap: 2, height: hh, flex: 'none' } }, [0, 1, 2].map(j => e('div', { key: j, style: { width: Math.max(2, Math.round(hh / 5)), height: hh, borderRadius: 1, background: color, transformOrigin: 'bottom', transform: m ? undefined : `scaleY(${[0.5, 1, 0.7][j]})`, animation: m ? `pm-eq ${0.8 + j * 0.17}s ease-in-out ${j * 0.12}s infinite` : 'none' } })));
+  }
+  knobPath(n, amp, R) { let d = ''; for (let i = 0; i <= 120; i++) { const t = i / 120 * Math.PI * 2, r = R * (1 - amp + amp * Math.cos(n * t)); d += (i ? 'L' : 'M') + (50 + Math.sin(t) * r).toFixed(2) + ' ' + (50 - Math.cos(t) * r).toFixed(2); } return d + 'Z'; }
+  djGlyph(on, mo) {
+    const id = this.kid || (this.kid = 'npk' + Math.random().toString(36).slice(2, 7));
+    return e('svg', { viewBox: '0 0 100 100', width: 22, height: 22, style: { flex: 'none', overflow: 'visible' } },
+      e('defs', null, e('mask', { id }, e('rect', { width: 100, height: 100, fill: '#fff' }), e('rect', { x: 43, y: 12, width: 14, height: 30, rx: 7, fill: '#000' }))),
+      e('g', { style: { transformBox: 'view-box', transformOrigin: '50% 50%', transform: on ? 'rotate(-55deg)' : 'none', animation: on && mo ? 'dj-knob 9s infinite' : 'none' } },
+        e('path', { d: this.knobPath(8, 0.08, 48), fill: 'currentColor', mask: `url(#${id})` })));
+  }
+  renderVals() {
+    const P = this.props, D = this.data(), st = this.state, desk = (P.form ?? 'desk') !== 'phone';
+    const W = P.w ?? (desk ? 1440 : 412), H = P.h ?? (desk ? 900 : 892);
+    const s = this.flat(this.scheme(D.hue ?? 215)), dur = D.dur || 240, pos = Math.min(D.pos || 0, dur), pct = pos / dur * 100, panel = D.panel || null, paused = !!D.paused;
+    const act = (t, a) => D.act && D.act(t, a);
+    const padM = W < 1300 ? 40 : 64;
+    const A = desk ? Math.max(200, Math.min(H - 84 - 36 - 40, Math.floor((W - 2 * padM - 56) * 0.48), 480)) : Math.max(180, Math.min(W - 56, H - 440));
+    const at = (ev, k) => { const r = ev.currentTarget.getBoundingClientRect(); act(k, Math.max(0, Math.min(1, (ev.clientX - r.left) / r.width))); };
+    const dn = k => ev => { ev.stopPropagation(); try { ev.currentTarget.setPointerCapture(ev.pointerId); } catch (x) {} this.drg = k; at(ev, k); };
+    const mv = k => ev => { if (this.drg === k && ev.buttons) at(ev, k); }, upP = () => { this.drg = null; };
+    const tg = (on, big, sm) => ({ R: on ? sm : big, Bg: on ? s.primary : 'rgba(255,255,255,0)', Fg: on ? s.onPrimary : s.on });
+    const sh = tg(D.shuffle, 28, 18), rp = tg(D.repeat !== 'off', 28, 18);
+    const chipT = on => ({ bg: on ? s.primary : 'rgba(255,255,255,0.06)', fg: on ? s.onPrimary : s.on, bd: on ? 'transparent' : s.edge });
+    const ly = chipT(panel === 'lyrics'), qu = chipT(panel === 'queue');
+    const vol = D.vol ?? 0.7, curL = Math.min(LW.length - 1, Math.floor(pos / dur * LW.length));
+    const lines = LW.map((w, i) => ({ w: i === curL ? Math.min(100, w + 6) : w, h: i === curL ? 22 : 14, r: i === curL ? 11 : 7, bg: i === curL ? s.primary : s.on, op: i === curL ? 1 : i < curL ? 0.22 : 0.45 }));
+    const stop = ev => ev.stopPropagation(), c = fn => ev => { ev.stopPropagation(); fn(); };
+    const played = (D.played || []).map((r, h) => ({ n: String(h + 1).padStart(2, '0'), t: r.t, by: r.by, d: fmt(r.dur || 0), art: r.artFn ? r.artFn(38) : null, artP: r.artFn ? r.artFn(40) : null, replay: c(() => act('replay', h)) }));
+    const drag = st.drag, sw = st.swipe;
+    const upNext = (D.upNext || []).map((r, u) => {
+      const isDrag = drag && drag.from === u, isOver = drag && drag.over === u && drag.from !== u, swx = sw && sw.u === u ? sw.dx : 0;
+      return { t: r.t, by: r.by, d: fmt(r.dur || 0), art: r.artFn ? r.artFn(40) : null, artP: r.artFn ? r.artFn(42) : null,
+        op: isDrag ? 0.45 : 1, bg: isDrag ? s.card : 'transparent', bgP: isDrag ? s.card : (swx ? s.card : 'transparent'),
+        ind: isDrag ? `inset 0 0 0 1px ${s.edge}` : 'none', indOn: !!isOver, indT: isOver && drag.after ? 'calc(100% - 2px)' : '0px',
+        dx: swx, swOp: swx < -8 ? Math.min(1, -swx / 80) : 0, tr: sw && sw.u === u && sw.live ? 'none' : 'transform 350ms cubic-bezier(0.42,1.67,0.21,0.9)',
+        jump: ev => { ev.stopPropagation(); if (this.swiped) { this.swiped = false; return; } act('upJump', u); },
+        next: c(() => act('playNext', u)), remove: c(() => act('remove', u)),
+        dStart: ev => { ev.stopPropagation(); try { ev.dataTransfer.effectAllowed = 'move'; ev.dataTransfer.setData('text/plain', String(u)); } catch (x) {} this.setState({ drag: { from: u, over: u, after: false } }); },
+        dOver: ev => { ev.preventDefault(); const r = ev.currentTarget.getBoundingClientRect(), after = ev.clientY > r.top + r.height / 2, d0 = this.state.drag; if (d0 && (d0.over !== u || d0.after !== after)) this.setState({ drag: { ...d0, over: u, after } }); },
+        dDrop: ev => { ev.preventDefault(); const d0 = this.state.drag; if (!d0) return; let to = d0.over + (d0.after ? 1 : 0); if (d0.from < to) to -= 1; this.setState({ drag: null }); if (to !== d0.from) act('move', { from: d0.from, to }); },
+        dEnd: () => this.setState({ drag: null }),
+        swDown: ev => { if (ev.target.closest && ev.target.closest('.ms')) return; this.sx = ev.clientX; this.su = u; this.swiped = false; },
+        swMove: ev => { if (this.su !== u || !ev.buttons) return; const dx = Math.min(0, ev.clientX - this.sx); if (dx < -6) { try { ev.currentTarget.setPointerCapture(ev.pointerId); } catch (x) {} this.setState({ swipe: { u, dx, live: true } }); } },
+        swUp: () => { if (this.su !== u) return; const d = this.state.swipe; this.su = null; if (d && d.u === u) { this.swiped = Math.abs(d.dx) > 6; if (d.dx < -90) { this.setState({ swipe: null }); act('remove', u); } else this.setState({ swipe: { u, dx: 0, live: false } }); } } };
+    });
+    const sum = arr => fmt(arr.reduce((t, r) => t + (r.dur || 0), 0)), pad = k => String(k).padStart(2, '0');
+    const devs = DEV(desk), devId = D.device || 'self', devRow = devs.find(d => d[0] === devId) || devs[0], remote = devId !== 'self';
+    const devices = devs.map(d => { const on = d[0] === devId; return { name: d[1], ic: d[2], sub: on ? (d[0] === 'self' ? d[3] : 'Connected · ' + d[3]) : d[3], on, fg: on ? s.primary : s.on, bg: on ? 'rgba(255,255,255,0.06)' : 'transparent', icBg: on ? s.primary : 'rgba(255,255,255,0.08)', icFg: on ? s.onPrimary : s.on, pick: c(() => act('device', d[0])) }; });
+    const djOn = !!st.djOn, djMo = this.m();
+    const djV = djOn ? { djBg: 'oklch(0.84 0.09 290)', djFg: 'oklch(0.28 0.08 292)', djSh: '0 0 24px -6px oklch(0.84 0.09 290 / 0.55)', djR: 12, djRP: 16 } : { djBg: 'rgba(255,255,255,0.06)', djFg: 'oklch(0.84 0.09 290)', djSh: 'inset 0 0 0 1px oklch(0.84 0.09 290 / 0.45)', djR: 20, djRP: 24 };
+    return {
+      ...djV, djOn, djGlyph: this.djGlyph(djOn, djMo), djTip: djOn ? 'DJ on air · click to stop' : 'Start the DJ from this song', doDj: ev => { ev && ev.stopPropagation && ev.stopPropagation(); this.setState({ djOn: !djOn }); },
+      desk, phone: !desk, W, H, rad: desk ? 20 : 44, s, padM, stop, pct,
+      hasImg: !!D.img, img: D.img || '', blobsEl: this.blobs(s, desk ? 80 : 60), artEl: D.artFn ? D.artFn(A) : null,
+      title: D.t, by: D.by, q: D.q || '16/44.1', chip: D.chip || '', hasChip: !!D.chip, source: D.source || '', titleFs: desk ? (W < 1300 ? 42 : 52) : 26,
+      waveEl: this.wave(s.primary, s.track, pct, desk ? 18 : 16, !paused), posL: fmt(pos), durL: fmt(dur), remL: fmt(Math.max(0, dur - pos)),
+      seekDown: dn('seek'), seekMove: mv('seek'), seekUp: upP, volDown: dn('vol'), volMove: mv('vol'), volUp: upP,
+      playEl: this.cookieEl(s, desk ? 96 : 80, paused ? 'play_arrow' : 'pause', desk ? 48 : 42, !paused),
+      shufR: sh.R, shufW: D.shuffle ? 56 : 76, repW: D.repeat !== 'off' ? 56 : 76, shufWP: D.shuffle ? 48 : 64, repWP: D.repeat !== 'off' ? 48 : 64, lyR: panel === 'lyrics' ? 12 : 20, quR: panel === 'queue' ? 12 : 20, lyWP: panel === 'lyrics' ? 48 : 64, quWP: panel === 'queue' ? 48 : 64, lyRP: panel === 'lyrics' ? 15 : 24, quRP: panel === 'queue' ? 15 : 24, shufRP: D.shuffle ? 15 : 24, shufBg: sh.Bg, shufFg: sh.Fg, repR: rp.R, repRP: D.repeat !== 'off' ? 15 : 24, repBg: rp.Bg, repFg: rp.Fg, repIc: D.repeat === 'one' ? 'repeat_one' : 'repeat',
+      repT: { off: 'Repeat off', all: 'Repeating the queue', one: 'Repeating this song' }[D.repeat || 'off'],
+      doShuffle: c(() => act('shuffle')), doRepeat: c(() => act('repeat')), doPrev: c(() => act('prev')), doNext: c(() => act('next')), doToggle: c(() => act('toggle')),
+      doClose: c(() => act('close')), doLyrics: c(() => act('panel', 'lyrics')), doQueue: c(() => act('panel', 'queue')), doDev: c(() => act('panel', 'devices')), closePanel: c(() => act('panel', panel)), doMute: c(() => act('mute')),
+      doShuffleUp: c(() => act('shuffleUp')), doClear: c(() => act('clear')), doRestore: c(() => act('restore')),
+      lyBg: ly.bg, lyFg: ly.fg, lyBd: ly.bd, quBg: qu.bg, quFg: qu.fg, quBd: qu.bd,
+      lyBgP: panel === 'lyrics' ? s.primary : 'rgba(255,255,255,0.08)', lyFgP: panel === 'lyrics' ? s.onPrimary : s.on, quBgP: panel === 'queue' ? s.primary : 'rgba(255,255,255,0.08)', quFgP: panel === 'queue' ? s.onPrimary : s.on,
+      devBgP: remote || panel === 'devices' ? s.primary : 'rgba(255,255,255,0.08)', devFgP: remote || panel === 'devices' ? s.onPrimary : s.on,
+      devBtnBg: remote || panel === 'devices' ? s.primary : 'transparent', devBtnFg: remote || panel === 'devices' ? s.onPrimary : s.onVar,
+      devIc: remote ? 'cast_connected' : 'cast', remote, devName: devRow[1], devices, devCount: devs.length + ' available',
+      volPct: Math.round(vol * 100), volIc: vol === 0 ? 'volume_off' : vol < 0.5 ? 'volume_down' : 'volume_up',
+      popOn: !!panel, isQueue: panel === 'queue', isLyrics: panel === 'lyrics', isDev: panel === 'devices', popW: Math.min(432, Math.round(W * 0.36)),
+      qRef: el => { this.qEl = el; }, nowRef: el => { this.nowEl = el; },
+      nowArt: D.artFn ? D.artFn(52) : null, srcArt: D.artFn ? D.artFn(22) : null, srcArtP: D.artFn ? D.artFn(20) : null, eqSm: this.eq(paused ? s.onVar : s.primary, 10),
+      played, hasPlayed: played.length > 0, playedMeta: pad(played.length) + ' · ' + sum(D.played || []),
+      upNext, upEmpty: upNext.length === 0, upMeta: pad(upNext.length) + ' · ' + sum(D.upNext || []), upCount: upNext.length, upCount2: pad(upNext.length),
+      canRestore: !!D.canRestore, emptyT: 'Nothing is queued after ' + D.t + '.', lines,
+    };
+  }
+}
+</script>
+</body>
+</html>
