@@ -72,9 +72,18 @@ export function CardFrame({
   className,
   extra,
   dim,
+  round,
+  titleNode,
+  letter,
 }: {
   art: ReactNode
   title: string
+  /** title with highlighted parts (search) */
+  titleNode?: ReactNode
+  /** round art (artists): Play sits inside the circle */
+  round?: boolean
+  /** data-letter for the A–Z scrubber */
+  letter?: string
   subtitle: ReactNode
   size: number
   active: boolean
@@ -89,14 +98,15 @@ export function CardFrame({
   return (
     <div
       {...extra}
-      className={`hcard ${active ? 'is-active' : ''} ${dim ? 'is-dim' : ''} ${className ?? ''}`}
+      className={`hcard ${active ? 'is-active' : ''} ${dim ? 'is-dim' : ''} ${round ? 'is-round' : ''} ${className ?? ''}`}
       style={{ width: size }}
+      data-letter={letter || undefined}
       role="link"
       tabIndex={0}
       onClick={onOpen}
       onKeyDown={(e) => e.key === 'Enter' && onOpen()}
     >
-      <div className="hcard-art" style={{ width: size, height: size, borderRadius: radiusFor(size) }}>
+      <div className="hcard-art" style={{ width: size, height: size, borderRadius: round ? '50%' : radiusFor(size), ['--pb-in' as string]: round ? `${Math.round(size * 0.06)}px` : '8px' }}>
         {art}
         {active && (
           <span className="hcard-badge">
@@ -114,7 +124,7 @@ export function CardFrame({
       </div>
       <div className="hcard-text">
         <div className="hcard-t" title={title}>
-          {title}
+          {titleNode ?? title}
         </div>
         <div className="hcard-s">{subtitle}</div>
       </div>

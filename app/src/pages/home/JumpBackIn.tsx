@@ -16,7 +16,7 @@ import { Icon, type IconName } from '../../design/icons'
 import { actions, type ActionTarget } from '../../actions/actions'
 import { playPlaylist } from '../../actions/ops'
 import { useCover } from '../../lib/covers'
-import { useArtStats } from '../../lib/artStats'
+import { useArtTint } from '../../design/tint'
 import { parseRadioId } from '../../lib/mixing'
 import { djUi, useDjView } from '../../state/djUi'
 import { nowPlayingStore } from '../../state/nowPlaying'
@@ -189,14 +189,14 @@ export function agoLabel(sec: number, nowMs = Date.now()): string {
 function useTileHue(src: HueSrc): number | null {
   const coverId = src && 'cover' in src ? src.cover : null
   const url = useCover(coverId)
-  const stats = useArtStats(coverId, url)
+  const tint = useArtTint(url)
   const artistHue = useArtistHue(src && 'artist' in src ? src.artist : null)
   const radioHue = useRadioHue(src && 'radio' in src ? src.radio : { type: 'song', artist: null, cover: null, name: '' })
   if (!src) return null
   if ('hue' in src) return src.hue
   if ('artist' in src) return artistHue
   if ('radio' in src) return radioHue
-  return stats ? stats.hue : null
+  return tint && tint.chroma > 0 ? tint.hue : null
 }
 
 const hueStyle = (h: number | null) => ({ '--h': h ?? 40, '--hc': h == null ? 0 : 1 }) as CSSProperties

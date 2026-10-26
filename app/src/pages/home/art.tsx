@@ -14,6 +14,7 @@
 import type { CSSProperties, MouseEvent } from 'react'
 import { useCover } from '../../lib/covers'
 import { useArtStats } from '../../lib/artStats'
+import { useArtTint } from '../../design/tint'
 import { nameHue, type MixKind } from '../../lib/mixing'
 import type { Artist, Catalogue } from '../../state/library'
 import { cookie, SHAPE_CLOVER, SHAPE_PLAYING } from '../../design/shapes'
@@ -116,9 +117,9 @@ export function ArtistDisc({ artist, size, className, style }: { artist: Artist;
 /** Hue of an artist (photo, else name). */
 export function useArtistHue(artist: Artist | null | undefined): number | null {
   const url = useCover(artist?.image?.id, artist?.image?.v)
-  const stats = useArtStats(artist?.image?.id, url)
+  const tint = useArtTint(url)
   if (!artist) return null
-  return url ? (stats ? stats.hue : null) : nameHue(artist.name)
+  return url ? (tint && tint.chroma > 0 ? tint.hue : null) : nameHue(artist.name)
 }
 
 /* ── Radio art ──────────────────────────────────────── */

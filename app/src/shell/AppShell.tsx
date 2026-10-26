@@ -410,11 +410,16 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
                 <PhoneTopBar
                   title={phoneTitle}
                   actions={
-                    key !== 'library' && (
+                    <>
+                      {key === 'library' && (
+                        <button type="button" className="ptb-ib" aria-label="Shuffle library" onClick={shuffleAll}>
+                          <Icon name="shuffle" />
+                        </button>
+                      )}
                       <button type="button" className="ptb-ib" aria-label="Search your library" onClick={focusLibrarySearch}>
                         <Icon name="search" />
                       </button>
-                    )
+                    </>
                   }
                 />
               )}

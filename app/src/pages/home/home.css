@@ -120,7 +120,7 @@
 .hcard-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .hcard-offline { position: absolute; left: 8px; top: 8px; width: 28px; height: 28px; border-radius: 999px; background: rgba(20, 16, 14, .72); color: var(--ink-primary); display: flex; align-items: center; justify-content: center; }
 .hcard-offline .ms { font-size: 18px; }
-.hcard-btns { position: absolute; right: 8px; bottom: 8px; display: flex; align-items: center; gap: 6px; opacity: 0; transform: translateY(8px); transition: opacity 200ms var(--ease-std), transform 350ms cubic-bezier(0.42, 1.67, 0.21, 0.9); }
+.hcard-btns { position: absolute; right: var(--pb-in, 8px); bottom: var(--pb-in, 8px); display: flex; align-items: center; gap: 6px; opacity: 0; transform: translateY(8px); transition: opacity 200ms var(--ease-std), transform 350ms cubic-bezier(0.42, 1.67, 0.21, 0.9); }
 .hcard:hover .hcard-btns, .hcard:focus-within .hcard-btns { opacity: 1; transform: none; }
 .hcard-shuf {
   width: 36px; height: 36px; border: 0; padding: 0; border-radius: 999px; cursor: pointer;

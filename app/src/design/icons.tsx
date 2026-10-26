@@ -89,6 +89,7 @@ export const ICON_SYMBOLS = {
   autorenew: 'autorenew',
   arrowR: 'arrow_forward',
   sensors: 'sensors',
+  searchOff: 'search_off',
   dj: '',
 } as const
 
