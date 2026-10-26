@@ -17,9 +17,14 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:clipChildren="false"
+        android:clipToPadding="false"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:padding="12dp">
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp">
 
         <ImageView
             android:id="@+id/wg_art"
@@ -32,6 +37,8 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
             android:layout_weight="1"
+            android:clipChildren="false"
+            android:clipToPadding="false"
             android:orientation="vertical">
 
             <TextView
@@ -50,6 +57,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
+            android:clipChildren="false"
+            android:clipToPadding="false"
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
@@ -63,8 +72,8 @@
             <ImageView
                 android:id="@+id/wg_play"
                 style="@style/WgPlay"
-                android:layout_width="56dp"
-                android:layout_height="56dp" />
+                android:layout_width="48dp"
+                android:layout_height="48dp" />
 
             <ImageView
                 android:id="@+id/wg_next"

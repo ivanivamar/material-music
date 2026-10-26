@@ -93,7 +93,7 @@ final class WidgetRenderer {
             this.h = h;
             this.m = m;
             cols = w < 128 ? 1 : w < 224 ? 2 : w < 320 ? 3 : 4;
-            rows = h < 128 ? 1 : h < 250 ? 2 : h < 330 ? 3 : 4;
+            rows = h < 120 ? 1 : h < 250 ? 2 : h < 330 ? 3 : 4;
             float d = ctx.getResources().getDisplayMetrics().density;
             k = Math.min(d, 2.25f);
             kBg = Math.min(d, 1.5f);
@@ -164,16 +164,17 @@ final class WidgetRenderer {
     /** 3×1 / 4×1 (mBar): 56dp cover, title + artist, prev · play 56 · next. */
     private static RemoteViews bar(R2 r) {
         RemoteViews v = new RemoteViews(r.ctx.getPackageName(), R.layout.widget_bar);
+        float cover = Math.max(40, Math.min(56, r.h - 16));
         WidgetArt.Bg bg = bg(r);
         bg.gx = 12;
-        bg.gy = Math.max(8, (r.h - 56) * 0.5f);
-        bg.gs = 56;
+        bg.gy = Math.max(8, (r.h - cover) * 0.5f);
+        bg.gs = cover;
         bg.gr = 16;
         background(v, bg);
-        v.setImageViewBitmap(R.id.wg_art, WidgetArt.cover(r.art, 56, 16, r.on ? 1f : 0.7f, r.k));
+        v.setImageViewBitmap(R.id.wg_art, WidgetArt.cover(r.art, cover, 16, r.on ? 1f : 0.7f, r.k));
         texts(v, r);
         transport(v, r);
-        playButton(v, r, 56, 56, r.on ? 28 : 16, 28);
+        playButton(v, r, 48, 48, r.on ? 24 : 14, 24);
         v.setOnClickPendingIntent(android.R.id.background, PelagicWidget.openApp(r.ctx, "open"));
         return v;
     }
@@ -181,10 +182,12 @@ final class WidgetRenderer {
     /** 3×2 / 4×2 (mPlayer): 144dp cover, status label (+ DJ knob), title, artist, 4dp progress bar, prev · play 64×48 · next · shuffle. */
     private static RemoteViews player(R2 r) {
         RemoteViews v = new RemoteViews(r.ctx.getPackageName(), R.layout.widget_player);
-        float cover = Math.max(48, Math.min(144, Math.min(r.h - 32, r.w - 32 - 16 - 176)));
+        float padX = 16f;
+        float padY = 10f;
+        float cover = Math.max(48, Math.min(144, Math.min(r.h - padY * 2, r.w - padX * 2 - 16 - 176)));
         WidgetArt.Bg bg = bg(r);
-        bg.gx = 16;
-        bg.gy = 16;
+        bg.gx = padX;
+        bg.gy = padY;
         bg.gs = cover;
         bg.gr = 20;
         background(v, bg);
@@ -197,14 +200,16 @@ final class WidgetRenderer {
     private static RemoteViews tall(R2 r) {
         RemoteViews v = new RemoteViews(r.ctx.getPackageName(), R.layout.widget_tall);
         WidgetState.Now n = r.m.now;
-        float cover = Math.max(48, Math.min(144, r.w - 32 - 16 - 176));
+        float padX = 16f;
+        float padY = 10f;
+        float cover = Math.max(48, Math.min(144, r.w - padX * 2 - 16 - 176));
 
         int maxRows = r.rows == 3 ? 1 : Math.max(1, Math.min(3, (int) Math.floor((r.h - 176 - 16 - 36) / 48f)));
         int count = Math.min(maxRows, n.up.size());
 
         WidgetArt.Bg bg = bg(r);
-        bg.gx = 16;
-        bg.gy = 16;
+        bg.gx = padX;
+        bg.gy = padY;
         bg.gs = cover;
         bg.gr = 20;
         bg.hasUp = count > 0;
@@ -237,7 +242,7 @@ final class WidgetRenderer {
         float col = Math.max(80, r.w - 32 - cover - 16);
         v.setImageViewBitmap(R.id.wg_scrub, WidgetArt.progressBar(col, r.m.now.fraction(), r.s.track, r.s.primary, r.k));
         transport(v, r);
-        playButton(v, r, 64, 48, r.on ? 24 : 16, 28);
+        playButton(v, r, 60, 44, r.on ? 22 : 14, 26);
         shuffle(v, r);
     }
 
