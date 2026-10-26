@@ -4,49 +4,61 @@
  * desktop page styles regardless of stylesheet order.
  */
 
-/* ── Shell: one column, bottom tabs, floating mini-player ── */
-.shell.is-phone { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); grid-template-areas: 'main'; }
-.shell.is-phone .shell-page {
-  padding: calc(18px + env(safe-area-inset-top)) 20px calc(var(--android-tabs-h) + 32px + env(safe-area-inset-bottom));
+/* ── Shell (Material redesign): top bar on top-level pages, 96px tab bar, 68px glass mini player ── */
+.shell.is-phone {
+  --android-tabs-h: 96px; --android-mini-h: 68px;
+  grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); grid-template-areas: 'main';
+  background: var(--panel);
 }
+.shell.is-phone .shell-main { grid-area: main; position: relative; inset: auto; min-height: 0; }
+.shell.is-phone .shell-page {
+  padding: calc(18px + env(safe-area-inset-top)) 16px calc(var(--android-tabs-h) + 32px + env(safe-area-inset-bottom));
+}
+.shell.is-phone.has-ptb .shell-page { padding-top: 8px; }
 .shell.is-phone.has-mini .shell-page {
   padding-bottom: calc(var(--android-tabs-h) + var(--android-mini-h) + 40px + env(safe-area-inset-bottom));
 }
+/* the top bar carries the page title on the top-level pages */
+.shell.is-phone.has-ptb-title .shell-page .ph-title { display: none; }
+
+.ptb { height: 64px; padding: env(safe-area-inset-top) 8px 0 16px; box-sizing: content-box; display: flex; align-items: center; gap: 10px; }
+.ptb-brand { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; color: var(--ink-primary); text-decoration: none; }
+.ptb-word { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ptb-title { flex: 1; min-width: 0; margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ptb-actions { display: flex; align-items: center; gap: 2px; flex: none; }
+.ptb-ib, .ptb-av {
+  width: 48px; height: 48px; padding: 0; border: 0; border-radius: 999px; background: none; cursor: pointer; color: var(--ink-primary);
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.ptb-ib .ms { font-size: 24px; }
 
 .tabs {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
   height: calc(var(--android-tabs-h) + env(safe-area-inset-bottom));
-  display: grid; grid-template-columns: repeat(4, 1fr);
-  padding: 6px 4px calc(22px + env(safe-area-inset-bottom));
-  background: var(--bg-1); border-top: 1px solid rgba(255, 255, 255, .06);
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+  padding: 0 0 calc(16px + env(safe-area-inset-bottom));
+  background: var(--surface-1);
 }
 .tab {
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
   min-width: 0; padding: 0; border: 0; background: none; font: inherit;
   color: var(--ink-secondary); text-decoration: none; cursor: pointer; -webkit-tap-highlight-color: transparent;
 }
-.tab:hover { color: var(--ink-primary); }
-.tab.is-on { color: #fff; }
-/* icon sits in a pill; the active tab's pill lights up */
+.tab:hover { color: var(--ink-secondary); }
+.tab.is-on, .tab.is-on:hover { color: var(--ink-primary); }
 .tab-ic {
   position: relative; display: inline-flex; align-items: center; justify-content: center;
-  width: 54px; height: 30px; border-radius: 999px; font-size: var(--icon-tab);
-  transition: background .25s ease, box-shadow .25s ease, transform .25s ease;
+  width: 64px; height: 32px; border-radius: 999px;
+  transition: background-color 200ms var(--ease-std), width 400ms var(--ease-shape);
 }
-.tab:active .tab-ic { transform: scale(.94); }
-.tab.is-on .tab-ic {
-  background: linear-gradient(180deg, rgba(255, 255, 255, .16), rgba(255, 255, 255, .07));
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .16), 0 0 18px -2px rgba(255, 255, 255, .22);
+.tab-ic > .ms { font-size: 24px; }
+.tab.is-on .tab-ic { background: oklch(0.36 0.035 38); color: oklch(0.92 0.025 38); }
+.tab-label { font-size: 12px; font-weight: 500; }
+.tab.is-on .tab-label { font-weight: 700; }
+.tab-count {
+  position: absolute; left: 34px; top: 2px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px;
+  background: var(--brand); color: var(--on-brand); font-size: 11px; font-weight: 700; line-height: 16px; text-align: center;
 }
-.tab-label { font-family: var(--font-mono); font-size: var(--fs-mono-xs); letter-spacing: .14em; transition: color .25s ease; }
-.tab.is-on .tab-label { text-shadow: 0 0 8px rgba(255, 255, 255, .5); }
-/* avatar tab */
-.tab-av {
-  width: 24px; height: 24px; border-radius: 50%; overflow: hidden; display: flex; align-items: center; justify-content: center;
-  font-size: 12px; color: var(--ink-primary); background: var(--surface-2); box-shadow: 0 0 0 1.5px rgba(255, 255, 255, .22);
-}
-.tab-av img { width: 100%; height: 100%; object-fit: cover; }
-.tab.is-on .tab-av { box-shadow: 0 0 0 1.5px #fff; }
 
 /* account bottom sheet (shares the .as look with the action sheets) */
 .as-me-av {
@@ -62,26 +74,32 @@
 .mini {
   position: fixed; left: 8px; right: 8px; z-index: 21;
   bottom: calc(var(--android-tabs-h) + 8px + env(safe-area-inset-bottom));
-  height: var(--android-mini-h); border-radius: 14px; overflow: hidden;
-  display: flex; align-items: center; gap: 12px; padding: 0 8px;
-  background: #151517; border: 1.5px solid rgba(255, 255, 255, .09);
-  box-shadow: 0 18px 40px -14px rgba(0, 0, 0, .7);
-  cursor: pointer; outline: none; -webkit-tap-highlight-color: transparent;
+  height: var(--android-mini-h); border-radius: 16px; overflow: hidden; isolation: isolate;
+  display: flex; align-items: center; gap: 4px; padding: 0 4px 0 8px;
+  background: var(--glass-bar);
+  -webkit-backdrop-filter: blur(28px) saturate(1.5); backdrop-filter: blur(28px) saturate(1.5);
+  box-shadow: 0 6px 18px -6px rgba(0, 0, 0, .5), inset 0 0 0 1px var(--glass-bar-rim), inset 0 1px 0 rgba(255, 255, 255, .08);
 }
-.mini:focus-visible { border-color: rgba(255, 255, 255, .45); }
-.mini-cover { width: 46px; height: 46px; flex: none; border-radius: 8px; object-fit: cover; display: block; }
+.mini-open { flex: 1; min-width: 0; height: 100%; display: flex; align-items: center; gap: 12px; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.mini-cover-wrap { flex: none; display: flex; }
+.mini-cover { width: 52px; height: 52px; flex: none; border-radius: 10px; object-fit: cover; display: block; }
 .mini-cover-empty { background: var(--surface-2); }
-.mini-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.mini-title { font-size: 15px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.mini-sub { font-size: 12px; color: var(--ink-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.mini-btn, .mini-play {
-  width: 44px; height: 44px; flex: none; border: 0; padding: 0; cursor: pointer;
+.mini-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.mini-title-row { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.mini-title { font-size: 14px; font-weight: 600; min-width: 0; color: oklch(0.95 0.006 40); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mini-sub { font-size: 12px; color: oklch(0.79 0.014 40); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mini-chip { flex: none; font-size: 11px; font-weight: 700; padding: 2px 6px; border-radius: 999px; background: var(--surface-raised); color: var(--ink-primary); }
+.mini-chip.is-dj { background: var(--dj); color: var(--on-dj); }
+.mini-play {
+  position: relative; width: 48px; height: 48px; flex: none; border: 0; padding: 0; border-radius: 999px; cursor: pointer;
+  background: var(--album); color: var(--on-album);
   display: inline-flex; align-items: center; justify-content: center;
 }
-.mini-btn { background: none; border-radius: 12px; font-size: 21px; color: var(--ink-secondary); }
-.mini-play { position: relative; border-radius: 50%; background: var(--ink-primary); color: var(--bg-1); font-size: 18px; }
-.mini-progress { position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: rgba(255, 255, 255, .12); }
-.mini-progress > span { display: block; height: 1px; background: #fff; box-shadow: 0 0 6px rgba(255, 255, 255, .7); }
+.mini-play .ms { font-size: 28px; }
+.mini-spin { position: absolute; inset: 3px; border-radius: 50%; border: 2px solid transparent; border-top-color: var(--on-album); animation: pm-spin .9s linear infinite; }
+.mini-next { width: 48px; height: 48px; flex: none; border: 0; padding: 0; background: none; cursor: pointer; color: oklch(0.95 0.006 40); display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; }
+.mini-next .ms { font-size: 28px; }
+.mini-progress { position: absolute; left: 0; bottom: 0; height: 3px; background: var(--album); transition: width .5s linear; }
 
 /* toasts: above the mini-player and tabs */
 html[data-phone]:not([data-np]) .toasts.toasts-shell { left: 0; right: 0; bottom: calc(var(--android-tabs-h) + var(--android-mini-h) + 24px + env(safe-area-inset-bottom)); }

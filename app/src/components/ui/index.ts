@@ -23,4 +23,4 @@ export {
 } from './Status'
 export { ToastProvider, useToast, type ToastInput } from './Toast'
 export { TrackRow, AlbumCard } from './Media'
-export { CookieButton, WaveProgress, AlbumEq } from './Material'
+export { CookieButton, WaveProgress, AlbumEq, WaveSeek, ThinSlider, ModeToggle } from './Material'

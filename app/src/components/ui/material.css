@@ -17,3 +17,47 @@
 
 .mm-eq { display: inline-flex; align-items: flex-end; gap: 2px; flex: none; }
 .mm-eq > span { width: 3px; height: 100%; border-radius: 2px; transform-origin: bottom; animation: pm-eq .9s ease-in-out infinite; }
+
+.mm-seek { display: flex; align-items: center; gap: 12px; width: 100%; font-size: 12px; font-variant-numeric: tabular-nums; color: var(--ink-secondary); }
+.mm-seek-t { min-width: 30px; }
+.mm-seek-t.is-end { text-align: right; }
+.mm-seek-hit { flex: 1; padding: 6px 0; cursor: pointer; touch-action: none; outline: none; border-radius: 8px; }
+.mm-seek-hit:focus-visible { box-shadow: 0 0 0 2px var(--brand); }
+
+.mm-thin { padding: 8px 0; cursor: pointer; touch-action: none; outline: none; border-radius: 6px; }
+.mm-thin:focus-visible { box-shadow: 0 0 0 2px var(--brand); }
+.mm-thin-track { height: 6px; border-radius: 999px; background: var(--track); overflow: hidden; }
+.mm-thin-fill { height: 100%; border-radius: 999px; background: var(--ink-primary); }
+
+.mm-mode-slot { width: 46px; flex: none; display: flex; justify-content: center; }
+.mm-mode {
+  position: relative; width: 46px; height: 34px; border: 0; padding: 0; border-radius: 17px; cursor: pointer;
+  background: transparent; color: var(--ink-secondary);
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: border-radius 480ms var(--ease-shape), width 480ms var(--ease-shape), background-color 200ms var(--ease-std), color 200ms var(--ease-std);
+}
+.mm-mode::before { content: ''; position: absolute; inset: -7px; border-radius: 999px; }
+.mm-mode .ms { font-size: 22px; }
+.mm-mode:hover { color: var(--ink-primary); }
+.mm-mode.is-on { width: 34px; border-radius: 11px; background: var(--album); color: var(--on-album); }
+.mm-mode.is-off { color: oklch(0.55 0.02 290); cursor: default; }
+.mm-mode-badge { position: absolute; right: 2px; top: 1px; font-size: 9px; font-weight: 700; line-height: 1; }
+
+/* Snackbar (Material redesign): inverse light surface, dark ink, coral action */
+.toast {
+  min-height: 48px; padding: 6px 8px 6px 16px; gap: 10px; border: 0 !important; border-radius: 12px;
+  background: oklch(0.90 0.01 40); color: oklch(0.22 0.01 40); font-size: 14px; line-height: 1.35;
+  box-shadow: 0 12px 28px -10px rgba(0, 0, 0, .6);
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+  animation-duration: 500ms; animation-timing-function: var(--ease-shape);
+}
+.toast-ic, .toast-ic.is-muted { color: oklch(0.40 0.02 40); font-size: 20px; }
+.toast-danger .toast-ic { color: oklch(0.52 0.16 28); }
+.toast-dj .toast-ic { color: oklch(0.50 0.14 292); }
+.toast-meta { font-family: var(--font-sans); font-size: 12px; letter-spacing: 0; text-transform: none; color: oklch(0.45 0.015 40); }
+.toast-action {
+  position: relative; height: 36px; padding: 0 12px; border-radius: 999px; font-weight: 700; font-size: 14px;
+  color: oklch(0.48 0.13 38); background: none; border: 0; letter-spacing: 0; text-transform: none; font-family: var(--font-sans);
+}
+.toast-action:hover { color: oklch(0.40 0.13 38); background: oklch(0.48 0.13 38 / 0.1); }
+.toast-progress { height: 3px; background: oklch(0.48 0.13 38); box-shadow: none; }
