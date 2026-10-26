@@ -1,8 +1,8 @@
 /** New Releases pieces shared by the feed, the hero and the detail panel / sheet. */
-import { useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent, type ReactNode } from 'react'
+import { useLayoutEffect, useMemo, useRef, useState, type PointerEvent, type ReactNode } from 'react'
 import { useToast } from '../../components/ui'
 import { Icon, type IconName } from '../../design/icons'
-import { GRAIN } from '../../design/textures'
+import { cookie } from '../../design/shapes'
 import { coverUrl, mbReleaseGroupUrl } from '../../lib/musicbrainz'
 import { PelagicNative, isNative } from '../../native/bridge'
 import { releasesStore } from '../../state/releases'
@@ -56,16 +56,14 @@ export function phoneMeta(it: FeedItem): string {
 
 const failed = new Set<string>()
 
-function hash(s: string): number {
-  let h = 2166136261
-  for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619)
-  return h >>> 0
+function artistHue(name: string): number {
+  let h = 0
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) % 360
+  return h
 }
 
 /**
- * Release cover. Not owned yet → softened (new / acquired) or low contrast (seen); in the library →
- * full contrast. No art on the Cover Art Archive → a generated cover: grain, a hairline at the golden
- * cut, a thin ring placed from the release id, artist and title in mono, tagged NO COVER ART.
+ * Release cover (Cover Art Archive, else M3 Expressive gradient sleeve with artist hue and cookie burst).
  */
 export function ReleaseCover({ item, size = 'sm' }: { item: FeedItem; size?: 'xs' | 'sm' | 'lg' }) {
   const id = item.rel.id
@@ -88,17 +86,14 @@ export function ReleaseCover({ item, size = 'sm' }: { item: FeedItem; size?: 'xs
         }}
       />
     )
-  const h = hash(id)
-  const ring: CSSProperties = { right: `${14 + (h % 13)}%`, top: `${16 + ((h >>> 4) % 13)}%`, width: `${22 + ((h >>> 8) % 9)}%` }
+  const h = artistHue(item.rel.a)
   return (
-    <div className={`${cls} nr-fb nr-fb-${size}`} style={{ '--nr-grain': GRAIN } as CSSProperties} aria-hidden>
-      <span className="nr-fb-line" />
-      <span className="nr-fb-ring" style={ring} />
+    <div className={`${cls} nr-fb nr-fb-${size}`} style={{ background: `linear-gradient(160deg, oklch(0.56 0.11 ${h}), oklch(0.28 0.07 ${h}))` }} aria-hidden>
+      <div className="nr-fb-burst" style={{ background: `oklch(0.82 0.10 ${h} / 0.35)`, clipPath: cookie(9, 0.06) }} />
       {size !== 'xs' && (
         <>
           <span className="nr-fb-a">{item.rel.a}</span>
           <span className="nr-fb-t">{item.rel.t}</span>
-          <span className="nr-fb-tag">NO COVER ART</span>
         </>
       )}
     </div>
@@ -294,15 +289,23 @@ export function SwipeRow({
 
   return (
     <div className="nr-swipe">
-      <div className="nr-swipe-under" aria-hidden>
-        <span style={{ opacity: Math.max(0, Math.min(1, dx / SWIPE)) }}>
+      <div
+        className="nr-swipe-under"
+        aria-hidden
+        style={{
+          background: dx > 0 ? 'oklch(0.36 0.035 38)' : 'oklch(0.55 0.17 25)',
+          color: dx > 0 ? 'oklch(0.92 0.025 38)' : 'oklch(0.97 0.02 25)',
+          opacity: Math.min(1, Math.abs(dx) / 30),
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', opacity: dx > 0 ? 1 : 0 }}>
           <Icon name="eye" />
-          {seenWord}
-        </span>
-        <span style={{ opacity: Math.max(0, Math.min(1, -dx / SWIPE)) }}>
-          DISMISS
+          <span>{seenWord}</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', opacity: dx < 0 ? 1 : 0 }}>
+          <span>Dismiss</span>
           <Icon name="x" />
-        </span>
+        </div>
       </div>
       <div
         className={`nr-row ${drag ? 'is-drag' : ''}`}

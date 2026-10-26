@@ -213,12 +213,35 @@ textarea.tf-input { height: auto; padding: 16px; resize: none; line-height: 1.45
 .dd.is-compact .dd-value { font-size: 14px; font-weight: 500; }
 .dd.is-compact .dd-arrow { right: 6px; }
 .dd-menu {
-  position: fixed; z-index: 400; min-width: 160px; max-width: min(360px, calc(100vw - 16px)); overflow-y: auto; overscroll-behavior: contain; padding: 8px 0;
+  position: fixed; z-index: 400; min-width: 160px; max-width: min(360px, calc(100vw - 16px));
   border-radius: 16px; background: oklch(0.26 0.009 40); box-shadow: 0 12px 32px -8px rgba(0, 0, 0, .75), 0 0 0 1px oklch(0.32 0.01 40);
   animation: dd-in 180ms var(--ease-std) both; transform-origin: top center;
+  overflow: hidden; display: flex; flex-direction: column;
 }
 .dd-menu.is-up { transform-origin: bottom center; }
 @keyframes dd-in { from { opacity: 0; transform: scaleY(.85); } to { opacity: 1; transform: none; } }
+.dd-menu-scroll {
+  overflow-y: auto; overscroll-behavior: contain; padding: 8px 0; max-height: inherit;
+  scrollbar-width: thin; scrollbar-color: oklch(0.44 0.012 40) transparent;
+}
+.dd-menu-scroll::-webkit-scrollbar, .dd-menu::-webkit-scrollbar {
+  width: 8px;
+}
+.dd-menu-scroll::-webkit-scrollbar-track, .dd-menu::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 10px 0;
+}
+.dd-menu-scroll::-webkit-scrollbar-thumb, .dd-menu::-webkit-scrollbar-thumb {
+  background: oklch(0.44 0.012 40);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+.dd-menu-scroll::-webkit-scrollbar-thumb:hover, .dd-menu::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.56 0.014 40);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
 .dd-item { height: 48px; padding: 0 16px 0 12px; display: flex; align-items: center; gap: 12px; cursor: pointer; font-size: 14px; font-weight: 500; color: var(--ink-primary); white-space: nowrap; }
 .dd-item.is-active { background: oklch(0.30 0.01 40); }
 .dd-item.is-on { background: oklch(0.36 0.035 38); color: oklch(0.92 0.025 38); }

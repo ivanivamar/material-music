@@ -1,9 +1,11 @@
 /**
- * New Releases side panel (desktop: 460px from the right over a scrim; phone: bottom sheet from
- * 64px under the top, handle + drag down to close). Two contents: a release's detail, or the
- * Followed artists settings.
+ * New Releases side panel (Material 3 Expressive redesign, handoff NewReleasesMaterial.dc.html).
+ * Desktop: 460px right popover over a dark scrim.
+ * Phone: bottom sheet with swipe-down handle.
+ * Contents: release detail, or Followed artists settings.
  */
-import { useEffect, useMemo, useRef, useState, type PointerEvent, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent, type PointerEvent, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { Skeleton, Toggle } from '../../components/ui'
 import { Icon } from '../../design/icons'
 import { bandcampSearchUrl, mbReleaseGroupUrl } from '../../lib/musicbrainz'
@@ -13,79 +15,279 @@ import { countdown, fmtLength, fmtRelDate, fmtRelShort, followedArtists, isOwned
 import { artistHref, go } from '../../shell/routes'
 import { ArtistAvatar } from '../library/common'
 import { useNowPlaying } from '../library/playback'
-import { Countdown, Dot, MatchingVeil, ReleaseCover, actionsFor, openExternal, ownedCount, playRelease, typeLabel, type ReleaseActions } from './parts'
+import { Countdown, Dot, MatchingVeil, ReleaseCover, Spinner, openExternal, ownedLabel, playRelease, typeLabel, type ReleaseActions } from './parts'
 
-/** "14 Nov" */
 const niceDay = (date: string) => fmtRelShort(date).replace(/^0/, '').replace(/ ([A-Z])([A-Z]+)/, (_, a: string, b: string) => ` ${a}${b.toLowerCase()}`)
 
 export type PanelState = { kind: 'rel'; id: string } | { kind: 'artists' } | { kind: 'artistFilter' } | null
 
 /* ── Container ───────────────────────────────────────── */
 
-export function ReleasePanel({ open, phone, contentKey, onClose, children }: { open: boolean; phone: boolean; contentKey: string; onClose: () => void; children: ReactNode }) {
-  const [pull, setPull] = useState(0)
-  const grab = useRef<{ y: number; id: number; t: number } | null>(null)
+export function ReleasePanel({
+  open,
+  phone,
+  contentKey,
+  onClose,
+  children,
+}: {
+  open: boolean
+  phone: boolean
+  contentKey: string
+  onClose: () => void
+  children: ReactNode
+}) {
+  const [grabDy, setGrabDy] = useState<number | null>(null)
+  const grab = useRef({ active: false, pid: -1, y0: 0, y: 0, t: 0, v: 0, moved: false, onHandle: false, fromBtn: false })
+  const swallowClick = useRef(false)
+  const panelRef = useRef<HTMLElement>(null)
   const scroller = useRef<HTMLDivElement>(null)
 
-  // a new content starts at the top
   useEffect(() => {
     if (open) scroller.current?.scrollTo({ top: 0 })
+    else {
+      grab.current.active = false
+      setGrabDy(null)
+    }
   }, [open, contentKey])
 
-  const down = (e: PointerEvent<HTMLDivElement>) => {
-    grab.current = { y: e.clientY, id: e.pointerId, t: performance.now() }
-    e.currentTarget.setPointerCapture(e.pointerId)
-  }
-  const move = (e: PointerEvent<HTMLDivElement>) => {
-    if (grab.current?.id !== e.pointerId) return
-    setPull(Math.max(0, e.clientY - grab.current.y))
-  }
-  const up = (e: PointerEvent<HTMLDivElement>) => {
-    const g = grab.current
-    grab.current = null
-    if (!g || g.id !== e.pointerId) return
-    const dy = Math.max(0, e.clientY - g.y)
-    const flick = dy > 30 && dy / (performance.now() - g.t) > 0.6
-    setPull(0)
-    if (dy < 6 || dy > 120 || flick) onClose()
+  /* Phone bottom sheet drag (same gesture model as QueuePanel):
+   * Dragging the handle or header area pulls the sheet down; a press on an interactive control
+   * stays a tap unless the finger moves past BTN_SLOP. Also supports pulling down when an inner
+   * scrollable list is at scrollTop === 0. */
+  const BTN_SLOP = 8
+  const isGrabZone = (target: HTMLElement) => {
+    const scrollList = target.closest<HTMLElement>('.nrp-art-list')
+    if (scrollList) return false
+    if (contentKey !== 'artists') {
+      // In detail / filter sheets, the top handle, header, and cover/title block are non-scrolling grab zones
+      return !!target.closest('.nr-handle, .nrp-head, .nrp-top, .nrp-titles')
+    }
+    return true
   }
 
-  return (
+  const onGrabDown = (e: PointerEvent<HTMLElement>) => {
+    if (!phone || !e.isPrimary) return
+    const target = e.target as HTMLElement
+    if (!isGrabZone(target)) return
+    const fromBtn = !!target.closest('button, a, input, label, .nrp-reissues-card')
+    if (!fromBtn) {
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId)
+      } catch {
+        /* ignore */
+      }
+    }
+    swallowClick.current = false
+    grab.current = {
+      active: true,
+      pid: e.pointerId,
+      y0: e.clientY,
+      y: e.clientY,
+      t: performance.now(),
+      v: 0,
+      moved: false,
+      onHandle: !!target.closest('.nr-handle'),
+      fromBtn,
+    }
+    setGrabDy(0)
+  }
+
+  const onGrabMove = (e: PointerEvent<HTMLElement>) => {
+    const g = grab.current
+    if (!g.active || g.pid !== e.pointerId) return
+    const now = performance.now()
+    if (now > g.t) g.v = 0.7 * ((e.clientY - g.y) / (now - g.t)) + 0.3 * g.v
+    g.y = e.clientY
+    g.t = now
+    const dy = e.clientY - g.y0
+    if (!g.moved) {
+      if (Math.abs(dy) <= (g.fromBtn ? BTN_SLOP : 4)) return
+      if (dy < 0) {
+        g.active = false
+        setGrabDy(null)
+        return
+      }
+      g.moved = true
+      if (g.fromBtn) {
+        swallowClick.current = true
+        try {
+          e.currentTarget.setPointerCapture(e.pointerId)
+        } catch {
+          /* ignore */
+        }
+      }
+    }
+    setGrabDy(Math.max(0, dy))
+  }
+
+  const onGrabUp = (e: PointerEvent<HTMLElement>) => {
+    const g = grab.current
+    if (!g.active || g.pid !== e.pointerId) return
+    g.active = false
+    const dy = Math.max(0, e.clientY - g.y0)
+    const { v, moved, onHandle } = g
+    setGrabDy(null)
+    if (swallowClick.current) window.setTimeout(() => (swallowClick.current = false), 350)
+    if (!moved) {
+      if (onHandle) onClose()
+      return
+    }
+    if (dy > 100 || v > 0.45) onClose()
+  }
+
+  const onGrabCancel = () => {
+    grab.current.active = false
+    setGrabDy(null)
+  }
+
+  const onGrabClickCapture = (e: ReactMouseEvent) => {
+    if (!swallowClick.current) return
+    swallowClick.current = false
+    e.preventDefault()
+    e.stopPropagation()
+  }
+
+  // Also allow pulling down to close when starting a touch inside the scrollable list at scrollTop === 0
+  useEffect(() => {
+    const el = panelRef.current
+    if (!el || !phone || !open) return
+    let tracking = false
+    let dragging = false
+    let y0 = 0
+    let x0 = 0
+    let lastY = 0
+    let lastT = 0
+    let v = 0
+    let scrollEl: HTMLElement | null = null
+
+    const onTouchStart = (ev: TouchEvent) => {
+      if (ev.touches.length !== 1) return
+      const target = ev.target as HTMLElement
+      if (isGrabZone(target)) return // handled by pointer events
+      scrollEl = target.closest<HTMLElement>('.nrp-art-list') ?? scroller.current
+      if (!scrollEl || scrollEl.scrollTop > 0) return
+      const t = ev.touches[0]
+      tracking = true
+      dragging = false
+      y0 = lastY = t.clientY
+      x0 = t.clientX
+      lastT = performance.now()
+      v = 0
+    }
+
+    const onTouchMove = (ev: TouchEvent) => {
+      if (!tracking || ev.touches.length !== 1) return
+      const t = ev.touches[0]
+      const dy = t.clientY - y0
+      const dx = t.clientX - x0
+      const now = performance.now()
+      if (!dragging) {
+        if (scrollEl && scrollEl.scrollTop > 0) {
+          tracking = false
+          return
+        }
+        if (dy < -4 || Math.abs(dx) > Math.abs(dy) + 4) {
+          tracking = false
+          return
+        }
+        if (dy <= 8) return
+        dragging = true
+        y0 = t.clientY
+      }
+      if (ev.cancelable) ev.preventDefault()
+      if (now > lastT) v = 0.7 * ((t.clientY - lastY) / (now - lastT)) + 0.3 * v
+      lastY = t.clientY
+      lastT = now
+      setGrabDy(Math.max(0, t.clientY - y0))
+    }
+
+    const onTouchEnd = () => {
+      if (!tracking) return
+      tracking = false
+      if (!dragging) return
+      dragging = false
+      const dy = Math.max(0, lastY - y0)
+      setGrabDy(null)
+      if (dy > 100 || v > 0.45) onClose()
+    }
+
+    el.addEventListener('touchstart', onTouchStart, { passive: true })
+    el.addEventListener('touchmove', onTouchMove, { passive: false })
+    el.addEventListener('touchend', onTouchEnd)
+    el.addEventListener('touchcancel', onTouchEnd)
+    return () => {
+      el.removeEventListener('touchstart', onTouchStart)
+      el.removeEventListener('touchmove', onTouchMove)
+      el.removeEventListener('touchend', onTouchEnd)
+      el.removeEventListener('touchcancel', onTouchEnd)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phone, open, contentKey])
+
+  const isArtists = contentKey === 'artists'
+  const pulling = grabDy !== null
+
+  return createPortal(
     <>
-      <div className={`nr-scrim ${open ? 'is-open' : ''}`} style={pull ? { opacity: Math.max(0, 1 - pull / 400), transition: 'none' } : undefined} onClick={onClose} aria-hidden />
+      <div
+        className={`nr-scrim ${open ? 'is-open' : ''} ${pulling ? 'is-grabbing' : ''}`}
+        style={grabDy && grabDy > 0 ? { opacity: Math.max(0, 1 - grabDy / 420) } : undefined}
+        onClick={onClose}
+        aria-hidden
+      />
       <aside
-        className={`nr-panel ${open ? 'is-open' : ''} ${pull ? 'is-grabbing' : ''}`}
-        style={pull ? { transform: `translate3d(0, ${pull}px, 0)` } : undefined}
+        ref={panelRef}
+        className={`nr-panel ${open ? 'is-open' : ''} ${phone ? 'is-phone' : ''} ${isArtists ? 'is-artists' : ''} ${pulling ? 'is-grabbing' : ''}`}
+        style={grabDy !== null ? { transform: `translate3d(0, ${grabDy}px, 0)` } : undefined}
         aria-hidden={!open}
         inert={!open}
         role="dialog"
         aria-modal="true"
+        onPointerDown={onGrabDown}
+        onPointerMove={onGrabMove}
+        onPointerUp={onGrabUp}
+        onPointerCancel={onGrabCancel}
+        onClickCapture={onGrabClickCapture}
       >
         {phone && (
-          <div className="nr-handle" onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up} aria-label="Close" role="button">
+          <div className="nr-handle" aria-label="Close" role="button">
             <span />
           </div>
         )}
-        <div className="nr-panel-scroll" ref={scroller}>
+        <div className={`nr-panel-scroll ${isArtists ? 'is-artists' : ''}`} ref={scroller}>
           {children}
         </div>
       </aside>
-    </>
+    </>,
+    document.body,
   )
 }
 
-function PanelHead({ kicker, onClose }: { kicker: string; onClose: () => void }) {
+export function PanelHead({ kicker, externalUrl, onClose }: { kicker: string; externalUrl?: string; onClose: () => void }) {
   return (
     <div className="nrp-head">
       <span className="nrp-kicker">{kicker}</span>
-      <button type="button" className="nrp-x" onClick={onClose} aria-label="Close">
-        <Icon name="x" />
-      </button>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+        {externalUrl && (
+          <button
+            type="button"
+            className="nrp-x"
+            onClick={() => openExternal(externalUrl)}
+            aria-label="Open on MusicBrainz"
+            title="Open on MusicBrainz"
+          >
+            <Icon name="ext" />
+          </button>
+        )}
+        <button type="button" className="nrp-x" onClick={onClose} aria-label="Close" title="Close">
+          <Icon name="x" />
+        </button>
+      </div>
     </div>
   )
 }
 
-/* ── Release detail ──────────────────────────────────── */
+/* ── Release Detail ──────────────────────────────────── */
 
 export function ReleaseDetail({
   item,
@@ -110,7 +312,6 @@ export function ReleaseDetail({
   }, [id, item.mbid])
 
   const lib = isOwned(item.status)
-  // pre-release / incomplete with a tracklist: the MusicBrainz tracklist, your songs playable, the rest marked
   const partial = (item.status === 'pre' || item.status === 'part') && !!item.detail?.tracks.length
   const loading = !item.detail && loadingDetail.includes(id)
   const links = doc.links[item.mbid]
@@ -119,15 +320,6 @@ export function ReleaseDetail({
   const owner = item.owners[0]
   const now = useNowPlaying()
 
-  const status = {
-    new: 'New',
-    seen: 'Seen',
-    acq: 'Acquired · matching',
-    lib: 'In library',
-    pre: `Pre-release · ${ownedCount(item).toLowerCase()}`,
-    part: `Incomplete · ${ownedCount(item).toLowerCase()}`,
-    gone: 'Dismissed',
-  }[item.status]
   const n = item.detail?.tracks.length ?? 0
   const facts: [string, ReactNode][] = [
     ['RELEASED', item.upcoming ? `${fmtRelDate(item.rel.date)} · ${countdown(item)}` : fmtRelDate(item.rel.date)],
@@ -135,28 +327,25 @@ export function ReleaseDetail({
     ['TYPE', typeLabel(item)],
     ['TRACKS', item.detail ? (n ? String(n) : 'Not yet listed') : loading ? <Skeleton key="t" width="30%" height={12} /> : '—'],
     ['LENGTH', item.detail?.length ? fmtLength(item.detail.length) : item.detail ? 'Unknown' : loading ? <Skeleton key="d" width="40%" height={12} /> : '—'],
-    ['STATUS', status],
   ]
 
   let matchText: string | null = null
   const album = item.match?.albumId ? c.albums[item.match.albumId] : null
   const as = album && album.title !== item.rel.t ? ` as ${album.title}` : ''
   if (item.status === 'pre') {
-    const n = item.total ? `${item.have} of ${item.total} songs are` : `${item.have} song${item.have === 1 ? ' is' : 's are'}`
-    matchText = `${n} already in your library${as}. The rest come out on ${niceDay(item.rel.date)}${item.reminded ? ', and you’ll be reminded that day' : ''}.`
+    const num = item.total ? `${item.have} of ${item.total} songs are` : `${item.have} song${item.have === 1 ? ' is' : 's are'}`
+    matchText = `${num} already in your library${as}. The rest come out on ${niceDay(item.rel.date)}${item.reminded ? ', and you’ll be reminded that day' : ''}.`
   } else if (item.status === 'part') {
     const miss = item.total - item.have
-    matchText = `${item.have} of ${item.total} songs are in your library${as}. ${miss} missing: it moves to In library when ${miss === 1 ? 'it arrives' : 'they arrive'}.`
+    matchText = `${item.have} of ${item.total} songs are in your library${as}. ${miss} missing: moves to In library once they arrive.`
   } else if (lib && item.match) {
-    const album = item.match.albumId ? c.albums[item.match.albumId] : null
     matchText = album && album.title !== item.rel.t ? `In your library as ${album.title}, ${item.match.quality}.` : `In your library, ${item.match.quality}.`
   } else if (matches.length) {
     const m = matches[0]
     const mbTitle = item.detail!.tracks[m.index][0]
-    matchText = `${mbTitle} ${mbTitle === m.title ? 'is' : `matches ${m.title}`} on ${m.album}, already in your library.${matches.length > 1 ? ` ${matches.length - 1} more song${matches.length > 2 ? 's' : ''} too.` : ''}`
+    matchText = `${mbTitle} ${mbTitle === m.title ? 'is' : `matches ${m.title}`} on ${m.album}, already in your library.`
   }
 
-  const acts = lib ? null : actionsFor(item, act, online)
   const matchById = new Map(matches.map((m) => [m.index, m]))
   const partialIds = partial ? matches.map((m) => m.trackId) : []
   const libTracks = lib && item.match ? item.match.trackIds.map((tid) => c.tracks[tid]).filter(Boolean) : []
@@ -168,13 +357,24 @@ export function ReleaseDetail({
     ...(links?.homepage ? [{ label: 'Artist site', url: links.homepage }] : []),
   ]
 
-  const title = (
+  const statusBadge = item.upcoming ? (
+    <span className="badge badge-release is-new">{`IN ${item.daysTo} ${item.daysTo === 1 ? 'DAY' : 'DAYS'}`}</span>
+  ) : item.status === 'acq' ? (
+    <span className="badge badge-release" style={{ background: 'oklch(0.84 0.09 290)', color: 'oklch(0.28 0.08 292)' }}>MATCHING</span>
+  ) : item.status === 'new' ? (
+    <span className="badge badge-release is-new">NEW</span>
+  ) : item.status === 'seen' ? (
+    <span className="badge badge-release is-seen">SEEN</span>
+  ) : isOwned(item.status) ? (
+    <span className="badge badge-release is-lib">{ownedLabel(item)}</span>
+  ) : null
+
+  const titleNode = (
     <div className="nrp-titles">
-      {phone && (
-        <span className="nrp-sub">
-          {typeLabel(item)} · {fmtRelDate(item.rel.date)}
-        </span>
-      )}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        {statusBadge}
+        <span className="nr-mono">{typeLabel(item)}</span>
+      </div>
       <div className="nrp-title-row">
         {item.status === 'new' && <Dot size="md" />}
         <h2 className="nrp-title">{item.rel.t}</h2>
@@ -187,135 +387,249 @@ export function ReleaseDetail({
 
   return (
     <div className="nrp">
-      {!phone && <PanelHead kicker="RELEASE · FROM MUSICBRAINZ" onClose={onClose} />}
+      <PanelHead
+        kicker={item.upcoming ? 'UPCOMING · MUSICBRAINZ' : 'OUT NOW · MUSICBRAINZ'}
+        externalUrl={mbReleaseGroupUrl(id)}
+        onClose={onClose}
+      />
+
       {phone ? (
         <div className="nrp-top">
-          <div className={`nrp-cover ${lib ? 'is-lib' : ''}`}>
+          <div className="nrp-cover">
             <ReleaseCover item={item} size="lg" />
             {item.status === 'acq' && <MatchingVeil compact />}
           </div>
-          {title}
+          {titleNode}
         </div>
       ) : (
         <>
-          <div className={`nrp-cover ${lib ? 'is-lib' : ''}`}>
+          <div className="nrp-cover">
             <ReleaseCover item={item} size="lg" />
             {item.upcoming && <Countdown item={item} className="is-lg" />}
             {item.status === 'acq' && <MatchingVeil />}
           </div>
-          {title}
+          {titleNode}
         </>
       )}
 
       {matchText && (
-        <div className={`nrp-match ${lib ? 'is-lib' : ''}`}>
-          <Icon name="check" />
+        <div className="nrp-match">
+          <Icon name="check" style={{ color: 'var(--brand)' }} />
           <span>{matchText}</span>
         </div>
       )}
 
-      <div className={phone ? 'nrp-tiles' : 'nrp-acts'}>
-        {lib ? (
-          <>
-            <button type="button" className="nrp-act is-on" onClick={() => playRelease(item)}>
-              <Icon name="playF" />
-              Play
+      <div className={phone ? 'nrp-acts-phone' : 'nrp-acts'}>
+        {phone ? (
+          item.upcoming ? (
+            <button
+              type="button"
+              className={`btn ${item.reminded ? 'btn-primary' : 'btn-secondary'} nrp-pbtn-full`}
+              onClick={() => act.remind(item)}
+            >
+              <span className="btn-ic"><Icon name={item.reminded ? 'bellF' : 'bell'} /></span>
+              {item.reminded ? 'Reminder set' : 'Remind me'}
             </button>
-            {item.status === 'pre' && (
-              <button type="button" className={`nrp-act ${item.reminded ? 'is-on' : ''}`} aria-pressed={item.reminded} onClick={() => act.remind(item)}>
-                <Icon name={item.reminded ? 'bellF' : 'bell'} />
-                {item.reminded ? (phone ? 'Set' : 'Reminder set') : phone ? 'Remind' : 'Remind me'}
+          ) : lib ? (
+            <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
+              <button type="button" className="btn btn-primary nrp-pbtn-flex" onClick={() => playRelease(item)}>
+                <span className="btn-ic"><Icon name="playF" /></span>
+                Play
               </button>
-            )}
-            <button type="button" className="nrp-act" onClick={() => act.dismiss(item)}>
-              <Icon name="x" />
-              Dismiss
-            </button>
-          </>
+              <button
+                type="button"
+                className="btn btn-ghost nrp-sqbtn-48"
+                title="Dismiss"
+                aria-label="Dismiss"
+                onClick={() => {
+                  act.dismiss(item)
+                  onClose()
+                }}
+              >
+                <Icon name="x" />
+              </button>
+            </div>
+          ) : item.status === 'acq' ? (
+            <div className="nrp-acq-pill">
+              <span className="btn-ic"><Spinner /></span>
+              Matching your files…
+            </div>
+          ) : (
+            <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
+              <button
+                type="button"
+                className="btn btn-primary nrp-pbtn-flex"
+                onClick={() => act.got(item)}
+              >
+                <span className="btn-ic"><Icon name="check" /></span>
+                I’ve got it
+              </button>
+              <button
+                type="button"
+                className="btn btn-ghost nrp-sqbtn-48"
+                title={item.status === 'seen' ? 'Mark new' : 'Mark seen'}
+                aria-label={item.status === 'seen' ? 'Mark new' : 'Mark seen'}
+                onClick={() => act.toggleSeen(item)}
+              >
+                <Icon name="eye" />
+              </button>
+              <button
+                type="button"
+                className="btn btn-ghost nrp-sqbtn-48"
+                title="Dismiss"
+                aria-label="Dismiss"
+                onClick={() => {
+                  act.dismiss(item)
+                  onClose()
+                }}
+              >
+                <Icon name="x" />
+              </button>
+            </div>
+          )
         ) : (
-          acts!.map((a) => (
-            <button key={a.key} type="button" className={`nrp-act ${a.on ? 'is-on' : ''}`} disabled={a.disabled} onClick={a.run} aria-pressed={a.key === 'ext' || a.key === 'dismiss' ? undefined : a.on}>
-              <Icon name={a.icon} />
-              {phone ? a.short : a.label}
-            </button>
-          ))
+          lib ? (
+            <>
+              <button type="button" className="btn btn-primary" onClick={() => playRelease(item)}>
+                <span className="btn-ic"><Icon name="playF" /></span>
+                Play
+              </button>
+              {item.status === 'pre' && (
+                <button
+                  type="button"
+                  className={`btn ${item.reminded ? 'btn-primary' : 'btn-secondary'}`}
+                  aria-pressed={item.reminded}
+                  onClick={() => act.remind(item)}
+                >
+                  <span className="btn-ic"><Icon name={item.reminded ? 'bellF' : 'bell'} /></span>
+                  {item.reminded ? 'Reminder set' : 'Remind me'}
+                </button>
+              )}
+              <button type="button" className="btn btn-ghost" onClick={() => act.dismiss(item)}>
+                <span className="btn-ic"><Icon name="x" /></span>
+                Dismiss
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                className={`btn ${item.status === 'acq' ? 'btn-secondary' : 'btn-primary'}`}
+                onClick={() => act.got(item)}
+                disabled={item.status === 'acq'}
+              >
+                <span className="btn-ic">{item.status === 'acq' ? <Spinner /> : <Icon name="check" />}</span>
+                {item.status === 'acq' ? 'Matching…' : "I’ve got it"}
+              </button>
+              <button type="button" className="btn btn-secondary" onClick={() => act.toggleSeen(item)}>
+                <span className="btn-ic"><Icon name="eye" /></span>
+                {item.status === 'seen' ? 'Mark new' : 'Mark seen'}
+              </button>
+              {item.upcoming && (
+                <button
+                  type="button"
+                  className={`btn ${item.reminded ? 'btn-primary' : 'btn-secondary'}`}
+                  onClick={() => act.remind(item)}
+                >
+                  <span className="btn-ic"><Icon name={item.reminded ? 'bellF' : 'bell'} /></span>
+                  {item.reminded ? 'Reminder set' : 'Remind me'}
+                </button>
+              )}
+              <button type="button" className="btn btn-ghost" onClick={() => act.dismiss(item)}>
+                <span className="btn-ic"><Icon name="x" /></span>
+                Dismiss
+              </button>
+            </>
+          )
         )}
       </div>
 
-      <div className="nrp-facts">
+      <div className="nrp-card">
         {facts.map(([k, v]) => (
-          <div key={k} className="nrp-fact">
-            <span className="nrp-fact-k">{k}</span>
-            <span className="nrp-fact-v">{v}</span>
+          <div key={k} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '32px', fontSize: '13px' }}>
+            <span className="nr-mono" style={{ fontSize: '11px', color: 'oklch(0.62 0.014 40)' }}>{k}</span>
+            <span style={{ color: 'oklch(0.94 0.006 40)', fontVariantNumeric: 'tabular-nums' }}>{v}</span>
           </div>
         ))}
       </div>
 
-      <div className="nrp-links">
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
         {linkList.map((l) => (
-          <button key={l.label} type="button" className="nrp-link" disabled={!online} onClick={() => openExternal(l.url)}>
+          <button
+            key={l.label}
+            type="button"
+            className="chip nr-chip"
+            disabled={!online}
+            onClick={() => openExternal(l.url)}
+            style={{ fontSize: '13px', height: '36px' }}
+          >
             {l.label}
             <Icon name="ext" />
           </button>
         ))}
       </div>
 
-      <div className="nrp-tl">
-        <div className="nrp-tl-head">
+      <div className="nrp-card">
+        <div className="nrp-card-head">
           <span>TRACKLIST</span>
-          <span className="nrp-tl-note">{partial ? `${item.have} OF ${item.total} IN LIBRARY` : lib ? 'PLAYABLE · FROM YOUR FILES' : item.detail ? (n ? 'NOT IN LIBRARY · PREVIEW ONLY' : 'NOT YET LISTED') : loading ? 'ASKING MUSICBRAINZ' : online ? '' : 'NEEDS A CONNECTION'}</span>
+          <span style={{ fontSize: '11px', color: 'oklch(0.62 0.014 40)' }}>
+            {partial ? `${item.have} OF ${item.total} IN LIBRARY` : lib ? 'PLAYABLE' : item.detail ? (n ? `${n} TRACKS` : 'NOT YET LISTED') : loading ? 'CHECKING MUSICBRAINZ' : ''}
+          </span>
         </div>
         {partial
           ? item.detail!.tracks.map(([t, d], i) => {
               const m = matchById.get(i)
               if (!m)
                 return (
-                  <div key={i} className="nrp-tr is-missing">
-                    <span className="nrp-tr-n">{String(i + 1).padStart(2, '0')}</span>
-                    <span className="nrp-tr-t">{t}</span>
-                    <span className="nrp-tr-d">{item.upcoming ? countdown(item, true) : 'MISSING'}</span>
-                    <span className="nrp-tr-ic" />
+                  <div key={i} className="nrp-trow" style={{ opacity: 0.6 }}>
+                    <span className="nrp-trow-n">{String(i + 1).padStart(2, '0')}</span>
+                    <span className="nrp-trow-t">{t}</span>
+                    <span className="nrp-trow-d">{item.upcoming ? countdown(item, true) : 'MISSING'}</span>
                   </div>
                 )
               const own = c.tracks[m.trackId]
               return (
-                <button key={i} type="button" className={`nrp-tr is-on ${now.id === m.trackId ? 'is-now' : ''}`} onClick={() => playRelease({ ...item, match: { ...item.match!, trackIds: partialIds } }, partialIds.indexOf(m.trackId))}>
-                  <span className="nrp-tr-n">{String(i + 1).padStart(2, '0')}</span>
-                  <span className="nrp-tr-t">{t}</span>
-                  <span className="nrp-tr-d">{own?.duration ? fmtLength(own.duration) : d ? fmtLength(d) : ''}</span>
-                  <span className="nrp-tr-ic">
-                    <Icon name="playF" />
-                  </span>
-                </button>
+                <div
+                  key={i}
+                  className="nrp-trow"
+                  onClick={() => playRelease({ ...item, match: { ...item.match!, trackIds: partialIds } }, partialIds.indexOf(m.trackId))}
+                  style={{ cursor: 'pointer', color: now.id === m.trackId ? 'var(--brand)' : undefined }}
+                >
+                  <span className="nrp-trow-n">{String(i + 1).padStart(2, '0')}</span>
+                  <span className="nrp-trow-t">{t}</span>
+                  <span className="nrp-trow-d">{own?.duration ? fmtLength(own.duration) : d ? fmtLength(d) : ''}</span>
+                  <Icon name="playF" style={{ fontSize: '16px' }} />
+                </div>
               )
             })
           : lib
           ? albumTracks.map((t, i) => (
-              <button key={t.id} type="button" className={`nrp-tr is-on ${now.id === t.id ? 'is-now' : ''}`} onClick={() => playRelease({ ...item, match: { ...item.match!, trackIds: albumTracks.map((x) => x.id) } }, i)}>
-                <span className="nrp-tr-n">{String(t.track ?? i + 1).padStart(2, '0')}</span>
-                <span className="nrp-tr-t">{t.title}</span>
-                <span className="nrp-tr-d">{t.duration ? fmtLength(t.duration) : ''}</span>
-                <span className="nrp-tr-ic">
-                  <Icon name="playF" />
-                </span>
-              </button>
+              <div
+                key={t.id}
+                className="nrp-trow"
+                onClick={() => playRelease({ ...item, match: { ...item.match!, trackIds: albumTracks.map((x) => x.id) } }, i)}
+                style={{ cursor: 'pointer', color: now.id === t.id ? 'var(--brand)' : undefined }}
+              >
+                <span className="nrp-trow-n">{String(t.track ?? i + 1).padStart(2, '0')}</span>
+                <span className="nrp-trow-t">{t.title}</span>
+                <span className="nrp-trow-d">{t.duration ? fmtLength(t.duration) : ''}</span>
+                <Icon name="playF" style={{ fontSize: '16px' }} />
+              </div>
             ))
           : item.detail
             ? item.detail.tracks.map(([t, d], i) => (
-                <div key={i} className={`nrp-tr ${matchedIdx.has(i) ? 'is-on' : ''}`}>
-                  <span className="nrp-tr-n">{String(i + 1).padStart(2, '0')}</span>
-                  <span className="nrp-tr-t">{t}</span>
-                  <span className="nrp-tr-d">{d ? fmtLength(d) : '—'}</span>
-                  <span className="nrp-tr-ic">{matchedIdx.has(i) && <Icon name="check" />}</span>
+                <div key={i} className="nrp-trow">
+                  <span className="nrp-trow-n">{String(i + 1).padStart(2, '0')}</span>
+                  <span className="nrp-trow-t">{t}</span>
+                  <span className="nrp-trow-d">{d ? fmtLength(d) : '—'}</span>
+                  {matchedIdx.has(i) && <Icon name="check" style={{ color: 'var(--brand)', fontSize: '16px' }} />}
                 </div>
               ))
             : loading &&
               Array.from({ length: 5 }, (_, i) => (
-                <div key={i} className="nrp-tr">
-                  <span className="nrp-tr-n">{String(i + 1).padStart(2, '0')}</span>
+                <div key={i} className="nrp-trow">
+                  <span className="nrp-trow-n">{String(i + 1).padStart(2, '0')}</span>
                   <Skeleton width={`${50 + ((i * 17) % 35)}%`} height={12} />
-                  <span />
-                  <span />
                 </div>
               ))}
       </div>
@@ -323,7 +637,7 @@ export function ReleaseDetail({
   )
 }
 
-/* ── Followed artists ────────────────────────────────── */
+/* ── Followed Artists ────────────────────────────────── */
 
 export function FollowedArtists({ c, phone, onClose }: { c: Catalogue; phone: boolean; onClose: () => void }) {
   const { doc } = useReleases()
@@ -336,57 +650,68 @@ export function FollowedArtists({ c, phone, onClose }: { c: Catalogue; phone: bo
 
   return (
     <div className="nrp nrp-artists">
-      {!phone && <PanelHead kicker="NEW RELEASES · SETTINGS" onClose={onClose} />}
+      <PanelHead kicker="NEW RELEASES · SETTINGS" onClose={onClose} />
       <div className="nrp-titles">
         <h2 className="nrp-title">Followed artists</h2>
         <span className="nrp-meta">
           {rows.length} ARTISTS · {mutedN} MUTED
         </span>
       </div>
-      {!phone && <p className="nrp-explain">Every artist in your library is followed automatically, plus the ones you added from Discover (NOT IN LIBRARY). Muted artists are still swept, just kept out of the feed.</p>}
-      <div className="nrp-card" onClick={() => releasesStore.setHideReissues(!hideRe)}>
-        <div className="nrp-card-text">
-          <span>Hide reissues and deluxe editions</span>
-          {!phone && <span className="nrp-card-meta">REMASTERS · ANNIVERSARY · EXPANDED</span>}
+      {!phone && (
+        <p className="nrp-explain">
+          Every artist in your library is followed automatically, plus artists added from Discover. Muted artists are still swept, just kept out of the feed.
+        </p>
+      )}
+
+      <div className="nrp-reissues-card" onClick={() => releasesStore.setHideReissues(!hideRe)} style={{ cursor: 'pointer' }}>
+        <div className="nrp-reissues-text">
+          <span className="nrp-reissues-title">Hide reissues and deluxe editions</span>
+          <span className="nrp-reissues-sub">Remasters, anniversary and expanded versions</span>
         </div>
         <span onClick={(e) => e.stopPropagation()}>
           <Toggle checked={hideRe} onChange={(v) => releasesStore.setHideReissues(v)} label="Hide reissues and deluxe editions" />
         </span>
       </div>
-      <label className="nrp-filter">
-        <Icon name="search" />
+
+      <div className="nrp-search-box">
+        <Icon name="search" style={{ color: 'oklch(0.62 0.014 40)', fontSize: '20px' }} />
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={`Filter ${rows.length} artists`} aria-label="Filter artists" />
-      </label>
-      <div className="nrp-arts">
+        {q && (
+          <button
+            type="button"
+            onClick={() => setQ('')}
+            style={{ background: 'none', border: 0, padding: 0, cursor: 'pointer', color: 'oklch(0.79 0.014 40)' }}
+          >
+            <Icon name="x" />
+          </button>
+        )}
+      </div>
+
+      <div className="nrp-art-list">
         {shown.map((r) => (
-          <div key={r.artist.id} className={`nrp-art ${r.muted ? 'is-muted' : ''}`} onClick={() => releasesStore.setMuted(r.artist.id, !r.muted)}>
+          <div key={r.artist.id} className="nrp-art-row">
             <ArtistAvatar artist={r.artist} size={40} className="nrp-art-av" />
-            <div className="nrp-art-text">
-              <span className="nrp-art-n">{r.artist.name}</span>
-              <span className="nrp-art-c">
-                {r.dz != null && <span className="nrp-art-ext">NOT IN LIBRARY · </span>}
+            <div className="nrp-art-info">
+              <span className="nrp-art-name">{r.artist.name}</span>
+              <span className="nrp-art-meta">
+                {r.dz != null && <span style={{ color: 'var(--brand)' }}>NOT IN LIBRARY · </span>}
                 {r.line}
               </span>
             </div>
             {r.dz != null && (
               <button
                 type="button"
-                className="nrp-unfollow"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  releasesStore.follow(r.dz!, null)
-                }}
+                className="btn btn-ghost"
+                style={{ height: '36px', padding: '0 12px', fontSize: '13px' }}
+                onClick={() => releasesStore.follow(r.dz!, null)}
               >
                 Unfollow
               </button>
             )}
-            {r.muted && !phone && <span className="nrp-art-word">MUTED</span>}
-            <span onClick={(e) => e.stopPropagation()}>
-              <Toggle checked={!r.muted} onChange={(v) => releasesStore.setMuted(r.artist.id, !v)} label={`${r.muted ? 'Unmute' : 'Mute'} ${r.artist.name}`} />
-            </span>
+            <Toggle checked={!r.muted} onChange={(v) => releasesStore.setMuted(r.artist.id, !v)} label={`${r.muted ? 'Unmute' : 'Mute'} ${r.artist.name}`} />
           </div>
         ))}
-        {!shown.length && <div className="nrp-none">No artist matches “{q.trim()}”.</div>}
+        {!shown.length && <div style={{ padding: '24px', textAlign: 'center', color: 'oklch(0.62 0.014 40)' }}>No artist matches “{q.trim()}”.</div>}
       </div>
     </div>
   )

@@ -221,20 +221,22 @@ export function Dropdown<T extends string | number>({
             role="listbox"
             style={{ left: pos.left, minWidth: pos.width, maxHeight: pos.max, ...(pos.up ? { bottom: window.innerHeight - pos.top } : { top: pos.top }) }}
           >
-            {options.map((o, i) => (
-              <div
-                key={String(o.value)}
-                role="option"
-                aria-selected={i === cur}
-                className={`dd-item ${i === cur ? 'is-on' : ''} ${i === active ? 'is-active' : ''}`}
-                onPointerEnter={() => setActive(i)}
-                onClick={() => pick(i)}
-              >
-                <Icon name="done" className="dd-check" />
-                <span className="dd-label">{o.label}</span>
-                {o.meta && <span className="dd-meta">{o.meta}</span>}
-              </div>
-            ))}
+            <div className="dd-menu-scroll">
+              {options.map((o, i) => (
+                <div
+                  key={String(o.value)}
+                  role="option"
+                  aria-selected={i === cur}
+                  className={`dd-item ${i === cur ? 'is-on' : ''} ${i === active ? 'is-active' : ''}`}
+                  onPointerEnter={() => setActive(i)}
+                  onClick={() => pick(i)}
+                >
+                  <Icon name="done" className="dd-check" />
+                  <span className="dd-label">{o.label}</span>
+                  {o.meta && <span className="dd-meta">{o.meta}</span>}
+                </div>
+              ))}
+            </div>
           </div>,
           document.body,
         )}

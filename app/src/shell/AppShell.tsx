@@ -387,8 +387,8 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
 
   const key = route.kind === 'app' ? route.key : null
   const deskSearch = key !== null && ['home', 'new', 'upload', 'downloads', 'stats', 'settings', 'health'].includes(key)
-  const phoneTop = key === 'home' || key === 'library' || key === 'new' || key === 'downloads'
-  const phoneTitle = key === 'library' ? 'Library' : key === 'new' ? 'New releases' : key === 'downloads' ? 'Downloads' : undefined
+  const phoneTop = key === 'home' || key === 'library' || key === 'downloads'
+  const phoneTitle = key === 'library' ? 'Library' : key === 'downloads' ? 'Downloads' : undefined
   const shuffleAll = () => {
     const c = libraryStore.get().data
     if (!c) return
@@ -405,6 +405,12 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
       <div className="shell-layer" inert={np.open}>
         {phone ? (
           <>
+            <div className="shell-deco" aria-hidden>
+              <i className="sd-dots" />
+              <i className="sd-ring sd-r1" />
+              <i className="sd-ring sd-r2" />
+              <i className="sd-ring sd-r3" />
+            </div>
             <main className="shell-main" ref={mainRef} id="main" tabIndex={-1}>
               {phoneTop && (
                 <PhoneTopBar

@@ -46,8 +46,13 @@ export const ICON_SYMBOLS = {
   grid: 'grid_view',
   timeline: 'view_timeline',
   refresh: 'refresh',
+  radar: 'radar',
+  upcoming: 'event_upcoming',
+  fiber_new: 'fiber_new',
   bell: 'notifications',
   bellF: 'notifications',
+  notifActive: 'notifications_active',
+  notifActiveF: 'notifications_active',
   ext: 'open_in_new',
   eye: 'visibility',
   gear: 'settings',
@@ -105,7 +110,7 @@ export const ICON_SYMBOLS = {
 export type IconName = keyof typeof ICON_SYMBOLS
 export const ICON_NAMES = Object.keys(ICON_SYMBOLS) as IconName[]
 
-const FILLED = new Set<IconName>(['playF', 'pauseF', 'heartF', 'bellF'])
+const FILLED = new Set<IconName>(['playF', 'pauseF', 'heartF', 'bellF', 'notifActiveF'])
 
 export interface IconProps {
   name: IconName
