@@ -134,9 +134,35 @@ Visual check: `vite preview` plus Playwright (`/home/claude/test/shots2.cjs`). I
 
 &#x20;  - \*\*Dialogs\*\* (`actions.css` appended + `Dialogs.tsx` / `SmartDialog.tsx`): 24px headline, outlined 56px fields (coral focus), coral text Cancel + coral filled OK; smart dialog presets as chips, rule rows as rounded cards, tonal selects, "Add rule" tonal, sentence-case labels. The Add to playlist picker stays the menu / sheet (restyled in phase 2), not the handoff's checkbox dialog.
 
-7\. New releases.
+7\. \*\*New releases: done Oct 26.\*\*
 
-8\. DJ, Upload, Downloads, Settings, First run / sign-in / no library / expired.
+&#x20;  - `pages/releases/NewReleases.tsx`, `Discover.tsx`, `ReleasePanel.tsx`, `parts.tsx`, `releases.css` rewritten to match `NewReleasesMaterial.dc.html`.
+
+&#x20;  - Header: radar status line + 45px (phone 28px) "New releases", Followed artists pill (icon-only 44px round on phone) + tonal coral Sweep button (48px / 44px radius 16) + 4px sweep progress bar. Desktop tabs (Upcoming, Out now, Discover) with pill active indicator and counts; phone 3-way segmented pill (`0.36 0.035 38` active). Filter chips (All / Unseen / Matching, artist popover / sheet, No reissues, Furthest first).
+
+&#x20;  - \*\*Upcoming\*\*: weekly timeline with coral ring nodes + vertical rail (compact header row on phone), tabular countdowns (coral when ≤ 4 days), 64px / 60px covers, new dot, Remind me pill (44px round bell on phone).
+
+&#x20;  - \*\*Out now\*\*: hero card with tilted cover (−4°), "NEWEST FROM YOUR MOST PLAYED" kicker, "I've got it" / "Play" / "Matching your files…" + Mark seen + MusicBrainz + Dismiss; desktop card grid with hover actions and status pills (`NEW` coral, `MATCHING` violet 290, `IN LIBRARY`); phone 76px swipe rows (swipe right = seen in coral, swipe left = dismiss) + swipe hint.
+
+&#x20;  - \*\*Discover\*\*: full-width cards with 9-lobe cookie avatar, "Because you play …" + play counts, recent releases / top songs preview, "Add to sweep" / "In the sweep" + Not interested + MusicBrainz / Bandcamp links.
+
+&#x20;  - \*\*Release detail & Followed artists panel\*\*: portalled to `document.body`; desktop 460px right popover clearing the floating player bar (`bottom: 140px`); phone full-width bottom sheet (`height: 86vh` for Followed artists) with `QueuePanel`-style swipe-down to close on the handle, pinned header, and top of the list. Followed artists pins the header, reissues card, and search box while only `.nrp-art-list` scrolls.
+
+&#x20;  - Phone shell (`AppShell.tsx`, `phone.css`): single header on New releases (no duplicate `PhoneTopBar`) and `.shell-deco` coral dot grid + rings enabled on phone.
+
+8\. \*\*DJ, Upload, Downloads, Settings, First run / sign-in / no library / expired: done Oct 26.\*\*
+
+&#x20;  - \*\*DJ\*\* (`dj/DjMark.tsx`, `dj/mark.ts`, `dj/DjButton.tsx`, `dj/DjStart.tsx`, `dj/DjIntro.tsx`, `dj/DjPanel.tsx`, `dj/dj.css`, `nowplaying/parts.tsx`, `nowplaying/NowPlaying.tsx`): scalloped violet dial knob (`hue=290`, `MATERIAL MUSIC DJ` artwork label), M3 violet pill/tight-pill `DjButton` + adjacent `tune` panel button, 2-column desktop / compact phone `DjStart` with 28px Genre card and type cards/rows, `DjIntro` with `DJ` chip + `INTRO · Session N` pill + live violet word highlight + level bars, and 420px desktop popover / phone bottom sheet `DjPanel` on `oklch(0.22 0.012 60)`.
+
+&#x20;  - \*\*Upload\*\* (`pages/upload/Upload.tsx`, `ReleaseList.tsx`, `Inspector.tsx`, `upload.css`, `state/uploadViews.ts`, `pages/PageHeader.tsx`): 45px/36px bold title above sentence-case subtitle, 56px rounded pill drop strip on desktop (`upload_file` + coral "Choose folders") and coral "Add" pill on phone, M3 filter chips, 68px/72px release rows with 4px/3px progress bars and Material Symbol status icons, 28px Inspector card (and phone bottom sheet) with amber issue card (`oklch(0.30 0.045 95)`), 8-column file slot grid, and tag editor.
+
+&#x20;  - \*\*Downloads\*\* (`pages/downloads/Downloads.tsx`, `downloads.css`): M3 connected button group for quality (`Opus 160` | `Original FLAC`), 3-segment 10px storage bar (`Material Music`, `Other`, `Free`), phone settings card, `In progress` cards (`BusyRow`) with 4px coral progress bars and tonal pause/resume buttons, `On this device` rows (`DoneRow`) with tonal quality badges and `more_vert` remove menu, and 28px empty state card.
+
+&#x20;  - \*\*Settings\*\* (`pages/settings/Settings.tsx`, `settings.css`): sticky 200px desktop sidebar (`45px` bold "Settings" + "Saved automatically" + coral active pill nav) and phone sticky top bar (`← Settings · Saved`), 28px rounded section cards (`oklch(0.205 0.008 40)`) with 44×44 tonal coral icon tiles, sentence-case hints with coral status dots, M3 connected button groups (`20px 8px 8px 20px` / `8px 20px 20px 8px` / `20px` active), vertical-thumb slider, and inline danger confirmations; unbuilt features remain hidden.
+
+&#x20;  - \*\*First run / Sign-in / No library / Expired\*\* (`screens/SignIn.tsx`, `screens/LibraryStatus.tsx`, `screens/screens.css`): 28px panel frame with radial coral glow and `.shell-deco` coral dot grid + 3 rings, `SignIn` (`AppMark` 96px, "Material Music", coral "Continue with Google" pill), `expired` session view (88×88 amber `lock_clock` tile), `LoadingLibrary` (top 4px progress bar, coral sonar animation, 3-card/3-row counters, "Go to Home" CTA), `NoLibrary` (128px concentric coral rings + `folder_off` tile), and `LibraryError`.
+
+&#x20;  - \*\*Button groups & ripple polish\*\* (`design/ripple.ts`, `styles/base.css`, `components/ui/Controls.tsx`, `components/ui/material.css`, `pages/library/lib2.css`, `pages/releases/releases.css`): connected button groups use exact half-height outer radii (`20px` / `22px` / `18px`) with `8px` inner radii so CSS corner-overlap scaling never flattens inner corners; `.mm-ripple` uses `border-radius: inherit` and a `ResizeObserver` so ripples track live button size and corner morphing.
 
 9\. Android widget restyle, app icon + splash + favicon, in-app "Pelagic" text → Material Music.
 

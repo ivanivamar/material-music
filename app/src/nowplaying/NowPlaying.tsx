@@ -243,7 +243,7 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
         <button
           ref={closeRef}
           type="button"
-          className={`np-close ${backToNp && phone ? 'is-hidden' : ''}`}
+          className="np-close"
           title={backToNp ? 'Back to Now playing' : 'Close · Esc'}
           aria-label={backToNp ? 'Back to Now playing' : 'Close'}
           onClick={() => (backToNp ? djUi.closeStart() : nowPlayingStore.close())}
@@ -279,7 +279,7 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
       {hasSomething && !startView && (
         <>
           <section className="np-main" aria-hidden={ly} inert={ly}>
-            <div className="np-cover-wrap">{phone ? <CoverSwipe cover={cover} glow="rgba(0,0,0,0.55)" /> : coverEl('np')}</div>
+            <div className={`np-cover-wrap ${intro ? 'is-intro' : ''}`}>{phone ? <CoverSwipe cover={cover} glow="rgba(0,0,0,0.55)" /> : coverEl('np')}</div>
             <div className={`np-info ${handing ? 'is-handing' : ''}`}>
               {intro && item ? (
                 <DjIntroInfo item={item} view={dj} playing={p.playing} phone={phone} />
@@ -343,9 +343,12 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
               )}
             </div>
             {phone && (
-              <div className="np-phone-actions">
-                <ViewButtons phone />
-              </div>
+              <>
+                <div className="np-phone-actions">
+                  <ViewButtons phone />
+                </div>
+                {dj.on && <div className="np-dj-hint">Tap DJ to skip this session · tune for the DJ panel</div>}
+              </>
             )}
           </section>
 

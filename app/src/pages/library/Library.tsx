@@ -298,7 +298,17 @@ function BrowseControls({ tab, phone, offline, filter, count }: { tab: LibraryTa
       {phone && <span className="lb-count">{`${fmtN(count)} ${count === 1 ? unit[0] : unit[1]}`}</span>}
       <div className="lb-views" role="group" aria-label="View">
         {views.map((x) => (
-          <button key={x.v} type="button" className={`lb-view ${view === x.v ? 'is-on' : ''}`} aria-pressed={view === x.v} title={x.label} onClick={() => setView(x.v)}>
+          <button
+            key={x.v}
+            type="button"
+            className={`lb-view ${view === x.v ? 'is-on' : ''}`}
+            aria-pressed={view === x.v}
+            title={x.label}
+            onPointerDown={(e) => {
+              if (e.button === 0 && e.pointerType === 'mouse') setView(x.v)
+            }}
+            onClick={() => setView(x.v)}
+          >
             <Icon name={x.icon} filled={view === x.v} />
             {!phone && x.label}
           </button>

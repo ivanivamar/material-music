@@ -1,18 +1,15 @@
 /**
- * Downloads (handoff 09–10 Downloads; step 7 phase D, Android).
+ * Downloads (Material 3 Expressive redesign, DownloadsMaterial.dc.html).
  *
  * Header: what's on the phone; Wi-Fi only + quality (Opus 160 / Original FLAC) — desktop-style tools on
- * a wide screen, a settings card on the phone layout. Storage bar (Pelagic / other / free).
- * IN PROGRESS: albums still downloading, with a progress line, "TRACK 7 OF 12 · 58% · 2.4 MB/S" or why
- * it waits (Wi-Fi, connection, paused, storage), pause / resume and remove.
- * ON THIS DEVICE: complete albums with track count, quality and size, remove (Undo in a toast). A single
- * song downloaded on its own (track menu, no album / playlist download around it) shows as that song.
- * Then "Download everything" / "Remove all downloads".
- *
- * In the browser there are no downloads (PC plays FLAC from the linked folder): an explainer instead.
+ * a wide screen, a settings card on the phone layout. Storage bar (Material Music / Other / Free).
+ * In progress: albums still downloading, with a 4px progress bar, "Track 7 of 12 · 58% · 2.4 MB/s" or why
+ * it waits (Wi-Fi, connection, paused, storage), pause / resume and cancel.
+ * On this device: complete albums with track count, tonal quality pill and size, plus a menu to remove.
  */
 import { useEffect, useRef, useState } from 'react'
-import { Button, EmptyState, IconButton, QualityBadge, Segmented, Toggle, qualityKind, useToast } from '../../components/ui'
+import { QualityBadge, Toggle, qualityKind, useToast } from '../../components/ui'
+import { Icon } from '../../design/icons'
 import { useCover } from '../../lib/covers'
 import { albumOffline, downloadsStore, libraryBytes, qualityOf, useDownloadProgress, useDownloads, type AlbumPlan, type DownloadQuality, type DownloadsState } from '../../state/downloads'
 import { useLibrary, type Catalogue } from '../../state/library'
@@ -28,6 +25,31 @@ const QUALITY: { value: DownloadQuality; label: string }[] = [
   { value: 'flac', label: 'Original FLAC' },
 ]
 
+function QualitySeg({ value, onChange, full }: { value: DownloadQuality; onChange: (q: DownloadQuality) => void; full?: boolean }) {
+  return (
+    <div className={`dl-seg ${full ? 'is-full' : ''}`} role="group" aria-label="Download quality">
+      {QUALITY.map((o, i) => {
+        const on = value === o.value
+        return (
+          <button
+            key={o.value}
+            type="button"
+            className={`dl-seg-btn ${on ? 'is-on' : ''} ${i === 0 ? 'is-first' : 'is-last'}`}
+            aria-pressed={on}
+            onPointerDown={(e) => {
+              if (e.button === 0 && e.pointerType === 'mouse') onChange(o.value)
+            }}
+            onClick={() => onChange(o.value)}
+          >
+            {on && <Icon name="done" size={16} />}
+            {o.label}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
 export function Downloads() {
   const dl = useDownloads()
   const { data } = useLibrary()
@@ -36,16 +58,18 @@ export function Downloads() {
 
   if (!dl.available) {
     return (
-      <>
-        <PageHeader meta="OFFLINE · ANDROID APP" title="Downloads" />
-        <div className="placeholder">
-          <EmptyState
-            icon="download"
-            title="Downloads live in the Android app."
-            body="On the phone, download albums, artists or the whole library to listen without a connection. On this PC, FLAC plays from your linked folder or streams from Drive."
-          />
+      <div className="downloads">
+        <PageHeader meta="Offline · Android app" title="Downloads" />
+        <div className="dl-empty-card">
+          <div className="dl-empty-ic" aria-hidden>
+            <Icon name="cloudDownload" />
+          </div>
+          <div className="dl-empty-text">
+            <h2 className="dl-empty-title">Downloads live in the Android app</h2>
+            <p className="dl-empty-sub">On the phone, download albums, artists or the whole library to listen without a connection. On this PC, FLAC plays from your linked folder or streams from Drive.</p>
+          </div>
         </div>
-      </>
+      </div>
     )
   }
   if (!data) return null
@@ -65,42 +89,53 @@ export function Downloads() {
       toast.show({
         icon: 'download',
         text: q === 'flac' ? 'Downloads switch to the original FLAC.' : 'Downloads switch to Opus 160.',
-        // albums with their own quality (album page) keep it
-        meta: 'FILES ARE REPLACED AS THEY ARRIVE',
+        meta: 'Files are replaced as they arrive',
         action: { label: 'Undo', onClick: () => downloadsStore.setQuality(before) },
       })
   }
   const removeAll = () => {
     const before = dl.prefs
     downloadsStore.removeAll()
-    toast.show({ icon: 'x', mutedIcon: true, text: 'Removed all downloads from this phone.', meta: n?.used ? `${fmtBytes(n.used)} FREED` : undefined, action: { label: 'Undo', onClick: () => downloadsStore.restore(before) } })
+    toast.show({ icon: 'x', mutedIcon: true, text: 'Removed all downloads from this phone.', meta: n?.used ? `${fmtBytes(n.used)} freed` : undefined, action: { label: 'Undo', onClick: () => downloadsStore.restore(before) } })
   }
   const downloadAll = () => {
     const before = dl.prefs
     downloadsStore.pin('all', '*')
-    toast.show({ icon: 'download', text: 'Downloading your whole library.', meta: `${fmtBytes(libraryBytes(data, dl.prefs))} · ${dl.prefs.wifiOnly ? 'WI-FI ONLY' : 'ANY NETWORK'}`, action: { label: 'Undo', onClick: () => downloadsStore.restore(before) } })
+    toast.show({ icon: 'download', text: 'Downloading your whole library.', meta: `${fmtBytes(libraryBytes(data, dl.prefs))} · ${dl.prefs.wifiOnly ? 'Wi-Fi only' : 'Any network'}`, action: { label: 'Undo', onClick: () => downloadsStore.restore(before) } })
   }
 
-  const settings = (
-    <>
-      <label className="dl-set">
-        <span>Wi-Fi only</span>
-        <Toggle checked={dl.prefs.wifiOnly} onChange={(v) => downloadsStore.setWifiOnly(v)} label="Download on Wi-Fi only" />
-      </label>
-      <div className="dl-set">
-        {phone && <span>Quality</span>}
-        <Segmented value={dl.prefs.quality} options={QUALITY} onChange={setQuality} label="Download quality" />
-      </div>
-    </>
-  )
-
-  const meta = rows.length ? `${plural(rows.length, 'ITEM')} · ${plural(tracksStored, 'TRACK')} · ${fmtBytes(n?.used ?? 0)} ON THIS DEVICE` : 'NOTHING STORED OFFLINE'
+  const meta = rows.length ? `${plural(rows.length, 'item', 'items')} · ${plural(tracksStored, 'track', 'tracks')} · ${fmtBytes(n?.used ?? 0)} on this device` : 'Nothing stored offline'
 
   return (
     <div className="downloads">
-      <PageHeader meta={meta} title="Downloads" tools={phone ? undefined : <div className="dl-tools">{settings}</div>} />
+      <PageHeader
+        meta={meta}
+        title="Downloads"
+        tools={
+          phone ? undefined : (
+            <div className="dl-tools">
+              <label className="dl-set">
+                <span>Wi-Fi only</span>
+                <Toggle checked={dl.prefs.wifiOnly} onChange={(v) => downloadsStore.setWifiOnly(v)} label="Download on Wi-Fi only" />
+              </label>
+              <QualitySeg value={dl.prefs.quality} onChange={setQuality} />
+            </div>
+          )
+        }
+      />
       <StorageBar s={dl} phone={phone} />
-      {phone && <div className="dl-card">{settings}</div>}
+      {phone && (
+        <div className="dl-card">
+          <label className="dl-set">
+            <div>
+              <div className="dl-set-t">Wi-Fi only</div>
+              <div className="dl-set-s">Pause downloads on mobile data</div>
+            </div>
+            <Toggle checked={dl.prefs.wifiOnly} onChange={(v) => downloadsStore.setWifiOnly(v)} label="Download on Wi-Fi only" />
+          </label>
+          <QualitySeg value={dl.prefs.quality} onChange={setQuality} full />
+        </div>
+      )}
 
       {n && (n.error || n.failed.length > 0) && (
         <div className="dl-alert" role="status">
@@ -108,62 +143,70 @@ export function Downloads() {
             {n.error === 'storage'
               ? 'The phone is out of space. Free some up or remove downloads.'
               : n.error === 'auth'
-                ? 'Downloads need your Google sign-in. Open Pelagic signed in to continue.'
-                : `${plural(n.failed.length, 'FILE')} couldn’t be downloaded from Drive.`}
+                ? 'Downloads need your Google sign-in. Open Material Music signed in to continue.'
+                : `${plural(n.failed.length, 'file', 'files')} couldn’t be downloaded from Drive.`}
           </span>
           {n.failed.length > 0 && (
-            <button type="button" className="sect-link" onClick={() => downloadsStore.retryFailed()}>
-              RETRY
+            <button type="button" className="dl-alert-btn" onClick={() => downloadsStore.retryFailed()}>
+              Retry
             </button>
           )}
         </div>
       )}
 
       {rows.length === 0 ? (
-        <div className="placeholder dl-empty">
-          <EmptyState
-            icon="download"
-            title="No music stored offline"
-            body="Download an album, playlist, artist or song to play it without a connection."
-            actions={
-              <>
-                <Button variant="secondary" icon="library" onClick={() => go(libraryHref('albums'))}>
-                  Browse library
-                </Button>
-                <Button variant="secondary" icon="download" onClick={downloadAll}>
-                  Everything · {fmtBytes(libraryBytes(data, dl.prefs))}
-                </Button>
-              </>
-            }
-          />
+        <div className="dl-empty-card">
+          <div className="dl-empty-ic" aria-hidden>
+            <Icon name="cloudDownload" />
+          </div>
+          <div className="dl-empty-text">
+            <h2 className="dl-empty-title">No music stored offline</h2>
+            <p className="dl-empty-sub">Download an album, playlist, artist or song to play it without a connection.</p>
+          </div>
+          <div className="dl-empty-btns">
+            <button type="button" className="dl-btn-pri" onClick={() => go(libraryHref('albums'))}>
+              <Icon name="library" />
+              Browse library
+            </button>
+            <button type="button" className="dl-btn-sec" onClick={downloadAll}>
+              <Icon name="download" />
+              Everything · {fmtBytes(libraryBytes(data, dl.prefs))}
+            </button>
+          </div>
         </div>
       ) : (
         <>
           {busy.length > 0 && (
             <section className="dl-sect">
-              <div className="dl-sect-head">IN PROGRESS</div>
-              {busy.map(({ ap }, i) => (
-                <BusyRow key={ap.albumId} c={data} ap={ap} s={dl} first={i === 0} />
-              ))}
+              <div className="dl-sect-head">In progress</div>
+              <div className="dl-busy-list">
+                {busy.map(({ ap }, i) => (
+                  <BusyRow key={ap.albumId} c={data} ap={ap} s={dl} first={i === 0} phone={phone} />
+                ))}
+              </div>
             </section>
           )}
           {done.length > 0 && (
             <section className="dl-sect">
-              <div className="dl-sect-head">ON THIS DEVICE</div>
-              {done.map(({ ap, off }) => (
-                <DoneRow key={ap.albumId} c={data} ap={ap} count={off.count} bytes={off.bytesDone} quality={qualityOf(dl.prefs, ap.albumId)} />
-              ))}
+              <div className="dl-sect-head">On this device</div>
+              <div className="dl-done-list">
+                {done.map(({ ap, off }) => (
+                  <DoneRow key={ap.albumId} c={data} ap={ap} count={off.count} bytes={off.bytesDone} quality={qualityOf(dl.prefs, ap.albumId)} phone={phone} />
+                ))}
+              </div>
             </section>
           )}
           <div className="dl-foot">
             {!hasAll && (
-              <Button variant="secondary" icon="download" onClick={downloadAll}>
+              <button type="button" className="dl-btn-sec" onClick={downloadAll}>
+                <Icon name="download" />
                 Download everything · {fmtBytes(libraryBytes(data, dl.prefs))}
-              </Button>
+              </button>
             )}
-            <Button variant="danger" icon="x" onClick={removeAll}>
+            <button type="button" className="dl-btn-danger" onClick={removeAll}>
+              <Icon name="delete" />
               Remove all downloads
-            </Button>
+            </button>
           </div>
         </>
       )}
@@ -179,26 +222,38 @@ function StorageBar({ s, phone }: { s: DownloadsState; phone: boolean }) {
   return (
     <div className="dl-storage">
       <div className="dl-bar" aria-hidden>
-        <span className="dl-bar-me" style={{ width: pct(n.used), minWidth: n.used ? 3 : 0 }} />
+        <span className="dl-bar-me" style={{ width: pct(n.used), minWidth: n.used ? 6 : 0 }} />
         <span className="dl-bar-other" style={{ width: pct(other) }} />
+        <span className="dl-bar-free" />
       </div>
       {phone ? (
         <div className="dl-legend dl-legend-phone">
-          <span>PELAGIC {n.used ? fmtBytes(n.used) : '0 MB'}</span>
-          <span>{fmtBytes(n.free)} FREE</span>
+          <span>
+            <i className="dl-dot dl-dot-me" />
+            Material Music {n.used ? fmtBytes(n.used) : '0 MB'}
+          </span>
+          <span>{fmtBytes(n.free)} free</span>
         </div>
       ) : (
         <div className="dl-legend">
-          <span><i className="dl-dot dl-dot-me" />PELAGIC {n.used ? fmtBytes(n.used) : '0 MB'}</span>
-          <span><i className="dl-dot dl-dot-other" />OTHER {fmtBytes(other)}</span>
-          <span>FREE {fmtBytes(n.free)} OF {fmtBytes(n.total)}</span>
+          <span>
+            <i className="dl-dot dl-dot-me" />
+            Material Music <b>{n.used ? fmtBytes(n.used) : '0 MB'}</b>
+          </span>
+          <span>
+            <i className="dl-dot dl-dot-other" />
+            Other {fmtBytes(other)}
+          </span>
+          <span>
+            <i className="dl-dot dl-dot-free" />
+            Free {fmtBytes(n.free)} of {fmtBytes(n.total)}
+          </span>
         </div>
       )}
     </div>
   )
 }
 
-/** Row title / subtitle: the album, or the song when just one song of it is kept (a song download). */
 function rowName(c: Catalogue, ap: AlbumPlan): { title: string; sub: string } {
   const album = c.albums[ap.albumId]
   const only = ap.partial && ap.trackFiles.size === 1 ? c.tracks[[...ap.trackFiles.keys()][0]] : undefined
@@ -215,13 +270,12 @@ function useRemove(c: Catalogue, ap: AlbumPlan, bytes: number) {
       icon: 'x',
       mutedIcon: true,
       text: `Removed ${rowName(c, ap).title} from this phone.`,
-      meta: bytes ? `${fmtBytes(bytes)} FREED` : undefined,
+      meta: bytes ? `${fmtBytes(bytes)} freed` : undefined,
       action: { label: 'Undo', onClick: () => downloadsStore.restore(before) },
     })
   }
 }
 
-/** bytes/s from the progress events of the file downloading now */
 function useSpeed(active: boolean, bytes: number): number | null {
   const last = useRef<{ t: number; b: number } | null>(null)
   const [speed, setSpeed] = useState<number | null>(null)
@@ -242,7 +296,17 @@ function useSpeed(active: boolean, bytes: number): number | null {
   return active ? speed : null
 }
 
-function BusyRow({ c, ap, s, first }: { c: Catalogue; ap: AlbumPlan; s: DownloadsState; first: boolean }) {
+function formatWait(why: string | null): string | null {
+  if (!why) return null
+  const u = why.toUpperCase()
+  if (u.includes('WI-FI')) return 'Waiting for Wi-Fi'
+  if (u.includes('PAUSED')) return 'Paused'
+  if (u.includes('OFFLINE') || u.includes('CONNECTION')) return 'Waiting for connection'
+  if (u.includes('SPACE') || u.includes('STORAGE')) return 'Out of storage space'
+  return why.charAt(0).toUpperCase() + why.slice(1).toLowerCase()
+}
+
+function BusyRow({ c, ap, s, first, phone }: { c: Catalogue; ap: AlbumPlan; s: DownloadsState; first: boolean; phone: boolean }) {
   const album = c.albums[ap.albumId]
   const name = rowName(c, ap)
   const cover = useCover(album?.cover)
@@ -253,72 +317,142 @@ function BusyRow({ c, ap, s, first }: { c: Catalogue; ap: AlbumPlan; s: Download
   const bytes = off.bytesDone + (mine && [...ap.trackFiles.values()].includes(mine.id) ? mine.bytes : 0)
   const speed = useSpeed(!!mine, bytes)
   const ratio = off.bytes ? bytes / off.bytes : 0
-  const why = waitingReason(s)
+  const why = formatWait(waitingReason(s))
   const paused = !!s.native?.paused
 
   let status: string
   if (mine && !why) {
-    const parts = [`TRACK ${Math.min(off.count, off.done + 1)} OF ${off.count}`, `${Math.floor(ratio * 100)}%`]
-    if (speed && speed > 0) parts.push(`${(speed / 1e6).toFixed(1)} MB/S`)
+    const parts = [`Track ${Math.min(off.count, off.done + 1)} of ${off.count}`, `${Math.floor(ratio * 100)}%`]
+    if (speed && speed > 0) parts.push(`${(speed / 1e6).toFixed(1)} MB/s`)
     status = parts.join(' · ')
-  } else status = why ?? (first ? 'STARTING' : 'QUEUED')
+  } else status = why ? `${why}${ratio > 0 ? ` · ${Math.floor(ratio * 100)}%` : ''}` : first ? 'Starting' : 'Queued'
 
   return (
-    <div className={`dl-row dl-busy ${mine ? 'is-active' : ''}`}>
+    <div className={`dl-row dl-busy ${mine ? 'is-active' : ''} ${why ? 'is-wait' : ''}`}>
       <button type="button" className="dl-cover" onClick={() => go(albumHref(ap.albumId))} aria-label={`Open ${album?.title ?? ''}`}>
         {cover ? <img src={cover} alt="" /> : <span />}
       </button>
-      <div className="dl-text">
-        <a className="dl-title" href={albumHref(ap.albumId)}>{name.title}</a>
-        <div className="dl-sub">{name.sub}</div>
-      </div>
-      <div className="dl-prog">
-        <div className="dl-line">
-          <span style={{ width: `${Math.round(ratio * 1000) / 10}%` }} />
+      {phone ? (
+        <div className="dl-mid">
+          <a className="dl-title" href={albumHref(ap.albumId)}>
+            {name.title}
+          </a>
+          <div className="dl-line">
+            <span style={{ width: `${Math.round(ratio * 1000) / 10}%` }} />
+          </div>
+          <div className="dl-status">{status}</div>
         </div>
-        <div className="dl-status">{status}</div>
-      </div>
+      ) : (
+        <>
+          <div className="dl-text">
+            <a className="dl-title" href={albumHref(ap.albumId)}>
+              {name.title}
+            </a>
+            <div className="dl-sub">{name.sub}</div>
+          </div>
+          <div className="dl-prog">
+            <div className="dl-line">
+              <span style={{ width: `${Math.round(ratio * 1000) / 10}%` }} />
+            </div>
+            <div className="dl-status">{status}</div>
+          </div>
+        </>
+      )}
       <div className="dl-btns">
         {first && (
-          <IconButton
-            icon={paused ? 'playF' : 'pauseF'}
-            label={paused ? 'Resume downloads' : 'Pause downloads'}
-            shape="square"
+          <button
+            type="button"
+            className="dl-ibtn is-tonal"
+            aria-label={paused ? 'Resume downloads' : 'Pause downloads'}
+            title={paused ? 'Resume downloads' : 'Pause downloads'}
             onClick={() => downloadsStore.setPaused(!paused)}
-          />
+          >
+            <Icon name={paused ? 'playF' : 'pauseF'} />
+          </button>
         )}
-        <IconButton icon="x" label={`Cancel ${name.title}`} shape="square" className="dl-x" onClick={remove} />
+        <button type="button" className="dl-ibtn" aria-label={`Cancel ${name.title}`} title={`Cancel ${name.title}`} onClick={remove}>
+          <Icon name="x" />
+        </button>
       </div>
     </div>
   )
 }
 
-function DoneRow({ c, ap, count, bytes, quality }: { c: Catalogue; ap: AlbumPlan; count: number; bytes: number; quality: DownloadQuality }) {
+function DoneRow({ c, ap, count, bytes, quality, phone }: { c: Catalogue; ap: AlbumPlan; count: number; bytes: number; quality: DownloadQuality; phone: boolean }) {
   const album = c.albums[ap.albumId]
   const name = rowName(c, ap)
   const cover = useCover(album?.cover)
   const remove = useRemove(c, ap, bytes)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
   const first = c.tracks[[...ap.trackFiles.keys()][0]]
   const flac = quality === 'flac' || !first?.mobile?.id
-  const label = flac ? `FLAC ${first?.flac?.bitDepth ?? 16}/${((first?.flac?.sampleRate ?? 44100) / 1000).toString().replace(/\.0$/, '')}` : 'OPUS 160'
+  const label = flac ? `FLAC ${first?.flac?.bitDepth ?? 16}/${((first?.flac?.sampleRate ?? 44100) / 1000).toString().replace(/\.0$/, '')}` : 'Opus 160'
+  const qBadge = <QualityBadge kind={flac ? qualityKind('flac', first?.flac?.bitDepth, first?.flac?.sampleRate) : 'opus'}>{label}</QualityBadge>
+
+  useEffect(() => {
+    if (!menuOpen) return
+    const onDown = (e: MouseEvent) => {
+      if (!menuRef.current?.contains(e.target as Node)) setMenuOpen(false)
+    }
+    window.addEventListener('pointerdown', onDown)
+    return () => window.removeEventListener('pointerdown', onDown)
+  }, [menuOpen])
+
   return (
     <div className="dl-row dl-done">
       <button type="button" className="dl-cover" onClick={() => go(albumHref(ap.albumId))} aria-label={`Open ${album?.title ?? ''}`}>
         {cover ? <img src={cover} alt="" /> : <span />}
       </button>
       <div className="dl-text">
-        <a className="dl-title" href={albumHref(ap.albumId)}>{name.title}</a>
-        <div className="dl-sub">
-          {name.sub}
-          <span className="dl-sub-phone"> · {plural(count, 'TRACK')}</span>
-        </div>
+        <a className="dl-title" href={albumHref(ap.albumId)}>
+          {name.title}
+        </a>
+        {phone ? (
+          <div className="dl-sub dl-sub-row">
+            {qBadge}
+            <span>
+              {plural(count, 'track', 'tracks')} · {fmtBytes(bytes)}
+            </span>
+          </div>
+        ) : (
+          <div className="dl-sub">{name.sub}</div>
+        )}
       </div>
-      <div className="dl-n">{plural(count, 'TRACK')}</div>
-      <div className="dl-q">
-        <QualityBadge kind={flac ? qualityKind('flac', first?.flac?.bitDepth, first?.flac?.sampleRate) : 'opus'}>{label}</QualityBadge>
+      {!phone && (
+        <>
+          <div className="dl-n">{plural(count, 'track', 'tracks')}</div>
+          <div className="dl-q">{qBadge}</div>
+          <div className="dl-size">{fmtBytes(bytes)}</div>
+        </>
+      )}
+      <div ref={menuRef} className="dl-more-wrap">
+        <button
+          type="button"
+          className="dl-ibtn"
+          aria-label={`More actions for ${name.title}`}
+          aria-expanded={menuOpen}
+          onClick={() => setMenuOpen((v) => !v)}
+        >
+          <Icon name="more" />
+        </button>
+        {menuOpen && (
+          <div className="dl-menu" role="menu">
+            <button
+              type="button"
+              role="menuitem"
+              className="dl-menu-item"
+              onClick={() => {
+                setMenuOpen(false)
+                remove()
+              }}
+            >
+              <Icon name="delete" />
+              Remove download
+            </button>
+          </div>
+        )}
       </div>
-      <div className="dl-size">{fmtBytes(bytes)}</div>
-      <IconButton icon="x" label={`Remove ${name.title} from this phone`} shape="square" bare className="dl-x" onClick={remove} />
     </div>
   )
 }

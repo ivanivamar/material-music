@@ -62,17 +62,34 @@ export function installRipple() {
       const sc = getComputedStyle(src)
       const w = document.createElement('span')
       w.className = 'mm-ripple'
-      w.style.borderRadius = sc.borderRadius
+      if (src !== el) w.style.borderRadius = sc.borderRadius
       if (sc.clipPath !== 'none') {
         w.style.clipPath = sc.clipPath
         if (src !== el && sc.transform !== 'none') w.style.transform = sc.transform
       }
-      const d = Math.max(Math.hypot(Math.max(e.clientX - r.left, r.right - e.clientX), Math.max(e.clientY - r.top, r.bottom - e.clientY)), 20) * 2
       const c = document.createElement('span')
-      c.style.cssText = `left:${e.clientX - r.left}px;top:${e.clientY - r.top}px;width:${d}px;height:${d}px`
+      const clientX = e.clientX
+      const clientY = e.clientY
+      const place = () => {
+        const nr = el.getBoundingClientRect()
+        if (!nr.width || !nr.height) return
+        const x = Math.max(0, Math.min(nr.width, clientX - nr.left))
+        const y = Math.max(0, Math.min(nr.height, clientY - nr.top))
+        const d = Math.max(Math.hypot(Math.max(x, nr.width - x), Math.max(y, nr.height - y)), 20) * 2
+        c.style.left = `${x}px`
+        c.style.top = `${y}px`
+        c.style.width = `${d}px`
+        c.style.height = `${d}px`
+      }
+      place()
       w.appendChild(c)
       el.appendChild(w)
-      setTimeout(() => w.remove(), 620)
+      const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(place) : null
+      ro?.observe(el)
+      setTimeout(() => {
+        ro?.disconnect()
+        w.remove()
+      }, 620)
     },
     true,
   )

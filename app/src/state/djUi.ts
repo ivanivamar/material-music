@@ -42,7 +42,7 @@ export const djUi = {
     anchor ??= document.querySelector<HTMLElement>('.np .djb-np, .np .djb-ly, .djb-bar')
     if (sheet || !anchor) return set({ panel: { kind: 'sheet' } })
     const r = anchor.getBoundingClientRect()
-    const W = 400
+    const W = 420
     const left = Math.max(16, Math.min(r.left, window.innerWidth - W - 16))
     set({ panel: { kind: 'popover', left, bottom: window.innerHeight - r.top + 12 } })
   },

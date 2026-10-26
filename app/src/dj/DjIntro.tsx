@@ -1,20 +1,20 @@
 /**
- * The intro moment (handoff_dj §4): the right column of the full-screen player while the DJ
- * speaks, the spoken line as lyric lines in the lyrics view, and the compact versions for the
- * player bar / mini-player. Everything reads the same live clock (dj/live.ts).
+ * The intro moment (Material 3 Expressive redesign, DJMaterial.dc.html):
+ * the right column of the full-screen player while the DJ speaks, the spoken line as lyric lines
+ * in the lyrics view, and the compact versions for the player bar / mini-player.
  */
 import { useCallback } from 'react'
 import { Icon } from '../design/icons'
 import { useMotion } from '../state/motion'
 import type { DjView } from '../state/dj'
 import { DjMark, LevelBars } from './DjMark'
-import { TYPE_UPPER } from './engine'
+import { TYPE_LABEL } from './engine'
 import { useIntroLive, type IntroLive, useIntroSpeaking, introLevel } from './live'
 
 const words = (line: string) => line.split(/\s+/).filter(Boolean)
 
-/** "FIRST SONG IN 6S" */
-const firstIn = (live: IntroLive) => `FIRST SONG IN ${Math.max(0, Math.ceil(live.duration - live.t))}S`
+/** "First song in 6s" */
+const firstIn = (live: IntroLive) => `First song in ${Math.max(0, Math.ceil(live.duration - live.t))}s`
 
 function Subtitle({ line, live }: { line: string; live: IntroLive }) {
   const ws = words(line)
@@ -31,37 +31,37 @@ function Subtitle({ line, live }: { line: string; live: IntroLive }) {
 
 function VoiceRow({ live, playing, phone }: { live: IntroLive; playing: boolean; phone: boolean }) {
   if (live.kind === 'silent' || !live.kind) {
-    const label = live.audio?.reason === 'off' ? 'VOICE OFF · TEXT INTRO' : 'TEXT INTRO'
+    const label = live.audio?.reason === 'off' ? 'Voice off · text intro' : 'Text intro'
     const pct = live.duration ? Math.min(100, (live.t / live.duration) * 100) : 0
     return phone ? (
       <div className="dji-voice is-text">
         <span className="dji-count">
           <span style={{ width: `${pct}%` }} />
         </span>
-        <span className="t-mono">TEXT · {firstIn(live)}</span>
+        <span className="dji-voice-r">Text · {firstIn(live)}</span>
       </div>
     ) : (
       <div className="dji-voice is-text">
         <span className="dji-count">
           <span style={{ width: `${pct}%` }} />
         </span>
-        <div className="dji-voice-m t-mono">
+        <div className="dji-voice-m">
           <span className="is-l">{label}</span>
           <span>{firstIn(live)}</span>
         </div>
       </div>
     )
   }
-  const l = !playing ? 'PAUSED' : live.speaking ? 'DJ · SPEAKING' : live.word < 0 ? 'DJ · ABOUT TO SPEAK' : 'HANDING OVER'
+  const l = !playing ? 'Paused' : live.speaking ? 'DJ · speaking' : live.word < 0 ? 'DJ · about to speak' : 'Handing over'
   return phone ? (
     <div className="dji-voice">
-      <LevelBars n={36} height={22} level={live.level} speaking={live.speaking} t={live.t} />
-      <span className="t-mono">{firstIn(live)}</span>
+      <LevelBars n={36} height={24} level={live.level} speaking={live.speaking} t={live.t} />
+      <span className="dji-voice-r">{firstIn(live)}</span>
     </div>
   ) : (
     <div className="dji-voice">
-      <LevelBars n={60} height={34} level={live.level} speaking={live.speaking} t={live.t} className="is-big" />
-      <div className="dji-voice-m t-mono">
+      <LevelBars n={58} height={44} level={live.level} speaking={live.speaking} t={live.t} className="is-big" />
+      <div className="dji-voice-m">
         <span className="is-l">{l}</span>
         <span>{firstIn(live)}</span>
       </div>
@@ -69,32 +69,25 @@ function VoiceRow({ live, playing, phone }: { live: IntroLive; playing: boolean;
   )
 }
 
-/** Right column during the intro: DJ chip · INTRO · SESSION n (· SKIPPED · …), title, type, the line, the voice. No song counts anywhere. */
+/** Right column during the intro: DJ chip · INTRO · Session n (· Skipped · …), title, type, the line, the voice. */
 export function DjIntroInfo({ item, view, playing, phone }: { item: string; view: DjView; playing: boolean; phone: boolean }) {
   const live = useIntroLive(item, true)
   const s = view.session
   if (!s) return null
   return (
     <div className="dji">
-      {phone ? (
-        <div className="dji-head">
-          <div className="dji-title is-phone">{s.title}</div>
-          <div className="dji-mono t-mono">{TYPE_UPPER[s.kind]}</div>
+      <div className="dji-head">
+        <div className="dji-meta">
+          <span className="dj-chip">DJ</span>
+          <span className="dj-intro-pill">
+            <b>INTRO</b>
+            Session {s.n}
+          </span>
+          {!phone && view.skippedFrom && <span className="dji-skipped">Skipped · {view.skippedFrom}</span>}
         </div>
-      ) : (
-        <div className="dji-head">
-          <div className="dji-meta t-mono">
-            <span className="dj-chip">DJ</span>
-            <span>INTRO</span>
-            <span>SESSION {s.n}</span>
-            {view.skippedFrom && <span className="dji-skipped">SKIPPED · {view.skippedFrom.toUpperCase()}</span>}
-          </div>
-          <div className="dji-title">{s.title}</div>
-          <div className="dji-count-row">
-            <span className="t-mono">{TYPE_UPPER[s.kind]}</span>
-          </div>
-        </div>
-      )}
+        <div className={`dji-title ${phone ? 'is-phone' : ''}`}>{s.title}</div>
+        <div className="dji-type">{TYPE_LABEL[s.kind]}</div>
+      </div>
       <Subtitle line={s.line} live={live} />
       {s.note && (
         <div className="dji-note">
@@ -107,12 +100,11 @@ export function DjIntroInfo({ item, view, playing, phone }: { item: string; view
   )
 }
 
-/** Lyrics view during the intro: the spoken line as sentences, the current one lit in gold. */
+/** Lyrics view during the intro: the spoken line as sentences, the current one lit in violet. */
 export function DjIntroLyrics({ item, line }: { item: string; line: string }) {
   const live = useIntroLive(item, true)
   const motion = useMotion()
   const sentences = (line.match(/[^.!?]+[.!?]+/g) ?? [line]).map((x) => x.trim()).filter(Boolean)
-  // which sentence holds the word being said
   let cur = 0
   let acc = 0
   sentences.forEach((x, i) => {
@@ -137,9 +129,9 @@ export function DjIntroLyrics({ item, line }: { item: string; line: string }) {
       <div className="ly-foot">
         <span className="ly-badge is-dj">
           <span className="ly-badge-dot" />
-          DJ INTRO
+          DJ intro
         </span>
-        <span className="ly-hint">SPOKEN · LIVE</span>
+        <span className="ly-hint">Spoken · live</span>
       </div>
     </>
   )
@@ -147,7 +139,6 @@ export function DjIntroLyrics({ item, line }: { item: string; line: string }) {
 
 /** The mark standing in for a cover, speaking with the live voice. */
 export function LiveMark({ item, size, radius, shadow, fluid, active = true }: { item: string; size: number; radius?: number; shadow?: string; fluid?: boolean; active?: boolean }) {
-  // re-renders only when the voice starts / stops; the level goes straight into a CSS variable
   const speaking = useIntroSpeaking(item, active)
   const getLevel = useCallback(() => introLevel(item), [item])
   return <DjMark size={size} speaking={speaking} getLevel={getLevel} radius={radius} shadow={shadow} fluid={fluid} />
@@ -164,4 +155,3 @@ export function IntroSub({ item }: { item: string }) {
     </span>
   )
 }
-

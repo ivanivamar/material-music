@@ -4,7 +4,7 @@
   position: absolute; left: 18px; right: 28px; bottom: 28px; z-index: 5;
   height: 96px; border-radius: var(--r-xl);
   display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) minmax(0, 1fr); align-items: center; gap: 28px;
-  padding: 0 20px 0 16px; overflow: hidden; isolation: isolate;
+  padding: 0 20px 0 16px; isolation: isolate;
   background: var(--glass-bar);
   -webkit-backdrop-filter: blur(28px) saturate(1.5); backdrop-filter: blur(28px) saturate(1.5);
   color: oklch(0.95 0.006 40);

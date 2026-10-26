@@ -1,10 +1,7 @@
 /**
- * DJ start view of the full-screen player (handoff_dj §3): what opens when the DJ is off and the
- * DJ button is pressed. Start DJ (Endless, all types) or one type: Genre (multi-select chips),
- * Never played, Forgotten, New additions — each with the songs available.
- *
- * Edge states (§9): types running low ("3 LEFT"), offline on the phone (downloaded songs only),
- * genres still being read (counts so far + skeleton chips).
+ * DJ start view of the full-screen player (Material 3 Expressive redesign, DJMaterial.dc.html):
+ * what opens when the DJ is off and the DJ button is pressed. Start DJ (Endless, all types) or
+ * one type: Genre (multi-select chips), Never played, Forgotten, New additions — each with the songs available.
  */
 import { useMemo, useState } from 'react'
 import { useToast } from '../components/ui'
@@ -14,7 +11,7 @@ import { useDownloads, useOnline } from '../state/downloads'
 import { useGenres } from '../state/genres'
 import { useHistory } from '../state/history'
 import { useLibrary } from '../state/library'
-import { DjIcon, DjMark } from './DjMark'
+import { DjMark } from './DjMark'
 import { MIN_SIZE, genreSongCount, type DjType } from './engine'
 
 const fmt = (n: number) => n.toLocaleString('en-US')
@@ -30,16 +27,14 @@ interface TypeCard {
   usable: number
 }
 
-export function DjStart({ phone, onBack }: { phone: boolean; onBack?: () => void }) {
+export function DjStart({ phone }: { phone: boolean; onBack?: () => void }) {
   const toast = useToast()
-  // re-evaluate with the catalogue, history, genres and downloads
   useLibrary()
   useHistory()
   const genres = useGenres()
   useDownloads()
   const online = useOnline()
   const { starting } = useDj()
-  // memoised inside on (catalogue, plays, genres, downloads, penalties)
   const lib = djLibrary()
   const counts = useMemo(() => (lib ? typeCounts(lib) : null), [lib])
   const [picked, setPicked] = useState<string[]>([])
@@ -65,17 +60,17 @@ export function DjStart({ phone, onBack }: { phone: boolean; onBack?: () => void
 
   const start = async (type?: DjType, gs?: string[]) => {
     const ok = await djStore.start({ type, genres: gs })
-    if (!ok) toast.show({ icon: 'alert', mutedIcon: true, text: 'Nothing the DJ can play here yet.', meta: offline ? 'DOWNLOADED SONGS ONLY' : 'LIBRARY' })
+    if (!ok) toast.show({ icon: 'alert', mutedIcon: true, text: 'Nothing the DJ can play here yet.', meta: offline ? 'Downloaded songs only' : 'Library' })
   }
   const toggle = (k: string) => setPicked((p) => (p.includes(k) ? p.filter((x) => x !== k) : [...p, k]))
-  const gSum = picked.length ? `${picked.length} ${picked.length === 1 ? 'GENRE' : 'GENRES'} · ${fmt(pickedCount)} SONGS` : 'NO GENRE PICKED'
-  const libLine = offline ? `${fmt(counts.total)} DOWNLOADED` : `${fmt(counts.total)} SONGS IN YOUR LIBRARY`
+  const gSum = picked.length ? `${picked.length} ${picked.length === 1 ? 'genre' : 'genres'} · ${fmt(pickedCount)} songs` : 'No genre picked'
+  const libLine = offline ? `${fmt(counts.total)} downloaded` : `${fmt(counts.total)} songs in your library`
 
   const genreCard = (
     <div className="djs-card djs-genre">
       <div className="djs-card-h">
         <div className="djs-card-t">Genre</div>
-        <div className="djs-mono">{reading ? `READING GENRES · ${fmt(lib.withGenre)} OF ${fmt(counts.total)}` : 'PICK ONE OR MORE'}</div>
+        <div className="djs-sub">{reading ? `Reading genres · ${fmt(lib.withGenre)} of ${fmt(counts.total)}` : 'Pick one or more'}</div>
       </div>
       {reading && (
         <div className="djs-progress" aria-hidden>
@@ -87,8 +82,9 @@ export function DjStart({ phone, onBack }: { phone: boolean; onBack?: () => void
           const on = picked.includes(g.key)
           return (
             <button key={g.key} type="button" className={`djs-chip ${on ? 'is-on' : ''}`} aria-pressed={on} onClick={() => toggle(g.key)}>
+              {on && <Icon name="done" size={16} />}
               {g.name}
-              <span className="djs-chip-n">{reading ? `${fmt(g.count)} SO FAR` : fmt(g.count)}</span>
+              <span className="djs-chip-n">{reading ? `${fmt(g.count)} so far` : fmt(g.count)}</span>
             </button>
           )
         })}
@@ -98,12 +94,12 @@ export function DjStart({ phone, onBack }: { phone: boolean; onBack?: () => void
       {reading && <div className="djs-note">Counts so far. Endless mode and the other types already work; genre sessions pick from tagged songs only.</div>}
       {phone ? (
         <button type="button" className="djs-genre-go" disabled={!picked.length || starting} onClick={() => void start('genre', picked)}>
-          Start with genre
-          <span className="djs-mono">{gSum}</span>
+          <span>Start with genre</span>
+          <span className="djs-genre-sum">{gSum}</span>
         </button>
       ) : (
         <div className="djs-card-f">
-          <div className="djs-mono is-sum">{gSum}</div>
+          <div className="djs-sub is-sum">{gSum}</div>
           <button type="button" className="djs-genre-go" disabled={!picked.length || starting} onClick={() => void start('genre', picked)}>
             Start with genre
           </button>
@@ -115,7 +111,7 @@ export function DjStart({ phone, onBack }: { phone: boolean; onBack?: () => void
   const typeEl = (c: TypeCard) => {
     const low = c.n < MIN_SIZE && c.usable >= 1
     const disabled = c.usable === 0 || starting
-    const n = c.n === 0 && c.type === 'forgotten' && c.usable ? '0 YET' : low ? `${fmt(c.n)} LEFT` : fmt(c.n)
+    const n = c.n === 0 && c.type === 'forgotten' && c.usable ? '0 yet' : low ? `${fmt(c.n)} left` : fmt(c.n)
     const sub = c.usable === 0 ? (offline ? 'None downloaded yet' : 'Nothing to play yet') : low && c.type !== 'forgotten' ? c.low : c.sub
     return phone ? (
       <button key={c.type} type="button" className="djs-row" disabled={disabled} onClick={() => void start(c.type)}>
@@ -123,7 +119,7 @@ export function DjStart({ phone, onBack }: { phone: boolean; onBack?: () => void
           <span className="djs-row-t">{c.label}</span>
           <span className="djs-row-s">{sub}</span>
         </span>
-        <span className="djs-row-n t-mono">{n}</span>
+        <span className="djs-row-n">{n}</span>
         <Icon name="chevR" />
       </button>
     ) : (
@@ -132,7 +128,7 @@ export function DjStart({ phone, onBack }: { phone: boolean; onBack?: () => void
           <span className="djs-type-t">{c.label}</span>
           <Icon name="chevR" />
         </span>
-        <span className="djs-type-n t-mono">{n}</span>
+        <span className="djs-type-n">{n}</span>
         <span className="djs-type-s">{sub}</span>
       </button>
     )
@@ -150,25 +146,21 @@ export function DjStart({ phone, onBack }: { phone: boolean; onBack?: () => void
   if (phone)
     return (
       <section className="djs is-phone pg-anim">
-        <button type="button" className="djs-back t-mono" onClick={onBack}>
-          <Icon name="chevL" />
-          NOW PLAYING
-        </button>
         <div className="djs-hero">
-          <DjMark size={120} idle />
+          <DjMark size={104} idle />
           <div className="djs-hero-t">
-            <div className="djs-mono">PELAGIC DJ</div>
+            <div className="djs-kicker">Material Music DJ</div>
             <div className="djs-title">DJ</div>
           </div>
         </div>
         <p className="djs-body">Endless themed sessions from your library, each with a short spoken intro. The queue waits until you stop.</p>
         {banner}
         <button type="button" className="djs-go" disabled={starting} onClick={() => void start()}>
-          <DjIcon dark />
+          <Icon name="podcasts" filled />
           Start DJ
-          <span className="djs-mono">{offline ? `${fmt(counts.total)} DOWNLOADED` : 'ENDLESS'}</span>
+          <span className="djs-go-sub">{offline ? `${fmt(counts.total)} downloaded` : 'Endless'}</span>
         </button>
-        <div className="djs-mono">OR START WITH ONE TYPE</div>
+        <div className="djs-sec-label">Or start with one type</div>
         {genreCard}
         <div className="djs-rows">{cards.map(typeEl)}</div>
       </section>
@@ -178,21 +170,21 @@ export function DjStart({ phone, onBack }: { phone: boolean; onBack?: () => void
     <section className="djs pg-anim">
       <div className="djs-left">
         <DjMark size={420} idle fluid />
-        <div className="djs-mono is-dim">THEMED SESSIONS · A SHORT SPOKEN INTRO BEFORE EACH</div>
+        <div className="djs-caption">Sessions of 6–9 songs, with a short spoken intro before each.</div>
       </div>
       <div className="djs-right">
         <div className="djs-head">
-          <div className="djs-mono">PELAGIC DJ · {libLine}</div>
+          <div className="djs-kicker">Material Music DJ · {libLine}</div>
           <div className="djs-title">DJ</div>
           <p className="djs-body">Plays an endless chain of sessions from your library and introduces each one. Pause, skip and lyrics work as usual; the queue waits until you stop the DJ.</p>
         </div>
         {banner}
         <button type="button" className="djs-go" disabled={starting} onClick={() => void start()}>
-          <DjIcon dark />
+          <Icon name="podcasts" filled />
           Start DJ
-          <span className="djs-mono">ENDLESS · ALL TYPES</span>
+          <span className="djs-go-sub">{offline ? `${fmt(counts.total)} downloaded` : 'Endless · all types'}</span>
         </button>
-        <div className="djs-mono is-dim">OR START WITH ONE TYPE</div>
+        <div className="djs-sec-label">Or start with one type</div>
         {genreCard}
         <div className="djs-types">{cards.map(typeEl)}</div>
       </div>

@@ -109,9 +109,9 @@ html[data-phone]:not([data-np]) .toasts.toasts-shell { left: 0; right: 0; bottom
 html[data-phone][data-qp] .toasts.toasts-shell { right: 0; }
 
 /* ── Page header ── */
-.shell.is-phone .ph { align-items: flex-start; gap: 16px; margin-bottom: 26px; }
-.shell.is-phone .ph-title { font-size: 28px; letter-spacing: -0.015em; }
-.shell.is-phone .ph-meta { font-size: var(--fs-mono-sm); }
+.shell.is-phone .ph { align-items: flex-start; gap: 16px; margin-bottom: 20px; }
+.shell.is-phone .ph-title { font-size: 36px; letter-spacing: -0.025em; }
+.shell.is-phone .ph-meta { font-size: 13px; }
 .shell.is-phone .search-pill { display: none; }
 .shell.is-phone .avatar { width: 36px; height: 36px; font-size: 13px; }
 .shell.is-phone .lib > .ph { margin-bottom: 0; }
@@ -200,7 +200,7 @@ html[data-phone][data-qp] .toasts.toasts-shell { right: 0; }
 .shell.is-phone .offl-main { justify-content: space-between; }
 .shell.is-phone .offl-text { align-items: flex-start; text-align: left; min-width: 0; }
 .shell.is-phone .offl-status { white-space: normal; }
-.shell.is-phone .offl .seg { display: flex; }
+.shell.is-phone .offl .seg { --seg-r: 17px; display: flex; height: 34px; }
 .shell.is-phone .offl .seg-opt { flex: 1; justify-content: center; height: 34px; }
 /* library: OFFLINE ONLY keeps its label; the count moves to the next line if needed */
 .shell.is-phone .lib-bar:has(.lib-offl) { flex-wrap: wrap; row-gap: 10px; }
@@ -291,12 +291,15 @@ html[data-phone][data-qp] .toasts.toasts-shell { right: 0; }
 .shell.is-phone .np-mode .ms { font-size: 24px; }
 .shell.is-phone .np-mode.is-on { width: 48px; border-radius: 15px; }
 .shell.is-phone .np-skip { width: 48px; height: 48px; }
-.np-phone-actions { margin-top: auto; padding: 24px 20px calc(36px + env(safe-area-inset-bottom)); display: flex; align-items: center; justify-content: space-between; flex: none; }
+.np-phone-actions { margin-top: auto; padding: 24px 20px calc(36px + env(safe-area-inset-bottom)); display: flex; align-items: center; justify-content: space-between; gap: 8px; flex: none; }
+.np-main:has(> .np-dj-hint) .np-phone-actions { padding-bottom: 8px; }
+.shell.is-phone .np-dj-hint { margin-top: 0; padding: 0 20px calc(24px + env(safe-area-inset-bottom)); }
 .np-phone-actions .np-vbtn.is-sq { width: 64px; height: 48px; padding: 0; justify-content: center; border-radius: 24px; background: rgba(255, 255, 255, .08); box-shadow: none; }
 .np-phone-actions .np-vbtn.is-sq .ms { font-size: 24px; }
 .np-phone-actions .np-vbtn.is-sq.is-on { width: 48px; border-radius: 15px; background: var(--album-hi); color: var(--on-album); }
-.np-phone-actions .djb.djb-phone { height: 48px; padding: 0 18px 0 14px; border-radius: 24px; }
-.np-phone-actions .djb.djb-phone.is-on { border-radius: 16px; }
+.np-phone-actions .np-vbtn.is-sq.is-dj-tune { width: 48px; color: var(--dj); }
+.np-phone-actions .djb.djb-phone { height: 48px; padding: 0 20px 0 16px; border-radius: 24px; }
+.np-phone-actions .djb.djb-phone.is-on { border-radius: 15px; }
 
 /* lyrics: floating bottom sheet (matches .qp in layout, rest offset and header drag) */
 .shell.is-phone .np-scrim { top: 0; bottom: 0; z-index: 44; background: rgba(5, 5, 5, .45); will-change: opacity; }
@@ -390,8 +393,6 @@ html[data-phone][data-qp] .toasts.toasts-shell { right: 0; }
   margin-left: -6px; padding-left: 6px; box-sizing: content-box; touch-action: none; cursor: grab;
 }
 .shell.is-phone .qp-ncover { width: 42px; height: 42px; }
-.shell.is-phone .qp-like { width: 44px; height: 44px; font-size: 18px; }
-.shell.is-phone .qp-like:hover:not(.is-on) { color: var(--ink-secondary); }
 .shell.is-phone .qp-nd { width: auto; padding-right: 6px; }
 .shell.is-phone .qp-row.is-drag .qp-row-in { opacity: .45; background: var(--surface-2); }
 /* swipe left: a red strip fills the space the row leaves behind */

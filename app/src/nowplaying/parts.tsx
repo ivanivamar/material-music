@@ -7,7 +7,8 @@ import { nowPlayingStore, useNowPlayingUi } from '../state/nowPlaying'
 import { playerStore, usePlayer, type PlayContext, type PlayerState } from '../state/player'
 import { albumHref, artistHref, mixHref, playlistHref } from '../shell/routes'
 import { parseRadioId } from '../lib/mixing'
-import { useDjView } from '../state/djUi'
+import { djUi, useDjView } from '../state/djUi'
+import { isTouch } from '../state/viewport'
 import { DjButton } from '../dj/DjButton'
 
 export interface Current {
@@ -159,5 +160,17 @@ export function ViewButtons({ phone = false }: { size?: 'md' | 'sm'; phone?: boo
     </button>
   )
   const djb = <DjButton key="dj" variant={phone ? 'phone' : 'np'} />
-  return <>{[lyrics, djb, queue]}</>
+  const tune = dj ? (
+    <button
+      key="tune"
+      type="button"
+      className="np-vbtn is-sq is-dj-tune"
+      aria-label="DJ panel"
+      title="DJ panel"
+      onClick={(e) => djUi.openPanel(e.currentTarget, phone || isTouch())}
+    >
+      <Icon name="tune" />
+    </button>
+  ) : null
+  return <>{[lyrics, djb, tune, queue]}</>
 }

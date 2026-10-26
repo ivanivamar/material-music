@@ -101,7 +101,7 @@ a:hover { color: var(--brand-hi); }
 .ms-fill { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
 
 /* ripple (design/ripple.ts) */
-.mm-ripple { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 1; color: inherit; }
+.mm-ripple { position: absolute; inset: 0; border-radius: inherit; overflow: hidden; pointer-events: none; z-index: 1; color: inherit; }
 .mm-ripple > span {
   position: absolute; border-radius: 50%; background: currentColor; opacity: 0;
   animation: mm-ripple 550ms var(--ease-std) forwards;

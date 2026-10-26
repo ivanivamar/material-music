@@ -44,10 +44,10 @@
 .toasts.toasts-shell { left: var(--sidebar-w, 272px); bottom: 144px; }
 
 /* ── Page header (shared by every page) ────────────── */
-.ph { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 44px; }
-.ph-text { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
-.ph-meta { font-family: var(--font-mono); font-size: var(--fs-mono-sm); letter-spacing: .16em; color: var(--ink-tertiary); text-transform: uppercase; }
-.ph-title { margin: 0; font-size: var(--fs-page); font-weight: 400; letter-spacing: var(--ls-page); line-height: 1.1; }
+.ph { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 24px; }
+.ph-text { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.ph-title { margin: 0; font-size: 45px; font-weight: 700; letter-spacing: -0.025em; line-height: 1.05; color: var(--ink-primary); }
+.ph-meta { font-size: 14px; font-weight: 400; letter-spacing: 0; color: var(--ink-secondary); text-transform: none; font-variant-numeric: tabular-nums; }
 .ph-tools { display: flex; align-items: center; gap: 14px; flex: none; }
 
 /* top bar (desktop): search pill (+ Shuffle all on Home) */

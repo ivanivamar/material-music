@@ -375,6 +375,9 @@ function Tabs({
               role="tab"
               aria-selected={on}
               className={`nr-seg-b ${on ? 'is-on' : ''}`}
+              onPointerDown={(e) => {
+                if (e.button === 0 && e.pointerType === 'mouse') onTab(id)
+              }}
               onClick={() => onTab(id)}
             >
               <span>{label}</span>
@@ -497,6 +500,9 @@ function Filters({
                 role="radio"
                 aria-checked={status === id}
                 className={`nr-segc-b ${status === id ? 'is-on' : ''}`}
+                onPointerDown={(e) => {
+                  if (e.button === 0 && e.pointerType === 'mouse') set(id)
+                }}
                 onClick={() => set(id)}
               >
                 {status === id && <Icon name="check" />}
