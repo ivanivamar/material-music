@@ -1,0 +1,19 @@
+/* Material redesign primitives (Material.tsx) */
+.mm-cookie {
+  position: relative; flex: none; border: 0; padding: 0; background: none; cursor: pointer;
+  display: inline-grid; place-items: center; -webkit-tap-highlight-color: transparent;
+}
+.mm-cookie:disabled { cursor: default; opacity: .5; }
+.mm-cookie-shape { position: absolute; inset: 0; transition: clip-path 520ms var(--ease-shape), background-color 300ms var(--ease-std); }
+.mm-cookie-shape.is-on { animation: pm-spin 14s linear infinite; }
+.mm-cookie-ic { position: relative; display: grid; place-items: center; z-index: 2; }
+.mm-cookie:active .mm-cookie-shape { transform: scale(.94); }
+
+.mm-wave { position: relative; width: 100%; }
+.mm-wave-played { position: absolute; left: 0; top: 2px; -webkit-mask-repeat: repeat-x; mask-repeat: repeat-x; }
+.mm-wave-played.is-moving { animation: pm-wave 1.4s linear infinite; }
+.mm-wave-track { position: absolute; right: 0; height: 4px; border-radius: 999px; }
+.mm-wave-thumb { position: absolute; top: -1px; width: 4px; border-radius: 2px; }
+
+.mm-eq { display: inline-flex; align-items: flex-end; gap: 2px; flex: none; }
+.mm-eq > span { width: 3px; height: 100%; border-radius: 2px; transform-origin: bottom; animation: pm-eq .9s ease-in-out infinite; }

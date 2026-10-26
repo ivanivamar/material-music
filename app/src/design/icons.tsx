@@ -1,131 +1,136 @@
 /**
- * Pelagic icon set — custom 24-grid line icons, 1.25px stroke.
- * Ported 1:1 from design_handoff_pelagic/pelagic-kit.js.
- * Sizes: 21px inside buttons, 17–20px in rows/nav, 22px in Android tabs.
+ * Material Music icons: Material Symbols Rounded (self-hosted variable font, FILL axis), opsz 24 / wght 400
+ * as in the Material redesign handoff. The app keeps its own short icon names; each maps to a symbol.
+ * Names ending in F (playF, pauseF, heartF, bellF) and `filled` render the filled variant.
+ * The DJ mark is not a symbol: it stays a small drawn burst (DJ identity, violet).
  */
-import type { CSSProperties, SVGProps } from 'react'
+import type { CSSProperties } from 'react'
 
-type Shape =
-  | string // path "d" with default stroke
-  | ['path', SVGProps<SVGPathElement>]
-  | ['circle', SVGProps<SVGCircleElement>]
-  | ['rect', SVGProps<SVGRectElement>]
+export const ICON_SYMBOLS = {
+  playF: 'play_arrow',
+  pauseF: 'pause',
+  prev: 'skip_previous',
+  next: 'skip_next',
+  shuffle: 'shuffle',
+  repeat: 'repeat',
+  repeatOne: 'repeat_one',
+  home: 'home',
+  library: 'library_music',
+  search: 'search',
+  newr: 'new_releases',
+  upload: 'upload',
+  download: 'download',
+  check: 'check_circle',
+  cloud: 'cloud',
+  queue: 'queue_music',
+  lyrics: 'lyrics',
+  volume: 'volume_up',
+  mute: 'volume_off',
+  heart: 'favorite',
+  heartF: 'favorite',
+  more: 'more_vert',
+  moreH: 'more_horiz',
+  chevD: 'expand_more',
+  chevL: 'chevron_left',
+  chevR: 'chevron_right',
+  chevU: 'expand_less',
+  back: 'arrow_back',
+  forward: 'arrow_forward',
+  plus: 'add',
+  clock: 'schedule',
+  smart: 'auto_awesome',
+  playlist: 'queue_music',
+  offline: 'cloud_off',
+  x: 'close',
+  drag: 'drag_indicator',
+  grid: 'grid_view',
+  timeline: 'view_timeline',
+  refresh: 'refresh',
+  bell: 'notifications',
+  bellF: 'notifications',
+  ext: 'open_in_new',
+  eye: 'visibility',
+  gear: 'settings',
+  alert: 'error',
+  radio: 'sensors',
+  saveList: 'playlist_add',
+  spark: 'auto_awesome',
+  album: 'album',
+  artist: 'person',
+  song: 'music_note',
+  sort: 'sort',
+  tune: 'tune',
+  done: 'check',
+  downloaded: 'download_done',
+  offlinePin: 'offline_pin',
+  edit: 'edit',
+  delete: 'delete',
+  playNext: 'queue_play_next',
+  addQueue: 'add_to_queue',
+  folder: 'folder_open',
+  logout: 'logout',
+  account: 'account_circle',
+  install: 'install_desktop',
+  update: 'system_update',
+  bookmark: 'bookmark_add',
+  bookmarked: 'bookmark_added',
+  wifi: 'wifi',
+  storage: 'storage',
+  keyboard: 'keyboard',
+  stats: 'bar_chart',
+  health: 'health_and_safety',
+  mic: 'mic',
+  info: 'info',
+  unfold: 'unfold_more',
+  dj: '',
+} as const
 
-const fill = { fill: 'currentColor', stroke: 'none' } as const
-const HEART = 'M12 19.5s-7-4.3-7-9.6A3.9 3.9 0 0 1 12 7.6a3.9 3.9 0 0 1 7 2.3c0 5.3-7 9.6-7 9.6z'
-const BELL = 'M6.5 16.5V11a5.5 5.5 0 0 1 11 0v5.5l1.5 1.5h-14z'
+export type IconName = keyof typeof ICON_SYMBOLS
+export const ICON_NAMES = Object.keys(ICON_SYMBOLS) as IconName[]
 
-export const ICON_PATHS = {
-  playF: [['path', { d: 'M8 5.8v12.4a.8.8 0 0 0 1.2.7l10-6.2a.8.8 0 0 0 0-1.4l-10-6.2A.8.8 0 0 0 8 5.8z', ...fill }]],
-  pauseF: [
-    ['rect', { x: 7, y: 5, width: 3, height: 14, rx: 0.8, ...fill }],
-    ['rect', { x: 14, y: 5, width: 3, height: 14, rx: 0.8, ...fill }],
-  ],
-  prev: [['path', { d: 'M18 6.5v11a.6.6 0 0 1-.9.5L9 12.5a.6.6 0 0 1 0-1L17.1 6a.6.6 0 0 1 .9.5z', ...fill }], 'M6 6v12'],
-  next: [['path', { d: 'M6 6.5v11a.6.6 0 0 0 .9.5L15 12.5a.6.6 0 0 0 0-1L6.9 6a.6.6 0 0 0-.9.5z', ...fill }], 'M18 6v12'],
-  shuffle: ['M4 7h3c4.5 0 5.5 10 10 10h3', 'M4 17h3c1.6 0 2.7-1.3 3.6-3', 'M13.4 10c.9-1.7 2-3 3.6-3h3', 'M17.5 4.5 20 7l-2.5 2.5', 'M17.5 14.5 20 17l-2.5 2.5'],
-  repeat: ['M4 11V9.5A3.5 3.5 0 0 1 7.5 6H20', 'M17 3l3 3-3 3', 'M20 13v1.5a3.5 3.5 0 0 1-3.5 3.5H4', 'M7 21l-3-3 3-3'],
-  home: ['M4 10.5 12 4l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5.5h-5V20H5a1 1 0 0 1-1-1z'],
-  library: ['M5 4v16', 'M9.5 4v16', 'M14 5l5 14.5'],
-  search: [['circle', { cx: 11, cy: 11, r: 6.5 }], 'M20 20l-4.3-4.3'],
-  /** New releases: a record with a fresh sparkle */
-  newr: [
-    ['circle', { cx: 10.5, cy: 13.5, r: 7 }],
-    ['circle', { cx: 10.5, cy: 13.5, r: 2 }],
-    ['path', { d: 'M6.6 13.5a3.9 3.9 0 0 1 3.9-3.9', strokeOpacity: 0.55 }],
-    'M18.5 2.8c.25 1.6 1.1 2.45 2.7 2.7-1.6.25-2.45 1.1-2.7 2.7-.25-1.6-1.1-2.45-2.7-2.7 1.6-.25 2.45-1.1 2.7-2.7z',
-  ],
-  upload: ['M12 15V4', 'M7.5 8.5 12 4l4.5 4.5', 'M5 15v3.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V15'],
-  download: ['M12 4v11', 'M7.5 10.5 12 15l4.5-4.5', 'M5 15v3.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V15'],
-  check: [['circle', { cx: 12, cy: 12, r: 8.5 }], 'M8.5 12.3l2.4 2.4 4.6-5'],
-  cloud: ['M7.5 18h9.5a4 4 0 0 0 .5-7.97A5.5 5.5 0 0 0 6.9 9.6 4.2 4.2 0 0 0 7.5 18z'],
-  queue: ['M4 6h16', 'M4 11h16', 'M4 16h8', ['path', { d: 'M15.5 14v6l5-3z', ...fill }]],
-  lyrics: ['M5 5h14a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-7l-4 3.5V16H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z', 'M8 9h8', 'M8 12h5'],
-  volume: ['M4 9.5v5h3.5L12 18V6L7.5 9.5z', 'M15.5 9a4 4 0 0 1 0 6', 'M18 6.5a7.5 7.5 0 0 1 0 11'],
-  mute: ['M4 9.5v5h3.5L12 18V6L7.5 9.5z', 'M16 9.5l5 5', 'M21 9.5l-5 5'],
-  heart: [HEART],
-  heartF: [['path', { d: HEART, fill: 'currentColor' }]],
-  more: [
-    ['circle', { cx: 5.5, cy: 12, r: 1.1, ...fill }],
-    ['circle', { cx: 12, cy: 12, r: 1.1, ...fill }],
-    ['circle', { cx: 18.5, cy: 12, r: 1.1, ...fill }],
-  ],
-  chevD: ['M6 9.5l6 6 6-6'],
-  chevL: ['M14.5 6l-6 6 6 6'],
-  chevR: ['M9.5 6l6 6-6 6'],
-  chevU: ['M6 14.5l6-6 6 6'],
-  plus: ['M12 5v14', 'M5 12h14'],
-  clock: [['circle', { cx: 12, cy: 12, r: 8.5 }], 'M12 7.5V12l3 2'],
-  smart: ['M4 6h9', 'M4 11h7', 'M4 16h6', ['path', { d: 'M17.5 9.5l1.1 2.9 2.9 1.1-2.9 1.1-1.1 2.9-1.1-2.9-2.9-1.1 2.9-1.1z', strokeLinejoin: 'round' }]],
-  playlist: ['M4 6h11', 'M4 11h11', 'M4 16h6', ['circle', { cx: 16.5, cy: 17, r: 2.5 }], 'M19 17V7.5l2-1'],
-  offline: ['M3 3l18 18', 'M8.5 8.6A9 9 0 0 0 3.5 10', 'M20.5 10a9 9 0 0 0-6-2.4', 'M6.5 13.5a6 6 0 0 1 5.5-1.6', 'M12 18.5h.01'],
-  x: ['M6 6l12 12', 'M18 6 6 18'],
-  drag: ['M5 9h14', 'M5 15h14'],
-  grid: [
-    ['rect', { x: 4, y: 4, width: 7, height: 7, rx: 2 }],
-    ['rect', { x: 13, y: 4, width: 7, height: 7, rx: 2 }],
-    ['rect', { x: 4, y: 13, width: 7, height: 7, rx: 2 }],
-    ['rect', { x: 13, y: 13, width: 7, height: 7, rx: 2 }],
-  ],
-  refresh: ['M19.5 12a7.5 7.5 0 1 1-2.2-5.3', 'M19.5 4.5v3.2h-3.2'],
-  bell: [BELL, 'M10 20.5a2 2 0 0 0 4 0'],
-  bellF: [['path', { d: BELL, fill: 'currentColor' }], 'M10 20.5a2 2 0 0 0 4 0'],
-  ext: ['M13.5 5.5h5v5', 'M18.5 5.5 11 13', 'M17 13.5v4a1 1 0 0 1-1 1H6.5a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h4'],
-  eye: ['M2.8 12S6.2 6 12 6s9.2 6 9.2 6-3.4 6-9.2 6-9.2-6-9.2-6z', ['circle', { cx: 12, cy: 12, r: 2.6 }]],
-  /** Settings: 8-tooth cog */
-  gear: [
-    'M10.44 5.49L10.73 3.49A8.6 8.6 0 0 1 13.27 3.49L13.56 5.49A6.7 6.7 0 0 1 15.50 6.29L17.12 5.09A8.6 8.6 0 0 1 18.91 6.88L17.71 8.50A6.7 6.7 0 0 1 18.51 10.44L20.51 10.73A8.6 8.6 0 0 1 20.51 13.27L18.51 13.56A6.7 6.7 0 0 1 17.71 15.50L18.91 17.12A8.6 8.6 0 0 1 17.12 18.91L15.50 17.71A6.7 6.7 0 0 1 13.56 18.51L13.27 20.51A8.6 8.6 0 0 1 10.73 20.51L10.44 18.51A6.7 6.7 0 0 1 8.50 17.71L6.88 18.91A8.6 8.6 0 0 1 5.09 17.12L6.29 15.50A6.7 6.7 0 0 1 5.49 13.56L3.49 13.27A8.6 8.6 0 0 1 3.49 10.73L5.49 10.44A6.7 6.7 0 0 1 6.29 8.50L5.09 6.88A8.6 8.6 0 0 1 6.88 5.09L8.50 6.29A6.7 6.7 0 0 1 10.44 5.49z',
-    ['circle', { cx: 12, cy: 12, r: 2.8 }],
-  ],
-  alert: [['circle', { cx: 12, cy: 12, r: 8.5 }], 'M12 7.8v5', 'M12 16.2h.01'],
-  /** DJ (step 22): horizon, two arcs, the dot */
-  dj: [['path', { d: 'M2 16.5h20', strokeOpacity: 0.45 }], 'M7.5 16.5a4.5 4.5 0 0 1 9 0', 'M3.5 16.5a8.5 8.5 0 0 1 17 0', ['circle', { cx: 12, cy: 16.5, r: 1.7, fill: 'currentColor', stroke: 'none' }]],
-  /** Radio (step 26): a station ring, its centre, the satellite */
-  radio: [['circle', { cx: 12, cy: 12, r: 8, strokeOpacity: 0.5 }], ['circle', { cx: 12, cy: 12, r: 3.2 }], ['circle', { cx: 17.66, cy: 6.34, r: 1.6, fill: 'currentColor', stroke: 'none' }]],
-  /** Save as playlist (step 26): a list with a plus */
-  saveList: ['M4 6h11', 'M4 11h11', 'M4 16h7', 'M17.5 13v7', 'M14 16.5h7'],
-  /** ✦ (step 26 smart playlists shelf) */
-  spark: ['M12 3.5c.6 4.6 3.9 7.9 8.5 8.5-4.6.6-7.9 3.9-8.5 8.5-.6-4.6-3.9-7.9-8.5-8.5 4.6-.6 7.9-3.9 8.5-8.5z'],
-} satisfies Record<string, Shape[]>
-
-export type IconName = keyof typeof ICON_PATHS
-export const ICON_NAMES = Object.keys(ICON_PATHS) as IconName[]
+const FILLED = new Set<IconName>(['playF', 'pauseF', 'heartF', 'bellF'])
 
 export interface IconProps {
   name: IconName
-  /** px; defaults to 1em so it follows font-size */
+  /** px; defaults to 1.25em of the surrounding text (Material Symbols sit at 20–24px next to 14–16px text) */
   size?: number | string
   className?: string
   style?: CSSProperties
+  /** filled variant (FILL 1), e.g. the selected nav item */
+  filled?: boolean
   /** accessible label; omit for decorative icons */
   title?: string
 }
 
-export function Icon({ name, size = '1em', className, style, title }: IconProps) {
-  const shapes: Shape[] = ICON_PATHS[name]
+/** The DJ burst: 9-sided cookie with a deep amplitude (handoff DJ mark). */
+const DJ_PATH = (() => {
+  const pts: string[] = []
+  for (let i = 0; i < 90; i++) {
+    const t = (i / 90) * Math.PI * 2
+    const r = 10 * (1 - 0.14 + 0.14 * Math.cos(9 * t))
+    pts.push(`${(12 + r * Math.cos(t)).toFixed(2)} ${(12 + r * Math.sin(t)).toFixed(2)}`)
+  }
+  return 'M' + pts.join('L') + 'Z'
+})()
+
+export function Icon({ name, size, className, style, filled, title }: IconProps) {
+  const a11y = title ? { role: 'img' as const, 'aria-label': title } : { 'aria-hidden': true as const }
+  if (name === 'dj') {
+    const s = size ?? '1.25em'
+    return (
+      <svg width={s} height={s} viewBox="0 0 24 24" className={className} style={{ display: 'block', flex: 'none', ...style }} {...a11y}>
+        <path d={DJ_PATH} fill="currentColor" />
+      </svg>
+    )
+  }
+  const fill = filled || FILLED.has(name)
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.25}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      style={{ display: 'block', flex: 'none', ...style }}
-      role={title ? 'img' : undefined}
-      aria-hidden={title ? undefined : true}
-      aria-label={title}
+    <span
+      className={'ms' + (fill ? ' ms-fill' : '') + (className ? ' ' + className : '')}
+      style={{ fontSize: size ?? undefined, ...style }}
+      {...a11y}
     >
-      {shapes.map((s, i) => {
-        if (typeof s === 'string') return <path key={i} d={s} />
-        const [tag, props] = s
-        if (tag === 'circle') return <circle key={i} {...props} />
-        if (tag === 'rect') return <rect key={i} {...props} />
-        return <path key={i} {...props} />
-      })}
-    </svg>
+      {ICON_SYMBOLS[name]}
+    </span>
   )
 }

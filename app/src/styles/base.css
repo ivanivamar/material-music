@@ -76,3 +76,44 @@ button { font: inherit; color: inherit; }
 }
 html[data-motion='reduced'] .pg-anim { animation: none !important; transition: none !important; }
 html[data-motion='reduced'] .pg-snow { display: none !important; }
+
+/* ── Material redesign foundation ─────────────────────── */
+@property --h { syntax: '<number>'; inherits: true; initial-value: 38; }
+:root { transition: --h 600ms var(--ease-std); }
+
+body { background: var(--bg-1); font-feature-settings: 'ss01'; }
+a { color: var(--brand); text-decoration: none; }
+a:hover { color: var(--brand-hi); }
+:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+::selection { background: oklch(0.80 0.115 38 / 0.35); color: var(--ink-primary); }
+
+/* Material Symbols Rounded (opsz 24, wght 400; .ms-fill = FILL 1) */
+.ms {
+  font-family: 'Material Symbols Rounded Variable', 'Material Symbols Rounded';
+  font-weight: normal; font-style: normal; font-size: 1.25em; line-height: 1;
+  letter-spacing: normal; text-transform: none; white-space: nowrap; direction: ltr;
+  display: inline-block; flex: none; overflow: hidden; width: 1em; height: 1em; text-align: center;
+  font-feature-settings: 'liga'; -webkit-font-feature-settings: 'liga'; -webkit-font-smoothing: antialiased;
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  user-select: none; -webkit-user-select: none;
+}
+.ms-fill { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+
+/* ripple (design/ripple.ts) */
+.mm-ripple { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 1; color: inherit; }
+.mm-ripple > span {
+  position: absolute; border-radius: 50%; background: currentColor; opacity: 0;
+  animation: mm-ripple 550ms var(--ease-std) forwards;
+}
+@keyframes mm-ripple { from { transform: translate(-50%, -50%) scale(0); opacity: .2; } to { transform: translate(-50%, -50%) scale(1); opacity: 0; } }
+
+@keyframes pm-eq { 0%, 100% { transform: scaleY(.3); } 50% { transform: scaleY(1); } }
+@keyframes pm-spin { to { transform: rotate(360deg); } }
+@keyframes pm-wave { from { -webkit-mask-position: 0 0; mask-position: 0 0; } to { -webkit-mask-position: 24px 0; mask-position: 24px 0; } }
+@keyframes pm-shimmer { 0% { background-position: 150% 0; } 100% { background-position: -50% 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  html:not([data-motion='full']) .mm-anim { animation: none !important; }
+}
+html[data-motion='reduced'] .mm-anim { animation: none !important; }
+html[data-motion='reduced'] .mm-shape { transition: none !important; }

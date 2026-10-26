@@ -43,12 +43,14 @@ export interface Tint {
   deep: RGB
   glow: RGB
   accent: RGB
+  /** album hue for the Material accents (albumHue.ts); brand coral for grey covers */
+  hue: number
 }
 
 export function tintFrom(rgb: RGB): Tint {
   const [, C, H] = toOklch(rgb)
   const at = (k: keyof typeof tintClamp) => fromOklch(tintClamp[k].l, Math.min(C, tintClamp[k].cMax), H)
-  return { wash: at('wash'), deep: at('deep'), glow: at('glow'), accent: at('accent') }
+  return { wash: at('wash'), deep: at('deep'), glow: at('glow'), accent: at('accent'), hue: C < 0.03 ? 38 : Math.round(H) }
 }
 
 export const rgba = (c: RGB, a: number) => `rgba(${c[0]},${c[1]},${c[2]},${a})`
