@@ -25,6 +25,8 @@ export function cookie(n: number, amp: number, points = 120): string {
 export const SHAPE_PAUSED = cookie(9, 0)
 export const SHAPE_PLAYING = cookie(9, 0.06)
 export const SHAPE_BURST = cookie(9, 0.14)
+/** the soft 10-lobe "clover" (badges, empty states) */
+export const SHAPE_CLOVER = cookie(10, 0.09)
 
 /** M3 Expressive loading-indicator sequence (same point count, so they morph). */
 export const LOADING_SHAPES = [

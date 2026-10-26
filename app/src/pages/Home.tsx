@@ -18,7 +18,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { Icon } from '../design/icons'
 import { useRelatedVersion } from '../lib/deezer'
 import { mixDay } from '../lib/mixing'
-import { libraryStats, useLibrary, type Album, type Catalogue } from '../state/library'
+import { libraryStats, useLibrary } from '../state/library'
 import { historyStore, useHistory } from '../state/history'
 import { homeShelves, monthYear, yourArtists } from '../state/homeViews'
 import { prefetchRelated, radioSet, useMixSet } from '../state/mixes'
@@ -29,11 +29,9 @@ import { useGenres } from '../state/genres'
 import { useDj } from '../state/dj'
 import { fmtN, plural } from '../state/views'
 import { libraryHref } from '../shell/routes'
-import { LibAlbumCard } from './library/common'
 import { usePlayingAlbumId } from './library/playback'
-import { PageHeader } from './PageHeader'
 import { RecapShelf } from './stats/RecapShelf'
-import { ArtistCard, avatarSize, cardSize, MixCard, NewSmartCard, RadioCardView, SkelCard, SmartCard, SmartInvite, useHomeSize } from './home/cards'
+import { AlbumCardHome, ArtistCard, avatarSize, cardSize, MixCard, NewSmartCard, RadioCardView, SkelCard, SmartCard, SmartInvite, useHomeSize } from './home/cards'
 import { JumpBackIn, jumpTiles } from './home/JumpBackIn'
 import './home/home.css'
 
@@ -50,36 +48,29 @@ function useMinuteClock() {
 
 const greeting = (h: number) => (h < 5 ? 'Still up' : h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening')
 
-function Shelf({ label, sub, subHref, note, phone, className, children, row = 'one' }: { label: string; sub?: ReactNode; subHref?: string; note?: ReactNode; phone?: boolean; className?: string; children: ReactNode; row?: 'one' | 'scroll' | 'none' }) {
+/** Shelf: title + note (+ "See all" on desktop, an arrow on phone); cards scroll sideways. */
+function Shelf({ label, sub, subHref, phone, className, children, row = 'scroll', inline }: { label: string; sub?: ReactNode; subHref?: string; phone?: boolean; className?: string; children: ReactNode; row?: 'scroll' | 'none'; inline?: boolean }) {
   return (
-    <section className={`shelf ${className ?? ''}`}>
-      <div className="shelf-head">
-        <span className="shelf-label">{label}</span>
-        <span className="shelf-line" />
-        {phone ? (
-          subHref && (
-            <a className="shelf-chev" href={subHref} aria-label={`All: ${label.toLowerCase()}`}>
-              <Icon name="chevR" />
-            </a>
-          )
-        ) : sub != null ? (
-          subHref ? (
-            <a className="shelf-sub shelf-link" href={subHref}>
-              {sub}
+    <section className={`hs ${className ?? ''}`}>
+      <div className="hs-head">
+        <h2 className="hs-title">{label}</h2>
+        {(!phone || inline) && sub != null && <span className="hs-sub">{sub}</span>}
+        <span className="hs-flex" />
+        {subHref &&
+          (phone ? (
+            <a className="hs-arrow" href={subHref} aria-label={`See all: ${label}`}>
+              <Icon name="arrowR" />
             </a>
           ) : (
-            <span className="shelf-sub">{sub}</span>
-          )
-        ) : null}
+            <a className="hs-more" href={subHref}>
+              See all
+            </a>
+          ))}
       </div>
-      {phone && note && <div className="shelf-note">{note}</div>}
-      {row === 'one' ? <div className="shelf-row shelf-one">{children}</div> : row === 'scroll' ? <div className="hrow">{children}</div> : children}
+      {phone && !inline && sub != null && <div className="hs-sub is-below">{sub}</div>}
+      {row === 'scroll' ? <div className="hs-row">{children}</div> : children}
     </section>
   )
-}
-
-function Card({ c, album, subtitle, playing }: { c: Catalogue; album: Album; subtitle: ReactNode; playing: string | null }) {
-  return <LibAlbumCard c={c} album={album} subtitle={subtitle} playingAlbumId={playing} />
 }
 
 const HAD_SMART = 'pelagic.home.hadSmart'
@@ -125,8 +116,7 @@ export function Home() {
   const shelves = homeShelves(data, history.plays, now.getTime())
   const artists = yourArtists(data, history.plays, now.getTime())
   const first = account?.name?.split(/\s+/)[0]
-  const date = now.toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short' }).replace(',', '')
-  const meta = phone ? date : `${date} · ${now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`
+  const date = now.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }).replace(',', '')
 
   const cs = cardSize(size)
   const tiles = jumpTiles(data, recent.items, lists.byId, mixes, history.plays, phone ? 5 : 7)
@@ -135,59 +125,56 @@ export function Home() {
   hadSmart(smart.length > 0)
   const level = mixes?.level ?? null
   const fewMixes = mixes && mixes.level !== 'full'
-  const mixSub = !mixes ? `MIXING FROM ${fmtN(stats.tracks)} SONGS` : fewMixes ? `${plural(mixes.dailyCount, 'DAILY MIX', 'DAILY MIXES')} FOR NOW · MORE AS YOU LISTEN` : 'UPDATED TODAY · 06:00'
-  const radioSub = !radios ? 'TUNING IN' : radios.byPlays ? 'FROM WHAT YOU PLAY' : 'FROM THE ARTISTS WITH THE MOST ALBUMS'
+  const mixSub = !mixes ? `Mixing from ${fmtN(stats.tracks)} songs` : fewMixes ? `${plural(mixes.dailyCount, 'daily mix', 'daily mixes')} for now · more as you listen` : 'Updated today · 06:00'
+  const radioSub = !radios ? 'Tuning in' : radios.byPlays ? 'From what you play' : 'From the artists with the most albums'
 
   return (
     <div className="home2">
-      <PageHeader meta={meta} title={first ? `${greeting(now.getHours())}, ${first}` : greeting(now.getHours())} />
-      <div className="shelves">
-        <Shelf label="JUMP BACK IN" sub={tiles.length + 1 < 8 ? 'YOUR LAST PLAYS · PC AND PHONE' : 'SYNCED · PC AND PHONE'} phone={phone} row="none">
-          <JumpBackIn tiles={tiles} phone={phone} size={size === 'desk' ? 56 : size === 'phone' ? 48 : 44} />
+      <header className="h-greet">
+        <div className="h-date">{date}</div>
+        <h1 className="h-hello">{first ? `${greeting(now.getHours())}, ${first}` : greeting(now.getHours())}</h1>
+      </header>
+      <div className="h-shelves">
+        <Shelf label="Jump back in" sub={phone ? (tiles.length + 1 < 6 ? 'Your last plays' : 'Synced with PC') : tiles.length + 1 < 8 ? 'Your last plays · PC and phone' : 'Synced · PC and phone'} phone={phone} row="none" inline className="hs-jbi">
+          <JumpBackIn tiles={tiles} phone={phone} size={size === 'desk' ? 56 : 48} />
         </Shelf>
 
         {/* once a year: Dec 18 – Jan 31 (step 21) */}
         <RecapShelf c={data} plays={history.plays} now={now} playing={playing} />
 
         {(!mixes || mixes.items.length > 0) && (
-          <Shelf label="MADE FOR YOU" sub={mixSub} note={!mixes ? mixSub : fewMixes ? mixSub : undefined} phone={phone} row="scroll">
-            {mixes ? mixes.items.map((m) => <MixCard key={m.id} c={data} mix={m} size={cs} />) : [0, 1, 2, 3, 4, 5].map((i) => <SkelCard key={i} size={cs} kind="mix" />)}
+          <Shelf label="Made for you" sub={mixSub} phone={phone}>
+            {mixes ? mixes.items.map((m) => <MixCard key={m.id} c={data} mix={m} size={cs} />) : [0, 1, 2, 3, 4, 5, 6].map((i) => <SkelCard key={i} size={cs} />)}
           </Shelf>
         )}
 
         {(!radios || radios.items.length > 0) && (
-          <Shelf label="RADIO FOR YOU" sub={radioSub} note={radios && !radios.byPlays ? radioSub : undefined} phone={phone} row="scroll">
-            {radios ? radios.items.map((r) => <RadioCardView key={r.id} c={data} radio={r} size={cs} />) : [0, 1, 2, 3, 4, 5].map((i) => <SkelCard key={i} size={cs} kind="radio" />)}
+          <Shelf label="Radio for you" sub={radioSub} phone={phone}>
+            {radios ? radios.items.map((r) => <RadioCardView key={r.id} c={data} radio={r} size={cs} />) : [0, 1, 2, 3, 4, 5, 6].map((i) => <SkelCard key={i} size={cs} />)}
           </Shelf>
         )}
 
         <Shelf
-          label="RECENTLY ADDED"
+          label="Recently added"
           subHref={libraryHref('albums')}
           phone={phone}
-          sub={shelves.addedThisWeek ? `${fmtN(shelves.addedThisWeek)} THIS WEEK` : `${plural(stats.albums, 'ALBUM')} · ${plural(stats.tracks, 'TRACK')}`}
+          sub={shelves.addedThisWeek ? `${fmtN(shelves.addedThisWeek)} this week` : `${plural(stats.albums, 'album', 'albums')} · ${plural(stats.tracks, 'song', 'songs')}`}
         >
           {shelves.added.map((album) => (
-            <Card key={album.id} c={data} album={album} subtitle={album.year ? `${album.artist} · ${album.year}` : album.artist} playing={playing} />
+            <AlbumCardHome key={album.id} c={data} album={album} size={cs} subtitle={album.year ? `${album.artist} · ${album.year}` : album.artist} />
           ))}
         </Shelf>
 
         {artists.items.length > 0 && (
-          <Shelf label="YOUR ARTISTS" sub={artists.byPlays ? 'MOST PLAYED · LAST 90 DAYS' : 'MOST ALBUMS IN YOUR LIBRARY'} subHref={libraryHref('artists')} phone={phone} row="scroll" className="shelf-artists">
+          <Shelf label="Your artists" sub={artists.byPlays ? 'Most played · last 90 days' : 'Most albums in your library'} subHref={libraryHref('artists')} phone={phone} className="hs-artists">
             {artists.items.map(({ artistId, n }) => (
-              <ArtistCard
-                key={artistId}
-                c={data}
-                artist={data.artists[artistId]}
-                size={avatarSize(size)}
-                sub={artists.byPlays ? (phone ? plural(n, 'PLAY') : `${plural(n, 'PLAY')} · 90 DAYS`) : plural(n, 'ALBUM')}
-              />
+              <ArtistCard key={artistId} c={data} artist={data.artists[artistId]} size={avatarSize(size)} sub={artists.byPlays ? `${plural(n, 'play', 'plays')} · 90 days` : plural(n, 'album', 'albums')} />
             ))}
           </Shelf>
         )}
 
         {showSmart && (
-          <Shelf label="SMART PLAYLISTS" sub={smart.length ? `${smart.length} · ${smart.length === 1 ? 'UPDATES ITSELF' : 'UPDATE THEMSELVES'}` : 'NONE YET'} subHref={smart.length ? libraryHref('playlists') : undefined} phone={phone} row={smart.length ? 'scroll' : 'none'}>
+          <Shelf label="Smart playlists" sub={smart.length ? `${smart.length} · ${smart.length === 1 ? 'updates itself' : 'update themselves'}` : 'None yet'} subHref={smart.length ? libraryHref('playlists') : undefined} phone={phone} row={smart.length ? 'scroll' : 'none'}>
             {smart.length ? (
               <>
                 {smart.map((p) => (
@@ -202,9 +189,9 @@ export function Home() {
         )}
 
         {level === 'full' && shelves.rediscover.length > 0 && (
-          <Shelf label="REDISCOVER" sub={shelves.rediscover.some((r) => r.last) ? 'NOT HEARD IN A WHILE' : 'NOT PLAYED YET'} phone={phone}>
+          <Shelf label="Rediscover" sub={shelves.rediscover.some((r) => r.last) ? 'Not heard in a while' : 'Not played yet'} phone={phone}>
             {shelves.rediscover.map(({ album, last }) => (
-              <Card key={album.id} c={data} album={album} playing={playing} subtitle={last ? `Last played ${monthYear(last)}` : `${album.artist} · not played yet`} />
+              <AlbumCardHome key={album.id} c={data} album={album} size={cs} subtitle={last ? `Last played ${monthYear(last)}` : `${album.artist} · not played yet`} />
             ))}
           </Shelf>
         )}

@@ -1,24 +1,27 @@
 /**
- * Mix page `#/mix/<id>` (step 26, handoff §9): the playlist page layout, read-only (no reorder, no
- * remove, no drag-to-reorder; rows still drag onto a sidebar playlist).
+ * Mix page `#/mix/<id>` (Material redesign, HomeMaterial.dc.html page=mix): read-only (no reorder, no
+ * remove; rows still drag onto a sidebar playlist).
  *
- *   genre-hue wash · HOME / MADE FOR YOU · generated cover (200, glow) · DAILY MIX · MADE FOR YOU ·
- *   REFRESHES DAILY · title · the "why" line · 50 SONGS · 3 HR 12 MIN · 9 NEW TO YOU
- *   Play · Shuffle · Save as playlist                    READ-ONLY · NEXT REFRESH TOMORROW 06:00
- *   #  TITLE  ALBUM  QUALITY  LAST PLAYED  ⏱
+ *   ← Home · Made for you
+ *   [neutral header card: tilted mix cover · DAILY MIX 1 · REFRESHES DAILY (mix hue) · title · the "why"
+ *    line · 50 songs · 3 hr 12 min · 9 new to you · cookie Play 80]
+ *   Shuffle · Save as playlist                         🔒 Read-only · next refresh tomorrow 06:00
+ *   [surface list: #  Title  Album  Quality  Last played  ⏱]
  *
  * Save as playlist copies today's songs into a normal playlist "<title> · 19 Oct".
  * Phone offline: only downloaded songs play; the others are greyed (cloud icon), the count line says
  * "32 OF 50 OFFLINE". An id that isn't in today's set (mixes refresh at 06:00) → "This mix has been
  * refreshed" + today's mixes.
  */
-import { useMemo, useSyncExternalStore, type CSSProperties } from 'react'
-import { Button, Eq, IconButton, QualityBadge, formatTime, qualityKind, qualityLabel, useToast } from '../../components/ui'
+import { useMemo, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from 'react'
+import type React from 'react'
+import { AlbumEq, CookieButton, formatTime, qualityLabel, useToast } from '../../components/ui'
+import { SHAPE_CLOVER, SHAPE_PLAYING } from '../../design/shapes'
 import { Icon } from '../../design/icons'
 import { actions, trackDrag } from '../../actions/actions'
 import { useLazyCover } from '../../lib/covers'
 import { mixDay } from '../../lib/mixing'
-import { albumHref, artistHref, go, href, playlistHref } from '../../shell/routes'
+import { albumHref, artistHref, back, go, href, playlistHref } from '../../shell/routes'
 import { useDj } from '../../state/dj'
 import { useDownloads } from '../../state/downloads'
 import { useGenres } from '../../state/genres'
@@ -29,29 +32,25 @@ import { playerStore, usePlayer } from '../../state/player'
 import { playlistsStore } from '../../state/playlists'
 import { isTouch, useIsPhone } from '../../state/viewport'
 import { fmtTotal, plural } from '../../state/views'
-import { Crumbs } from '../library/common'
 import { MixCover } from '../home/art'
 import { MixCard, cardSize, useHomeSize } from '../home/cards'
-import '../library/library.css'
-import '../playlists/playlists.css'
 import '../home/home.css'
 import './mix.css'
 
-const KIND_UPPER = { daily: 'DAILY MIX', deep: 'DEEP CUTS', redis: 'REDISCOVER' } as const
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const DAY = 86_400_000
 
 function lastPlayedLabel(sec: number | undefined, nowMs: number): string {
   if (!sec) return '—'
   const days = Math.floor((nowMs - sec * 1000) / DAY)
-  if (days <= 0) return 'TODAY'
-  if (days === 1) return 'YESTERDAY'
-  if (days < 7) return `${days} DAYS AGO`
-  if (days < 14) return '1 WEEK AGO'
-  if (days < 30) return `${Math.floor(days / 7)} WEEKS AGO`
-  if (days < 60) return '1 MONTH AGO'
-  if (days < 365) return `${Math.floor(days / 30)} MONTHS AGO`
-  return days < 730 ? '1 YEAR AGO' : `${Math.floor(days / 365)} YEARS AGO`
+  if (days <= 0) return 'Today'
+  if (days === 1) return 'Yesterday'
+  if (days < 7) return `${days} days ago`
+  if (days < 14) return '1 week ago'
+  if (days < 30) return `${Math.floor(days / 7)} weeks ago`
+  if (days < 60) return '1 month ago'
+  if (days < 365) return `${Math.floor(days / 30)} months ago`
+  return days < 730 ? '1 year ago' : `${Math.floor(days / 365)} years ago`
 }
 
 const COMPACT = '(max-width: 1240px)'
@@ -73,23 +72,30 @@ export function useTodayMixes(): MixSet | null {
 export function MixPage({ id }: { id: string }) {
   const { data } = useLibrary()
   const set = useTodayMixes()
+  const phone = useIsPhone()
   if (!data) return null
-  const crumbs = <Crumbs fallback={href('home')} parts={[<a key="h" href={href('home')}>HOME</a>, <span key="m">MADE FOR YOU</span>]} />
+  const backBtn = (
+    <button type="button" className={`mx-back ${phone ? 'is-phone' : ''}`} onClick={() => back(href('home'))} aria-label="Back to Home">
+      <Icon name="back" />
+      {!phone && 'Home · Made for you'}
+    </button>
+  )
   if (!set)
     return (
-      <div className="pl-page mx-page">
-        {crumbs}
-        <div className="mx-loading t-mono">MIXING…</div>
+      <div className="mx-page">
+        {backBtn}
+        <div className="mx-loading">Mixing…</div>
       </div>
     )
   const mix = set.items.find((m) => m.id === id)
-  if (!mix) return <Expired c={data} id={id} set={set} crumbs={crumbs} />
-  return <MixView c={data} mix={mix} crumbs={crumbs} />
+  if (!mix) return <Expired c={data} id={id} set={set} backBtn={backBtn} />
+  return <MixView c={data} mix={mix} backBtn={backBtn} />
 }
 
-function MixView({ c, mix, crumbs }: { c: Catalogue; mix: MixPlan; crumbs: React.ReactNode }) {
+const KIND_KICKER = { daily: 'DAILY MIX', deep: 'DEEP CUTS · NEVER PLAYED', redis: 'REDISCOVER · LOVED, NOT LATELY' } as const
+
+function MixView({ c, mix, backBtn }: { c: Catalogue; mix: MixPlan; backBtn: ReactNode }) {
   const phone = useIsPhone()
-  const size = useHomeSize()
   const toast = useToast()
   const p = usePlayer()
   const history = useHistory()
@@ -103,13 +109,15 @@ function MixView({ c, mix, crumbs }: { c: Catalogue; mix: MixPlan; crumbs: React
   const playing = active && p.playing
   const curId = active ? p.queue[p.index] : null
   const day = mixDay(Date.now())
-  const nextRefresh = new Date(day.next).toDateString() === new Date(Date.now() + DAY).toDateString() ? 'TOMORROW 06:00' : 'TODAY 06:00'
-  const H = mix.hue
+  const nextRefresh = new Date(day.next).toDateString() === new Date(Date.now() + DAY).toDateString() ? 'tomorrow 06:00' : 'today 06:00'
+  const compact = useCompact()
+  const [saved, setSaved] = useState(false)
 
   const save = () => {
     const d = new Date()
     const name = `${mix.title} · ${d.getDate()} ${MONTHS[d.getMonth()]}`
     const pid = playlistsStore.create(name, tracks.map((t) => t.id))
+    setSaved(true)
     toast.show({ icon: 'check', text: `Saved as ‘${name}’`, action: { label: 'Open', onClick: () => go(playlistHref(pid)) } })
   }
   const playFrom = (t: Track) => {
@@ -117,55 +125,63 @@ function MixView({ c, mix, crumbs }: { c: Catalogue; mix: MixPlan; crumbs: React
     if (curId === t.id) return playerStore.toggle()
     playMix(mix, { startId: t.id })
   }
+  const playAll = () => (active ? playerStore.toggle() : playMix(mix))
+  const menu = (e: React.MouseEvent) => actions.menu({ kind: 'tracks', trackIds: tracks.map((t) => t.id), label: mix.title }, e)
 
-  const stats = [plural(tracks.length, 'SONG'), seconds ? fmtTotal(seconds) : null, offline !== null ? `${offline} OF ${tracks.length} OFFLINE` : mix.newCount ? `${mix.newCount} NEW TO YOU` : null].filter(Boolean).join(' · ')
-  const wash = phone
-    ? `radial-gradient(55% 70% at 50% 22%, oklch(0.20 0.035 ${H}), transparent 72%), radial-gradient(90% 50% at 50% 108%, oklch(0.13 0.022 ${H}), transparent 80%)`
-    : `radial-gradient(55% 70% at 26% 40%, oklch(0.20 0.035 ${H}), transparent 72%), radial-gradient(90% 50% at 50% 108%, oklch(0.13 0.022 ${H}), transparent 80%)`
-  const compact = useCompact()
-  const cover = phone ? (size === 'narrow' ? 200 : 228) : compact ? 168 : 200
+  const stats = [plural(tracks.length, 'song', 'songs'), seconds ? fmtTotal(seconds).toLowerCase() : null, offline !== null ? `${offline} of ${tracks.length} offline` : mix.newCount ? `${mix.newCount} new to you` : null].filter(Boolean).join(' · ')
+  const kicker = mix.kind === 'daily' ? `DAILY MIX ${mix.n ?? ''} · REFRESHES DAILY` : KIND_KICKER[mix.kind]
+  const coverSize = phone ? 200 : compact ? 176 : 208
 
   return (
-    <div className="pl-page mx-page">
-      <div className="mx-wash" style={{ background: wash }} aria-hidden />
-      {crumbs}
-      <header className="pl-hero mx-hero">
-        <div className="mx-cover" style={{ boxShadow: `0 40px 80px -30px oklch(0.34 0.06 ${H} / 0.9)` }}>
-          <MixCover c={c} mix={mix} size={cover} radius={14} />
+    <div className={`mx-page hue-scope ${phone ? 'is-phone' : ''}`} style={{ '--h': mix.hue, '--hc': 1 } as CSSProperties}>
+      {backBtn}
+      <header className="mx-hero">
+        <div className="mx-cover">
+          <MixCover c={c} mix={mix} size={coverSize} />
         </div>
-        <div className="pl-hero-text">
-          <div className="hero-meta">{KIND_UPPER[mix.kind]} · MADE FOR YOU · REFRESHES DAILY</div>
-          <h1 className="hero-title mx-title" title={mix.title}>
+        <div className="mx-hero-text">
+          <div className="mx-kicker">{kicker}</div>
+          <h1 className="mx-title" title={mix.title}>
             {mix.title}
           </h1>
           <div className="mx-why">{mix.why}</div>
-          <div className="hero-stats">{stats}</div>
+          <div className="mx-stats">{stats}</div>
         </div>
+        {!phone && <CookieButton size={80} iconSize={40} playing={playing} icon={playing ? 'pauseF' : 'playF'} label={playing ? 'Pause' : 'Play'} className="mx-play" onClick={playAll} />}
       </header>
 
       {phone ? (
         <div className="mx-actions">
-          <IconButton icon="saveList" label="Save as playlist" onClick={save} className="mx-ib" />
-          <IconButton icon="more" label="More" onClick={(e) => actions.menu({ kind: 'tracks', trackIds: tracks.map((t) => t.id), label: mix.title }, e)} className="mx-ib" />
-          <span className="mx-flex" />
-          <IconButton icon="shuffle" label="Shuffle" onClick={() => playMix(mix, { shuffle: true })} className="mx-ib" />
-          <button type="button" className="mx-play" aria-label={playing ? 'Pause' : 'Play'} onClick={() => (active ? playerStore.toggle() : playMix(mix))}>
-            <Icon name={playing ? 'pauseF' : 'playF'} />
+          <button type="button" className="mx-ib" aria-label="Shuffle" onClick={() => playMix(mix, { shuffle: true })}>
+            <Icon name="shuffle" />
           </button>
+          <button type="button" className="mx-ib" aria-label={saved ? 'Saved as playlist' : 'Save as playlist'} onClick={save}>
+            <Icon name={saved ? 'bookmarked' : 'bookmark'} filled={saved} />
+          </button>
+          <button type="button" className="mx-ib" aria-label="More" onClick={menu}>
+            <Icon name="more" />
+          </button>
+          <span className="mx-flex" />
+          <CookieButton size={64} iconSize={32} playing={playing} icon={playing ? 'pauseF' : 'playF'} label={playing ? 'Pause' : 'Play'} onClick={playAll} />
         </div>
       ) : (
         <div className="mx-buttons">
-          <Button icon={playing ? 'pauseF' : 'playF'} onClick={() => (active ? playerStore.toggle() : playMix(mix))} className="actions-play">
-            {playing ? 'Pause' : active ? 'Resume' : 'Play'}
-          </Button>
-          <Button variant="secondary" icon="shuffle" onClick={() => playMix(mix, { shuffle: true })}>
+          <button type="button" className="mx-btn is-tonal" onClick={() => playMix(mix, { shuffle: true })}>
+            <Icon name="shuffle" />
             Shuffle
-          </Button>
-          <Button variant="secondary" icon="saveList" onClick={save}>
-            Save as playlist
-          </Button>
+          </button>
+          <button type="button" className="mx-btn is-outline" onClick={save}>
+            <Icon name={saved ? 'bookmarked' : 'bookmark'} filled={saved} />
+            {saved ? 'Saved as playlist' : 'Save as playlist'}
+          </button>
+          <button type="button" className="mx-btn is-icon" aria-label="More" title="More" onClick={menu}>
+            <Icon name="moreH" />
+          </button>
           <span className="mx-flex" />
-          <span className="mx-ro t-mono">READ-ONLY · NEXT REFRESH {nextRefresh}</span>
+          <span className="mx-ro">
+            <Icon name="lock" />
+            Read-only · next refresh {nextRefresh}
+          </span>
         </div>
       )}
 
@@ -173,21 +189,21 @@ function MixView({ c, mix, crumbs }: { c: Catalogue; mix: MixPlan; crumbs: React
         <div className="mx-offline">
           <Icon name="offline" />
           <span className="mx-offline-t">You’re offline. Only downloaded songs play.</span>
-          <span className="mx-offline-m t-mono">
-            {offline} OF {tracks.length} OFFLINE
+          <span className="mx-offline-m">
+            {offline} of {tracks.length}
           </span>
         </div>
       )}
 
-      <div className="pl-table mx-table" role="table">
+      <div className="mx-list" role="table">
         {!phone && (
-          <div className="pl-head" role="row">
-            <span className="pl-h-n">#</span>
-            <span>TITLE</span>
-            <span>ALBUM</span>
-            <span>QUALITY</span>
-            <span>LAST PLAYED</span>
-            <span className="pl-h-r">
+          <div className="mx-head" role="row">
+            <span className="mx-c-n">#</span>
+            <span>Title</span>
+            <span>Album</span>
+            <span>Quality</span>
+            <span>Last played</span>
+            <span className="mx-c-d">
               <Icon name="clock" />
             </span>
           </div>
@@ -208,7 +224,9 @@ function MixView({ c, mix, crumbs }: { c: Catalogue; mix: MixPlan; crumbs: React
           />
         ))}
       </div>
-      <div className="mx-foot t-mono">{mixContext(mix).label.toUpperCase()} · {plural(tracks.length, 'SONG')}</div>
+      <div className="mx-foot">
+        {mixContext(mix).label} · {plural(tracks.length, 'song', 'songs')}
+      </div>
     </div>
   )
 }
@@ -223,96 +241,99 @@ function Row({ c, t, i, phone, current, playing, fresh, lastLabel, unavailable, 
   const album = c.albums[t.albumId]
   const [ref, cover] = useLazyCover<HTMLDivElement>(album?.cover)
   const target = { kind: 'track', trackId: t.id } as const
+  const q24 = (t.flac?.bitDepth ?? 16) > 16 || (t.flac?.sampleRate ?? 44100) > 48000
   return (
     <div
-      className={['pl-row', 'mx-row', current && 'is-playing', unavailable && 'is-unavailable'].filter(Boolean).join(' ')}
+      className={['mx-row', current && 'is-current', unavailable && 'is-unavailable'].filter(Boolean).join(' ')}
       role="row"
       onDoubleClick={onPlay}
       onClick={(e) => {
-        if (isTouch() && !(e.target as HTMLElement).closest('a, button')) onPlay()
+        if ((phone || isTouch()) && !(e.target as HTMLElement).closest('a, button')) onPlay()
       }}
       onContextMenu={(e) => actions.menu(target, e)}
       {...trackDrag(() => [t.id], `${t.title} · ${t.artist}`)}
     >
-      <div className="pl-n">
-        {current && playing ? <Eq /> : <span className="pl-n-t">{String(i + 1).padStart(2, '0')}</span>}
-        <button type="button" className="pl-play" onClick={onPlay} aria-label={`Play ${t.title}`}>
-          <Icon name="playF" />
-        </button>
-      </div>
-      <div className="pl-main">
-        <div ref={ref} className="pl-cover">
-          {cover && <img src={cover} alt="" decoding="async" draggable={false} />}
+      {!phone && (
+        <div className="mx-c-n">
+          {current ? <AlbumEq color={playing ? 'var(--brand)' : 'var(--ink-secondary)'} on={playing} /> : <span className="mx-n">{i + 1}</span>}
+          <button type="button" className="mx-rplay" onClick={onPlay} aria-label={`Play ${t.title}`}>
+            <Icon name={current && playing ? 'pauseF' : 'playF'} />
+          </button>
         </div>
-        <div className="pl-text">
-          <div className="pl-t">{t.title}</div>
-          <div className="pl-a">
-            <a className="ln" href={artistHref(t.artistId)} draggable={false}>
+      )}
+      <div className="mx-main">
+        <div ref={ref} className="mx-rcover">
+          {cover && <img src={cover} alt="" decoding="async" draggable={false} />}
+          {phone && current && (
+            <span className="mx-rcover-eq">
+              <AlbumEq color="oklch(0.93 0.04 38)" on={playing} />
+            </span>
+          )}
+        </div>
+        <div className="mx-text">
+          <div className="mx-t">{t.title}</div>
+          <div className="mx-a">
+            {phone && fresh && <span className="mx-new is-sm">NEW</span>}
+            <a className="mx-ln" href={artistHref(t.artistId)} draggable={false} onClick={(e) => e.stopPropagation()}>
               {t.artist}
             </a>
-            {phone && fresh && <span className="mx-new is-sm">NEW</span>}
+            {phone && t.duration ? <span className="mx-a-d">· {formatTime(t.duration)}</span> : null}
           </div>
         </div>
-        {!phone && fresh && <span className="mx-new">NEW TO YOU</span>}
       </div>
       {!phone && (
         <>
-          <div className="pl-album">
+          <div className="mx-album">
             {album && (
-              <a className="ln" href={albumHref(album.id)} draggable={false}>
+              <a className="mx-ln" href={albumHref(album.id)} draggable={false}>
                 {album.title}
               </a>
             )}
           </div>
-          <div className="pl-q">
-            <QualityBadge kind={qualityKind('flac', t.flac?.bitDepth, t.flac?.sampleRate)}>{qualityLabel('flac', { bitDepth: t.flac?.bitDepth, sampleRate: t.flac?.sampleRate })}</QualityBadge>
+          <div className="mx-q">
+            <span className={`mx-qpill ${q24 ? 'is-24' : ''}`}>{qualityLabel('flac', { bitDepth: t.flac?.bitDepth, sampleRate: t.flac?.sampleRate })}</span>
           </div>
-          <div className="pl-added">{lastLabel}</div>
+          <div className="mx-last">{fresh ? <span className="mx-new">New to you</span> : lastLabel}</div>
+          <div className="mx-c-d">{unavailable ? <Icon name="cloud" /> : t.duration ? formatTime(t.duration) : '—'}</div>
         </>
       )}
-      <div className="pl-d">{unavailable ? <Icon name="cloud" /> : t.duration ? formatTime(t.duration) : '—'}</div>
       {phone && (
-        <div className="pl-act">
-          <button type="button" className="pl-dots" aria-label="More" onClick={(e) => actions.menu(target, e)}>
-            <Icon name="more" />
-          </button>
-        </div>
+        <button type="button" className="mx-dots" aria-label="More" onClick={(e) => (e.stopPropagation(), actions.menu(target, e))}>
+          {unavailable ? <Icon name="cloud" /> : <Icon name="more" />}
+        </button>
       )}
     </div>
   )
 }
 
-function Expired({ c, id, set, crumbs }: { c: Catalogue; id: string; set: MixSet; crumbs: React.ReactNode }) {
+function Expired({ c, id, set, backBtn }: { c: Catalogue; id: string; set: MixSet; backBtn: ReactNode }) {
   const phone = useIsPhone()
   const size = useHomeSize()
   const seen = seenMix(id)
   const was = seen ? `${seen.kind === 'daily' && seen.n ? `Daily Mix ${seen.n}` : seen.title} from ${fmtDay(seen.day)}` : null
-  const body = phone
-    ? `Daily Mixes are rebuilt every morning.${was ? ` This link was for ${was}.` : ''}`
-    : `Daily Mixes are rebuilt every morning from what you've been playing.${was ? ` This link was for ${was}.` : ''} Save a mix as a playlist to keep it.`
-  const ring = phone ? 120 : 150
+  const body = `Daily Mixes are rebuilt every morning from what you've been playing.${was ? ` This link was for ${was}.` : ''} Save a mix as a playlist to keep it.`
+  const S = phone ? 140 : 160
   return (
-    <div className="pl-page mx-page">
-      {crumbs}
+    <div className={`mx-page mx-exp-page ${phone ? 'is-phone' : ''}`}>
+      {backBtn}
       <div className="mx-expired">
-        <div className="mx-rings" style={{ width: ring, height: ring } as CSSProperties} aria-hidden>
-          <span style={{ inset: 0, opacity: 0.06 }} />
-          <span style={{ inset: '18%', opacity: 0.12 }} />
-          <span style={{ inset: '34%', opacity: 0.3 }} />
-          <Icon name="refresh" className="mx-rings-ic" />
+        <div className="mx-exp-mark" style={{ width: S, height: S }} aria-hidden>
+          <span className="mx-exp-clover" style={{ clipPath: SHAPE_CLOVER }} />
+          <span className="mx-exp-cookie" style={{ inset: phone ? 22 : 26, clipPath: SHAPE_PLAYING }} />
+          <Icon name="autorenew" size={phone ? 36 : 45} className="mx-exp-ic" />
         </div>
         <h2 className="mx-exp-t">This mix has been refreshed</h2>
         <p className="mx-exp-b">{body}</p>
       </div>
       {set.items.length > 0 && (
-        <section className="shelf mx-today">
-          <div className="shelf-head">
-            <span className="shelf-label">TODAY'S MIXES</span>
-            <span className="shelf-line" />
+        <section className="hs mx-today">
+          <div className="hs-head">
+            <h2 className="hs-title">Today's mixes</h2>
+            {!phone && <span className="hs-sub">Updated today · 06:00</span>}
           </div>
-          <div className={phone ? 'mx-today-grid' : 'hrow'}>
+          <div className="hs-row">
             {set.items.map((m) => (
-              <MixCard key={m.id} c={c} mix={m} size={phone ? Math.floor((Math.min(window.innerWidth, 760) - (size === 'narrow' ? 32 : 40) - 14) / 2) : cardSize(size)} />
+              <MixCard key={m.id} c={c} mix={m} size={cardSize(size)} />
             ))}
           </div>
         </section>
@@ -325,4 +346,3 @@ function fmtDay(key: string): string {
   const [, m, d] = key.split('-').map(Number)
   return `${d} ${MONTHS[(m ?? 1) - 1]}`
 }
-

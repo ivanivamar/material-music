@@ -82,6 +82,13 @@ export const ICON_SYMBOLS = {
   mic: 'mic',
   info: 'info',
   unfold: 'unfold_more',
+  today: 'today',
+  explore: 'explore',
+  history: 'history',
+  lock: 'lock',
+  autorenew: 'autorenew',
+  arrowR: 'arrow_forward',
+  sensors: 'sensors',
   dj: '',
 } as const
 
