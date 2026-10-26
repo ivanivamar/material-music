@@ -298,22 +298,34 @@ html[data-phone][data-qp] .toasts.toasts-shell { right: 0; }
 .np-phone-actions .djb.djb-phone { height: 48px; padding: 0 18px 0 14px; border-radius: 24px; }
 .np-phone-actions .djb.djb-phone.is-on { border-radius: 16px; }
 
-/* lyrics: a sheet from below */
-.shell.is-phone .np-scrim { background: rgba(5, 5, 5, .45); }
+/* lyrics: floating bottom sheet (matches .qp in layout, rest offset and header drag) */
+.shell.is-phone .np-scrim { top: 0; bottom: 0; z-index: 44; background: rgba(5, 5, 5, .45); will-change: opacity; }
 .shell.is-phone .np-panel {
-  left: 8px; right: 8px; bottom: calc(8px + env(safe-area-inset-bottom)); top: calc(200px + var(--np-sat)); width: auto;
-  box-shadow: 0 -20px 60px -20px rgba(0, 0, 0, .7), inset 0 0 0 1px var(--glass-panel-edge);
-  animation: np-sheet 450ms cubic-bezier(0.2, 0, 0, 1) both;
+  --np-ly-rest: max(0px, calc(192px - env(safe-area-inset-top, 0px)));
+  left: 8px; right: 8px; top: calc(env(safe-area-inset-top, 0px) + 8px); bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+  width: auto; max-width: none; z-index: 45;
+  opacity: 1; transform: translate3d(0, calc(100% + 24px), 0);
+  will-change: transform;
+  transition: transform var(--dur-panel) var(--ease), visibility 0s linear var(--dur-panel);
 }
-@keyframes np-sheet { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
-.shell.is-phone .np-panel-head { padding: 4px 22px 14px; }
+.shell.is-phone .np-panel.is-expanded { --np-ly-rest: 0px; }
+.shell.is-phone .np-panel.is-open { transform: translate3d(0, var(--np-ly-rest), 0); transition: transform .5s var(--ease), visibility 0s; }
+.shell.is-phone .np-panel.is-grabbing, .shell.is-phone .np-scrim.is-grabbing { transition: none; }
+.shell.is-phone .np-panel-card {
+  bottom: calc(var(--np-ly-rest) + var(--np-ly-drag-up, 0px)); border-radius: 28px;
+  box-shadow: 0 -20px 60px -20px rgba(0, 0, 0, .8), inset 0 1px 0 rgba(255, 255, 255, .05);
+}
+.shell.is-phone .np-panel-head { gap: 10px; padding: 10px 18px 14px; touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none; }
+.np-panel-grab { align-self: center; display: flex; align-items: center; justify-content: center; width: 72px; height: 16px; margin: -6px 0 -6px; cursor: grab; }
+.np-panel-grab > span { width: 36px; height: 4px; border-radius: 4px; background: rgba(255, 255, 255, .25); transition: background .2s, width .3s var(--ease); }
+.np-panel.is-grabbing .np-panel-grab > span { background: rgba(255, 255, 255, .6); width: 44px; }
 .shell.is-phone .np-panel-title { font-size: 22px; }
-.shell.is-phone .ly-list { left: 22px; right: 22px; top: 32%; }
-.shell.is-phone .ly-line { font-size: 22px; padding: 8px 0; }
+.shell.is-phone .ly-list { left: 12px; right: 12px; padding: 12px 0 20px; }
+.shell.is-phone .ly-line { font-size: 18px; padding: 10px 12px 10px 14px; }
+.shell.is-phone .ly-line.is-on { font-size: 22px; padding: 14px 14px 14px 16px; border-radius: 20px; }
 /* Android WebView flickered on every line change with the masked viewport: just clip on the phone */
-.shell.is-phone .ly-viewport { -webkit-mask-image: none; mask-image: none; }
-.shell.is-phone .ly-meta { display: none; }
-.shell.is-phone .ly-plain { padding: 20px 22px 32px; }
+.shell.is-phone .ly-viewport { -webkit-mask-image: none !important; mask-image: none !important; }
+.shell.is-phone .ly-plain { padding: 18px 20px 28px; }
 .shell.is-phone .ly-plain p { font-size: 18px; }
 
 /* ── Queue: floating bottom sheet (design_handoff_queue_popover, 07 "QUEUE / SHEET OVER NOW PLAYING") ──
@@ -362,11 +374,16 @@ html[data-phone][data-qp] .toasts.toasts-shell { right: 0; }
    a long press lifts the row, so no text selection / callout */
 .shell.is-phone .qp-row { touch-action: pan-y; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
 .shell.is-phone .qp-prow { height: 56px; }
-.shell.is-phone .qp-prow .qp-row-in { padding: 0 8px; }
-.shell.is-phone .qp-pcover { width: 40px; height: 40px; border-radius: 8px; }
+.shell.is-phone .qp-prow .qp-row-in { padding: 0 10px 0 8px; }
+.shell.is-phone .qp-pcover { width: 40px; height: 40px; border-radius: 9px; }
 .shell.is-phone .qp-nrow { height: 60px; cursor: pointer; }
-.shell.is-phone .qp-nrow .qp-row-in { gap: 10px; padding: 0 4px 0 2px; will-change: transform; }
-.shell.is-phone .qp-nrow:hover .qp-row-in { background: none; }
+.shell.is-phone .qp-nrow .qp-row-in { gap: 10px; padding: 0 8px 0 4px; will-change: transform; }
+.shell.is-phone .qp-nrow:hover .qp-row-in { background: oklch(0.23 0.008 40); }
+.shell.is-phone .qp-prow:hover .qp-row-in { background: oklch(0.195 0.006 40); }
+.shell.is-phone .qp-prow:hover .qp-pnum { background: rgba(255, 255, 255, .06); color: oklch(0.66 0.012 40); }
+.shell.is-phone .qp-prow:hover .qp-pn-done { display: inline-flex; }
+.shell.is-phone .qp-prow:hover .qp-pn-play { display: none; }
+.shell.is-phone .qp-now:hover .qp-now-play { opacity: 0; }
 .shell.is-phone .qp-grip {
   width: 24px; font-size: 18px; color: var(--ink-tertiary); align-self: stretch;
   /* wider hit area than it looks; a press here lifts the row at once */

@@ -39,9 +39,9 @@ import { contextLine } from './parts'
 import { actions } from '../actions/actions'
 import './queue.css'
 
-/* Row metrics (px) per layout: section rule, played row, next-up row. */
-const DESKTOP = { rule: 40, played: 54, next: 56 }
-const PHONE = { rule: 36, played: 56, next: 60 }
+/* Row metrics (px) per layout: section rule, played row (56 + 2px gap), next-up row (58/60 + 2px gap). */
+const DESKTOP = { rule: 40, played: 58, next: 60 }
+const PHONE = { rule: 36, played: 58, next: 62 }
 /** Now playing block: 10px margin + 78px card (1 + 12 + 52 + 12 + 1) + 6px margin */
 const NOW_M_TOP = 10
 const NOW_CARD = 78
@@ -116,13 +116,30 @@ function dropTarget(d: DragState | null, base: number): number | null {
   return to === d.from ? null : to
 }
 
-/* ── Played row: index · cover · title / artist · album · length · ▶ (click = play again) ── */
-function PlayedRow({ c, id, abs, top, phone, onKey }: { c: Catalogue; id: string; abs: number; top: number; phone: boolean; onKey: (abs: number) => (e: KeyboardEvent) => void }) {
+/* ── Played row: check/play · cover · title / artist · album · Played badge · length (click = play again) ── */
+function PlayedRow({
+  c,
+  id,
+  abs,
+  top,
+  isFirst,
+  isLast,
+  onKey,
+}: {
+  c: Catalogue
+  id: string
+  abs: number
+  top: number
+  isFirst: boolean
+  isLast: boolean
+  phone: boolean
+  onKey: (abs: number) => (e: KeyboardEvent) => void
+}) {
   const t = c.tracks[id]
   return (
     <div
       data-abs={abs}
-      className="qp-row qp-prow"
+      className={`qp-row qp-prow ${isFirst ? 'is-first' : ''} ${isLast ? 'is-last' : ''}`}
       style={{ top }}
       tabIndex={0}
       role="button"
@@ -132,18 +149,21 @@ function PlayedRow({ c, id, abs, top, phone, onKey }: { c: Catalogue; id: string
       onKeyDown={onKey(abs)}
     >
       <div className="qp-row-in">
-        {!phone && <span className="qp-pn t-mono">{String(abs + 1).padStart(2, '0')}</span>}
+        <span className="qp-pnum" title="Played · click to play again" aria-hidden>
+          <span className="qp-pn-done">
+            <Icon name="check" />
+          </span>
+          <span className="qp-pn-play">
+            <Icon name="playF" />
+          </span>
+        </span>
         {t ? <Cover c={c} albumId={t.albumId} className="qp-cover qp-pcover" /> : <span className="qp-cover qp-pcover qp-cover-empty" />}
         <div className="qp-text">
           <div className="qp-t">{t?.title ?? 'Missing track'}</div>
           <div className="qp-a">{sub(c, id)}</div>
         </div>
+        <span className="qp-played-tag">Played</span>
         <span className="qp-d t-mono">{t?.duration ? formatTime(t.duration) : '--:--'}</span>
-        {!phone && (
-          <span className="qp-replay" title="Play again" aria-hidden>
-            <Icon name="playF" />
-          </span>
-        )}
       </div>
     </div>
   )
@@ -155,6 +175,8 @@ interface NextRowProps {
   abs: number
   top: number
   base: number
+  isFirst: boolean
+  isLast: boolean
   phone: boolean
   liked: boolean
   drag: DragState | null
@@ -166,8 +188,8 @@ interface NextRowProps {
   remove: (abs: number) => void
 }
 
-/* ── Next up row: grip · cover · title / artist · album · ♥ · length · ↑ · × ── */
-function NextRow({ c, id, abs, top, base, phone, drag, onDragStart, onDragOver, onDragEnd, onTouchDown, onKey, remove }: NextRowProps) {
+/* ── Next up row: grip · cover · title / artist · album · length · ↑ · × ── */
+function NextRow({ c, id, abs, top, base, isFirst, isLast, phone, drag, onDragStart, onDragOver, onDragEnd, onTouchDown, onKey, remove }: NextRowProps) {
   const t = c.tracks[id]
   const isDrag = drag?.from === abs
   const line = drag && drag.over === abs && drag.from !== abs && dropTarget(drag, base) !== null ? (drag.after ? 'bot' : 'top') : null
@@ -175,7 +197,7 @@ function NextRow({ c, id, abs, top, base, phone, drag, onDragStart, onDragOver, 
     <div
       data-abs={abs}
       data-up=""
-      className={`qp-row qp-nrow ${isDrag ? 'is-drag' : ''}`}
+      className={`qp-row qp-nrow ${isFirst ? 'is-first' : ''} ${isLast ? 'is-last' : ''} ${isDrag ? 'is-drag' : ''}`}
       style={{ top }}
       draggable={!phone}
       tabIndex={0}
@@ -692,8 +714,28 @@ export function QueuePanel() {
 
   const nowCard =
     current && data ? (
-      <div className="qp-now" style={{ top: nowTop + NOW_M_TOP }} onDragOver={onNowDragOver} onContextMenu={(e) => actions.menu({ kind: 'track', trackId: current.id }, e)}>
-        <Cover c={data} albumId={current.albumId} className="qp-now-cover" />
+      <div
+        className="qp-now"
+        style={{ top: nowTop + NOW_M_TOP }}
+        role="button"
+        tabIndex={0}
+        aria-label={`Now playing: ${current.title} by ${current.artist}. Click to ${p.playing ? 'pause' : 'play'}.`}
+        onClick={() => playerStore.toggle()}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            playerStore.toggle()
+          }
+        }}
+        onDragOver={onNowDragOver}
+        onContextMenu={(e) => actions.menu({ kind: 'track', trackId: current.id }, e)}
+      >
+        <span className="qp-now-cover-wrap">
+          <Cover c={data} albumId={current.albumId} className="qp-now-cover" />
+          <span className="qp-now-play" aria-hidden>
+            <Icon name={p.playing ? 'pauseF' : 'playF'} />
+          </span>
+        </span>
         <div className="qp-now-text">
           <div className="qp-now-eye t-mono">
             <Eq playing={p.playing} />
@@ -815,21 +857,36 @@ export function QueuePanel() {
               {played.length > 0 && rule('PLAYED', `${pad2(played.length)} · ${fmtTotal(playedTotal)}`, 0)}
               {played.slice(pFrom, pTo).map((id, k) => {
                 const abs = pFrom + k
-                return <PlayedRow key={`${abs}:${id}`} c={data} id={id} abs={abs} top={playedTop + abs * M.played} phone={phone} onKey={onRowKey} />
+                return (
+                  <PlayedRow
+                    key={`${abs}:${id}`}
+                    c={data}
+                    id={id}
+                    abs={abs}
+                    top={playedTop + abs * M.played}
+                    isFirst={abs === 0}
+                    isLast={abs === played.length - 1}
+                    phone={phone}
+                    onKey={onRowKey}
+                  />
+                )
               })}
               {nowCard}
               {rule('NEXT UP', `${pad2(upcoming.length)} · ${fmtTotal(total) || '00:00'}`, nextRuleTop)}
               {upcoming.length > 0 ? (
                 upcoming.slice(uFrom, uTo).map((id, k) => {
-                  const abs = base + uFrom + k
+                  const idx = uFrom + k
+                  const abs = base + idx
                   return (
                     <NextRow
                       key={`${abs}:${id}`}
                       c={data}
                       id={id}
                       abs={abs}
-                      top={upTop + (uFrom + k) * M.next}
+                      top={upTop + idx * M.next}
                       base={base}
+                      isFirst={idx === 0}
+                      isLast={idx === upcoming.length - 1}
                       phone={phone}
                       liked={!!likes[id]}
                       drag={drag}

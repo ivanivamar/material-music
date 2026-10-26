@@ -8,7 +8,7 @@
  * sheet from below (phone) over a scrim; the queue is its own panel (QueuePanel.tsx).
  * Opened from the player bar / mini player. Esc or Back closes (AppShell + history).
  */
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type MouseEvent, type PointerEvent } from 'react'
 import { ThinSlider, WaveSeek } from '../components/ui'
 import { Icon } from '../design/icons'
 import { useCover } from '../lib/covers'
@@ -120,6 +120,82 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
   // phone: swipe down anywhere (outside sliders / lyrics) to close, like the queue sheet
   const rootRef = useRef<HTMLDivElement>(null)
   useSwipeDown(rootRef, phone && !closing && !startView, closeNp)
+
+  /* ── Phone lyrics bottom sheet: drag the handle / header (like QueuePanel) ──
+   * down → close (or back to normal height when expanded), up → full height; tap the handle to
+   * toggle full height. The sheet follows the finger; the scrim fades while pulling down. */
+  const [lyExpanded, setLyExpanded] = useState(false)
+  const [lyGrabDy, setLyGrabDy] = useState<number | null>(null)
+  const lyGrab = useRef({ y0: 0, y: 0, t: 0, v: 0, moved: false, onHandle: false, fromBtn: false })
+  if (!ly && lyExpanded) setLyExpanded(false)
+  if (!ly && lyGrabDy !== null) setLyGrabDy(null)
+  const lySheetRef = useRef<HTMLElement>(null)
+  const lyRestOffset = () => (lySheetRef.current ? parseFloat(getComputedStyle(lySheetRef.current).getPropertyValue('--np-ly-rest')) || 0 : 0)
+  const closeLyrics = () => nowPlayingStore.setView('np')
+
+  const BTN_SLOP = 8
+  const lySwallowClick = useRef(false)
+  const onLyGrabDown = (e: PointerEvent<HTMLDivElement>) => {
+    if (!phone || !e.isPrimary) return
+    const target = e.target as HTMLElement
+    const fromBtn = !!target.closest('button')
+    if (!fromBtn) e.currentTarget.setPointerCapture(e.pointerId)
+    lySwallowClick.current = false
+    lyGrab.current = { y0: e.clientY, y: e.clientY, t: performance.now(), v: 0, moved: false, onHandle: !!target.closest('.np-panel-grab'), fromBtn }
+    setLyGrabDy(0)
+  }
+  const onLyGrabMove = (e: PointerEvent<HTMLDivElement>) => {
+    if (lyGrabDy === null) return
+    const g = lyGrab.current
+    const now = performance.now()
+    if (now > g.t) g.v = 0.7 * ((e.clientY - g.y) / (now - g.t)) + 0.3 * g.v // px/ms, + = down
+    g.y = e.clientY
+    g.t = now
+    const dy = e.clientY - g.y0
+    if (!g.moved) {
+      if (Math.abs(dy) <= (g.fromBtn ? BTN_SLOP : 4)) return
+      g.moved = true
+      if (g.fromBtn) {
+        lySwallowClick.current = true
+        try {
+          e.currentTarget.setPointerCapture(e.pointerId)
+        } catch {
+          /* pointer already gone */
+        }
+      }
+    }
+    setLyGrabDy(lyExpanded ? Math.max(0, dy) : Math.max(-lyRestOffset(), dy))
+  }
+  const onLyGrabClickCapture = (e: MouseEvent) => {
+    if (!lySwallowClick.current) return
+    lySwallowClick.current = false
+    e.preventDefault()
+    e.stopPropagation()
+  }
+  const onLyGrabUp = () => {
+    if (lyGrabDy === null) return
+    const { v, moved, onHandle } = lyGrab.current
+    const dy = lyGrabDy
+    setLyGrabDy(null)
+    if (lySwallowClick.current) window.setTimeout(() => (lySwallowClick.current = false), 350)
+    if (!moved) {
+      if (onHandle) setLyExpanded((x) => !x)
+      return
+    }
+    if (dy > 0 && (dy > 120 || v > 0.5)) {
+      if (lyExpanded && dy < lyRestOffset() + 200 && v < 1.2) setLyExpanded(false)
+      else closeLyrics()
+    } else if (dy < 0 && !lyExpanded && (dy < -60 || v < -0.5)) setLyExpanded(true)
+  }
+  const lySheetStyle: CSSProperties | undefined =
+    lyGrabDy === null
+      ? undefined
+      : ({
+          transform: `translate3d(0, calc(var(--np-ly-rest) + ${lyGrabDy}px), 0)`,
+          '--np-ly-drag-up': `${Math.min(0, lyGrabDy)}px`,
+        } as CSSProperties)
+  const lyScrimStyle: CSSProperties | undefined =
+    lyGrabDy !== null && lyGrabDy > 0 ? { opacity: Math.max(0, 1 - lyGrabDy / Math.max(1, window.innerHeight - (lyExpanded ? 0 : lyRestOffset()))) } : undefined
   const ctx = contextLine(p.context)
   const duration = intro ? (introAudio?.duration ?? 0) : (songTrack?.duration ?? 0)
   const djScene = startView || intro
@@ -273,30 +349,49 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
             )}
           </section>
 
-          {ly && (
-            <>
-              <div className="np-scrim" onClick={() => nowPlayingStore.toggleLyrics()} aria-hidden />
-              <aside className="np-panel np-ly-panel" aria-label="Lyrics">
+          <div
+            className={`np-scrim pg-anim ${ly ? 'is-open' : ''} ${lyGrabDy !== null ? 'is-grabbing' : ''}`}
+            style={lyScrimStyle}
+            onClick={closeLyrics}
+            aria-hidden
+          />
+          <aside
+            ref={lySheetRef}
+            className={`np-panel np-ly-panel pg-anim ${ly ? 'is-open' : ''} ${lyExpanded ? 'is-expanded' : ''} ${lyGrabDy !== null ? 'is-grabbing' : ''}`}
+            style={lySheetStyle}
+            aria-label="Lyrics"
+            aria-hidden={!ly}
+            inert={!ly}
+          >
+            <div className="np-panel-card">
+              <div
+                className="np-panel-head"
+                onPointerDown={onLyGrabDown}
+                onPointerMove={onLyGrabMove}
+                onPointerUp={onLyGrabUp}
+                onPointerCancel={() => setLyGrabDy(null)}
+                onClickCapture={onLyGrabClickCapture}
+              >
                 {phone && (
-                  <button type="button" className="np-panel-grab" aria-label="Close lyrics" onClick={() => nowPlayingStore.toggleLyrics()}>
+                  <div className="np-panel-grab" role="presentation" title={lyExpanded ? 'Drag down to shrink or close' : 'Drag up to expand, down to close'}>
                     <span />
-                  </button>
+                  </div>
                 )}
-                <div className="np-panel-head">
+                <div className="np-panel-head-row">
                   <div className="np-panel-titles">
                     <div className="np-panel-title">Lyrics</div>
                     <div className="np-panel-sub">{intro ? `${dj.session?.title ?? 'DJ'} · spoken intro` : songTrack ? `${songTrack.title} · ${songTrack.artist}` : ''}</div>
                   </div>
                   {!phone && (
-                    <button type="button" className="np-panel-x" title="Close" aria-label="Close lyrics" onClick={() => nowPlayingStore.toggleLyrics()}>
+                    <button type="button" className="np-panel-x" title="Close" aria-label="Close lyrics" onClick={closeLyrics}>
                       <Icon name="x" />
                     </button>
                   )}
                 </div>
-                <div className="np-ly-col">{intro && item ? <DjIntroLyrics item={item} line={dj.session?.line ?? ''} /> : songTrack && <Lyrics track={songTrack} position={p.position} playing={p.playing && ly} />}</div>
-              </aside>
-            </>
-          )}
+              </div>
+              <div className="np-ly-col">{intro && item ? <DjIntroLyrics item={item} line={dj.session?.line ?? ''} /> : songTrack && <Lyrics track={songTrack} position={p.position} playing={p.playing && ly} />}</div>
+            </div>
+          </aside>
         </>
       )}
     </div>

@@ -158,8 +158,13 @@ html[data-motion='reduced'] .dji-line > span { transition: none; }
 .dji-skipped { color: var(--ink-secondary); }
 
 /* lyrics view during the intro */
-.ly-line.dj-ly-line { cursor: default; font-size: clamp(26px, 2.4vw, 34px); }
-.ly-line.dj-ly-line.is-on { color: var(--dj-light); text-shadow: 0 0 24px rgba(var(--dj-rgb), .45); }
+.ly-line.dj-ly-line { cursor: default; font-size: clamp(20px, 2vw, 24px); }
+.ly-line.dj-ly-line.is-on {
+  color: var(--dj-light);
+  background: linear-gradient(125deg, oklch(0.32 0.06 290 / .65), oklch(0.22 0.01 40) 75%);
+  box-shadow: inset 0 0 0 1px oklch(0.84 0.09 290 / .38), 0 16px 34px -18px rgba(0, 0, 0, .8);
+}
+.ly-line.dj-ly-line.is-on .ly-bar { background: var(--dj); box-shadow: 0 0 12px rgba(var(--dj-rgb), .7); }
 .np-ly-meta { font-size: var(--fs-mono-sm); letter-spacing: .14em; color: var(--ink-secondary); }
 
 /* player bar / mini-player during the intro */

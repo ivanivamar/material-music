@@ -123,15 +123,24 @@ export function DjIntroLyrics({ item, line }: { item: string; line: string }) {
   return (
     <>
       <div className="ly-viewport">
-        <div className={`ly-list pg-anim ${motion ? '' : 'is-snap'}`} style={{ transform: `translateY(${-cur * 92}px)` }}>
+        <div className={`ly-list pg-anim ${motion ? '' : 'is-snap'}`} style={{ transform: `translate3d(0, ${Math.min(0, -(cur - 1) * 92)}px, 0)` }}>
           {sentences.map((x, i) => (
-            <div key={i} className={`ly-line dj-ly-line ${i === cur ? 'is-on' : ''}`} style={{ opacity: Math.abs(i - cur) > 2 ? 0.3 : i === cur ? 1 : 0.7 }}>
-              {x}
+            <div key={i} className={`ly-line dj-ly-line ${i === cur ? 'is-on' : ''}`} style={{ opacity: Math.abs(i - cur) > 2 ? 0.35 : i === cur ? 1 : 0.72 }}>
+              <span className="ly-bar" aria-hidden />
+              <span className="ly-body">
+                <span className="ly-text">{x}</span>
+              </span>
             </div>
           ))}
         </div>
       </div>
-      <div className="ly-meta t-mono">DJ INTRO · SPOKEN, IN STEP WITH THE VOICE</div>
+      <div className="ly-foot">
+        <span className="ly-badge is-dj">
+          <span className="ly-badge-dot" />
+          DJ INTRO
+        </span>
+        <span className="ly-hint">SPOKEN · LIVE</span>
+      </div>
     </>
   )
 }
