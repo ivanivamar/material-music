@@ -194,10 +194,14 @@
 /* Album accents are computed where --h is set: the root (now playing) and any .hue-scope
    (a page with its own album sets style="--h: …" plus this class, so its accents follow that album). */
 :root, .hue-scope {
-  --album: oklch(0.82 0.11 var(--h));
-  --album-hi: oklch(0.84 0.11 var(--h));
-  --on-album: oklch(0.26 0.06 var(--h));
-  --album-container: oklch(0.30 0.06 var(--h));
-  --album-icon: oklch(0.80 0.09 var(--h));
-  --album-eq: oklch(0.86 0.10 var(--h));
+  /* --hc: how colourful the cover is (1 = clear hue, 0 = white / grey / black cover → a near-neutral accent
+     that reads as white instead of falling back to coral) */
+  --album: oklch(calc(0.82 + 0.08 * (1 - var(--hc))) calc(0.11 * var(--hc) + 0.008) var(--h));
+  --album-hi: oklch(calc(0.84 + 0.08 * (1 - var(--hc))) calc(0.11 * var(--hc) + 0.008) var(--h));
+  --on-album: oklch(0.26 calc(0.06 * var(--hc) + 0.006) var(--h));
+  --album-container: oklch(0.30 calc(0.06 * var(--hc) + 0.006) var(--h));
+  --album-icon: oklch(calc(0.80 + 0.08 * (1 - var(--hc))) calc(0.09 * var(--hc) + 0.008) var(--h));
+  --album-eq: oklch(calc(0.86 + 0.06 * (1 - var(--hc))) calc(0.10 * var(--hc) + 0.008) var(--h));
 }
+/* a page with its own album is colourful unless it says otherwise */
+.hue-scope { --hc: 1; }

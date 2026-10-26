@@ -96,7 +96,6 @@
   display: inline-flex; align-items: center; justify-content: center;
 }
 .mini-play .ms { font-size: 28px; }
-.mini-spin { position: absolute; inset: 3px; border-radius: 50%; border: 2px solid transparent; border-top-color: var(--on-album); animation: pm-spin .9s linear infinite; }
 .mini-next { width: 48px; height: 48px; flex: none; border: 0; padding: 0; background: none; cursor: pointer; color: oklch(0.95 0.006 40); display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; }
 .mini-next .ms { font-size: 28px; }
 .mini-progress { position: absolute; left: 0; bottom: 0; height: 3px; background: var(--album); transition: width .5s linear; }
@@ -249,103 +248,69 @@ html[data-phone][data-qp] .toasts.toasts-shell { right: 0; }
 .shell.is-phone .srow-cover { width: 42px; height: 42px; }
 .shell.is-phone .srow-sub-album { display: inline; }
 
-/* ── Full-screen player (handoff 05 Android Now Playing) ── */
-/* Android app (edge-to-edge): the player's background reaches the top of the screen (behind the
-   status bar); only its content is pushed below it */
-.shell.is-phone .np { --np-sat: env(safe-area-inset-top, 0px); }
-/* swipe down to close (nowplaying/swipe.ts) */
-/* swipe state is a data attribute (swipe.ts) — React rewrites className when closing */
+/* ── Full-screen player, phone (Material redesign, NowPlayingMaterial phone form) ── */
+/* Android app (edge-to-edge): the glass reaches the top of the screen; content sits below the status bar */
+.shell.is-phone .np { --np-sat: env(safe-area-inset-top, 0px); padding-top: var(--np-sat); }
+/* swipe down to close (nowplaying/swipe.ts); swipe state is a data attribute (React rewrites className when closing) */
 .shell.is-phone .np[data-swipe]:not(.is-closing) { animation: none; }
 .shell.is-phone .np[data-swipe="dragging"] { transition: none; }
-.shell.is-phone .np[data-swipe="springing"] { transition: transform .3s var(--ease); }
+.shell.is-phone .np[data-swipe="springing"] { transition: transform .3s var(--ease-std); }
 .shell.is-phone .np[data-swipe="swiped"] { animation: none !important; transition: transform .26s cubic-bezier(.4, 0, 1, 1); pointer-events: none; }
-.shell.is-phone .np-head { top: var(--np-sat); height: 60px; padding: 0 14px; }
-.shell.is-phone .np-close { width: 44px; height: 44px; padding: 0; margin: 0; justify-content: center; font-size: 0; letter-spacing: 0; }
-.shell.is-phone .np-close svg { font-size: 22px; }
-.shell.is-phone .np-from-k { font-size: var(--fs-mono-xs); }
-.shell.is-phone .np-from-l { font-size: 13px; }
-.shell.is-phone .np-from { max-width: 60vw; }
+.shell.is-phone .np-head { height: 56px; padding: 0 4px; grid-template-columns: 48px minmax(0, 1fr) 48px; }
+.shell.is-phone .np-close { background: none; }
+.shell.is-phone .np-from { gap: 2px; }
+.shell.is-phone .np-from-l { max-width: 100%; }
 
+.shell.is-phone .np { --np-cover: max(180px, min(calc(100vw - 56px), calc(100vh - 440px - var(--np-sat)))); }
 .shell.is-phone .np-main {
-  inset: calc(60px + var(--np-sat)) 0 0; padding: 4px 24px calc(28px + env(safe-area-inset-bottom));
-  display: flex; flex-direction: column; justify-content: flex-start; gap: clamp(16px, 3.4vh, 30px);
-  /* stretch, not the desktop grid's centre: a centred flex child grows to its widest unbreakable line */
-  align-items: stretch;
-  overflow-y: auto; overscroll-behavior: contain;
+  flex-direction: column; align-items: stretch; justify-content: flex-start; gap: 0; padding: 16px 0 0;
+  overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain;
 }
-.shell.is-phone .np { --np-cover: max(180px, min(364px, calc(100vw - 48px), calc(100vh - 470px - var(--np-sat)))); }
 /* cover row (CoverSwipe.tsx): the queue's covers side by side, one full-width slot per song, in an
-   overflow-hidden scroller that only the component moves (finger drag + its own release glide; no
-   native momentum / snap). pan-y keeps vertical drags for scrolling / swipe-down-to-close.
-   Full bleed (out of .np-main's 24px padding) so the neighbours slide in from the screen edge.
-   Bottom padding keeps the cover glow from being clipped; the negative margin gives it back. */
-.shell.is-phone .np-main { overflow-x: hidden; }
-.shell.is-phone .np-cover-wrap { align-self: stretch; margin: 0 -24px; }
-.npc {
-  width: 100%; height: calc(var(--np-cover) + 72px); margin-bottom: -72px;
-  overflow: hidden; touch-action: pan-y;
-  -webkit-touch-callout: none; user-select: none;
-}
+   overflow-hidden scroller that only the component moves; pan-y keeps vertical drags for swipe-down-to-close.
+   The tilt and shadow sit on each slot so neighbours slide in tilted too. */
+.shell.is-phone .np-cover-wrap { transform: none; filter: none; align-self: stretch; }
+.npc { width: 100%; height: calc(var(--np-cover) + 60px); margin-bottom: -44px; overflow: hidden; touch-action: pan-y; -webkit-touch-callout: none; user-select: none; }
 .npc-track { display: flex; height: 100%; }
-.npc-slot { flex: 0 0 100%; display: flex; justify-content: center; align-items: flex-start; }
-.shell.is-phone .np-info { gap: clamp(16px, 3.4vh, 30px); max-width: none; flex: 1; }
-.shell.is-phone .np-text { gap: 8px; }
-.shell.is-phone .np-badges { order: 3; gap: 10px; font-size: var(--fs-mono-xs); }
-.shell.is-phone .np-title { font-size: clamp(26px, 8.3vw, 34px); letter-spacing: -0.02em; }
-.shell.is-phone .np-titles { gap: 8px; }
-.shell.is-phone .np-title-x { font-size: var(--fs-mono-sm); gap: 10px; }
-.shell.is-phone .np-title-x-line { width: 14px; }
-.shell.is-phone .np-sub { font-size: 16px; }
-.shell.is-phone .np-artist { color: #bdbdbd; }
-.shell.is-phone .np-seek { gap: 10px; max-width: none; }
-.shell.is-phone .np-transport { justify-content: space-between; gap: 0; }
-.shell.is-phone .np-transport .ibtn { width: 48px; height: 48px; margin: 0; }
-.shell.is-phone .np-transport .ibtn.np-skip { width: 56px; height: 56px; }
-.shell.is-phone .np-play .playbtn { width: 72px !important; height: 72px !important; box-shadow: 0 0 44px -10px rgba(255, 255, 255, .5); }
-.shell.is-phone .np-actions { max-width: none; justify-content: space-between; }
-.shell.is-phone .np-actions .np-flex,
-.shell.is-phone .np-actions > .ibtn,
-.shell.is-phone .np-vol,
-.shell.is-phone .np-next { display: none; }
-.shell.is-phone .np-vbtn { height: 40px; padding: 0 14px; }
+.npc-slot { flex: 0 0 100%; display: flex; justify-content: center; align-items: flex-start; padding-top: 8px; }
+.npc-slot .np-cover { transform: rotate(-3deg); filter: drop-shadow(0 22px 30px rgba(0, 0, 0, .55)); }
+.shell.is-phone .np-info { max-width: none; padding: 32px 28px 0; gap: 18px; }
+.shell.is-phone .np-title-col { gap: 0; }
+.shell.is-phone .np-title { font-size: 28px; letter-spacing: -0.02em; line-height: 1.15; display: block; white-space: nowrap; }
+.shell.is-phone .np-chip { align-self: flex-start; height: 22px; padding: 0 8px; margin-bottom: 8px; }
+.shell.is-phone .np-by { font-size: 14px; margin-top: 4px; }
+.shell.is-phone .np-q { height: 22px; padding: 0 8px; margin-bottom: 2px; }
+.shell.is-phone .np-seek .mm-seek-hit { padding: 8px 0; }
+.shell.is-phone .np-transport { max-width: none; }
+.shell.is-phone .np-mode-slot { width: 64px; }
+.shell.is-phone .np-mode { width: 64px; height: 48px; border-radius: 24px; }
+.shell.is-phone .np-mode .ms { font-size: 24px; }
+.shell.is-phone .np-mode.is-on { width: 48px; border-radius: 15px; }
+.shell.is-phone .np-skip { width: 48px; height: 48px; }
+.np-phone-actions { margin-top: auto; padding: 24px 20px calc(36px + env(safe-area-inset-bottom)); display: flex; align-items: center; justify-content: space-between; flex: none; }
+.np-phone-actions .np-vbtn.is-sq { width: 64px; height: 48px; padding: 0; justify-content: center; border-radius: 24px; background: rgba(255, 255, 255, .08); box-shadow: none; }
+.np-phone-actions .np-vbtn.is-sq .ms { font-size: 24px; }
+.np-phone-actions .np-vbtn.is-sq.is-on { width: 48px; border-radius: 15px; background: var(--album-hi); color: var(--on-album); }
+.np-phone-actions .djb.djb-phone { height: 48px; padding: 0 18px 0 14px; border-radius: 24px; }
+.np-phone-actions .djb.djb-phone.is-on { border-radius: 16px; }
 
-/* lyrics view: top strip · lyrics · seek + transport */
-.shell.is-phone .np-ly { inset: calc(60px + var(--np-sat)) 0 0; display: flex; flex-direction: column; }
-.shell.is-phone .np-ly-col { flex: 1; min-height: 0; }
-.npp-strip { display: flex; align-items: center; gap: 12px; padding: 0 14px 0 24px; height: 56px; flex: none; }
-.npp-strip-cover { width: 40px; height: 40px; flex: none; border-radius: 8px; object-fit: cover; display: block; }
-.npp-strip-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.npp-strip-title { font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.npp-strip-sub { font-size: 12px; color: var(--ink-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.npp-strip .ibtn { width: 44px; height: 44px; font-size: 21px; color: var(--ink-secondary); }
-.npp-strip .ibtn[aria-pressed='true'] { color: #fff; }
-.npp-strip .ibtn[aria-pressed='true'] svg { filter: drop-shadow(0 0 4px rgba(255, 255, 255, .5)); }
-.npp-bottom { flex: none; display: flex; flex-direction: column; gap: 18px; padding: 8px 24px calc(28px + env(safe-area-inset-bottom)); }
-.npp-bottom { gap: 16px; }
-.npp-bottom .np-transport.is-compact { width: auto; justify-content: space-between; }
-.npp-bottom .np-transport.is-compact .ibtn { width: 48px; height: 48px; font-size: 22px; }
-.npp-bottom .np-transport.is-compact .ibtn.np-skip { width: 56px; height: 56px; font-size: 26px; }
-.npp-bottom .np-play .playbtn { width: 64px !important; height: 64px !important; }
-.shell.is-phone .ly-list { left: 28px; right: 28px; top: 40%; }
-.shell.is-phone .ly-line { font-size: 24px; padding: 9px 0; line-height: 1.25; }
-.shell.is-phone .ly-line.is-gap { font-size: 18px; }
-/* Android WebView flickered on every line change. Three things repainted / re-laid out the moving
-   list at once; on the phone none of them happen:
-   · the mask-image fade on the viewport: the transformed list under a mask is re-rasterised into the
-     mask surface while it glides, and the WebView showed a blank frame now and then. The per-line
-     distance fade (Lyrics.tsx lineOpacity) already dims the edges, so the viewport just clips.
-   · font-weight 300 → 400 on the sung line: wider glyphs can re-wrap the line, the list's height
-     changes and the glide target is re-measured mid-transition. Same weight for every line.
-   · the 28px text-shadow glow animated over 1.1 s (a blur repaint per frame): a small static glow,
-     only opacity and colour fade. */
+/* lyrics: a sheet from below */
+.shell.is-phone .np-scrim { background: rgba(5, 5, 5, .45); }
+.shell.is-phone .np-panel {
+  left: 8px; right: 8px; bottom: calc(8px + env(safe-area-inset-bottom)); top: calc(200px + var(--np-sat)); width: auto;
+  box-shadow: 0 -20px 60px -20px rgba(0, 0, 0, .7), inset 0 0 0 1px var(--glass-panel-edge);
+  animation: np-sheet 450ms cubic-bezier(0.2, 0, 0, 1) both;
+}
+@keyframes np-sheet { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+.shell.is-phone .np-panel-head { padding: 4px 22px 14px; }
+.shell.is-phone .np-panel-title { font-size: 22px; }
+.shell.is-phone .ly-list { left: 22px; right: 22px; top: 32%; }
+.shell.is-phone .ly-line { font-size: 22px; padding: 8px 0; }
+/* Android WebView flickered on every line change with the masked viewport: just clip on the phone */
 .shell.is-phone .ly-viewport { -webkit-mask-image: none; mask-image: none; }
-.shell.is-phone .ly-line { font-weight: 400; transition: opacity 1.1s var(--ease), color 1.1s var(--ease); }
-.shell.is-phone .ly-line.is-on { text-shadow: 0 0 12px rgba(255, 255, 255, .35); }
 .shell.is-phone .ly-meta { display: none; }
-.shell.is-phone .ly-plain { padding: 12vh 28px 20vh; }
-.shell.is-phone .ly-plain p { font-size: 20px; }
-.shell.is-phone .ly-empty { inset: 0; }
-.shell.is-phone .ly-empty .empty { padding: 24px; gap: 20px; }
+.shell.is-phone .ly-plain { padding: 20px 22px 32px; }
+.shell.is-phone .ly-plain p { font-size: 18px; }
 
 /* ── Queue: floating bottom sheet (design_handoff_queue_popover, 07 "QUEUE / SHEET OVER NOW PLAYING") ──
    8px from the sides and the bottom, resting with its top 200px down the screen (the now-playing

@@ -18,8 +18,9 @@ export function NowPlayingHue() {
   const cover = useCover(album?.cover)
   const tint = useArtTint(cover)
   const hue = tint?.hue ?? (cover ? null : BRAND_HUE)
+  const chroma = tint ? tint.chroma : 1
   useEffect(() => {
-    if (hue != null) setNowPlayingHue(hue)
-  }, [hue])
+    if (hue != null) setNowPlayingHue(hue, chroma)
+  }, [hue, chroma])
   return null
 }

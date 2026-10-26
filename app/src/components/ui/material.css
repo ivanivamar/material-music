@@ -6,7 +6,15 @@
 .mm-cookie:disabled { cursor: default; opacity: .5; }
 .mm-cookie-shape { position: absolute; inset: 0; transition: clip-path 520ms var(--ease-shape), background-color 300ms var(--ease-std); }
 .mm-cookie-shape.is-on { animation: pm-spin 14s linear infinite; }
-.mm-cookie-ic { position: relative; display: grid; place-items: center; z-index: 2; }
+.mm-cookie-ic { position: relative; display: grid; place-items: center; z-index: 2; transition: opacity 200ms var(--ease-std), transform 320ms var(--ease-shape); }
+.mm-cookie.is-loading .mm-cookie-ic { opacity: 0; transform: scale(.4); }
+.mm-cookie-load { position: absolute; left: 50%; top: 50%; z-index: 2; margin: 0; translate: -50% -50%; animation: mm-load-in 320ms var(--ease-shape) both; }
+@keyframes mm-load-in { from { opacity: 0; scale: .3; } to { opacity: 1; scale: 1; } }
+
+/* loading indicator: the shape morphs (one step per ~650ms) while the wrapper turns */
+.mm-load { display: inline-block; flex: none; }
+.mm-load:not(.mm-cookie-load) { position: relative; }
+.mm-load-shape { position: absolute; inset: 0; animation: mm-load-morph 3.9s cubic-bezier(0.38, 1.21, 0.22, 1) infinite, pm-spin 1.3s linear infinite; }
 .mm-cookie:active .mm-cookie-shape { transform: scale(.94); }
 
 .mm-wave { position: relative; width: 100%; }
@@ -61,3 +69,8 @@
 }
 .toast-action:hover { color: oklch(0.40 0.13 38); background: oklch(0.48 0.13 38 / 0.1); }
 .toast-progress { height: 3px; background: oklch(0.48 0.13 38); box-shadow: none; }
+
+.mm-seek.is-below { flex-direction: column; align-items: stretch; gap: 6px; }
+.mm-seek-row { display: flex; justify-content: space-between; }
+.mm-thin-track { position: relative; overflow: visible; }
+.mm-thin-knob { position: absolute; top: -5px; width: 16px; height: 16px; margin-left: -8px; border-radius: 8px; background: var(--ink-primary); box-shadow: 0 2px 6px rgba(0, 0, 0, .4); }

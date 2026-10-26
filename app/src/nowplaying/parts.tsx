@@ -1,6 +1,6 @@
 /** Bits shared by the full-screen player, its lyrics view and the queue panel. */
 import type { MouseEvent, ReactNode } from 'react'
-import { IconButton, PlayButton } from '../components/ui'
+import { CookieButton } from '../components/ui'
 import { Icon } from '../design/icons'
 import { useLibrary, type Album, type Track } from '../state/library'
 import { nowPlayingStore, useNowPlayingUi } from '../state/nowPlaying'
@@ -79,72 +79,68 @@ export function onPlayPause() {
   playerStore.toggle()
 }
 
-/** Shuffle · prev · play · next · repeat (handoff: 40px gaps, 76px play). `compact` = lyrics view (54px play, tighter gaps; shuffle and repeat stay). */
-export function Transport({ compact }: { compact?: boolean }) {
+/** Shuffle · prev · play · next · repeat (Material redesign): mode toggles that tighten into album-colour
+ * squares when on, 64px skip buttons, the cookie play button (96 desktop, 80 phone; `compact` 64). */
+export function Transport({ compact, phone }: { compact?: boolean; phone?: boolean }) {
   const p = usePlayer()
   const djOn = useDjView().on
   const radio = p.context?.kind === 'radio'
   // shuffle / repeat are not used by the DJ or a radio
   const dj = djOn || radio
   const offLabel = djOn ? 'Not used by the DJ' : 'Not used by the radio'
-  const state = p.buffering ? 'buffering' : p.playing ? 'playing' : 'paused'
-  const repeatLabel = p.repeat === 'off' ? 'Repeat' : p.repeat === 'all' ? 'Repeat all' : 'Repeat one'
+  const repeatLabel = p.repeat === 'off' ? 'Repeat' : p.repeat === 'all' ? 'Repeating the queue' : 'Repeating this song'
+  const size = compact ? 64 : phone ? 80 : 96
   return (
-    <div className={`np-transport ${compact ? 'is-compact' : ''}`}>
-      <IconButton
-        icon="shuffle"
-        label={dj ? offLabel : p.shuffle ? 'Shuffle on' : 'Shuffle'}
-        bare
-        pressed={!dj && p.shuffle}
-        className={`np-mode ${!dj && p.shuffle ? 'is-on' : ''} ${dj ? 'is-dj-off' : ''}`}
-        onClick={() => !dj && playerStore.toggleShuffle()}
-      />
-      <IconButton icon="prev" label="Previous" bare className="np-skip" onClick={() => playerStore.prev()} />
-      <span className="np-play">
-        <PlayButton size={compact ? 54 : 76} state={state} onClick={onPlayPause} />
+    <div className={`np-transport ${compact ? 'is-compact' : ''} ${phone ? 'is-phone' : ''}`}>
+      <span className="np-mode-slot">
+        <button type="button" className={`np-mode ${!dj && p.shuffle ? 'is-on' : ''} ${dj ? 'is-dj-off' : ''}`} aria-pressed={!dj && p.shuffle} aria-label={dj ? offLabel : p.shuffle ? 'Shuffle on' : 'Shuffle'} title={dj ? offLabel : 'Shuffle'} onClick={() => !dj && playerStore.toggleShuffle()}>
+          <Icon name="shuffle" />
+        </button>
       </span>
-      <IconButton icon="next" label="Next" bare className="np-skip" onClick={() => playerStore.next()} />
-      <span className="np-repeat-wrap">
-        <IconButton
-          icon="repeat"
-          label={dj ? offLabel : repeatLabel}
-          bare
-          pressed={!dj && p.repeat !== 'off'}
-          className={`np-mode ${!dj && p.repeat !== 'off' ? 'is-on' : ''} ${dj ? 'is-dj-off' : ''}`}
-          onClick={() => !dj && playerStore.cycleRepeat()}
-        />
-        {!dj && p.repeat === 'one' && (
-          <span className="np-repeat-one" aria-hidden>
-            1
-          </span>
-        )}
+      <button type="button" className="np-skip" aria-label="Previous" title="Previous" onClick={() => playerStore.prev()}>
+        <Icon name="prev" filled />
+      </button>
+      <CookieButton
+        size={size}
+        iconSize={Math.round(size / 2)}
+        playing={p.playing}
+        icon={p.playing || p.buffering ? 'pauseF' : 'playF'}
+        label={p.playing ? 'Pause' : 'Play'}
+        className="np-play"
+        onClick={onPlayPause}
+        loading={p.buffering}
+      />
+      <button type="button" className="np-skip" aria-label="Next" title="Next" onClick={() => playerStore.next()}>
+        <Icon name="next" filled />
+      </button>
+      <span className="np-mode-slot">
+        <button type="button" className={`np-mode ${!dj && p.repeat !== 'off' ? 'is-on' : ''} ${dj ? 'is-dj-off' : ''}`} aria-pressed={!dj && p.repeat !== 'off'} aria-label={dj ? offLabel : repeatLabel} title={dj ? offLabel : repeatLabel} onClick={() => !dj && playerStore.cycleRepeat()}>
+          <Icon name={p.repeat === 'one' ? 'repeatOne' : 'repeat'} />
+        </button>
       </span>
     </div>
   )
 }
 
-/** Lyrics / Queue toggle buttons (outlined; solid white when on) + the DJ button. Phone order: Lyrics · DJ · Queue. */
-export function ViewButtons({ size = 'md', phone = false }: { size?: 'md' | 'sm'; phone?: boolean }) {
+/** Lyrics / Queue chips (filled with the album colour when open) + the DJ button.
+ * Desktop: labelled chips, Lyrics · DJ · Queue n. Phone: square icon buttons, Lyrics · DJ · Queue. */
+export function ViewButtons({ phone = false }: { size?: 'md' | 'sm'; phone?: boolean }) {
   const ui = useNowPlayingUi()
   const p = usePlayer()
   const dj = useDjView().on
   const upcoming = Math.max(0, p.queue.length - p.index - 1)
   const ly = ui.open && ui.view === 'lyrics'
   const lyrics = (
-    <button key="ly" type="button" className={`np-vbtn ${size === 'sm' ? 'is-sm' : ''} ${ly ? 'is-on' : ''}`} aria-pressed={ly} onClick={() => nowPlayingStore.toggleLyrics()}>
-      <span className="np-vbtn-ic">
-        <Icon name="lyrics" />
-      </span>
-      Lyrics
+    <button key="ly" type="button" className={`np-vbtn ${phone ? 'is-sq' : ''} ${ly ? 'is-on' : ''}`} aria-pressed={ly} aria-label="Lyrics" onClick={() => nowPlayingStore.toggleLyrics()}>
+      <Icon name="lyrics" />
+      {!phone && 'Lyrics'}
     </button>
   )
   const queue = dj ? (
     <span key="q" className="dj-off-wrap">
-      <button type="button" className={`np-vbtn ${size === 'sm' ? 'is-sm' : ''} is-dj-off`} aria-disabled="true" title={phone ? 'Not available while the DJ plays' : undefined}>
-        <span className="np-vbtn-ic">
-          <Icon name="queue" />
-        </span>
-        Queue
+      <button type="button" className={`np-vbtn ${phone ? 'is-sq' : ''} is-dj-off`} aria-disabled="true" aria-label="Queue: not available while the DJ plays" title={phone ? 'Not available while the DJ plays' : undefined}>
+        <Icon name="queue" />
+        {!phone && 'Queue'}
       </button>
       {!phone && (
         <span className="dj-off-tip" role="tooltip">
@@ -153,14 +149,15 @@ export function ViewButtons({ size = 'md', phone = false }: { size?: 'md' | 'sm'
       )}
     </span>
   ) : (
-    <button key="q" type="button" className={`np-vbtn ${size === 'sm' ? 'is-sm' : ''} ${ui.queue ? 'is-on' : ''}`} aria-pressed={ui.queue} onClick={() => nowPlayingStore.toggleQueue()}>
-      <span className="np-vbtn-ic">
-        <Icon name="queue" />
-      </span>
-      Queue
-      <span className="np-vbtn-n">{String(upcoming).padStart(2, '0')}</span>
+    <button key="q" type="button" className={`np-vbtn ${phone ? 'is-sq' : ''} ${ui.queue ? 'is-on' : ''}`} aria-pressed={ui.queue} aria-label="Queue" onClick={() => nowPlayingStore.toggleQueue()}>
+      <Icon name="queue" />
+      {!phone && (
+        <>
+          Queue<span className="np-vbtn-n">{upcoming}</span>
+        </>
+      )}
     </button>
   )
-  const djb = <DjButton key="dj" variant={phone ? 'phone' : size === 'sm' ? 'ly' : 'np'} />
-  return <>{phone ? [lyrics, djb, queue] : [lyrics, queue, djb]}</>
+  const djb = <DjButton key="dj" variant={phone ? 'phone' : 'np'} />
+  return <>{[lyrics, djb, queue]}</>
 }

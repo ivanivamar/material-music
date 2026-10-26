@@ -4,7 +4,7 @@
  *
  *   primary    oklch(0.82 0.11 H)    on-primary oklch(0.26 0.06 H)    container oklch(0.30 0.06 H)
  *
- * The hue comes from the cover (tint.ts dominantColor). Grey covers fall back to the brand coral hue.
+ * The hue comes from the cover (tint.ts dominantColor). Grey / white / black covers get --hc 0: a near-white accent.
  * `--h` on <html> is the now-playing hue; pages with their own album (album page) set `--h` locally.
  */
 import { toOklch } from './tint'
@@ -26,6 +26,8 @@ export function hueOf(rgb: [number, number, number]): number {
   return C < 0.03 ? BRAND_HUE : Math.round(H)
 }
 
-export function setNowPlayingHue(h: number) {
-  document.documentElement.style.setProperty('--h', String(h))
+export function setNowPlayingHue(h: number, chroma = 1) {
+  const root = document.documentElement.style
+  root.setProperty('--h', String(h))
+  root.setProperty('--hc', String(Math.round(chroma * 100) / 100))
 }

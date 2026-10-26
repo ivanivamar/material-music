@@ -79,7 +79,8 @@ html[data-motion='reduced'] .pg-snow { display: none !important; }
 
 /* ── Material redesign foundation ─────────────────────── */
 @property --h { syntax: '<number>'; inherits: true; initial-value: 38; }
-:root { transition: --h 600ms var(--ease-std); }
+@property --hc { syntax: '<number>'; inherits: true; initial-value: 1; }
+:root { transition: --h 600ms var(--ease-std), --hc 600ms var(--ease-std); }
 
 body { background: var(--bg-1); font-feature-settings: 'ss01'; }
 a { color: var(--brand); text-decoration: none; }

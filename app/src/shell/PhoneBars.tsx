@@ -10,6 +10,7 @@ import type { ReactNode } from 'react'
 import { Icon, type IconName } from '../design/icons'
 import { AppMark } from '../components/Logo'
 import { Marquee } from '../components/Marquee'
+import { LoadingShape } from '../components/ui'
 import { useCover } from '../lib/covers'
 import { useLibrary } from '../state/library'
 import { nowPlayingStore } from '../state/nowPlaying'
@@ -102,9 +103,8 @@ export function MiniPlayer() {
           {intro && id && dj.session ? <IntroSub item={id} /> : <Marquee className="mini-sub" text={track!.artist} />}
         </span>
       </button>
-      <button type="button" className="mini-play" aria-label={p.playing ? 'Pause' : 'Play'} onClick={() => playerStore.toggle()}>
-        <Icon name={p.playing || p.buffering ? 'pauseF' : 'playF'} />
-        {p.buffering && <span className="mini-spin mm-anim" aria-hidden />}
+      <button type="button" className="mini-play" aria-label={p.playing ? 'Pause' : 'Play'} aria-busy={p.buffering || undefined} onClick={() => playerStore.toggle()}>
+        {p.buffering ? <LoadingShape size={26} /> : <Icon name={p.playing ? 'pauseF' : 'playF'} />}
       </button>
       <button type="button" className="mini-next" aria-label="Next" onClick={() => playerStore.next()}>
         <Icon name="next" filled />

@@ -28,7 +28,7 @@ import { Eq, formatTime, useToast } from '../components/ui'
 import { Icon } from '../design/icons'
 import { useCover } from '../lib/covers'
 import { useLibrary, type Catalogue } from '../state/library'
-import { likesStore, useLikes } from '../state/likes'
+import { useLikes } from '../state/likes'
 import { nowPlayingStore, useNowPlayingUi } from '../state/nowPlaying'
 import { playerStore, usePlayer } from '../state/player'
 import { usePlaylists } from '../state/playlists'
@@ -167,20 +167,10 @@ interface NextRowProps {
 }
 
 /* ── Next up row: grip · cover · title / artist · album · ♥ · length · ↑ · × ── */
-function NextRow({ c, id, abs, top, base, phone, liked, drag, onDragStart, onDragOver, onDragEnd, onTouchDown, onKey, remove }: NextRowProps) {
+function NextRow({ c, id, abs, top, base, phone, drag, onDragStart, onDragOver, onDragEnd, onTouchDown, onKey, remove }: NextRowProps) {
   const t = c.tracks[id]
   const isDrag = drag?.from === abs
   const line = drag && drag.over === abs && drag.from !== abs && dropTarget(drag, base) !== null ? (drag.after ? 'bot' : 'top') : null
-  const [pop, setPop] = useState(false)
-  const toggleLike = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    if (!t) return
-    likesStore.set(t.id, !liked)
-    if (!liked) {
-      setPop(true)
-      window.setTimeout(() => setPop(false), 220)
-    }
-  }
   return (
     <div
       data-abs={abs}
@@ -218,19 +208,6 @@ function NextRow({ c, id, abs, top, base, phone, liked, drag, onDragStart, onDra
           <div className="qp-t">{t?.title ?? 'Missing track'}</div>
           <div className="qp-a">{sub(c, id)}</div>
         </div>
-        {t && (
-          <button
-            type="button"
-            className={`qp-like ${liked ? 'is-on' : ''} ${pop ? 'is-pop' : ''}`}
-            title={liked ? 'Remove from Liked' : 'Like'}
-            aria-label={liked ? 'Remove from Liked' : 'Like'}
-            aria-pressed={liked}
-            onClick={toggleLike}
-            onPointerDown={(e) => e.stopPropagation()}
-          >
-            <Icon name={liked ? 'heartF' : 'heart'} />
-          </button>
-        )}
         <span className="qp-d qp-nd t-mono">{t?.duration ? formatTime(t.duration) : '--:--'}</span>
         {!phone && (
           <span className="qp-acts">

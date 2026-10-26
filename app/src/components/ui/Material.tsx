@@ -9,7 +9,7 @@
 import { useState, type CSSProperties, type MouseEvent, type ReactNode } from 'react'
 import type React from 'react'
 import { Icon, type IconName } from '../../design/icons'
-import { SHAPE_PAUSED, SHAPE_PLAYING } from '../../design/shapes'
+import { SHAPE_PAUSED, SHAPE_PLAYING, LOADING_SHAPES } from '../../design/shapes'
 
 export function CookieButton({
   size,
@@ -23,6 +23,7 @@ export function CookieButton({
   className,
   disabled,
   children,
+  loading,
 }: {
   size: number
   /** playing → cookie + slow turn; paused → circle */
@@ -36,29 +37,58 @@ export function CookieButton({
   className?: string
   disabled?: boolean
   children?: ReactNode
+  /** buffering: the icon gives way to the M3 Expressive loading indicator (a morphing, turning shape) */
+  loading?: boolean
 }) {
   return (
     <button
       type="button"
-      className={'mm-cookie' + (className ? ' ' + className : '')}
+      className={'mm-cookie' + (loading ? ' is-loading' : '') + (className ? ' ' + className : '')}
+      aria-busy={loading || undefined}
       style={{ width: size, height: size, color: ink } as CSSProperties}
       onClick={onClick}
       aria-label={label}
       disabled={disabled}
     >
       <span
-        className={'mm-cookie-shape mm-shape' + (playing ? ' is-on mm-anim' : '')}
-        style={{ background: color, clipPath: playing ? SHAPE_PLAYING : SHAPE_PAUSED }}
+        className={'mm-cookie-shape mm-shape' + (playing && !loading ? ' is-on mm-anim' : '')}
+        style={{ background: color, clipPath: playing && !loading ? SHAPE_PLAYING : SHAPE_PAUSED }}
         aria-hidden
       />
       <span className="mm-cookie-ic">{children ?? (icon && <Icon name={icon} filled size={iconSize ?? Math.round(size * 0.52)} />)}</span>
+      {loading && <LoadingShape size={Math.round(size * 0.5)} className="mm-cookie-load" />}
     </button>
+  )
+}
+
+/**
+ * M3 Expressive loading indicator: one shape that keeps morphing through the expressive set
+ * (soft burst → pentagon → oval → sunny → 4-leaf clover → 9-cookie) while it turns. Colour = currentColor.
+ */
+let loadKf = false
+function ensureLoadKeyframes() {
+  if (loadKf || typeof document === 'undefined') return
+  loadKf = true
+  const seq = [...LOADING_SHAPES, LOADING_SHAPES[0]]
+  const steps = seq.map((sh, i) => `${((i / (seq.length - 1)) * 100).toFixed(2)}% { clip-path: ${sh}; }`).join('\n')
+  const el = document.createElement('style')
+  el.dataset.mm = 'loading-indicator'
+  el.textContent = `@keyframes mm-load-morph {\n${steps}\n}`
+  document.head.appendChild(el)
+}
+
+export function LoadingShape({ size, className, color = 'currentColor' }: { size: number; className?: string; color?: string }) {
+  ensureLoadKeyframes()
+  return (
+    <span className={'mm-load' + (className ? ' ' + className : '')} style={{ width: size, height: size }} role="progressbar" aria-label="Loading">
+      <span className="mm-load-shape mm-anim" style={{ background: color, clipPath: LOADING_SHAPES[0] }} />
+    </span>
   )
 }
 
 const waveMask = (hh: number) => {
   const m = hh / 2
-  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='24' height='${hh}'><path d='M0 ${m} Q6 ${m - 6} 12 ${m} T24 ${m}' fill='none' stroke='black' stroke-width='3'/></svg>`
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='24' height='${hh}'><path d='M-12 ${m} Q-6 ${m + 6} 0 ${m} T12 ${m} T24 ${m} T36 ${m}' fill='none' stroke='black' stroke-width='3' stroke-linecap='round'/></svg>`
   return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`
 }
 
@@ -148,6 +178,7 @@ export function WaveSeek({
   onSeek,
   height = 12,
   times = true,
+  below = false,
   className,
 }: {
   position: number
@@ -156,6 +187,8 @@ export function WaveSeek({
   onSeek: (s: number) => void
   height?: number
   times?: boolean
+  /** times under the wave: position left, remaining right (Now playing) */
+  below?: boolean
   className?: string
 }) {
   const [drag, setDrag] = useState<number | null>(null)
@@ -167,36 +200,49 @@ export function WaveSeek({
       if (duration > 0) onSeek(v * duration)
     },
   )
+  const hit = (
+    <div
+      className="mm-seek-hit"
+      role="slider"
+      tabIndex={duration > 0 ? 0 : -1}
+      aria-label="Seek"
+      aria-valuemin={0}
+      aria-valuemax={Math.round(duration)}
+      aria-valuenow={Math.round(f * duration)}
+      aria-valuetext={`${clock(f * duration)} of ${clock(duration)}`}
+      {...handlers}
+      onKeyDown={(e) => {
+        if (!duration) return
+        if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+          e.preventDefault()
+          onSeek(Math.max(0, Math.min(duration, position + (e.key === 'ArrowRight' ? 5 : -5))))
+        }
+      }}
+    >
+      <WaveProgress fraction={f} moving={playing && drag === null} height={height} />
+    </div>
+  )
+  if (below)
+    return (
+      <div className={'mm-seek is-below' + (className ? ' ' + className : '')}>
+        {hit}
+        <div className="mm-seek-row">
+          <span>{clock(f * duration)}</span>
+          <span>-{clock(Math.max(0, duration - f * duration))}</span>
+        </div>
+      </div>
+    )
   return (
     <div className={'mm-seek' + (className ? ' ' + className : '')}>
       {times && <span className="mm-seek-t">{clock(f * duration)}</span>}
-      <div
-        className="mm-seek-hit"
-        role="slider"
-        tabIndex={duration > 0 ? 0 : -1}
-        aria-label="Seek"
-        aria-valuemin={0}
-        aria-valuemax={Math.round(duration)}
-        aria-valuenow={Math.round(f * duration)}
-        aria-valuetext={`${clock(f * duration)} of ${clock(duration)}`}
-        {...handlers}
-        onKeyDown={(e) => {
-          if (!duration) return
-          if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
-            e.preventDefault()
-            onSeek(Math.max(0, Math.min(duration, position + (e.key === 'ArrowRight' ? 5 : -5))))
-          }
-        }}
-      >
-        <WaveProgress fraction={f} moving={playing && drag === null} height={height} />
-      </div>
+      {hit}
       {times && <span className="mm-seek-t is-end">{clock(duration)}</span>}
     </div>
   )
 }
 
-/** Thin 6px volume bar (player bar). */
-export function ThinSlider({ value, onChange, label, width = 72 }: { value: number; onChange: (v: number) => void; label: string; width?: number }) {
+/** Thin 6px volume bar (player bar; `knob` = with a 16px handle, Now playing). */
+export function ThinSlider({ value, onChange, label, width = 72, knob = false }: { value: number; onChange: (v: number) => void; label: string; width?: number; knob?: boolean }) {
   const handlers = useDrag(onChange)
   return (
     <div
@@ -216,6 +262,7 @@ export function ThinSlider({ value, onChange, label, width = 72 }: { value: numb
     >
       <div className="mm-thin-track">
         <div className="mm-thin-fill" style={{ width: `${value * 100}%` }} />
+        {knob && <div className="mm-thin-knob" style={{ left: `${value * 100}%` }} />}
       </div>
     </div>
   )

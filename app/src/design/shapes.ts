@@ -25,3 +25,13 @@ export function cookie(n: number, amp: number, points = 120): string {
 export const SHAPE_PAUSED = cookie(9, 0)
 export const SHAPE_PLAYING = cookie(9, 0.06)
 export const SHAPE_BURST = cookie(9, 0.14)
+
+/** M3 Expressive loading-indicator sequence (same point count, so they morph). */
+export const LOADING_SHAPES = [
+  cookie(9, 0.1), // soft burst
+  cookie(5, 0.1), // soft pentagon
+  cookie(2, 0.14), // oval / pill
+  cookie(8, 0.05), // sunny
+  cookie(4, 0.15), // 4-leaf clover
+  cookie(12, 0.07), // 12-cookie
+]

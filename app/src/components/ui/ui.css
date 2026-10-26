@@ -170,7 +170,7 @@ html[data-motion='reduced'] .swell-head, html[data-motion='reduced'] .swell-tip 
 /* ── Status: eq, download ─────────────────────────────── */
 .eq { display: inline-flex; align-items: flex-end; gap: 2px; height: 11px; }
 .eq > span {
-  width: 1.5px; height: 11px; background: #fff; box-shadow: 0 0 4px rgba(255, 255, 255, .8);
+  width: 2px; height: 11px; border-radius: 1px; background: var(--album-eq, #fff);
   transform-origin: bottom; animation: pg-eq 1s ease-in-out infinite;
 }
 .eq.is-still > span { animation: none; transform: scaleY(.6); }

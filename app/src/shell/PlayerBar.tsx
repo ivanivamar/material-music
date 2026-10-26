@@ -132,6 +132,7 @@ export function PlayerBar() {
             label={p.playing ? 'Pause' : 'Play'}
             disabled={empty}
             onClick={empty ? undefined : onPlay}
+            loading={p.buffering && !empty}
           />
           <button type="button" className="pb-skip" aria-label="Next" title="Next" disabled={empty} onClick={() => playerStore.next()}>
             <Icon name="next" filled />
