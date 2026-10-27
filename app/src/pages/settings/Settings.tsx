@@ -31,6 +31,9 @@ import { nextSweepAt, releasesStore, sweepTargets, useReleases } from '../../sta
 import { sessionStore, useSession } from '../../state/session'
 import { settingsStore, useSettings, type StreamQuality } from '../../state/settings'
 import { useIsPhone } from '../../state/viewport'
+import { concertsStore, RADII, useConcerts, type Radius } from '../../state/concerts'
+import { buildShows, cityLabel, lastUpdated, nearbyShows, radiusHint, updatedLabel } from '../../state/concertViews'
+import { CitySearch } from '../concerts/parts'
 import { fmtBytes, fmtN } from '../../state/views'
 import './settings.css'
 
@@ -62,6 +65,7 @@ export function Settings() {
     { id: 'playback', label: 'Playback', render: () => <PlaybackSection /> },
     ...(isNative ? [{ id: 'downloads', label: 'Downloads', render: () => <DownloadsSection /> }] : []),
     { id: 'new', label: 'New releases', render: () => <ReleasesSection /> },
+    { id: 'concerts', label: 'Concerts', render: () => <ConcertsSection /> },
     { id: 'dj', label: 'DJ', render: () => <DjSection /> },
     { id: 'atmos', label: 'Atmosphere', render: () => <AtmosphereSection /> },
     { id: 'about', label: 'About', render: () => <AboutSection /> },
@@ -98,6 +102,13 @@ export function Settings() {
     main.scrollTo({ top: y, behavior: motion ? 'smooth' : 'auto' })
     setActive(id)
   }
+
+  // #/settings?city (Artist page → On tour → Set city): straight to Concerts → Home city
+  useEffect(() => {
+    if (!/[?&]city\b/.test(window.location.hash)) return
+    const t = window.setTimeout(() => jump('concerts'), 60)
+    return () => window.clearTimeout(t)
+  }, [])
 
   // Esc closes an open confirmation
   useEffect(() => {
@@ -650,6 +661,62 @@ function ReleasesSection() {
         control={<ValueBtn onClick={() => go(`${href('new')}?artists`)}>{`${fmtN(followed.length)} · ${muted ? `${fmtN(muted)} muted` : 'none muted'}`}</ValueBtn>}
       />
     </SectionGroup>
+  )
+}
+
+/* ── Concerts ───────────────────────────────────────── */
+
+const RADIUS_OPTS: SegOption<string>[] = RADII.map((r) => ({ value: String(r), label: `${r} km` }))
+
+function ConcertsSection() {
+  const st = useConcerts()
+  const rs = useReleases()
+  const { data } = useLibrary()
+  const toast = useToast()
+  const home = st.doc.home[0]
+  const radius = st.doc.radius[0]
+  const [editing, setEditing] = useState(() => /[?&]city\b/.test(window.location.hash))
+  const upcoming = useMemo(() => (data && home ? nearbyShows(buildShows(data, st, st.doc, rs.doc, st.doc.seenAt[0]), radius).length : 0), [data, st, rs.doc, home, radius])
+  const updated = lastUpdated(st)
+  return (
+    <>
+      <SectionGroup label="Concerts" note="Ticketmaster · checked daily">
+        <Row
+          tile={<Icon name="city" size={22} />}
+          label="Home city"
+          hint="Used for Concerts near you. No GPS."
+          control={
+            <ValueBtn open={editing} label="Change home city" onClick={() => setEditing((v) => !v)}>
+              {home ? cityLabel(home) : 'Not set'}
+            </ValueBtn>
+          }
+          below={
+            editing ? (
+              <div className="st-city">
+                <CitySearch
+                  value={home}
+                  autoFocus
+                  big
+                  surface="high"
+                  onPick={(c) => {
+                    concertsStore.setHome(c)
+                    setEditing(false)
+                    toast.show({ icon: 'concerts', text: `Showing concerts near ${c.name} · ${radius} km` })
+                  }}
+                />
+              </div>
+            ) : undefined
+          }
+        />
+        <Row label="Radius" hint={radiusHint(radius)} wide={<Seg label="Radius" value={String(radius)} options={RADIUS_OPTS} onChange={(v) => concertsStore.setRadius(Number(v) as Radius)} />} />
+        <Row
+          label="Concerts near you"
+          hint={st.sweeping ? `Checking now · ${st.sweeping.done} of ${st.sweeping.total} artists` : updated ? `Last checked ${updatedLabel(updated)}` : home ? 'Not checked yet' : 'Set a home city first'}
+          control={<ValueBtn onClick={() => go(href('concerts'))}>{home ? `${upcoming} upcoming` : 'Open'}</ValueBtn>}
+        />
+      </SectionGroup>
+      <div className="st-foot-note">Ticket info from Ticketmaster.</div>
+    </>
   )
 }
 

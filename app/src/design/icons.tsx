@@ -121,6 +121,21 @@ export const ICON_SYMBOLS = {
   sdStorage: 'sd_storage',
   deleteSweep: 'delete_sweep',
   folderClosed: 'folder',
+  // Concerts
+  concerts: 'local_activity',
+  ticket: 'confirmation_number',
+  key: 'key',
+  eventRepeat: 'event_repeat',
+  eventBusy: 'event_busy',
+  postponed: 'update',
+  location: 'location_on',
+  city: 'location_city',
+  festival: 'festival',
+  globe: 'public',
+  editCalendar: 'edit_calendar',
+  event: 'event',
+  stadium: 'stadium',
+  link: 'link',
   dj: '',
 } as const
 

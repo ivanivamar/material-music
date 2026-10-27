@@ -27,6 +27,8 @@ import { Health } from './pages/health/Health'
 import { NewReleases } from './pages/releases/NewReleases'
 import { PlaylistPage } from './pages/playlists/PlaylistPage'
 import { MixPage } from './pages/mix/MixPage'
+import { Concerts } from './pages/concerts/Concerts'
+import { concertsStore } from './state/concerts'
 import { recentStore } from './state/recent'
 import { initRadio } from './state/radio'
 import { playlistsStore } from './state/playlists'
@@ -86,6 +88,8 @@ initWidget()
 initReleaseNotifications()
 // New Releases → Discover: recent releases by related artists who aren't in the library.
 initDiscover()
+// Concerts: Ticketmaster tour dates once a day; home city + hand-added shows synced through Drive concerts.json.
+concertsStore.init()
 
 function Page({ route }: { route: Extract<Route, { kind: 'app' }> }) {
   switch (route.key) {
@@ -103,6 +107,8 @@ function Page({ route }: { route: Extract<Route, { kind: 'app' }> }) {
       return <MixPage key={route.id} id={route.id} />
     case 'new':
       return <NewReleases />
+    case 'concerts':
+      return <Concerts />
     case 'upload':
       return <Upload />
     case 'downloads':

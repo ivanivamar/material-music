@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0..1,0&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:oklch(0.12 0.004 40);-webkit-font-smoothing:antialiased}
+a{color:oklch(0.80 0.115 38)}a:hover{color:oklch(0.88 0.08 38)}
+.ms{font-family:'Material Symbols Rounded';font-weight:normal;font-style:normal;line-height:1;letter-spacing:normal;text-transform:none;white-space:nowrap;direction:ltr;-webkit-font-feature-settings:'liga';font-feature-settings:'liga';user-select:none}
+@keyframes pm-shim{from{background-position:200% 0}to{background-position:-200% 0}}
+@keyframes pm-spin{to{transform:rotate(360deg)}}
+@keyframes pm-wave{from{-webkit-mask-position:0 0;mask-position:0 0}to{-webkit-mask-position:24px 0;mask-position:24px 0}}
+@media (prefers-reduced-motion: reduce){*{animation:none !important}}
+</style>
+</helmet>
+
+<sc-if value="{{ isPageDesk }}" hint-placeholder-val="{{ true }}">
+<div onClick="{{ closeAll }}" style="position:relative; width:{{ W }}px; height:{{ H }}px; border-radius:20px; overflow:hidden; background:oklch(0.125 0.005 40); box-shadow:0 0 0 1px oklch(0.30 0.01 40); display:grid; grid-template-columns:272px minmax(0,1fr); font-family:'Google Sans Flex',system-ui,sans-serif; color:oklch(0.94 0.006 40);">
+  <div style="padding:16px 12px 16px; display:flex; flex-direction:column; gap:2px; min-height:0; height:100%; box-sizing:border-box;">
+    <div style="display:flex; align-items:center; gap:12px; padding:6px 8px 4px;"><div title="Pelagic" style="position:relative; width:36px; height:36px; border-radius:12px; overflow:hidden; flex:none;"><div style="position:absolute; left:0; top:0; width:376px; height:376px; transform:scale(0.09574); transform-origin:0 0; background:linear-gradient(180deg, oklch(0.82 0.11 40), oklch(0.75 0.13 34));"><div style="position:absolute; left:62px; top:50px; width:276px; height:276px; clip-path:polygon(100.0% 50.0%,99.5% 52.6%,98.0% 55.0%,95.9% 57.3%,93.8% 59.3%,92.0% 61.3%,90.9% 63.3%,90.6% 65.6%,90.9% 68.2%,91.4% 71.1%,91.8% 74.1%,91.5% 77.0%,90.5% 79.4%,88.5% 81.2%,85.9% 82.3%,82.9% 82.9%,79.9% 83.3%,77.4% 83.8%,75.3% 84.8%,73.7% 86.5%,72.4% 88.8%,71.1% 91.4%,69.6% 94.1%,67.8% 96.2%,65.5% 97.6%,62.8% 97.8%,60.0% 97.2%,57.3% 95.9%,54.7% 94.5%,52.3% 93.4%,50.0% 93.0%,47.7% 93.4%,45.3% 94.5%,42.7% 95.9%,40.0% 97.2%,37.2% 97.8%,34.5% 97.6%,32.2% 96.2%,30.4% 94.1%,28.9% 91.4%,27.6% 88.8%,26.3% 86.5%,24.7% 84.8%,22.6% 83.8%,20.1% 83.3%,17.1% 82.9%,14.1% 82.3%,11.5% 81.2%,9.5% 79.4%,8.5% 77.0%,8.2% 74.1%,8.6% 71.1%,9.1% 68.2%,9.4% 65.6%,9.1% 63.3%,8.0% 61.3%,6.2% 59.3%,4.1% 57.3%,2.0% 55.0%,0.5% 52.6%,0.0% 50.0%,0.5% 47.4%,2.0% 45.0%,4.1% 42.7%,6.2% 40.7%,8.0% 38.7%,9.1% 36.7%,9.4% 34.4%,9.1% 31.8%,8.6% 28.9%,8.2% 25.9%,8.5% 23.0%,9.5% 20.6%,11.5% 18.8%,14.1% 17.7%,17.1% 17.1%,20.1% 16.7%,22.6% 16.2%,24.7% 15.2%,26.3% 13.5%,27.6% 11.2%,28.9% 8.6%,30.4% 5.9%,32.2% 3.8%,34.5% 2.4%,37.2% 2.2%,40.0% 2.8%,42.7% 4.1%,45.3% 5.5%,47.7% 6.6%,50.0% 7.0%,52.3% 6.6%,54.7% 5.5%,57.3% 4.1%,60.0% 2.8%,62.8% 2.2%,65.5% 2.4%,67.8% 3.8%,69.6% 5.9%,71.1% 8.6%,72.4% 11.2%,73.7% 13.5%,75.3% 15.2%,77.4% 16.2%,79.9% 16.7%,82.9% 17.1%,85.9% 17.7%,88.5% 18.8%,90.5% 20.6%,91.5% 23.0%,91.8% 25.9%,91.4% 28.9%,90.9% 31.8%,90.6% 34.4%,90.9% 36.7%,92.0% 38.7%,93.8% 40.7%,95.9% 42.7%,98.0% 45.0%,99.5% 47.4%); background:oklch(0.86 0.09 42); transform:rotate(10deg);"></div><div style="position:absolute; left:84px; top:212px; width:124px; height:106px; border-radius:50%; background:oklch(0.24 0.04 35); transform:rotate(-22deg);"></div><div style="position:absolute; left:176px; top:70px; width:30px; height:200px; border-radius:16px; background:oklch(0.24 0.04 35);"></div><div style="position:absolute; left:191px; top:70px; width:90px; height:104px; border-radius:0 100% 0 0; background:oklch(0.24 0.04 35);"></div></div></div><div style="min-width:0;"><div style="font-size:16px; font-weight:700; letter-spacing:-0.01em;">pelagic</div><div style="font-size:12px; color:oklch(0.79 0.014 40);">Local library</div></div></div>
+    <div style="font-size:12px; font-weight:600; color:oklch(0.62 0.014 40); padding:18px 10px 6px;">Browse</div>
+    <div onClick="{{ navSoon }}" style="height:38px; border-radius:12px; padding:0 10px; display:flex; align-items:center; gap:12px; font-size:14px; font-weight:500; color:oklch(0.86 0.01 40); cursor:pointer;" style-hover="background:oklch(0.20 0.007 40);"><span class="ms" style="font-size:22px; color:oklch(0.79 0.014 40);">home</span>Home</div>
+    <div onClick="{{ navSoon }}" style="height:38px; border-radius:12px; padding:0 10px; display:flex; align-items:center; gap:12px; font-size:14px; font-weight:500; color:oklch(0.86 0.01 40); cursor:pointer;" style-hover="background:oklch(0.20 0.007 40);"><span class="ms" style="font-size:22px; color:oklch(0.79 0.014 40);">library_music</span>Library</div>
+    <div onClick="{{ navSoon }}" style="height:38px; border-radius:12px; padding:0 10px; display:flex; align-items:center; gap:12px; font-size:14px; font-weight:500; color:oklch(0.86 0.01 40); cursor:pointer;" style-hover="background:oklch(0.20 0.007 40);"><span class="ms" style="font-size:22px; color:oklch(0.79 0.014 40);">new_releases</span><div style="flex:1;">New releases</div><div style="min-width:20px; height:20px; padding:0 6px; box-sizing:border-box; border-radius:999px; background:oklch(0.80 0.115 38); color:oklch(0.30 0.08 38); font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center;">3</div></div>
+    <div style="height:38px; border-radius:12px; padding:0 10px; display:flex; align-items:center; gap:12px; font-size:14px; font-weight:700; background:oklch(0.36 0.035 38); color:oklch(0.92 0.025 38);"><span class="ms" style="font-size:22px; font-variation-settings:'FILL' 1;">local_activity</span><div style="flex:1;">Concerts</div><sc-if value="{{ navBadge }}"><div style="min-width:20px; height:20px; padding:0 6px; box-sizing:border-box; border-radius:999px; background:oklch(0.80 0.115 38); color:oklch(0.30 0.08 38); font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center;">2</div></sc-if></div>
+    <div onClick="{{ navSoon }}" style="height:38px; border-radius:12px; padding:0 10px; display:flex; align-items:center; gap:12px; font-size:14px; font-weight:500; color:oklch(0.86 0.01 40); cursor:pointer;" style-hover="background:oklch(0.20 0.007 40);"><span class="ms" style="font-size:22px; color:oklch(0.79 0.014 40);">upload</span>Upload</div>
+    <div onClick="{{ navSoon }}" style="height:38px; border-radius:12px; padding:0 10px; display:flex; align-items:center; gap:12px; font-size:14px; font-weight:500; color:oklch(0.86 0.01 40); cursor:pointer;" style-hover="background:oklch(0.20 0.007 40);"><span class="ms" style="font-size:22px; color:oklch(0.79 0.014 40);">download</span>Downloads</div>
+    <div style="display:flex; align-items:center; justify-content:space-between; padding:18px 10px 6px;"><div style="font-size:12px; font-weight:600; color:oklch(0.62 0.014 40);">Playlists</div><span class="ms" style="font-size:20px; color:oklch(0.79 0.014 40);">add</span></div>
+    <sc-for list="{{ sidePl }}" as="p" hint-placeholder-count="5">
+      <div style="height:44px; border-radius:12px; padding:0 10px; display:flex; align-items:center; gap:12px; cursor:pointer;" style-hover="background:oklch(0.20 0.007 40);"><img src="{{ p.img }}" alt="" style="width:28px; height:28px; border-radius:8px; object-fit:cover;"><div style="min-width:0;"><div style="font-size:14px; font-weight:500;">{{ p.n }}</div><div style="font-size:11px; color:oklch(0.62 0.014 40);">{{ p.c }}</div></div></div>
+    </sc-for>
+    <div style="flex:1;"></div>
+    <div style="display:flex; align-items:center; gap:12px; padding:10px 8px; border-radius:16px;"><div style="width:36px; height:36px; border-radius:999px; background:oklch(0.82 0.08 95); color:oklch(0.30 0.05 95); display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700;">K</div><div style="flex:1; min-width:0;"><div style="font-size:14px; font-weight:600;">Kast</div><div style="font-size:12px; color:oklch(0.79 0.014 40);">Synced 2 min ago</div></div><span class="ms" style="font-size:16px; color:oklch(0.62 0.014 40);">unfold_more</span></div>
+  </div>
+
+  <div style="margin:10px 10px 10px 0; border-radius:28px; background:oklch(0.17 0.006 40); box-shadow:0 0 0 1px oklch(0.24 0.008 40), 0 12px 40px -16px rgba(0,0,0,0.8); position:relative; overflow:hidden; min-height:0;">
+    <div style="position:absolute; inset:0; overflow:hidden; pointer-events:none;">
+      <div style="position:absolute; inset:0; background:radial-gradient(85% 520px at 8% -14%, oklch(0.36 0.07 38 / 0.32), transparent 72%);"></div>
+      <div style="position:absolute; right:-60px; top:-70px; width:520px; height:380px; background-image:radial-gradient(circle, oklch(0.80 0.115 38 / 0.40) 1.4px, transparent 1.9px); background-size:18px 18px; -webkit-mask-image:radial-gradient(closest-side, black 45%, transparent); mask-image:radial-gradient(closest-side, black 45%, transparent);"></div>
+      <div style="position:absolute; left:-260px; top:52%; width:560px; height:560px; border-radius:999px; box-shadow:inset 0 0 0 1.5px oklch(0.80 0.115 38 / 0.15);"></div>
+      <div style="position:absolute; left:-340px; top:calc(52% - 80px); width:720px; height:720px; border-radius:999px; box-shadow:inset 0 0 0 1.5px oklch(0.80 0.115 38 / 0.10);"></div>
+    </div>
+    <div style="position:absolute; inset:0; overflow-y:auto; overflow-x:hidden; scrollbar-width:none;">
+      <div style="padding:28px 36px 170px; display:flex; flex-direction:column; gap:28px;">
+
+        <div style="display:flex; flex-direction:column; gap:12px;">
+          <div style="display:flex; align-items:flex-end; gap:20px;"><div style="flex:1; min-width:0; font-size:45px; font-weight:700; letter-spacing:-0.025em; line-height:1.05;">Concerts near you</div><sc-if value="{{ hasCity }}"><div onClick="{{ openAdd }}" style="height:48px; padding:0 20px 0 14px; border-radius:16px; background:oklch(0.30 0.012 40); display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; cursor:pointer; transition:border-radius 500ms cubic-bezier(0.38,1.21,0.22,1);" style-hover="border-radius:24px; background:oklch(0.33 0.012 40);"><span class="ms" style="font-size:22px;">add</span>Add show</div></sc-if></div>
+          <sc-if value="{{ hasCity }}"><div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+            <div style="position:relative;">
+              <div onClick="{{ toggleLoc }}" style="height:40px; padding:0 8px 0 12px; border-radius:12px; background:oklch(0.225 0.008 40); box-shadow:inset 0 0 0 1px {{ locBd }}; display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; cursor:pointer;" style-hover="background:oklch(0.26 0.009 40);"><span class="ms" style="font-size:20px; color:oklch(0.80 0.115 38); font-variation-settings:'FILL' 1;">location_on</span><span style="font-family:'Google Sans Flex',system-ui,sans-serif;">Near {{ city }} ·</span><span style="font-family:'JetBrains Mono',monospace; font-weight:500;">{{ radius }} km</span><span class="ms" style="font-size:22px; color:oklch(0.79 0.014 40);">arrow_drop_down</span></div>
+              <sc-if value="{{ locOn }}"><div onClick="{{ stop }}" style="position:absolute; left:0; top:48px; z-index:20; width:380px; border-radius:20px; background:oklch(0.26 0.009 40); box-shadow:0 12px 32px -8px rgba(0,0,0,0.75); padding:20px; box-sizing:border-box; display:flex; flex-direction:column; gap:16px;">
+                <div style="display:flex; flex-direction:column; gap:8px;"><div style="font-size:12px; font-weight:600; color:oklch(0.79 0.014 40);">Home city</div>
+                  <div style="height:52px; border-radius:14px; background:oklch(0.21 0.008 40); box-shadow:inset 0 0 0 2px oklch(0.80 0.115 38); display:flex; align-items:center; gap:10px; padding:0 14px;"><span class="ms" style="font-size:22px; color:oklch(0.79 0.014 40);">location_city</span><input value="{{ cityV }}" onChange="{{ onCity }}" style="flex:1; min-width:0; background:transparent; border:none; outline:none; color:oklch(0.94 0.006 40); font-family:inherit; font-size:16px; font-weight:500;"><span style="font-size:12px; color:oklch(0.62 0.014 40);">Spain</span></div></div>
+                <div style="display:flex; flex-direction:column; gap:8px;"><div style="font-size:12px; font-weight:600; color:oklch(0.79 0.014 40);">Radius</div>
+                  <div style="display:flex; gap:2px;"><sc-for list="{{ radOpts }}" as="o" hint-placeholder-count="4"><div onClick="{{ o.fn }}" style="flex:1; height:40px; border-radius:{{ o.rad }}; display:flex; align-items:center; justify-content:center; gap:4px; font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:600; cursor:pointer; background:{{ o.bg }}; color:{{ o.fg }}; transition:border-radius 350ms cubic-bezier(0.42,1.67,0.21,0.9), background 200ms;"><sc-if value="{{ o.on }}"><span class="ms" style="font-size:16px;">check</span></sc-if>{{ o.l }}</div></sc-for></div></div>
+                <div style="font-size:12px; line-height:1.45; color:oklch(0.79 0.014 40);">No GPS. Shows are matched to this city and refreshed once a day.</div>
+                <div style="display:flex; justify-content:flex-end;"><div onClick="{{ toggleLoc }}" style="height:40px; padding:0 20px; border-radius:999px; background:oklch(0.80 0.115 38); color:oklch(0.30 0.08 38); display:flex; align-items:center; font-size:14px; font-weight:600; cursor:pointer;">Done</div></div>
+              </div></sc-if>
+            </div>
+            <div style="font-size:14px; color:oklch(0.79 0.014 40);">{{ countL }}<span style="color:oklch(0.62 0.014 40);"> · {{ updL }}</span></div>
+          </div></sc-if>
+          <sc-if value="{{ noCity }}"><div style="font-size:14px; color:oklch(0.79 0.014 40);">Shows from the artists in your library, near where you live.</div></sc-if>
+        </div>
+
+        <sc-if value="{{ offline }}"><div style="display:flex; align-items:center; gap:14px; padding:12px 12px 12px 18px; border-radius:20px; background:oklch(0.27 0.045 75); box-shadow:inset 0 0 0 1px oklch(0.62 0.09 75 / 0.4);"><span class="ms" style="font-size:24px; flex:none; color:oklch(0.86 0.10 80);">cloud_off</span><div style="flex:1; min-width:0;"><div style="font-size:14px; font-weight:600; line-height:20px; color:oklch(0.95 0.03 80);">Couldn't update concerts</div><div style="font-size:12px; line-height:16px; color:oklch(0.82 0.05 80);">You're offline. Showing dates from yesterday, 06:10. Check the status before you buy.</div></div><div onClick="{{ retry }}" style="height:40px; padding:0 16px; border-radius:999px; display:flex; align-items:center; font-size:14px; font-weight:600; color:oklch(0.88 0.10 80); cursor:pointer;" style-hover="background:rgba(255,255,255,0.08);">Retry</div></div></sc-if>
+
+        <sc-if value="{{ showChips }}"><div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <sc-for list="{{ chips }}" as="c" hint-placeholder-count="4"><div onClick="{{ c.pick }}" style="height:36px; padding:0 14px 0 {{ c.pl }}px; border-radius:12px; background:{{ c.bg }}; box-shadow:inset 0 0 0 1px {{ c.bd }}; color:{{ c.fg }}; display:flex; align-items:center; gap:6px; font-size:14px; font-weight:600; cursor:pointer; white-space:nowrap; transition:background 200ms cubic-bezier(0.31,0.94,0.34,1);"><sc-if value="{{ c.on }}"><span class="ms" style="font-size:16px;">check</span></sc-if>{{ c.label }}<span style="font-weight:500; color:{{ c.cc }}; font-family:'JetBrains Mono',monospace; font-size:12px;">{{ c.n }}</span></div></sc-for>
+        </div></sc-if>
+
+        <sc-if value="{{ loading }}"><div style="display:flex; flex-direction:column; gap:2px; padding-left:50px;">
+          <sc-for list="{{ skel }}" as="k" hint-placeholder-count="5"><div style="display:grid; grid-template-columns:64px minmax(0,1fr) 200px 124px; align-items:center; gap:20px; height:88px; padding:0 16px 0 12px; border-radius:{{ k.rad }}; background:oklch(0.21 0.008 40);">
+            <div style="width:64px; height:64px; border-radius:16px; background:linear-gradient(90deg, oklch(0.23 0.008 40) 0%, oklch(0.29 0.01 40) 50%, oklch(0.23 0.008 40) 100%); background-size:200% 100%; animation:pm-shim 1.4s linear infinite;"></div>
+            <div style="display:flex; align-items:center; gap:14px;"><div style="width:48px; height:48px; flex:none; border-radius:999px; background:linear-gradient(90deg, oklch(0.23 0.008 40) 0%, oklch(0.29 0.01 40) 50%, oklch(0.23 0.008 40) 100%); background-size:200% 100%; animation:pm-shim 1.4s linear infinite;"></div><div style="flex:1; display:flex; flex-direction:column; gap:8px;"><div style="width:{{ k.w1 }}; height:14px; border-radius:7px; background:linear-gradient(90deg, oklch(0.23 0.008 40) 0%, oklch(0.29 0.01 40) 50%, oklch(0.23 0.008 40) 100%); background-size:200% 100%; animation:pm-shim 1.4s linear infinite;"></div><div style="width:{{ k.w2 }}; height:10px; border-radius:5px; background:linear-gradient(90deg, oklch(0.23 0.008 40) 0%, oklch(0.29 0.01 40) 50%, oklch(0.23 0.008 40) 100%); background-size:200% 100%; animation:pm-shim 1.4s linear infinite;"></div></div></div>
+            <div style="width:96px; height:28px; border-radius:8px; background:linear-gradient(90deg, oklch(0.23 0.008 40) 0%, oklch(0.29 0.01 40) 50%, oklch(0.23 0.008 40) 100%); background-size:200% 100%; animation:pm-shim 1.4s linear infinite;"></div>
+            <div style="width:112px; height:40px; border-radius:999px; background:linear-gradient(90deg, oklch(0.23 0.008 40) 0%, oklch(0.29 0.01 40) 50%, oklch(0.23 0.008 40) 100%); background-size:200% 100%; animation:pm-shim 1.4s linear infinite;"></div>
+          </div></sc-for>
+        </div></sc-if>
+
+        <sc-if value="{{ noCity }}"><div style="max-width:620px; display:flex; flex-direction:column; gap:20px; padding:32px; border-radius:28px; background:oklch(0.205 0.008 40); box-shadow:inset 0 0 0 1px oklch(0.27 0.01 40);">
+          <div style="position:relative; width:72px; height:72px; display:flex; align-items:center; justify-content:center;"><div style="position:absolute; inset:0; background:oklch(0.36 0.035 38); clip-path:{{ clover }};"></div><span class="ms" style="position:relative; font-size:34px; color:oklch(0.92 0.025 38); font-variation-settings:'FILL' 1;">location_on</span></div>
+          <div style="display:flex; flex-direction:column; gap:8px;"><div style="font-size:28px; font-weight:600; letter-spacing:-0.01em;">Where's home?</div><div style="font-size:14px; line-height:1.5; color:oklch(0.79 0.014 40); text-wrap:pretty;">Pick a city and a radius. Once a day Pelagic checks tour dates for every artist in your library and lists the ones inside that circle.</div></div>
+          <div style="display:flex; flex-direction:column; gap:8px;"><div style="font-size:12px; font-weight:600; color:oklch(0.79 0.014 40);">Home city</div><div style="height:56px; border-radius:16px; background:oklch(0.26 0.009 40); box-shadow:inset 0 0 0 1px oklch(0.38 0.012 40); display:flex; align-items:center; gap:10px; padding:0 16px;"><span class="ms" style="font-size:22px; color:oklch(0.79 0.014 40);">search</span><input placeholder="City, e.g. Barcelona" style="flex:1; min-width:0; background:transparent; border:none; outline:none; color:oklch(0.94 0.006 40); font-family:inherit; font-size:16px; font-weight:500;"></div></div>
+          <div style="display:flex; flex-direction:column; gap:8px;"><div style="font-size:12px; font-weight:600; color:oklch(0.79 0.014 40);">How far would you travel?</div><div style="display:flex; gap:2px;"><sc-for list="{{ radOpts }}" as="o" hint-placeholder-count="4"><div onClick="{{ o.fn }}" style="flex:1; height:48px; border-radius:{{ o.rad }}; display:flex; align-items:center; justify-content:center; gap:4px; font-family:'JetBrains Mono',monospace; font-size:14px; font-weight:600; cursor:pointer; background:{{ o.bg }}; color:{{ o.fg }}; transition:border-radius 350ms cubic-bezier(0.42,1.67,0.21,0.9), background 200ms;"><sc-if value="{{ o.on }}"><span class="ms" style="font-size:18px;">check</span></sc-if>{{ o.l }}</div></sc-for></div></div>
+          <div style="display:flex; align-items:center; gap:16px; margin-top:4px;"><div onClick="{{ setupDone }}" style="height:56px; padding:0 24px; border-radius:16px; background:oklch(0.42 0.10 38); color:oklch(0.93 0.04 38); display:flex; align-items:center; gap:10px; font-size:14px; font-weight:600; cursor:pointer;"><span class="ms" style="font-size:22px;">local_activity</span>Show concerts</div><div style="font-size:12px; color:oklch(0.62 0.014 40);">You can change this in Settings.</div></div>
+        </div></sc-if>
+
+        <sc-if value="{{ empty }}"><div style="display:flex; flex-direction:column; align-items:center; gap:16px; text-align:center; padding:56px 0 40px;">
+          <div style="position:relative; width:120px; height:120px; display:flex; align-items:center; justify-content:center;"><div style="position:absolute; inset:0; background:oklch(0.225 0.008 40); clip-path:{{ clover }};"></div><span class="ms" style="position:relative; font-size:45px; color:oklch(0.80 0.115 38);">event_busy</span></div>
+          <div style="font-size:24px; font-weight:600;">No shows near you right now</div>
+          <div style="font-size:14px; line-height:1.5; color:oklch(0.79 0.014 40); max-width:440px; text-wrap:pretty;">None of your 214 artists have dates within 50 km of Barcelona. Pelagic checks again tomorrow morning.</div>
+          <div style="display:flex; gap:12px; margin-top:4px;"><div onClick="{{ widen }}" style="height:48px; padding:0 22px 0 16px; border-radius:16px; background:oklch(0.42 0.10 38); color:oklch(0.93 0.04 38); display:flex; align-items:center; gap:10px; font-size:14px; font-weight:600; cursor:pointer;"><span class="ms" style="font-size:22px;">radar</span>Widen to 100 km</div><div onClick="{{ toggleLoc }}" style="height:48px; padding:0 22px; border-radius:16px; background:oklch(0.30 0.012 40); display:flex; align-items:center; font-size:14px; font-weight:600; cursor:pointer;">Change city</div></div>
+        </div></sc-if>
+
+        <sc-if value="{{ listA }}">
+        <div style="display:flex; flex-direction:column; gap:36px;">
+          <sc-for list="{{ groups }}" as="g" hint-placeholder-count="3">
+            <div style="position:relative; display:flex; flex-direction:column; gap:16px; padding-left:50px;">
+              <div style="position:absolute; left:17px; top:18px; bottom:{{ g.railB }}px; width:2px; border-radius:1px; background:oklch(0.30 0.01 40);"></div>
+              <div style="display:flex; align-items:center; gap:14px; margin-left:-50px;">
+                <div style="position:relative; z-index:1; width:36px; height:36px; flex:none; display:flex; align-items:center; justify-content:center;"><div style="width:16px; height:16px; border-radius:999px; background:oklch(0.17 0.006 40); box-shadow:inset 0 0 0 4px {{ g.ringC }};"></div></div>
+                <div style="font-size:16px; font-weight:600; white-space:nowrap;">{{ g.label }}</div>
+                <div style="flex:1; height:1px; background:oklch(0.28 0.009 40);"></div>
+                <div style="font-size:12px; color:oklch(0.62 0.014 40); font-family:'JetBrains Mono',monospace;">{{ g.n }}</div>
+              </div>
+              <div style="display:flex; flex-direction:column; gap:2px;">
+                <sc-for list="{{ g.items }}" as="r">
+                  <div onClick="{{ r.goArtist }}" style="display:grid; grid-template-columns:{{ rowCols }}; align-items:center; gap:{{ rowGap }}px; min-height:88px; padding:12px 16px 12px 12px; box-sizing:border-box; border-radius:{{ r.rad }}; background:oklch(0.21 0.008 40); cursor:pointer; transition:background 150ms cubic-bezier(0.31,0.94,0.34,1);" style-hover="background:oklch(0.25 0.009 40);">
+                    <div style="width:64px; height:64px; border-radius:16px; background:{{ r.dBg }}; opacity:{{ r.dOp }}; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px;"><div style="font-size:11px; font-weight:700; letter-spacing:0.08em; color:{{ r.dFg }};">{{ r.mon }}</div><div style="font-size:{{ r.dayFs }}px; font-weight:700; line-height:1.05; letter-spacing:-0.02em; text-decoration:{{ r.deco }};">{{ r.day }}</div><div style="font-size:11px; color:oklch(0.79 0.014 40);">{{ r.dow }}</div></div>
+                    <div style="display:flex; align-items:center; gap:16px; min-width:0;">
+                      <img src="{{ r.img }}" alt="" style="width:48px; height:48px; flex:none; border-radius:999px; object-fit:cover; box-shadow:{{ r.ring }}; filter:{{ r.imgF }};">
+                      <div style="min-width:0; display:flex; flex-direction:column; gap:3px;">
+                        <sc-if value="{{ r.isFest }}"><div style="display:flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:{{ r.dFg }};"><span class="ms" style="font-size:16px;">festival</span>{{ r.fest }}</div></sc-if>
+                        <div style="display:flex; align-items:center; gap:8px; min-width:0;"><div style="font-size:16px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" style-hover="text-decoration:underline;">{{ r.a }}</div><sc-if value="{{ r.isNew }}"><div style="flex:none; height:20px; padding:0 7px; border-radius:999px; background:oklch(0.80 0.115 38); color:oklch(0.30 0.08 38); font-size:11px; font-weight:700; display:flex; align-items:center;">New</div></sc-if></div>
+                        <div style="font-size:14px; color:oklch(0.79 0.014 40); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-decoration:{{ r.deco }};">{{ r.place }}</div>
+                        <sc-if value="{{ r.isFest }}"><div style="display:flex; align-items:center; gap:8px; font-size:12px; color:oklch(0.79 0.014 40); margin-top:2px;"><div style="display:flex;"><sc-for list="{{ r.lineup }}" as="l"><img src="{{ l.img }}" alt="{{ l.n }}" title="{{ l.n }}" style="width:22px; height:22px; border-radius:999px; object-fit:cover; margin-right:-6px; box-shadow:0 0 0 2px oklch(0.21 0.008 40);"></sc-for></div><span style="padding-left:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ r.lineupL }}</span></div></sc-if>
+                      </div>
+                    </div>
+                    <div style="display:flex; flex-direction:column; align-items:flex-end; gap:3px; font-family:'JetBrains Mono',monospace;"><div style="font-size:14px; font-weight:500; color:{{ r.timeC }};">{{ r.time }}</div><div style="font-size:12px; color:oklch(0.79 0.014 40);">{{ r.km }}</div><div style="font-size:12px; color:oklch(0.62 0.014 40);">{{ r.price }}</div></div>
+                    <div style="display:flex; flex-direction:column; align-items:flex-start; gap:5px; min-width:0;"><div onClick="{{ r.chipFn }}" style="height:28px; padding:0 10px 0 8px; border-radius:8px; background:{{ r.sBg }}; box-shadow:inset 0 0 0 1px {{ r.sBd }}; color:{{ r.sFg }}; display:flex; align-items:center; gap:6px; font-size:12px; font-weight:700; white-space:nowrap;"><span class="ms" style="font-size:16px;">{{ r.sIc }}</span>{{ r.sL }}</div><sc-if value="{{ r.hasNote }}"><div style="font-size:12px; color:oklch(0.79 0.014 40);">{{ r.note }}</div></sc-if></div>
+                    <div style="display:flex; justify-content:flex-end;"><sc-if value="{{ r.hasTk }}"><div onClick="{{ r.tickets }}" style="height:40px; padding:0 14px 0 16px; border-radius:999px; background:{{ r.tkBg }}; box-shadow:inset 0 0 0 1px {{ r.tkBd }}; color:{{ r.tkFg }}; display:flex; align-items:center; gap:6px; font-size:14px; font-weight:600; cursor:pointer; white-space:nowrap;" style-hover="filter:brightness(1.12);">Tickets<span class="ms" style="font-size:18px;">open_in_new</span></div></sc-if></div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+        </sc-if>
+
+        <sc-if value="{{ listB }}">
+        <div style="display:flex; flex-direction:column; gap:40px;">
+          <div style="display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:20px;">
+            <sc-for list="{{ posters }}" as="p" hint-placeholder-count="3">
+              <div onClick="{{ p.goArtist }}" style="border-radius:28px; background:oklch(0.205 0.008 40); overflow:hidden; display:flex; flex-direction:column; cursor:pointer; box-shadow:inset 0 0 0 1px oklch(0.27 0.01 40); transition:transform 350ms cubic-bezier(0.42,1.67,0.21,0.9);" style-hover="transform:translateY(-3px);">
+                <div style="position:relative; height:210px;"><img src="{{ p.img }}" alt="" style="width:100%; height:100%; object-fit:cover; display:block;">
+                  <div style="position:absolute; left:14px; top:14px; width:64px; height:68px; border-radius:18px; background:oklch(0.17 0.006 40); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; box-shadow:0 8px 20px -8px rgba(0,0,0,0.7);"><div style="font-size:11px; font-weight:700; letter-spacing:0.08em; color:{{ p.dFg }};">{{ p.mon }}</div><div style="font-size:{{ p.dayFs }}px; font-weight:700; line-height:1.05;">{{ p.day }}</div><div style="font-size:11px; color:oklch(0.79 0.014 40);">{{ p.dow }}</div></div>
+                  <div style="position:absolute; right:14px; top:14px; height:28px; padding:0 10px 0 8px; border-radius:8px; background:{{ p.sBgSolid }}; color:{{ p.sFg }}; display:flex; align-items:center; gap:6px; font-size:12px; font-weight:700;"><span class="ms" style="font-size:16px;">{{ p.sIc }}</span>{{ p.sL }}</div>
+                </div>
+                <div style="padding:18px 20px 20px; display:flex; flex-direction:column; gap:14px; flex:1;">
+                  <div style="display:flex; flex-direction:column; gap:4px; min-width:0;">
+                    <sc-if value="{{ p.isFest }}"><div style="display:flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:{{ p.dFg }};"><span class="ms" style="font-size:16px;">festival</span>{{ p.fest }}</div></sc-if>
+                    <div style="font-size:24px; font-weight:700; letter-spacing:-0.01em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ p.a }}</div>
+                    <div style="font-size:14px; color:oklch(0.79 0.014 40); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ p.place }}</div>
+                    <sc-if value="{{ p.isFest }}"><div style="display:flex; align-items:center; gap:8px; font-size:12px; color:oklch(0.79 0.014 40); margin-top:4px;"><div style="display:flex;"><sc-for list="{{ p.lineup }}" as="l"><img src="{{ l.img }}" alt="{{ l.n }}" title="{{ l.n }}" style="width:22px; height:22px; border-radius:999px; object-fit:cover; margin-right:-6px; box-shadow:0 0 0 2px oklch(0.205 0.008 40);"></sc-for></div><span style="padding-left:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ p.lineupL }}</span></div></sc-if>
+                  </div>
+                  <div style="flex:1;"></div>
+                  <div style="display:flex; align-items:center; gap:12px;"><div style="flex:1; min-width:0; font-family:'JetBrains Mono',monospace; font-size:12px; color:oklch(0.79 0.014 40); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ p.meta }}</div><div onClick="{{ p.tickets }}" style="height:40px; padding:0 14px 0 16px; border-radius:999px; background:oklch(0.80 0.115 38); color:oklch(0.30 0.08 38); display:flex; align-items:center; gap:6px; font-size:14px; font-weight:600; cursor:pointer; white-space:nowrap;">Tickets<span class="ms" style="font-size:18px;">open_in_new</span></div></div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:28px;">
+            <sc-for list="{{ months }}" as="m" hint-placeholder-count="3">
+              <div style="display:grid; grid-template-columns:150px minmax(0,1fr); gap:24px; align-items:start; padding-top:24px; border-top:1px solid oklch(0.27 0.01 40);">
+                <div style="display:flex; flex-direction:column; gap:4px; position:sticky; top:0;"><div style="font-size:28px; font-weight:700; letter-spacing:-0.02em; line-height:1.1;">{{ m.label }}</div><div style="font-size:12px; color:oklch(0.62 0.014 40); font-family:'JetBrains Mono',monospace;">{{ m.sub }}</div></div>
+                <div style="display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px;">
+                  <sc-for list="{{ m.items }}" as="r">
+                    <div onClick="{{ r.goArtist }}" style="display:flex; gap:16px; padding:16px; border-radius:24px; background:oklch(0.205 0.008 40); cursor:pointer; min-width:0;" style-hover="background:oklch(0.235 0.008 40);">
+                      <img src="{{ r.img }}" alt="" style="width:56px; height:56px; flex:none; border-radius:999px; object-fit:cover; box-shadow:{{ r.ringB }}; filter:{{ r.imgF }};">
+                      <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:4px;">
+                        <div style="font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:600; color:{{ r.dFg }}; text-decoration:{{ r.deco }}; white-space:nowrap;">{{ r.dateL }}</div>
+                        <div style="display:flex; align-items:center; gap:8px; min-width:0;"><div style="font-size:16px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ r.a }}</div><sc-if value="{{ r.isNew }}"><div style="flex:none; height:20px; padding:0 7px; border-radius:999px; background:oklch(0.80 0.115 38); color:oklch(0.30 0.08 38); font-size:11px; font-weight:700; display:flex; align-items:center;">New</div></sc-if></div>
+                        <div style="font-size:12px; color:oklch(0.79 0.014 40); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ r.placeKm }}</div>
+                        <sc-if value="{{ r.isFest }}"><div style="font-size:12px; color:oklch(0.79 0.014 40);">{{ r.fest }} · {{ r.lineupL }}</div></sc-if>
+                        <div style="display:flex; align-items:center; gap:8px; margin-top:6px; flex-wrap:wrap;"><div onClick="{{ r.chipFn }}" style="height:26px; padding:0 9px 0 7px; border-radius:8px; background:{{ r.sBg }}; box-shadow:inset 0 0 0 1px {{ r.sBd }}; color:{{ r.sFg }}; display:flex; align-items:center; gap:5px; font-size:12px; font-weight:700; white-space:nowrap;"><span class="ms" style="font-size:15px;">{{ r.sIc }}</span>{{ r.sL }}</div><sc-if value="{{ r.hasPrice }}"><div style="font-family:'JetBrains Mono',monospace; font-size:11px; color:oklch(0.62 0.014 40);">{{ r.price }}</div></sc-if><sc-if value="{{ r.hasNote }}"><div style="font-size:12px; color:oklch(0.79 0.014 40);">{{ r.note }}</div></sc-if></div>
+                      </div>
+                      <sc-if value="{{ r.hasTk }}"><div onClick="{{ r.tickets }}" title="Tickets" style="width:40px; height:40px; flex:none; border-radius:999px; background:{{ r.tkBg }}; box-shadow:inset 0 0 0 1px {{ r.tkBd }}; color:{{ r.tkFg }}; display:flex; align-items:center; justify-content:center; cursor:pointer;"><span class="ms" style="font-size:20px;">local_activity</span></div></sc-if>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        </sc-if>
+
+        <sc-if value="{{ attrib }}"><div style="display:flex; align-items:center; gap:8px; font-size:12px; color:oklch(0.62 0.014 40); padding:4px 0 0 2px;"><span class="ms" style="font-size:16px;">info</span>Ticket info from Ticketmaster. Tickets open on their site.</div></sc-if>
+      </div>
+    </div>
+  </div>
+
+  <div style="position:absolute; left:290px; right:28px; bottom:28px; height:96px; border-radius:28px; background:oklch(0.20 0.007 40 / 0.86); backdrop-filter:blur(28px) saturate(1.5); -webkit-backdrop-filter:blur(28px) saturate(1.5); color:oklch(0.95 0.006 40); display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.3fr) minmax(0,1fr); align-items:center; padding:0 20px 0 16px; gap:28px; box-shadow:0 20px 48px -16px rgba(0,0,0,0.6), inset 0 0 0 1px oklch(0.34 0.01 40 / 0.7), inset 0 1px 0 rgba(255,255,255,0.08); z-index:5;">
+    <div style="display:flex; align-items:center; gap:14px; min-width:0;"><img src="art/spiritbox-tsunami-sea.jpg" alt="" style="width:64px; height:64px; flex:none; border-radius:14px; object-fit:cover; transform:rotate(-4deg); filter:drop-shadow(0 8px 12px rgba(0,0,0,0.5));"><div style="min-width:0;"><div style="font-size:16px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Black Rainbow</div><div style="font-size:12px; color:oklch(0.79 0.014 40); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Spiritbox · Tsunami Sea</div></div></div>
+    <div style="display:flex; flex-direction:column; gap:4px;">
+      <div style="display:flex; align-items:center; justify-content:center; gap:14px;"><span class="ms" style="font-size:28px; padding:4px; font-variation-settings:'FILL' 1;">skip_previous</span><div onClick="{{ togglePlay }}" style="cursor:pointer;">{{ pCookie }}</div><span class="ms" style="font-size:28px; padding:4px; font-variation-settings:'FILL' 1;">skip_next</span></div>
+      <div style="display:flex; align-items:center; gap:12px; font-size:12px; font-family:'JetBrains Mono',monospace; color:oklch(0.79 0.014 40);"><div style="min-width:30px;">{{ posL }}</div><div style="flex:1; padding:6px 0;">{{ pWave }}</div><div style="min-width:30px; text-align:right;">3:43</div></div>
+    </div>
+    <div style="display:flex; align-items:center; justify-content:flex-end; gap:2px; color:oklch(0.79 0.014 40);"><div style="display:flex; align-items:center; gap:5px; height:22px; padding:0 8px; border-radius:999px; box-shadow:inset 0 0 0 1.5px oklch(0.79 0.014 40); margin-right:4px; font-family:'JetBrains Mono',monospace; font-size:11px; line-height:1;"><span style="font-weight:700; color:oklch(0.82 0.11 215);">FLAC</span><span>24/48</span></div><span class="ms" style="font-size:22px; padding:9px;">lyrics</span><span class="ms" style="font-size:22px; padding:9px;">queue_music</span><span class="ms" style="font-size:22px; padding:9px;">volume_up</span></div>
+  </div>
+<sc-if value="{{ dlgOn }}"><div onClick="{{ dlgClose }}" style="position:absolute; inset:0; z-index:60; background:rgba(0,0,0,0.55); display:flex; align-items:center; justify-content:center;">
+  <div onClick="{{ stop }}" style="width:560px; max-height:calc(100% - 48px); overflow-y:auto; scrollbar-width:none; border-radius:28px; background:oklch(0.225 0.008 40); box-shadow:0 24px 64px -16px rgba(0,0,0,0.8); padding:24px; box-sizing:border-box; display:flex; flex-direction:column; gap:20px;">
+    <div style="display:flex; align-items:center; gap:14px;"><div style="width:48px; height:48px; flex:none; border-radius:16px; background:oklch(0.36 0.035 38); color:oklch(0.92 0.025 38); display:flex; align-items:center; justify-content:center;"><span class="ms" style="font-size:24px;">edit_calendar</span></div><div style="min-width:0;"><div style="font-size:24px; font-weight:600;">{{ dlgTitle }}</div><div style="font-size:14px; color:oklch(0.79 0.014 40);">Only you see it. Ticketmaster updates won't change it.</div></div></div>
+    <div style="display:flex; flex-direction:column; gap:8px; position:relative;">
+      <div style="font-size:12px; font-weight:600; color:oklch(0.79 0.014 40);">Artist</div>
+      <sc-if value="{{ dA.has }}"><div style="height:56px; border-radius:16px; background:oklch(0.26 0.009 40); box-shadow:inset 0 0 0 1px oklch(0.38 0.012 40); display:flex; align-items:center; gap:12px; padding:0 8px 0 10px;"><img src="{{ dA.img }}" alt="" style="width:36px; height:36px; border-radius:999px; object-fit:cover; box-shadow:{{ dA.ring }};"><div style="flex:1; min-width:0; font-size:16px; font-weight:600;">{{ dA.n }}</div><div onClick="{{ dA.clear }}" title="Change artist" style="width:40px; height:40px; border-radius:999px; display:flex; align-items:center; justify-content:center; color:oklch(0.86 0.01 40); cursor:pointer;" style-hover="background:oklch(0.32 0.01 40);"><span class="ms" style="font-size:22px;">close</span></div></div></sc-if>
+      <sc-if value="{{ dA.none }}"><div style="height:56px; border-radius:16px; background:oklch(0.26 0.009 40); box-shadow:inset 0 0 0 2px oklch(0.80 0.115 38); display:flex; align-items:center; gap:10px; padding:0 14px;"><span class="ms" style="font-size:22px; color:oklch(0.79 0.014 40);">search</span><input value="{{ dA.q }}" onChange="{{ dA.onQ }}" placeholder="Search artists in your library" style="flex:1; min-width:0; background:transparent; border:none; outline:none; color:oklch(0.94 0.006 40); font-family:inherit; font-size:16px; font-weight:500;"></div>
+        <sc-if value="{{ dA.sugOn }}"><div style="position:absolute; left:0; right:0; top:88px; z-index:3; border-radius:16px; background:oklch(0.29 0.01 40); box-shadow:0 12px 32px -8px rgba(0,0,0,0.75); padding:6px 0;">
+          <sc-for list="{{ dA.sug }}" as="s"><div onClick="{{ s.pick }}" style="height:52px; padding:0 16px; display:flex; align-items:center; gap:12px; cursor:pointer;" style-hover="background:oklch(0.33 0.01 40);"><img src="{{ s.img }}" alt="" style="width:32px; height:32px; border-radius:999px; object-fit:cover;"><div style="flex:1; min-width:0; font-size:14px; font-weight:600;">{{ s.n }}</div><div style="font-size:12px; color:oklch(0.79 0.014 40);">{{ s.sub }}</div></div></sc-for>
+          <sc-if value="{{ dA.sugNone }}"><div style="padding:12px 16px; font-size:14px; color:oklch(0.79 0.014 40);">No artist in your library matches.</div></sc-if>
+        </div></sc-if>
+      </sc-if>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px;">
+      <sc-for list="{{ dFields }}" as="f" hint-placeholder-count="5"><div style="grid-column:span {{ f.span }}; display:flex; flex-direction:column; gap:8px; min-width:0;"><div style="display:flex; gap:6px; font-size:12px; font-weight:600; color:oklch(0.79 0.014 40);">{{ f.label }}<span style="font-weight:500; color:oklch(0.62 0.014 40);">{{ f.opt }}</span></div><div style="height:56px; border-radius:16px; background:oklch(0.26 0.009 40); box-shadow:inset 0 0 0 1px {{ f.bd }}; display:flex; align-items:center; gap:10px; padding:0 14px; min-width:0;"><span class="ms" style="font-size:22px; color:oklch(0.79 0.014 40);">{{ f.ic }}</span><input type="{{ f.type }}" value="{{ f.v }}" onChange="{{ f.on }}" placeholder="{{ f.ph }}" style="flex:1; min-width:0; width:100%; background:transparent; border:none; outline:none; color:oklch(0.94 0.006 40); font-family:{{ f.ff }}; font-size:15px; font-weight:500; color-scheme:dark;"></div><sc-if value="{{ f.hasErr }}"><div style="font-size:12px; color:oklch(0.82 0.10 25);">{{ f.err }}</div></sc-if></div></sc-for>
+    </div>
+    <div style="display:flex; align-items:center; gap:8px; margin-top:4px;">
+      <sc-if value="{{ dEdit }}"><div onClick="{{ dDelete }}" style="height:40px; padding:0 14px 0 10px; border-radius:999px; display:flex; align-items:center; gap:6px; font-size:14px; font-weight:600; color:oklch(0.82 0.10 25); cursor:pointer;" style-hover="background:rgba(255,255,255,0.06);"><span class="ms" style="font-size:20px;">delete</span>Delete</div></sc-if>
+      <div style="flex:1;"></div>
+      <div onClick="{{ dlgClose }}" style="height:40px; padding:0 16px; border-radius:999px; display:flex; align-items:center; font-size:14px; font-weight:600; color:oklch(0.80 0.115 38); cursor:pointer;" style-hover="background:rgba(255,255,255,0.06);">Cancel</div>
+      <div onClick="{{ dSave }}" style="height:40px; padding:0 24px; border-radius:999px; background:{{ dSaveBg }}; color:{{ dSaveFg }}; display:flex; align-items:center; font-size:14px; font-weight:600; cursor:pointer;">{{ dSaveL }}</div>
+    </div>
+  </div>
+</div></sc-if>
+  <div style="position:absolute; left:{{ toastL }}px; bottom:144px; z-index:45; transform:translate(-50%, {{ tY }}px); opacity:{{ tOp }}; pointer-events:none; transition:opacity 200ms cubic-bezier(0.31,0.94,0.34,1), transform 500ms cubic-bezier(0.38,1.21,0.22,1); display:flex; align-items:center; min-height:48px; padding:0 20px 0 16px; border-radius:12px; background:oklch(0.90 0.01 40); color:oklch(0.22 0.01 40); font-size:14px; white-space:nowrap; box-shadow:0 12px 28px -10px rgba(0,0,0,0.6);">{{ tText }}</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isPagePhone }}" hint-placeholder-val="{{ false }}">
+<div onClick="{{ closeAll }}" style="position:relative; width:{{ W }}px; height:{{ H }}px; border-radius:44px; overflow:hidden; background:oklch(0.17 0.006 40); box-shadow:0 0 0 1px oklch(0.30 0.01 40); font-family:'Google Sans Flex',system-ui,sans-serif; color:oklch(0.94 0.006 40);">
+  <div style="position:absolute; inset:0; overflow:hidden; pointer-events:none;">
+    <div style="position:absolute; inset:0; background:radial-gradient(85% 420px at 8% -10%, oklch(0.36 0.07 38 / 0.32), transparent 72%);"></div>
+    <div style="position:absolute; right:-50px; top:-30px; width:280px; height:240px; background-image:radial-gradient(circle, oklch(0.80 0.115 38 / 0.40) 1.4px, transparent 1.9px); background-size:14px 14px; -webkit-mask-image:radial-gradient(closest-side, black 45%, transparent); mask-image:radial-gradient(closest-side, black 45%, transparent);"></div>
+  </div>
+  <div style="position:absolute; inset:0; overflow-y:auto; overflow-x:hidden; scrollbar-width:none;">
+    <div style="height:36px; padding:0 24px; display:flex; align-items:center; justify-content:space-between; font-size:14px; font-weight:500;"><div>9:41</div><div style="display:flex; gap:4px;"><span class="ms" style="font-size:16px;">signal_cellular_4_bar</span><span class="ms" style="font-size:16px;">battery_full</span></div></div>
+    <div style="padding:4px 20px 200px; display:flex; flex-direction:column; gap:20px;">
+      <div style="display:flex; align-items:center; margin:0 -8px;"><div onClick="{{ navSoon }}" title="Back" style="width:48px; height:48px; border-radius:999px; display:flex; align-items:center; justify-content:center; cursor:pointer;"><span class="ms" style="font-size:24px;">arrow_back</span></div></div>
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <div style="font-size:32px; font-weight:700; letter-spacing:-0.02em; line-height:1.1;">Concerts near you</div>
+        <sc-if value="{{ hasCity }}"><div style="display:flex; flex-direction:column; align-items:flex-start; gap:8px;">
+          <div onClick="{{ toggleLoc }}" style="height:40px; padding:0 8px 0 12px; border-radius:12px; background:oklch(0.225 0.008 40); box-shadow:inset 0 0 0 1px oklch(0.34 0.01 40); display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; cursor:pointer;"><span class="ms" style="font-size:20px; color:oklch(0.80 0.115 38); font-variation-settings:'FILL' 1;">location_on</span><span style="font-family:'Google Sans Flex',system-ui,sans-serif;">Near {{ city }} ·</span><span style="font-family:'JetBrains Mono',monospace; font-weight:500;">{{ radius }} km</span><span class="ms" style="font-size:22px; color:oklch(0.79 0.014 40);">arrow_drop_down</span></div>
+          <div style="font-size:12px; color:oklch(0.79 0.014 40);">{{ countL }}<span style="color:oklch(0.62 0.014 40);"> · {{ updL }}</span></div>
+        </div></sc-if>
+        <sc-if value="{{ noCity }}"><div style="font-size:14px; color:oklch(0.79 0.014 40);">Shows from the artists in your library, near where you live.</div></sc-if>
+      </div>
+      <sc-if value="{{ offline }}"><div style="display:flex; align-items:center; gap:14px; padding:12px 8px 12px 16px; border-radius:20px; background:oklch(0.27 0.045 75); box-shadow:inset 0 0 0 1px oklch(0.62 0.09 75 / 0.4);"><span class="ms" style="font-size:24px; flex:none; color:oklch(0.86 0.10 80);">cloud_off</span><div style="flex:1; min-width:0;"><div style="font-size:14px; font-weight:600; line-height:20px; color:oklch(0.95 0.03 80);">Couldn't update concerts</div><div style="font-size:12px; line-height:16px; color:oklch(0.82 0.05 80);">Offline · dates from yesterday, 06:10</div></div><div onClick="{{ retry }}" style="height:40px; padding:0 16px; border-radius:999px; display:flex; align-items:center; font-size:14px; font-weight:600; color:oklch(0.88 0.10 80); cursor:pointer;">Retry</div></div></sc-if>
+      <sc-if value="{{ showChips }}"><div style="display:flex; gap:8px; margin:0 -20px; padding:0 20px; overflow-x:auto; scrollbar-width:none;">
+        <sc-for list="{{ chips }}" as="c" hint-placeholder-count="4"><div onClick="{{ c.pick }}" style="flex:none; height:36px; padding:0 14px 0 {{ c.pl }}px; border-radius:12px; background:{{ c.bg }}; box-shadow:inset 0 0 0 1px {{ c.bd }}; color:{{ c.fg }}; display:flex; align-items:center; gap:6px; font-size:14px; font-weight:600; cursor:pointer; white-space:nowrap;"><sc-if value="{{ c.on }}"><span class="ms" style="font-size:16px;">check</span></sc-if>{{ c.label }}<span style="font-weight:500; color:{{ c.cc }}; font-family:'JetBrains Mono',monospace; font-size:12px;">{{ c.n }}</span></div></sc-for>
+      </div></sc-if>
+
+      <sc-if value="{{ loading }}"><div style="display:flex; flex-direction:column; gap:2px;">
+        <sc-for list="{{ skel }}" as="k" hint-placeholder-count="5"><div style="display:flex; align-items:center; gap:14px; height:96px; padding:0 12px; border-radius:{{ k.rad }}; background:oklch(0.21 0.008 40);"><div style="width:56px; height:60px; flex:none; border-radius:16px; background:linear-gradient(90deg, oklch(0.23 0.008 40) 0%, oklch(0.29 0.01 40) 50%, oklch(0.23 0.008 40) 100%); background-size:200% 100%; animation:pm-shim 1.4s linear infinite;"></div><div style="flex:1; display:flex; flex-direction:column; gap:8px;"><div style="width:{{ k.w1 }}; height:14px; border-radius:7px; background:linear-gradient(90deg, oklch(0.23 0.008 40) 0%, oklch(0.29 0.01 40) 50%, oklch(0.23 0.008 40) 100%); background-size:200% 100%; animation:pm-shim 1.4s linear infinite;"></div><div style="width:{{ k.w2 }}; height:10px; border-radius:5px; background:linear-gradient(90deg, oklch(0.23 0.008 40) 0%, oklch(0.29 0.01 40) 50%, oklch(0.23 0.008 40) 100%); background-size:200% 100%; animation:pm-shim 1.4s linear infinite;"></div><div style="width:80px; height:22px; border-radius:8px; background:linear-gradient(90deg, oklch(0.23 0.008 40) 0%, oklch(0.29 0.01 40) 50%, oklch(0.23 0.008 40) 100%); background-size:200% 100%; animation:pm-shim 1.4s linear infinite;"></div></div></div></sc-for>
+      </div></sc-if>
+
+      <sc-if value="{{ noCity }}"><div style="display:flex; flex-direction:column; gap:18px; padding:24px 20px; border-radius:28px; background:oklch(0.205 0.008 40); box-shadow:inset 0 0 0 1px oklch(0.27 0.01 40);">
+        <div style="position:relative; width:64px; height:64px; display:flex; align-items:center; justify-content:center;"><div style="position:absolute; inset:0; background:oklch(0.36 0.035 38); clip-path:{{ clover }};"></div><span class="ms" style="position:relative; font-size:30px; color:oklch(0.92 0.025 38); font-variation-settings:'FILL' 1;">location_on</span></div>
+        <div style="display:flex; flex-direction:column; gap:6px;"><div style="font-size:24px; font-weight:600;">Where's home?</div><div style="font-size:14px; line-height:1.5; color:oklch(0.79 0.014 40); text-wrap:pretty;">Pick a city and a radius. Once a day Pelagic checks tour dates for every artist in your library.</div></div>
+        <div style="display:flex; flex-direction:column; gap:8px;"><div style="font-size:12px; font-weight:600; color:oklch(0.79 0.014 40);">Home city</div><div style="height:56px; border-radius:16px; background:oklch(0.26 0.009 40); box-shadow:inset 0 0 0 1px oklch(0.38 0.012 40); display:flex; align-items:center; gap:10px; padding:0 16px;"><span class="ms" style="font-size:22px; color:oklch(0.79 0.014 40);">search</span><input placeholder="City, e.g. Barcelona" style="flex:1; min-width:0; background:transparent; border:none; outline:none; color:oklch(0.94 0.006 40); font-family:inherit; font-size:16px; font-weight:500;"></div></div>
+        <div style="display:flex; flex-direction:column; gap:8px;"><div style="font-size:12px; font-weight:600; color:oklch(0.79 0.014 40);">How far would you travel?</div><div style="display:flex; gap:2px;"><sc-for list="{{ radOpts }}" as="o" hint-placeholder-count="4"><div onClick="{{ o.fn }}" style="flex:1; height:48px; border-radius:{{ o.rad }}; display:flex; align-items:center; justify-content:center; gap:2px; font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:600; cursor:pointer; background:{{ o.bg }}; color:{{ o.fg }}; transition:border-radius 350ms cubic-bezier(0.42,1.67,0.21,0.9), background 200ms;">{{ o.l }}</div></sc-for></div></div>
+        <div onClick="{{ setupDone }}" style="height:56px; border-radius:16px; background:oklch(0.42 0.10 38); color:oklch(0.93 0.04 38); display:flex; align-items:center; justify-content:center; gap:10px; font-size:14px; font-weight:600; cursor:pointer;"><span class="ms" style="font-size:22px;">local_activity</span>Show concerts</div>
+        <div style="font-size:12px; color:oklch(0.62 0.014 40); text-align:center;">You can change this in Settings.</div>
+      </div></sc-if>
+
+      <sc-if value="{{ empty }}"><div style="display:flex; flex-direction:column; align-items:center; gap:14px; text-align:center; padding:40px 8px;">
+        <div style="position:relative; width:104px; height:104px; display:flex; align-items:center; justify-content:center;"><div style="position:absolute; inset:0; background:oklch(0.225 0.008 40); clip-path:{{ clover }};"></div><span class="ms" style="position:relative; font-size:40px; color:oklch(0.80 0.115 38);">event_busy</span></div>
+        <div style="font-size:22px; font-weight:600;">No shows near you right now</div>
+        <div style="font-size:14px; line-height:1.5; color:oklch(0.79 0.014 40); text-wrap:pretty;">None of your 214 artists have dates within 50 km of Barcelona. Pelagic checks again tomorrow morning.</div>
+        <div style="display:flex; flex-direction:column; gap:10px; align-self:stretch; margin-top:6px;"><div onClick="{{ widen }}" style="height:56px; border-radius:16px; background:oklch(0.42 0.10 38); color:oklch(0.93 0.04 38); display:flex; align-items:center; justify-content:center; gap:10px; font-size:14px; font-weight:600; cursor:pointer;"><span class="ms" style="font-size:22px;">radar</span>Widen to 100 km</div><div onClick="{{ toggleLoc }}" style="height:56px; border-radius:16px; background:oklch(0.30 0.012 40); display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:600; cursor:pointer;">Change city</div></div>
+      </div></sc-if>
+
+      <sc-if value="{{ listA }}">
+      <div style="display:flex; flex-direction:column; gap:28px;">
+        <sc-for list="{{ groups }}" as="g" hint-placeholder-count="3">
+          <div style="position:relative; display:flex; flex-direction:column; gap:12px; padding-left:34px;">
+            <div style="position:absolute; left:13px; top:14px; bottom:{{ g.railBP }}px; width:2px; border-radius:1px; background:oklch(0.30 0.01 40);"></div>
+            <div style="display:flex; align-items:center; gap:10px; margin-left:-34px;"><div style="position:relative; z-index:1; width:28px; height:28px; flex:none; display:flex; align-items:center; justify-content:center;"><div style="width:14px; height:14px; border-radius:999px; background:oklch(0.17 0.006 40); box-shadow:inset 0 0 0 4px {{ g.ringC }};"></div></div><div style="font-size:16px; font-weight:600;">{{ g.label }}</div><div style="flex:1; height:1px; background:oklch(0.28 0.009 40);"></div><div style="font-size:12px; color:oklch(0.62 0.014 40); font-family:'JetBrains Mono',monospace;">{{ g.n }}</div></div>
+            <div style="display:flex; flex-direction:column; gap:2px;">
+              <sc-for list="{{ g.items }}" as="r">
+                <div onClick="{{ r.goArtist }}" style="display:flex; align-items:flex-start; gap:12px; padding:12px 8px 12px 10px; border-radius:{{ r.rad }}; background:oklch(0.21 0.008 40); cursor:pointer;">
+                  <div style="width:52px; height:60px; flex:none; border-radius:16px; background:{{ r.dBg }}; opacity:{{ r.dOp }}; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px;"><div style="font-size:10px; font-weight:700; letter-spacing:0.08em; color:{{ r.dFg }};">{{ r.mon }}</div><div style="font-size:{{ r.dayFsP }}px; font-weight:700; line-height:1.05; text-decoration:{{ r.deco }};">{{ r.day }}</div><div style="font-size:10px; color:oklch(0.79 0.014 40);">{{ r.dow }}</div></div>
+                  <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:3px;">
+                    <sc-if value="{{ r.isFest }}"><div style="display:flex; align-items:center; gap:4px; font-size:12px; font-weight:600; color:{{ r.dFg }}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"><span class="ms" style="font-size:15px;">festival</span>{{ r.fest }}</div></sc-if>
+                    <div style="display:flex; align-items:center; gap:8px; min-width:0;"><img src="{{ r.img }}" alt="" style="width:22px; height:22px; flex:none; border-radius:999px; object-fit:cover; box-shadow:{{ r.ringS }}; filter:{{ r.imgF }};"><div style="font-size:16px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ r.a }}</div><sc-if value="{{ r.isNew }}"><div style="flex:none; height:18px; padding:0 6px; border-radius:999px; background:oklch(0.80 0.115 38); color:oklch(0.30 0.08 38); font-size:10px; font-weight:700; display:flex; align-items:center;">New</div></sc-if></div>
+                    <div style="font-size:12px; color:oklch(0.79 0.014 40); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-decoration:{{ r.deco }};">{{ r.place }}</div>
+                    <sc-if value="{{ r.isFest }}"><div style="font-size:12px; color:oklch(0.79 0.014 40);">{{ r.lineupL }}</div></sc-if>
+                    <div style="display:flex; align-items:center; gap:8px; margin-top:4px; min-width:0;"><div onClick="{{ r.chipFn }}" style="flex:none; height:24px; padding:0 8px 0 6px; border-radius:8px; background:{{ r.sBg }}; box-shadow:inset 0 0 0 1px {{ r.sBd }}; color:{{ r.sFg }}; display:flex; align-items:center; gap:4px; font-size:11px; font-weight:700; white-space:nowrap;"><span class="ms" style="font-size:14px;">{{ r.sIc }}</span>{{ r.sL }}</div><div style="font-family:'JetBrains Mono',monospace; font-size:11px; color:oklch(0.79 0.014 40); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ r.metaP }}</div></div>
+                    <sc-if value="{{ r.hasNote }}"><div style="font-size:12px; color:oklch(0.79 0.014 40);">{{ r.note }}</div></sc-if>
+                  </div>
+                  <sc-if value="{{ r.hasTk }}"><div onClick="{{ r.tickets }}" title="Tickets" style="width:44px; height:44px; flex:none; align-self:center; border-radius:999px; background:{{ r.tkBg }}; box-shadow:inset 0 0 0 1px {{ r.tkBd }}; color:{{ r.tkFg }}; display:flex; align-items:center; justify-content:center; cursor:pointer;"><span class="ms" style="font-size:22px;">local_activity</span></div></sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+      </sc-if>
+
+      <sc-if value="{{ listB }}">
+      <div style="display:flex; flex-direction:column; gap:28px;">
+        <div style="display:flex; gap:12px; margin:0 -20px; padding:0 20px; overflow-x:auto; scrollbar-width:none; scroll-snap-type:x mandatory;">
+          <sc-for list="{{ posters }}" as="p" hint-placeholder-count="3">
+            <div onClick="{{ p.goArtist }}" style="width:288px; flex:none; scroll-snap-align:start; border-radius:28px; background:oklch(0.205 0.008 40); overflow:hidden; display:flex; flex-direction:column; box-shadow:inset 0 0 0 1px oklch(0.27 0.01 40);">
+              <div style="position:relative; height:168px;"><img src="{{ p.img }}" alt="" style="width:100%; height:100%; object-fit:cover; display:block;"><div style="position:absolute; left:12px; top:12px; width:56px; height:60px; border-radius:16px; background:oklch(0.17 0.006 40); display:flex; flex-direction:column; align-items:center; justify-content:center;"><div style="font-size:10px; font-weight:700; letter-spacing:0.08em; color:{{ p.dFg }};">{{ p.mon }}</div><div style="font-size:{{ p.dayFsP }}px; font-weight:700; line-height:1.05;">{{ p.day }}</div><div style="font-size:10px; color:oklch(0.79 0.014 40);">{{ p.dow }}</div></div><div style="position:absolute; right:12px; top:12px; height:26px; padding:0 9px 0 7px; border-radius:8px; background:{{ p.sBgSolid }}; color:{{ p.sFg }}; display:flex; align-items:center; gap:5px; font-size:11px; font-weight:700;"><span class="ms" style="font-size:15px;">{{ p.sIc }}</span>{{ p.sL }}</div></div>
+              <div style="padding:14px 16px 16px; display:flex; flex-direction:column; gap:12px;"><div style="min-width:0;"><sc-if value="{{ p.isFest }}"><div style="font-size:12px; font-weight:600; color:{{ p.dFg }};">{{ p.fest }}</div></sc-if><div style="font-size:20px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ p.a }}</div><div style="font-size:12px; color:oklch(0.79 0.014 40); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ p.place }}</div><sc-if value="{{ p.isFest }}"><div style="font-size:12px; color:oklch(0.79 0.014 40); margin-top:2px;">{{ p.lineupL }}</div></sc-if></div>
+                <div style="display:flex; align-items:center; gap:10px;"><div style="flex:1; min-width:0; font-family:'JetBrains Mono',monospace; font-size:11px; color:oklch(0.79 0.014 40); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ p.metaP }}</div><div onClick="{{ p.tickets }}" style="height:44px; padding:0 14px 0 16px; border-radius:999px; background:oklch(0.80 0.115 38); color:oklch(0.30 0.08 38); display:flex; align-items:center; gap:6px; font-size:14px; font-weight:600; white-space:nowrap;">Tickets<span class="ms" style="font-size:18px;">open_in_new</span></div></div></div>
+            </div>
+          </sc-for>
+        </div>
+        <sc-for list="{{ months }}" as="m" hint-placeholder-count="3">
+          <div style="display:flex; flex-direction:column; gap:10px;">
+            <div style="display:flex; align-items:baseline; gap:10px;"><div style="font-size:22px; font-weight:700;">{{ m.label }}</div><div style="font-size:12px; color:oklch(0.62 0.014 40); font-family:'JetBrains Mono',monospace;">{{ m.sub }}</div></div>
+            <sc-for list="{{ m.items }}" as="r">
+              <div onClick="{{ r.goArtist }}" style="display:flex; gap:14px; padding:14px 10px 14px 14px; border-radius:24px; background:oklch(0.205 0.008 40);">
+                <img src="{{ r.img }}" alt="" style="width:48px; height:48px; flex:none; border-radius:999px; object-fit:cover; box-shadow:{{ r.ringB }}; filter:{{ r.imgF }};">
+                <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:3px;">
+                  <div style="font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:600; color:{{ r.dFg }}; text-decoration:{{ r.deco }}; white-space:nowrap;">{{ r.dateL }}</div>
+                  <div style="font-size:16px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ r.a }}</div>
+                  <div style="font-size:12px; color:oklch(0.79 0.014 40); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ r.placeKm }}</div>
+                  <div style="display:flex; align-items:center; gap:8px; margin-top:4px; flex-wrap:wrap;"><div onClick="{{ r.chipFn }}" style="height:24px; padding:0 8px 0 6px; border-radius:8px; background:{{ r.sBg }}; box-shadow:inset 0 0 0 1px {{ r.sBd }}; color:{{ r.sFg }}; display:flex; align-items:center; gap:4px; font-size:11px; font-weight:700; white-space:nowrap;"><span class="ms" style="font-size:14px;">{{ r.sIc }}</span>{{ r.sL }}</div><sc-if value="{{ r.hasNote }}"><div style="font-size:12px; color:oklch(0.79 0.014 40);">{{ r.note }}</div></sc-if></div>
+                </div>
+                <sc-if value="{{ r.hasTk }}"><div onClick="{{ r.tickets }}" title="Tickets" style="width:44px; height:44px; flex:none; align-self:center; border-radius:999px; background:{{ r.tkBg }}; box-shadow:inset 0 0 0 1px {{ r.tkBd }}; color:{{ r.tkFg }}; display:flex; align-items:center; justify-content:center;"><span class="ms" style="font-size:22px;">local_activity</span></div></sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </sc-for>
+      </div>
+      </sc-if>
+      <sc-if value="{{ attrib }}"><div style="font-size:12px; color:oklch(0.62 0.014 40); text-align:center;">Ticket info from Ticketmaster</div></sc-if>
+    </div>
+  </div>
+
+  <div style="position:absolute; left:50%; bottom:184px; z-index:45; transform:translate(-50%, {{ tY }}px); opacity:{{ tOp }}; pointer-events:none; transition:opacity 200ms cubic-bezier(0.31,0.94,0.34,1), transform 500ms cubic-bezier(0.38,1.21,0.22,1); width:372px; min-height:48px; padding:8px 16px; box-sizing:border-box; display:flex; align-items:center; border-radius:12px; background:oklch(0.90 0.01 40); color:oklch(0.22 0.01 40); font-size:14px; box-shadow:0 12px 28px -10px rgba(0,0,0,0.6);">{{ tText }}</div>
+  <div style="position:absolute; left:8px; right:8px; bottom:104px; height:68px; border-radius:16px; background:oklch(0.20 0.007 40 / 0.86); backdrop-filter:blur(28px) saturate(1.5); -webkit-backdrop-filter:blur(28px) saturate(1.5); display:flex; align-items:center; gap:12px; padding:0 8px; overflow:hidden; box-shadow:0 6px 18px -6px rgba(0,0,0,0.5), inset 0 0 0 1px oklch(0.34 0.01 40 / 0.7); z-index:5;">
+    <img src="art/spiritbox-tsunami-sea.jpg" alt="" style="width:52px; height:52px; flex:none; border-radius:12px; object-fit:cover;">
+    <div style="flex:1; min-width:0;"><div style="font-size:14px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Black Rainbow</div><div style="font-size:12px; color:oklch(0.79 0.014 40);">Spiritbox · Tsunami Sea</div></div>
+    <div onClick="{{ togglePlay }}" style="width:48px; height:48px; flex:none; border-radius:999px; background:oklch(0.82 0.11 215); color:oklch(0.26 0.06 215); display:flex; align-items:center; justify-content:center; cursor:pointer;"><span class="ms" style="font-size:28px; font-variation-settings:'FILL' 1;">{{ pIc }}</span></div>
+    <span class="ms" style="font-size:28px; padding:10px 8px;">skip_next</span>
+    <div style="position:absolute; left:0; bottom:0; width:{{ pos }}%; height:3px; background:oklch(0.82 0.11 215);"></div>
+  </div>
+  <div style="position:absolute; left:0; right:0; bottom:0; height:96px; padding-bottom:16px; box-sizing:border-box; background:oklch(0.20 0.007 40); display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); z-index:6;">
+    <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;"><div style="width:64px; height:32px; border-radius:999px; background:oklch(0.36 0.035 38); color:oklch(0.92 0.025 38); display:flex; align-items:center; justify-content:center;"><span class="ms" style="font-size:24px; font-variation-settings:'FILL' 1;">home</span></div><div style="font-size:12px; font-weight:700;">Home</div></div>
+    <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; color:oklch(0.79 0.014 40);"><div style="width:64px; height:32px; display:flex; align-items:center; justify-content:center;"><span class="ms" style="font-size:24px;">library_music</span></div><div style="font-size:12px; font-weight:500;">Library</div></div>
+    <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; color:oklch(0.79 0.014 40);"><div style="position:relative; width:64px; height:32px; display:flex; align-items:center; justify-content:center;"><span class="ms" style="font-size:24px;">new_releases</span><div style="position:absolute; left:34px; top:2px; min-width:16px; height:16px; padding:0 4px; box-sizing:border-box; border-radius:999px; background:oklch(0.80 0.115 38); color:oklch(0.30 0.08 38); font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center;">3</div></div><div style="font-size:12px; font-weight:500;">New</div></div>
+    <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; color:oklch(0.79 0.014 40);"><div style="width:64px; height:32px; display:flex; align-items:center; justify-content:center;"><span class="ms" style="font-size:24px;">download</span></div><div style="font-size:12px; font-weight:500;">Downloads</div></div>
+  </div>
+  <div style="position:absolute; left:50%; bottom:8px; width:108px; height:4px; margin-left:-54px; border-radius:2px; background:oklch(0.79 0.014 40); z-index:7;"></div>
+  <sc-if value="{{ fabOn }}"><div onClick="{{ openAdd }}" style="position:absolute; right:16px; bottom:188px; z-index:8; height:56px; padding:0 20px 0 16px; border-radius:16px; background:oklch(0.42 0.10 38); color:oklch(0.93 0.04 38); display:flex; align-items:center; gap:10px; font-size:14px; font-weight:600; box-shadow:0 8px 20px -6px rgba(0,0,0,0.6); cursor:pointer;"><span class="ms" style="font-size:24px;">add</span>Add show</div></sc-if>
+  <sc-if value="{{ dlgOn }}"><div onClick="{{ stop }}" style="position:absolute; inset:0; z-index:40; background:oklch(0.17 0.006 40); display:flex; flex-direction:column;">
+    <div style="height:36px; flex:none;"></div>
+    <div style="height:64px; flex:none; padding:0 12px 0 4px; display:flex; align-items:center; gap:4px;"><div onClick="{{ dlgClose }}" title="Close" style="width:48px; height:48px; border-radius:999px; display:flex; align-items:center; justify-content:center; cursor:pointer;"><span class="ms" style="font-size:24px;">close</span></div><div style="flex:1; min-width:0; font-size:22px; font-weight:600;">{{ dlgTitle }}</div><div onClick="{{ dSave }}" style="height:40px; padding:0 20px; border-radius:999px; background:{{ dSaveBg }}; color:{{ dSaveFg }}; display:flex; align-items:center; font-size:14px; font-weight:600; cursor:pointer;">{{ dSaveL }}</div></div>
+    <div style="flex:1; overflow-y:auto; scrollbar-width:none; padding:8px 20px 40px; display:flex; flex-direction:column; gap:20px;">
+      <div style="font-size:14px; line-height:1.45; color:oklch(0.79 0.014 40);">For shows Ticketmaster doesn't list. Only you see it, and daily updates won't change it.</div>
+    <div style="display:flex; flex-direction:column; gap:8px; position:relative;">
+      <div style="font-size:12px; font-weight:600; color:oklch(0.79 0.014 40);">Artist</div>
+      <sc-if value="{{ dA.has }}"><div style="height:56px; border-radius:16px; background:oklch(0.26 0.009 40); box-shadow:inset 0 0 0 1px oklch(0.38 0.012 40); display:flex; align-items:center; gap:12px; padding:0 8px 0 10px;"><img src="{{ dA.img }}" alt="" style="width:36px; height:36px; border-radius:999px; object-fit:cover; box-shadow:{{ dA.ring }};"><div style="flex:1; min-width:0; font-size:16px; font-weight:600;">{{ dA.n }}</div><div onClick="{{ dA.clear }}" title="Change artist" style="width:40px; height:40px; border-radius:999px; display:flex; align-items:center; justify-content:center; color:oklch(0.86 0.01 40); cursor:pointer;" style-hover="background:oklch(0.32 0.01 40);"><span class="ms" style="font-size:22px;">close</span></div></div></sc-if>
+      <sc-if value="{{ dA.none }}"><div style="height:56px; border-radius:16px; background:oklch(0.26 0.009 40); box-shadow:inset 0 0 0 2px oklch(0.80 0.115 38); display:flex; align-items:center; gap:10px; padding:0 14px;"><span class="ms" style="font-size:22px; color:oklch(0.79 0.014 40);">search</span><input value="{{ dA.q }}" onChange="{{ dA.onQ }}" placeholder="Search artists in your library" style="flex:1; min-width:0; background:transparent; border:none; outline:none; color:oklch(0.94 0.006 40); font-family:inherit; font-size:16px; font-weight:500;"></div>
+        <sc-if value="{{ dA.sugOn }}"><div style="position:absolute; left:0; right:0; top:88px; z-index:3; border-radius:16px; background:oklch(0.29 0.01 40); box-shadow:0 12px 32px -8px rgba(0,0,0,0.75); padding:6px 0;">
+          <sc-for list="{{ dA.sug }}" as="s"><div onClick="{{ s.pick }}" style="height:52px; padding:0 16px; display:flex; align-items:center; gap:12px; cursor:pointer;" style-hover="background:oklch(0.33 0.01 40);"><img src="{{ s.img }}" alt="" style="width:32px; height:32px; border-radius:999px; object-fit:cover;"><div style="flex:1; min-width:0; font-size:14px; font-weight:600;">{{ s.n }}</div><div style="font-size:12px; color:oklch(0.79 0.014 40);">{{ s.sub }}</div></div></sc-for>
+          <sc-if value="{{ dA.sugNone }}"><div style="padding:12px 16px; font-size:14px; color:oklch(0.79 0.014 40);">No artist in your library matches.</div></sc-if>
+        </div></sc-if>
+      </sc-if>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px;">
+      <sc-for list="{{ dFields }}" as="f" hint-placeholder-count="5"><div style="grid-column:span {{ f.span }}; display:flex; flex-direction:column; gap:8px; min-width:0;"><div style="display:flex; gap:6px; font-size:12px; font-weight:600; color:oklch(0.79 0.014 40);">{{ f.label }}<span style="font-weight:500; color:oklch(0.62 0.014 40);">{{ f.opt }}</span></div><div style="height:56px; border-radius:16px; background:oklch(0.26 0.009 40); box-shadow:inset 0 0 0 1px {{ f.bd }}; display:flex; align-items:center; gap:10px; padding:0 14px; min-width:0;"><span class="ms" style="font-size:22px; color:oklch(0.79 0.014 40);">{{ f.ic }}</span><input type="{{ f.type }}" value="{{ f.v }}" onChange="{{ f.on }}" placeholder="{{ f.ph }}" style="flex:1; min-width:0; width:100%; background:transparent; border:none; outline:none; color:oklch(0.94 0.006 40); font-family:{{ f.ff }}; font-size:15px; font-weight:500; color-scheme:dark;"></div><sc-if value="{{ f.hasErr }}"><div style="font-size:12px; color:oklch(0.82 0.10 25);">{{ f.err }}</div></sc-if></div></sc-for>
+    </div>
+      <sc-if value="{{ dEdit }}"><div onClick="{{ dDelete }}" style="height:56px; border-radius:16px; box-shadow:inset 0 0 0 1px oklch(0.45 0.08 25); display:flex; align-items:center; justify-content:center; gap:8px; font-size:14px; font-weight:600; color:oklch(0.82 0.10 25); cursor:pointer;"><span class="ms" style="font-size:20px;">delete</span>Delete show</div></sc-if>
+    </div>
+  </div></sc-if>
+  <sc-if value="{{ locOn }}">
+    <div style="position:absolute; inset:0; z-index:20; background:rgba(0,0,0,0.5);"></div>
+    <div onClick="{{ stop }}" style="position:absolute; left:0; right:0; bottom:0; z-index:21; border-radius:28px 28px 0 0; background:oklch(0.225 0.008 40); padding:10px 24px 36px; box-sizing:border-box; display:flex; flex-direction:column; gap:18px;">
+      <div style="width:32px; height:4px; border-radius:2px; background:oklch(0.62 0.014 40); margin:0 auto;"></div>
+      <div style="font-size:22px; font-weight:600;">Location</div>
+      <div style="display:flex; flex-direction:column; gap:8px;"><div style="font-size:12px; font-weight:600; color:oklch(0.79 0.014 40);">Home city</div><div style="height:56px; border-radius:16px; background:oklch(0.20 0.007 40); box-shadow:inset 0 0 0 2px oklch(0.80 0.115 38); display:flex; align-items:center; gap:10px; padding:0 16px;"><span class="ms" style="font-size:22px; color:oklch(0.79 0.014 40);">location_city</span><input value="{{ cityV }}" onChange="{{ onCity }}" style="flex:1; min-width:0; background:transparent; border:none; outline:none; color:oklch(0.94 0.006 40); font-family:inherit; font-size:16px; font-weight:500;"><span style="font-size:12px; color:oklch(0.62 0.014 40);">Spain</span></div></div>
+      <div style="display:flex; flex-direction:column; gap:8px;"><div style="font-size:12px; font-weight:600; color:oklch(0.79 0.014 40);">Radius</div><div style="display:flex; gap:2px;"><sc-for list="{{ radOpts }}" as="o" hint-placeholder-count="4"><div onClick="{{ o.fn }}" style="flex:1; height:48px; border-radius:{{ o.rad }}; display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:600; cursor:pointer; background:{{ o.bg }}; color:{{ o.fg }}; transition:border-radius 350ms cubic-bezier(0.42,1.67,0.21,0.9), background 200ms;">{{ o.l }}</div></sc-for></div></div>
+      <div style="font-size:12px; line-height:1.45; color:oklch(0.79 0.014 40);">No GPS. Shows are matched to this city and refreshed once a day.</div>
+      <div onClick="{{ toggleLoc }}" style="height:56px; border-radius:16px; background:oklch(0.80 0.115 38); color:oklch(0.30 0.08 38); display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:600; cursor:pointer;">Done</div>
+    </div>
+  </sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{ isShelf }}" hint-placeholder-val="{{ false }}">
+<div style="width:{{ W }}px; box-sizing:border-box; padding:{{ shelfPad }}; border-radius:28px; background:oklch(0.17 0.006 40); box-shadow:0 0 0 1px oklch(0.24 0.008 40); font-family:'Google Sans Flex',system-ui,sans-serif; color:oklch(0.94 0.006 40); display:flex; flex-direction:column; gap:14px;">
+  <div style="display:flex; align-items:baseline; gap:12px;"><div style="font-size:22px; font-weight:600;">Concerts near you</div><div style="font-size:12px; color:oklch(0.79 0.014 40);">Barcelona · <span style="font-family:'JetBrains Mono',monospace;">50 km</span></div><div style="flex:1;"></div><div onClick="{{ navSoon }}" style="font-size:14px; font-weight:600; color:oklch(0.80 0.115 38); cursor:pointer;">See all 9</div></div>
+  <div style="display:flex; gap:{{ shelfGap }}px; overflow-x:auto; scrollbar-width:none; margin:0 {{ shelfM }}px; padding:2px {{ shelfP }}px 4px;">
+    <sc-for list="{{ shelf }}" as="r" hint-placeholder-count="4">
+      <div onClick="{{ r.goArtist }}" style="width:{{ shelfW }}px; flex:none; box-sizing:border-box; padding:16px; border-radius:24px; background:oklch(0.205 0.008 40); display:flex; flex-direction:column; gap:14px; cursor:pointer;" style-hover="background:oklch(0.235 0.008 40);">
+        <div style="display:flex; align-items:flex-start; justify-content:space-between;"><img src="{{ r.img }}" alt="" style="width:56px; height:56px; border-radius:999px; object-fit:cover; box-shadow:{{ r.ringB }};"><div style="width:52px; height:56px; border-radius:16px; background:{{ r.dBg }}; display:flex; flex-direction:column; align-items:center; justify-content:center;"><div style="font-size:10px; font-weight:700; letter-spacing:0.08em; color:{{ r.dFg }};">{{ r.mon }}</div><div style="font-size:{{ r.dayFsP }}px; font-weight:700; line-height:1.05;">{{ r.day }}</div><div style="font-size:10px; color:oklch(0.79 0.014 40);">{{ r.dow }}</div></div></div>
+        <div style="min-width:0; display:flex; flex-direction:column; gap:3px;"><div style="font-size:16px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ r.a }}</div><div style="font-size:12px; color:oklch(0.79 0.014 40); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ r.place }}</div><div style="font-family:'JetBrains Mono',monospace; font-size:11px; color:oklch(0.62 0.014 40);">{{ r.metaP }}</div></div>
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;"><div onClick="{{ r.chipFn }}" style="height:24px; padding:0 8px 0 6px; border-radius:8px; background:{{ r.sBg }}; box-shadow:inset 0 0 0 1px {{ r.sBd }}; color:{{ r.sFg }}; display:flex; align-items:center; gap:4px; font-size:11px; font-weight:700; white-space:nowrap;"><span class="ms" style="font-size:14px;">{{ r.sIc }}</span>{{ r.sL }}</div><div onClick="{{ r.tickets }}" title="Tickets" style="width:40px; height:40px; border-radius:999px; background:{{ r.tkBg }}; box-shadow:inset 0 0 0 1px {{ r.tkBd }}; color:{{ r.tkFg }}; display:flex; align-items:center; justify-content:center;"><span class="ms" style="font-size:20px;">local_activity</span></div></div>
+      </div>
+    </sc-for>
+  </div>
+  <div style="font-size:11px; color:oklch(0.62 0.014 40);">Ticket info from Ticketmaster</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isSettings }}" hint-placeholder-val="{{ false }}">
+<div style="width:{{ W }}px; box-sizing:border-box; padding:24px; border-radius:28px; background:oklch(0.17 0.006 40); box-shadow:0 0 0 1px oklch(0.24 0.008 40); font-family:'Google Sans Flex',system-ui,sans-serif; color:oklch(0.94 0.006 40); display:flex; flex-direction:column; gap:12px;">
+  <div style="display:flex; align-items:baseline; justify-content:space-between; padding:0 6px;"><div style="font-size:22px; font-weight:700; letter-spacing:-0.01em;">Concerts</div><div style="font-size:12px; color:oklch(0.62 0.014 40);">Ticketmaster · checked daily</div></div>
+  <div style="border-radius:28px; background:oklch(0.205 0.008 40); overflow:hidden;">
+    <div style="display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:14px 24px; min-height:72px; padding:14px 20px; box-sizing:border-box; border-bottom:1px solid oklch(0.27 0.01 40);">
+      <div style="display:flex; align-items:center; gap:14px; min-width:0;"><div style="width:44px; height:44px; flex:none; border-radius:16px; background:oklch(0.36 0.035 38); color:oklch(0.92 0.025 38); display:flex; align-items:center; justify-content:center;"><span class="ms" style="font-size:22px;">location_city</span></div><div style="display:flex; flex-direction:column; gap:3px; min-width:0;"><div style="font-size:14px; font-weight:500;">Home city</div><div style="font-size:12px; color:oklch(0.79 0.014 40);">Used for Concerts near you. No GPS.</div></div></div>
+      <div onClick="{{ navSoon }}" style="display:flex; align-items:center; gap:4px; font-size:14px; color:oklch(0.79 0.014 40); cursor:pointer;">Barcelona, Spain<span class="ms" style="font-size:22px;">chevron_right</span></div>
+    </div>
+    <div style="display:grid; grid-template-columns:{{ setCols }}; align-items:center; gap:14px 24px; min-height:72px; padding:14px 20px; box-sizing:border-box; border-bottom:1px solid oklch(0.27 0.01 40);">
+      <div style="display:flex; flex-direction:column; gap:3px; min-width:0;"><div style="font-size:14px; font-weight:500;">Radius</div><div style="font-size:12px; color:oklch(0.79 0.014 40);">{{ radHint }}</div></div>
+      <div style="display:flex; gap:2px;"><sc-for list="{{ radOpts }}" as="o" hint-placeholder-count="4"><div onClick="{{ o.fn }}" style="flex:1; padding:0 14px; height:40px; border-radius:{{ o.rad }}; display:flex; align-items:center; justify-content:center; gap:4px; font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap; background:{{ o.bg }}; color:{{ o.fg }}; transition:border-radius 350ms cubic-bezier(0.42,1.67,0.21,0.9), background 200ms;"><sc-if value="{{ o.on }}"><span class="ms" style="font-size:16px;">check</span></sc-if>{{ o.l }}</div></sc-for></div>
+    </div>
+    <div style="display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:14px 24px; min-height:72px; padding:14px 20px; box-sizing:border-box;">
+      <div style="display:flex; flex-direction:column; gap:3px; min-width:0;"><div style="font-size:14px; font-weight:500;">Concerts near you</div><div style="font-size:12px; color:oklch(0.79 0.014 40);">Last checked today, 06:10</div></div>
+      <div onClick="{{ navSoon }}" style="display:flex; align-items:center; gap:4px; font-size:14px; color:oklch(0.79 0.014 40); cursor:pointer;">9 upcoming<span class="ms" style="font-size:22px;">chevron_right</span></div>
+    </div>
+  </div>
+  <div style="font-size:12px; color:oklch(0.62 0.014 40); padding:0 6px;">Ticket info from Ticketmaster.</div>
+</div>
+</sc-if>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:900},&quot;view&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;page&quot;,&quot;shelf&quot;,&quot;settings&quot;],&quot;default&quot;:&quot;page&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;form&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;desk&quot;,&quot;phone&quot;],&quot;default&quot;:&quot;desk&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;dir&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;a&quot;,&quot;b&quot;],&quot;default&quot;:&quot;b&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;state&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;ready&quot;,&quot;loading&quot;,&quot;empty&quot;,&quot;nocity&quot;,&quot;offline&quot;],&quot;default&quot;:&quot;ready&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;chip&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;all&quot;,&quot;month&quot;,&quot;sale&quot;,&quot;fol&quot;],&quot;default&quot;:&quot;all&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;mine&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;addDemo&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;&quot;,&quot;empty&quot;,&quot;suggest&quot;,&quot;filled&quot;],&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;locDemo&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;w&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:1440,&quot;tsType&quot;:&quot;number&quot;},&quot;h&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:900,&quot;tsType&quot;:&quot;number&quot;}}">
+const e = React.createElement;
+const ART = k => 'art/' + k + '.jpg';
+const EV = [
+  { a: 'Spiritbox', img: 'spiritbox-tsunami-sea', h: 215, fol: true, t: 2, m: 'Oct', d: 29, dow: 'Thu', time: '20:30', venue: 'Razzmatazz', city: 'Barcelona', km: 3, st: 'onsale', price: '€38–52', g: 'week' },
+  { a: 'Periphery', img: 'periphery-v', h: 30, fol: true, t: 4, m: 'Oct', d: 31, dow: 'Sat', time: '21:00', venue: 'Sala Apolo', city: 'Barcelona', km: 2, st: 'resched', note: 'Moved from Sat 24 Oct', price: '€35', g: 'week' },
+  { a: 'Ado', img: 'ado-zanmu', h: 330, fol: true, t: 17, m: 'Nov', d: 13, dow: 'Fri', time: '19:30', venue: 'Palau Sant Jordi', city: 'Barcelona', km: 4, st: 'presale', note: 'Presale until Thu 29 Oct, 10:00', price: '€65–120', g: 'nov' },
+  { a: 'Evanescence', img: 'evanescence-sanctuary', h: 285, fol: false, t: 22, m: 'Nov', d: 18, dow: 'Wed', time: '20:00', venue: 'Palau Sant Jordi', city: 'Barcelona', km: 4, st: 'postponed', note: 'New date to be announced', g: 'nov' },
+  { a: 'Bullet For My Valentine', img: 'bfmv-social-apocalypse', h: 20, fol: false, t: 25, m: 'Nov', d: 21, dow: 'Sat', time: '19:00', venue: 'Sant Jordi Club', city: 'Barcelona', km: 4, st: 'soldout', g: 'nov' },
+  { a: 'Black Veil Brides', img: 'bvb-vindicate', h: 0, fol: false, t: 36, m: 'Dec', d: 2, dow: 'Wed', time: '20:00', venue: 'Sala Apolo', city: 'Barcelona', km: 2, st: 'cancelled', g: 'dec' },
+  { a: 'Spiritbox', fest: 'Mar de Fons Festival', img: 'spiritbox-rotoscope', h: 215, fol: true, t: 39, m: 'Dec', d: 5, d2: 6, dow: 'Sat–Sun', time: 'TBA', venue: 'Parc del Fòrum', city: 'Barcelona', km: 6, st: 'onsale', price: '€89–149', lineup: [['Periphery', 'periphery-v'], ['Wing', 'wing-dopamine']], g: 'dec' },
+  { a: 'Eve', img: 'eve-under-blue', h: 245, fol: true, t: 81, m: 'Jan', d: 16, dow: 'Sat', time: '20:00', venue: 'Razzmatazz 2', city: 'Barcelona', km: 3, st: 'notyet', chip: 'On sale 6 Nov', note: 'Fri 6 Nov, 10:00', price: '€30', g: 'later', isNew: true, y: '2027' },
+  { a: 'Wing', img: 'wing-dopamine', h: 150, fol: false, t: 108, m: 'Feb', d: 12, dow: 'Fri', time: 'TBA', venue: 'Salamandra', city: "L'Hospitalet", km: 6, st: 'onsale', price: '€24', g: 'later', isNew: true, y: '2027' }];
+const ST = {
+  onsale: { l: 'On sale', ic: 'confirmation_number', bg: 'oklch(0.31 0.05 150)', fg: 'oklch(0.88 0.08 150)', tk: 'tonal', buy: true },
+  presale: { l: 'Presale', ic: 'key', bg: 'oklch(0.33 0.06 38)', fg: 'oklch(0.90 0.07 38)', tk: 'tonal', buy: true },
+  resched: { l: 'Rescheduled', ic: 'event_repeat', bg: 'oklch(0.31 0.05 75)', fg: 'oklch(0.88 0.09 80)', tk: 'tonal', buy: true },
+  notyet: { l: 'Not on sale yet', ic: 'event_upcoming', bg: 'transparent', bd: 'oklch(0.40 0.012 40)', solid: 'oklch(0.20 0.007 40)', fg: 'oklch(0.86 0.01 40)', tk: 'outlined' },
+  soldout: { l: 'Sold out', ic: 'block', bg: 'oklch(0.27 0.01 40)', fg: 'oklch(0.78 0.014 40)', tk: 'outlined' },
+  postponed: { l: 'Postponed', ic: 'update', bg: 'oklch(0.31 0.05 75)', fg: 'oklch(0.88 0.09 80)', tk: 'outlined' },
+  mine: { l: 'Added by you', ic: 'edit', bg: 'oklch(0.25 0.009 40)', bd: 'oklch(0.40 0.012 40)', fg: 'oklch(0.90 0.01 40)', tk: 'tonal' },
+  cancelled: { l: 'Cancelled', ic: 'event_busy', bg: 'oklch(0.32 0.07 25)', fg: 'oklch(0.88 0.08 25)', tk: 'none' }};
+const PL = [['Heavy water', 42, 'periphery-v'], ['Late train, Tokyo', 28, 'ado-zanmu'], ['Breakdowns only', 63, 'spiritbox-rotoscope'], ['Low volume', 19, 'eve-under-blue'], ['Gym, unfortunately', 51, 'bvb-vindicate']];
+const MON = { Jan: 'January', Feb: 'February', Mar: 'March', Apr: 'April', May: 'May', Jun: 'June', Jul: 'July', Aug: 'August', Sep: 'September', Oct: 'October', Nov: 'November', Dec: 'December' };
+const LIB = [['Spiritbox', 'spiritbox-tsunami-sea', 215, true, '3 releases'], ['Periphery', 'periphery-v', 30, true, '1 album'], ['Ado', 'ado-zanmu', 330, true, '2 albums'], ['Evanescence', 'evanescence-sanctuary', 285, false, '1 album'], ['Bullet For My Valentine', 'bfmv-social-apocalypse', 20, false, '1 album'], ['Black Veil Brides', 'bvb-vindicate', 0, false, '1 album'], ['Eve', 'eve-under-blue', 245, true, '1 album'], ['Wing', 'wing-dopamine', 150, false, '1 album']].map(([n, img, h, fol, sub]) => ({ n, img, h, fol, sub }));
+const SEED = { artist: 'Wing', aq: '', date: '2026-11-27', time: '21:00', venue: 'Sala Upload', city: 'Barcelona', link: 'ticketsbcn.com/wing' };
+const DEMO = { filled: { mode: 'add', f: { ...SEED, link: '' } }, suggest: { mode: 'add', f: { artist: '', aq: 'pe', date: '', time: '', venue: '', city: 'Barcelona', link: '' } }, empty: { mode: 'add', f: { artist: '', aq: '', date: '', time: '', venue: '', city: 'Barcelona', link: '' } } };
+const MS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], DW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const rad = (i, n) => n === 1 ? '24px' : i === 0 ? '24px 24px 8px 8px' : i === n - 1 ? '8px 8px 24px 24px' : '8px';
+const radF = (i, n, on) => on ? '999px' : i === 0 ? '999px 8px 8px 999px' : i === n - 1 ? '8px 999px 999px 8px' : '8px';
+
+class Component extends DCLogic {
+  state = { chip: undefined, loc: undefined, radius: undefined, city: 'Barcelona', paused: false, pos: 38, toast: '', tOn: false, setup: false, dlg: undefined, mineList: undefined };
+  ck = {};
+  componentDidMount() { this.iv = setInterval(() => { if (!this.state.paused) this.setState(s => ({ pos: s.pos >= 100 ? 0 : s.pos + 0.45 })); }, 1000); }
+  componentWillUnmount() { clearInterval(this.iv); clearTimeout(this.tt); }
+  toast(t) { clearTimeout(this.tt); this.setState({ toast: t, tOn: true }); this.tt = setTimeout(() => this.setState({ tOn: false }), 2800); }
+  cookie(n, amp) {
+    const key = n + ':' + amp; if (this.ck[key]) return this.ck[key];
+    const p = []; for (let i = 0; i < 120; i++) { const t = i / 120 * Math.PI * 2, r = 50 * (1 - amp + amp * Math.cos(n * t)); p.push((50 + r * Math.cos(t)).toFixed(2) + '% ' + (50 + r * Math.sin(t)).toFixed(2) + '%'); }
+    return (this.ck[key] = 'polygon(' + p.join(',') + ')');
+  }
+  cookieEl(size, icon, is, spin) {
+    return e('div', { style: { position: 'relative', width: size, height: size, flex: 'none' } }, [
+      e('div', { key: 1, style: { position: 'absolute', inset: 0, background: 'oklch(0.82 0.11 215)', clipPath: spin ? this.cookie(9, 0.06) : this.cookie(9, 0), transition: 'clip-path 520ms cubic-bezier(0.38,1.21,0.22,1)', animation: spin ? 'pm-spin 14s linear infinite' : 'none' } }),
+      e('span', { key: 2, className: 'ms', style: { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: is, color: 'oklch(0.26 0.06 215)', fontVariationSettings: "'FILL' 1" } }, icon)]);
+  }
+  wave(pct, hh, anim) {
+    const m = hh / 2, svg = `<svg xmlns='http://www.w3.org/2000/svg' width='24' height='${hh}'><path d='M0 ${m} Q6 ${m - 6} 12 ${m} T24 ${m}' fill='none' stroke='black' stroke-width='3'/></svg>`;
+    const url = 'url("data:image/svg+xml,' + encodeURIComponent(svg) + '")', c = 'oklch(0.82 0.11 215)';
+    return e('div', { style: { position: 'relative', height: hh + 4, width: '100%' } }, [
+      e('div', { key: 1, style: { position: 'absolute', left: 0, top: 2, width: pct + '%', height: hh, background: c, WebkitMaskImage: url, maskImage: url, WebkitMaskSize: '24px ' + hh + 'px', maskSize: '24px ' + hh + 'px', WebkitMaskRepeat: 'repeat-x', maskRepeat: 'repeat-x', animation: anim ? 'pm-wave 1.4s linear infinite' : 'none' } }),
+      e('div', { key: 2, style: { position: 'absolute', left: 'calc(' + pct + '% + 8px)', right: 0, top: m, height: 4, borderRadius: 999, background: 'oklch(0.36 0.01 40)' } }),
+      e('div', { key: 3, style: { position: 'absolute', left: 'calc(' + pct + '% - 2px)', top: -1, width: 4, height: hh + 6, borderRadius: 2, background: c } })]);
+  }
+  dayT(iso) { return Math.round((new Date(iso + 'T12:00:00') - new Date('2026-10-27T12:00:00')) / 864e5); }
+  mk(f, id) {
+    const d = new Date(f.date + 'T12:00:00'), t = this.dayT(f.date), mo = d.getMonth(), yr = d.getFullYear(), L = LIB.find(l => l.n === f.artist);
+    const g = t <= 5 ? 'week' : yr === 2026 && mo === 10 ? 'nov' : yr === 2026 && mo === 11 ? 'dec' : 'later';
+    return { id, mine: true, iso: f.date, a: f.artist, img: L.img, h: L.h, fol: L.fol, t, m: MS[mo], d: d.getDate(), dow: DW[d.getDay()], time: f.time || 'TBA', venue: f.venue.trim(), city: (f.city || '').trim() || this.state.city, st: 'mine', link: (f.link || '').trim(), g, y: yr !== 2026 ? String(yr) : undefined };
+  }
+  mine() { return this.state.mineList ?? (this.props.mine ? [this.mk(SEED, 's1')] : []); }
+  dlgCur() { return this.state.dlg !== undefined ? this.state.dlg : (DEMO[this.props.addDemo] || null); }
+  setF(patch) { const d = this.dlgCur(); if (d) this.setState({ dlg: { ...d, f: { ...d.f, ...patch } } }); }
+  openDlg(x) { this.setState({ loc: false, dlg: x ? { mode: 'edit', id: x.id, f: { artist: x.a, aq: '', date: x.iso, time: x.time === 'TBA' ? '' : x.time, venue: x.venue, city: x.city, link: x.link || '' } } : { mode: 'add', f: { artist: '', aq: '', date: '', time: '', venue: '', city: this.state.city, link: '' } } }); }
+  dlgVals() {
+    const D = this.dlgCur(); if (!D) return { dlgOn: false, dA: { has: false, none: false, sug: [] }, dFields: [] };
+    const f = D.f, L = LIB.find(l => l.n === f.artist), q = f.aq.trim().toLowerCase(), sug = LIB.filter(l => l.n.toLowerCase().includes(q)).slice(0, 4);
+    const t = f.date ? this.dayT(f.date) : null, past = t !== null && t < 0, canSave = !!L && !!f.date && !past && f.venue.trim().length > 0;
+    const fld = (k, label, opt, type, ic, ph, span, mono, err) => ({ label, opt, type, ic, ph, span, v: f[k], ff: mono ? "'JetBrains Mono',monospace" : 'inherit', hasErr: !!err, err: err || '', bd: err ? 'oklch(0.70 0.12 25)' : 'oklch(0.38 0.012 40)', on: ev => this.setF({ [k]: ev.target.value }) });
+    const edit = D.mode === 'edit';
+    return { dlgOn: true, dlgTitle: edit ? 'Edit show' : 'Add a show', dEdit: edit, dSaveL: edit ? 'Save' : 'Add show',
+      dSaveBg: canSave ? 'oklch(0.80 0.115 38)' : 'oklch(0.30 0.01 40)', dSaveFg: canSave ? 'oklch(0.30 0.08 38)' : 'oklch(0.62 0.014 40)',
+      dA: { has: !!L, none: !L, img: L ? ART(L.img) : '', n: L ? L.n : '', ring: L ? `0 0 0 2px oklch(0.26 0.009 40), 0 0 0 4px oklch(0.70 0.10 ${L.h})` : 'none', q: f.aq,
+        clear: () => this.setF({ artist: '', aq: '' }), onQ: ev => this.setF({ aq: ev.target.value }), sugOn: !L && q.length > 0, sugNone: sug.length === 0,
+        sug: sug.map(l => ({ n: l.n, img: ART(l.img), sub: l.sub, pick: () => this.setF({ artist: l.n, aq: '' }) })) },
+      dFields: [fld('date', 'Date', '', 'date', 'event', '', 1, true, past ? 'Pick today or a later date' : ''), fld('time', 'Start time', 'Optional', 'time', 'schedule', '', 1, true), fld('venue', 'Venue', '', 'text', 'stadium', 'e.g. Razzmatazz', 1), fld('city', 'City', '', 'text', 'location_city', 'City', 1), fld('link', 'Ticket link', 'Optional', 'url', 'link', 'Paste a link', 2)],
+      dlgClose: () => this.setState({ dlg: null }),
+      dSave: () => { if (!canSave) return; const list = this.mine(), x = this.mk(f, edit ? D.id : 'm' + Date.now()); this.setState({ dlg: null, mineList: edit ? list.map(m => m.id === D.id ? x : m) : [...list, x], chip: 'all' }); this.toast((edit ? 'Saved ' : 'Added ') + x.a + ' · ' + x.dow + ' ' + x.d + ' ' + x.m); },
+      dDelete: () => { this.setState({ dlg: null, mineList: this.mine().filter(m => m.id !== D.id) }); this.toast('Removed ' + f.artist + ' at ' + f.venue); } };
+  }
+  row(x, i, n) {
+    const s = ST[x.st], can = x.st === 'cancelled', H = x.h, day = x.d2 ? x.d + '–' + x.d2 : String(x.d);
+    const tk = s.tk === 'tonal' ? { tkBg: 'oklch(0.36 0.035 38)', tkFg: 'oklch(0.92 0.025 38)', tkBd: 'transparent' } : { tkBg: 'transparent', tkFg: 'oklch(0.86 0.01 40)', tkBd: 'oklch(0.40 0.012 40)' };
+    const kmS = x.km != null ? ' · ' + x.km + ' km' : '';
+    const time = x.time === 'TBA' ? 'Time TBA' : x.time, dateL = (x.d2 ? 'SAT 5 – SUN 6 DEC' : (x.dow + ' ' + x.d + ' ' + x.m).toUpperCase()) + (x.time === 'TBA' ? '' : ' · ' + x.time);
+    const lineup = (x.lineup || []).map(([n2, im]) => ({ n: n2, img: ART(im) }));
+    return { ...tk, mon: x.m.toUpperCase(), day, dow: x.dow, dayFs: x.d2 ? 19 : 24, dayFsP: x.d2 ? 16 : 20,
+      dBg: `oklch(0.25 0.03 ${H})`, dFg: `oklch(0.84 0.09 ${H})`, dOp: can ? 0.55 : 1, deco: can ? 'line-through' : 'none',
+      img: ART(x.img), imgF: can ? 'grayscale(1)' : 'none',
+      ring: `0 0 0 2px oklch(0.21 0.008 40), 0 0 0 4px oklch(0.70 0.10 ${H})`, ringS: `0 0 0 1.5px oklch(0.70 0.10 ${H})`, ringB: `0 0 0 2px oklch(0.205 0.008 40), 0 0 0 4px oklch(0.70 0.10 ${H})`,
+      a: x.a, fest: x.fest || '', isFest: !!x.fest, isNew: !!x.isNew, place: x.venue + ' · ' + x.city, placeKm: x.venue + ' · ' + x.city + kmS,
+      time, timeC: x.time === 'TBA' ? 'oklch(0.79 0.014 40)' : 'oklch(0.94 0.006 40)', km: x.km != null ? x.km + ' km' : '', price: x.price || '', hasPrice: !!x.price,
+      meta: time + kmS + (x.price ? ' · ' + x.price : ''), metaP: time + kmS, dateL,
+      sL: x.chip || s.l, sIc: s.ic, sBg: s.bg, sBgSolid: s.solid || s.bg, sFg: s.fg, sBd: s.bd || 'transparent', note: x.note || '', hasNote: !!x.note,
+      hasTk: s.tk !== 'none' && (!x.mine || !!x.link), lineup, chipFn: x.mine ? ev => { ev.stopPropagation(); this.openDlg(x); } : () => {}, lineupL: lineup.length ? '+ ' + lineup.length + ' artists you have: ' + lineup.map(l => l.n).join(', ') : '',
+      rad: rad(i, n),
+      goArtist: () => this.toast('Opens the Artist page · ' + x.a),
+      tickets: ev => { ev.stopPropagation(); this.toast(x.mine ? 'Opens ' + x.link + ' in your browser' : 'Opens Ticketmaster in your browser · ' + (x.fest || x.a)); } };
+  }
+  renderVals() {
+    const P = this.props, st = this.state, view = P.view ?? 'page', desk = (P.form ?? 'desk') !== 'phone';
+    const W = P.w ?? (view === 'page' ? (desk ? 1440 : 412) : desk ? 1100 : 412), H = P.h ?? (desk ? 900 : 892);
+    let S = P.state ?? 'ready'; if (S === 'nocity' && st.setup) S = 'ready';
+    const dir = P.dir ?? 'b', chip = st.chip ?? P.chip ?? 'all', radius = st.radius ?? 50;
+    const ready = S === 'ready' || S === 'offline';
+    const F = { all: () => true, month: x => x.t <= 30, sale: x => ST[x.st].buy, fol: x => x.fol };
+    const ALL = [...EV, ...this.mine()].sort((p, q) => p.t - q.t), evs = ready ? ALL.filter(F[chip]) : [];
+    const chips = [['all', 'All'], ['month', 'Next 30 days'], ['sale', 'On sale now'], ['fol', 'Artists I follow']].map(([id, label]) => { const on = id === chip;
+      return { label, n: ALL.filter(F[id]).length, on, pl: on ? 8 : 14, bg: on ? 'oklch(0.36 0.035 38)' : 'transparent', bd: on ? 'transparent' : 'oklch(0.38 0.012 40)', fg: on ? 'oklch(0.92 0.025 38)' : 'oklch(0.86 0.01 40)', cc: on ? 'oklch(0.80 0.04 38)' : 'oklch(0.62 0.014 40)', pick: () => this.setState({ chip: id }) }; });
+    const GL = [['week', 'This week'], ['nov', 'November'], ['dec', 'December'], ['later', 'Later']];
+    const gs = GL.map(([id, label]) => ({ id, label, ev: evs.filter(x => x.g === id) })).filter(g => g.ev.length);
+    const groups = gs.map((g, k) => ({ label: g.label, n: g.ev.length + (g.ev.length === 1 ? ' show' : ' shows'), ringC: k === 0 ? 'oklch(0.80 0.115 38)' : 'oklch(0.50 0.02 40)',
+      railB: k === gs.length - 1 ? 44 : -36, railBP: k === gs.length - 1 ? 40 : -28, items: g.ev.map((x, i) => this.row(x, i, g.ev.length)) }));
+    const pEv = evs.filter(x => ST[x.st].buy).slice(0, 3), rest = evs.filter(x => !pEv.includes(x));
+    const mk = [...new Set(rest.map(x => x.m))];
+    const months = mk.map(m => { const it = rest.filter(x => x.m === m); return { label: MON[m] + (it[0].y ? ' ' + it[0].y : ''), sub: it.length + (it.length === 1 ? ' show' : ' shows'), items: it.map((x, i) => this.row(x, i, it.length)) }; });
+    const locOn = st.loc ?? !!P.locDemo;
+    const radOpts = [25, 50, 100, 250].map((v, i) => { const on = v === radius; return { l: v + ' km', on, rad: radF(i, 4, on), bg: on ? 'oklch(0.80 0.115 38)' : 'oklch(0.28 0.01 40)', fg: on ? 'oklch(0.30 0.08 38)' : 'oklch(0.86 0.01 40)', fn: ev => { ev && ev.stopPropagation(); this.setState({ radius: v }); } }; });
+    const shelfEv = EV.filter(x => ST[x.st].buy || x.st === 'notyet').slice(0, 4).map((x, i) => this.row(x, i, 4));
+    const playing = !st.paused, el = Math.round(st.pos / 100 * 223);
+    return {
+      rowCols: W < 1300 ? '64px minmax(0,1fr) 76px 168px 108px' : '64px minmax(0,1fr) 96px 232px 124px', rowGap: W < 1300 ? 14 : 20,
+      ...this.dlgVals(), openAdd: ev => { ev && ev.stopPropagation(); this.openDlg(null); }, fabOn: !desk && S !== 'nocity' && S !== 'loading' && !this.dlgCur(),
+      isPageDesk: view === 'page' && desk, isPagePhone: view === 'page' && !desk, isShelf: view === 'shelf', isSettings: view === 'settings',
+      W, H, navBadge: true, loading: S === 'loading', empty: S === 'empty', offline: S === 'offline', noCity: S === 'nocity', hasCity: S !== 'nocity',
+      showChips: ready, attrib: ready || S === 'empty', listA: ready && dir === 'a', listB: ready && dir === 'b',
+      city: st.city, cityV: st.city, onCity: ev => this.setState({ city: ev.target.value }), radius,
+      countL: (ready ? ALL.length : S === 'empty' ? 0 : '—') + ' upcoming shows', updL: S === 'offline' ? 'Updated yesterday, 06:10' : 'Updated today, 06:10',
+      chips, groups, posters: pEv.map((x, i) => this.row(x, i, 1)), months, shelf: shelfEv,
+      skel: [['46%', '28%'], ['62%', '34%'], ['38%', '24%'], ['54%', '30%'], ['44%', '26%']].map(([w1, w2], i) => ({ w1, w2, rad: rad(i, 5) })),
+      clover: this.cookie(10, 0.09), radOpts, locOn, locBd: locOn ? 'oklch(0.80 0.115 38)' : 'oklch(0.34 0.01 40)',
+      radHint: radius <= 25 ? 'Only shows in and right around the city' : radius <= 50 ? 'City and nearby towns' : radius <= 100 ? 'Day trips by train or car' : 'Worth a weekend away',
+      setCols: desk ? 'minmax(0,1fr) auto' : 'minmax(0,1fr)',
+      shelfW: desk ? 248 : 216, shelfGap: desk ? 16 : 12, shelfPad: desk ? '24px 28px' : '20px', shelfM: desk ? 0 : -20, shelfP: desk ? 0 : 20,
+      toggleLoc: ev => { ev && ev.stopPropagation(); this.setState({ loc: !locOn }); },
+      closeAll: () => { if (locOn) this.setState({ loc: false }); }, stop: ev => ev.stopPropagation(),
+      setupDone: () => { this.setState({ setup: true }); this.toast('Showing concerts near Barcelona · ' + radius + ' km'); },
+      widen: () => { this.setState({ radius: 100 }); this.toast('Radius set to 100 km · checking again'); },
+      retry: () => this.toast('Still offline · will retry when a connection is available'),
+      navSoon: () => this.toast('Opens in its own screen'),
+      sidePl: PL.map(([n, k, im]) => ({ n, c: k + ' songs', img: ART(im) })),
+      pCookie: this.cookieEl(56, playing ? 'pause' : 'play_arrow', 32, playing), pWave: this.wave(st.pos, 12, playing), pIc: playing ? 'pause' : 'play_arrow', pos: st.pos,
+      posL: Math.floor(el / 60) + ':' + String(el % 60).padStart(2, '0'), togglePlay: ev => { ev.stopPropagation(); this.setState(s => ({ paused: !s.paused })); },
+      toastL: 272 + (W - 272) / 2, tText: st.toast, tOp: st.tOn ? 1 : 0, tY: st.tOn ? 0 : 16 };
+  }
+}
+</script>
+</body>
+</html>

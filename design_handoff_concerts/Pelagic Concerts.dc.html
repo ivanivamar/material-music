@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:oklch(0.12 0.004 40);-webkit-font-smoothing:antialiased}
+a{color:oklch(0.80 0.115 38)}a:hover{color:oklch(0.88 0.08 38)}
+</style>
+</helmet>
+<div style="min-height:100vh; background:oklch(0.12 0.004 40); color:oklch(0.94 0.006 40); font-family:'Google Sans Flex',system-ui,sans-serif; padding:96px; display:flex; flex-direction:column; gap:120px;">
+
+<div style="display:flex; flex-direction:column; gap:18px; max-width:900px;">
+  <div style="font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:0.12em; text-transform:uppercase; color:oklch(0.79 0.014 40);">Pelagic · Concerts · Material</div>
+  <div style="font-size:56px; font-weight:500; letter-spacing:-0.02em; line-height:1.07;">Tour dates for the artists you already listen to.</div>
+  <div style="font-size:18px; line-height:1.55; color:oklch(0.79 0.014 40); text-wrap:pretty;">An On tour section on the Artist page and a Concerts near you page, built from Ticketmaster data refreshed once a day and matched to a home city and radius set in Settings. Every screen is interactive: chips filter, the location pill opens the city and radius picker, Tickets and artist taps show where they lead.</div>
+</div>
+
+<section style="display:flex; flex-direction:column; gap:28px;">
+  <div style="display:flex; align-items:baseline; gap:16px;"><div style="font-family:'JetBrains Mono',monospace; font-size:12px; color:oklch(0.80 0.115 38);">01</div><div style="font-size:32px; font-weight:500;">Concerts near you · two directions</div></div>
+  <div style="font-size:16px; line-height:1.55; color:oklch(0.79 0.014 40); max-width:860px; text-wrap:pretty;"><a href="#1a">1a</a> is a single agenda on the Library timeline rail, one segmented row per show with every field visible. <a href="#1b">1b</a> leads with poster cards for the next three shows you can buy tickets for, then lists the rest as cards by month. <strong style="color:oklch(0.94 0.006 40);">1b is the chosen direction.</strong> 1a stays here for reference.</div>
+  <div style="display:flex; flex-wrap:wrap; gap:72px; align-items:flex-start;">
+    <div id="1a" data-screen-label="1a Timeline agenda" style="display:flex; flex-direction:column; gap:16px;">
+      <div style="display:flex; align-items:center; gap:12px;"><div style="height:28px; padding:0 10px; border-radius:8px; background:oklch(0.80 0.115 38); color:oklch(0.30 0.08 38); font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:600; display:flex; align-items:center;">1a</div><div style="font-size:20px; font-weight:600;">Timeline agenda</div><div style="font-size:14px; color:oklch(0.79 0.014 40);">Dense, scannable, same rail as Library</div></div>
+      <div style="display:flex; gap:40px; align-items:flex-start;">
+        <dc-import name="ConcertsMaterial" form="desk" dir="a" hint-size="1440px,900px"></dc-import>
+        <dc-import name="ConcertsMaterial" form="phone" dir="a" w="{{ 412 }}" h="{{ 892 }}" hint-size="412px,892px"></dc-import>
+      </div>
+    </div>
+    <div id="1b" data-screen-label="1b Posters and months" style="display:flex; flex-direction:column; gap:16px;">
+      <div style="display:flex; align-items:center; gap:12px;"><div style="height:28px; padding:0 10px; border-radius:8px; background:oklch(0.80 0.115 38); color:oklch(0.30 0.08 38); font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:600; display:flex; align-items:center;">1b</div><div style="font-size:20px; font-weight:600;">Posters + months</div><div style="height:24px; padding:0 10px; border-radius:999px; background:oklch(0.31 0.05 150); color:oklch(0.88 0.08 150); font-size:12px; font-weight:700; display:flex; align-items:center;">Chosen</div><div style="font-size:14px; color:oklch(0.79 0.014 40);">Photo-led headliners, then cards by month</div></div>
+      <div style="display:flex; gap:40px; align-items:flex-start;">
+        <dc-import name="ConcertsMaterial" form="desk" dir="b" hint-size="1440px,900px"></dc-import>
+        <dc-import name="ConcertsMaterial" form="phone" dir="b" w="{{ 412 }}" h="{{ 892 }}" hint-size="412px,892px"></dc-import>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section style="display:flex; flex-direction:column; gap:28px;">
+  <div style="display:flex; align-items:baseline; gap:16px;"><div style="font-family:'JetBrains Mono',monospace; font-size:12px; color:oklch(0.80 0.115 38);">02</div><div style="font-size:32px; font-weight:500;">Artist page · On tour</div></div>
+  <div style="font-size:16px; line-height:1.55; color:oklch(0.79 0.014 40); max-width:860px; text-wrap:pretty;">On desktop it sits at the top of the right column, above Albums, so Most played stays the main block. On phone it goes between the actions and Most played. Nearby dates get full rows with Tickets. Dates elsewhere fold into one row that expands to a compact list. A green chip in the hero appears only when a date is inside your radius. With no upcoming dates the section is hidden.</div>
+  <div style="display:flex; flex-wrap:wrap; gap:56px; align-items:flex-start;">
+    <div data-screen-label="02 Artist desktop nearby" style="display:flex; flex-direction:column; gap:12px;"><div style="font-size:13px; color:oklch(0.79 0.014 40);">Desktop · two nearby dates, 12 elsewhere</div><dc-import name="ArtistTourMaterial" form="desk" tour="nearby" hint-size="1440px,900px"></dc-import></div>
+    <div data-screen-label="02 Artist desktop far" style="display:flex; flex-direction:column; gap:12px;"><div style="font-size:13px; color:oklch(0.79 0.014 40);">Desktop · none nearby, list expanded</div><dc-import name="ArtistTourMaterial" form="desk" tour="far" tour-open="{{ true }}" hint-size="1440px,900px"></dc-import></div>
+  </div>
+  <div style="display:flex; flex-wrap:wrap; gap:48px; align-items:flex-start;">
+    <div data-screen-label="02 Artist phone nearby" style="display:flex; flex-direction:column; gap:12px;"><div style="font-size:13px; color:oklch(0.79 0.014 40);">Phone · nearby</div><dc-import name="ArtistTourMaterial" form="phone" w="{{ 412 }}" h="{{ 892 }}" tour="nearby" hint-size="412px,892px"></dc-import></div>
+    <div data-screen-label="02 Artist phone one" style="display:flex; flex-direction:column; gap:12px;"><div style="font-size:13px; color:oklch(0.79 0.014 40);">Phone · a single date</div><dc-import name="ArtistTourMaterial" form="phone" w="{{ 412 }}" h="{{ 892 }}" tour="one" hint-size="412px,892px"></dc-import></div>
+    <div data-screen-label="02 Artist phone loading" style="display:flex; flex-direction:column; gap:12px;"><div style="font-size:13px; color:oklch(0.79 0.014 40);">Phone · loading</div><dc-import name="ArtistTourMaterial" form="phone" w="{{ 412 }}" h="{{ 892 }}" tour="loading" hint-size="412px,892px"></dc-import></div>
+    <div data-screen-label="02 Artist phone no city" style="display:flex; flex-direction:column; gap:12px;"><div style="font-size:13px; color:oklch(0.79 0.014 40);">Phone · home city not set</div><dc-import name="ArtistTourMaterial" form="phone" w="{{ 412 }}" h="{{ 892 }}" tour="nocity" hint-size="412px,892px"></dc-import></div>
+    <div data-screen-label="02 Artist phone error" style="display:flex; flex-direction:column; gap:12px;"><div style="font-size:13px; color:oklch(0.79 0.014 40);">Phone · couldn't load</div><dc-import name="ArtistTourMaterial" form="phone" w="{{ 412 }}" h="{{ 892 }}" tour="error" hint-size="412px,892px"></dc-import></div>
+  </div>
+</section>
+
+<section style="display:flex; flex-direction:column; gap:28px;">
+  <div style="display:flex; align-items:baseline; gap:16px;"><div style="font-family:'JetBrains Mono',monospace; font-size:12px; color:oklch(0.80 0.115 38);">03</div><div style="font-size:32px; font-weight:500;">Concerts page · states</div></div>
+  <div style="font-size:16px; line-height:1.55; color:oklch(0.79 0.014 40); max-width:860px; text-wrap:pretty;">Shown in the chosen direction, <a href="#1b">1b</a>. The cancelled (Black Veil Brides) and postponed (Evanescence) shows are in the lists above.</div>
+  <div style="display:flex; flex-wrap:wrap; gap:56px; align-items:flex-start;">
+    <div data-screen-label="03 Desktop location" style="display:flex; flex-direction:column; gap:12px;"><div style="font-size:13px; color:oklch(0.79 0.014 40);">Change city and radius</div><dc-import name="ConcertsMaterial" dir="b" form="desk" w="{{ 1180 }}" h="{{ 760 }}" loc-demo="{{ true }}" hint-size="1180px,760px"></dc-import></div>
+    <div data-screen-label="03 Desktop first-time" style="display:flex; flex-direction:column; gap:12px;"><div style="font-size:13px; color:oklch(0.79 0.014 40);">Home city not set · first-time setup</div><dc-import name="ConcertsMaterial" dir="b" form="desk" w="{{ 1180 }}" h="{{ 760 }}" state="nocity" hint-size="1180px,760px"></dc-import></div>
+    <div data-screen-label="03 Desktop loading" style="display:flex; flex-direction:column; gap:12px;"><div style="font-size:13px; color:oklch(0.79 0.014 40);">Loading</div><dc-import name="ConcertsMaterial" dir="b" form="desk" w="{{ 1180 }}" h="{{ 760 }}" state="loading" hint-size="1180px,760px"></dc-import></div>
+    <div data-screen-label="03 Desktop empty" style="display:flex; flex-direction:column; gap:12px;"><div style="font-size:13px; color:oklch(0.79 0.014 40);">No shows nearby</div><dc-import name="ConcertsMaterial" dir="b" form="desk" w="{{ 1180 }}" h="{{ 760 }}" state="empty" hint-size="1180px,760px"></dc-import></div>
+    <div data-screen-label="03 Desktop offline" style="display:flex; flex-direction:column; gap:12px;"><div style="font-size:13px; color:oklch(0.79 0.014 40);">Couldn't update · cached dates</div><dc-import name="ConcertsMaterial" dir="b" form="desk" w="{{ 1180 }}" h="{{ 760 }}" state="offline" hint-size="1180px,760px"></dc-import></div>
+  </div>
+  <div style="display:flex; flex-wrap:wrap; gap:48px; align-items:flex-start;">
+    <div data-screen-label="03 Phone location" style="display:flex; flex-direction:column; gap:12px;"><div style="font-size:13px; color:oklch(0.79 0.014 40);">Phone · location sheet</div><dc-import name="ConcertsMaterial" dir="b" form="phone" w="{{ 412 }}" h="{{ 892 }}" loc-demo="{{ true }}" hint-size="412px,892px"></dc-import></div>
+    <div data-screen-label="03 Phone first-time" style="display:flex; flex-direction:column; gap:12px;"><div style="font-size:13px; color:oklch(0.79 0.014 40);">Phone · first-time setup</div><dc-import name="ConcertsMaterial" dir="b" form="phone" w="{{ 412 }}" h="{{ 892 }}" state="nocity" hint-size="412px,892px"></dc-import></div>
+    <div data-screen-label="03 Phone loading" style="display:flex; flex-direction:column; gap:12px;"><div style="font-size:13px; color:oklch(0.79 0.014 40);">Phone · loading</div><dc-import name="ConcertsMaterial" dir="b" form="phone" w="{{ 412 }}" h="{{ 892 }}" state="loading" hint-size="412px,892px"></dc-import></div>
+    <div data-screen-label="03 Phone empty" style="display:flex; flex-direction:column; gap:12px;"><div style="font-size:13px; color:oklch(0.79 0.014 40);">Phone · empty</div><dc-import name="ConcertsMaterial" dir="b" form="phone" w="{{ 412 }}" h="{{ 892 }}" state="empty" hint-size="412px,892px"></dc-import></div>
+    <div data-screen-label="03 Phone offline" style="display:flex; flex-direction:column; gap:12px;"><div style="font-size:13px; color:oklch(0.79 0.014 40);">Phone · offline</div><dc-import name="ConcertsMaterial" dir="b" form="phone" w="{{ 412 }}" h="{{ 892 }}" state="offline" hint-size="412px,892px"></dc-import></div>
+  </div>
+</section>
+
+<section style="display:flex; flex-direction:column; gap:28px;">
+  <div style="display:flex; align-items:baseline; gap:16px;"><div style="font-family:'JetBrains Mono',monospace; font-size:12px; color:oklch(0.80 0.115 38);">04</div><div style="font-size:32px; font-weight:500;">Where it lives</div></div>
+  <div style="font-size:16px; line-height:1.55; color:oklch(0.79 0.014 40); max-width:860px; text-wrap:pretty;">Desktop: a Concerts item in the sidebar Browse list, under New releases, with a coral badge counting shows added since your last visit (visible in the screens above). Phone: the bottom bar keeps its four tabs. Concerts opens as a pushed page from the Home shelf's See all, the Artist page hero chip, and the Settings row.</div>
+  <div style="display:flex; flex-wrap:wrap; gap:48px; align-items:flex-start;">
+    <div data-screen-label="04 Home shelf desktop" style="display:flex; flex-direction:column; gap:12px;"><div style="font-size:13px; color:oklch(0.79 0.014 40);">Home shelf · desktop</div><dc-import name="ConcertsMaterial" view="shelf" form="desk" w="{{ 1100 }}" hint-size="1100px,320px"></dc-import></div>
+    <div data-screen-label="04 Home shelf phone" style="display:flex; flex-direction:column; gap:12px;"><div style="font-size:13px; color:oklch(0.79 0.014 40);">Home shelf · phone</div><dc-import name="ConcertsMaterial" view="shelf" form="phone" w="{{ 412 }}" hint-size="412px,320px"></dc-import></div>
+  </div>
+  <div style="display:flex; flex-wrap:wrap; gap:48px; align-items:flex-start;">
+    <div data-screen-label="04 Settings desktop" style="display:flex; flex-direction:column; gap:12px;"><div style="font-size:13px; color:oklch(0.79 0.014 40);">Settings · desktop</div><dc-import name="ConcertsMaterial" view="settings" form="desk" w="{{ 760 }}" hint-size="760px,340px"></dc-import></div>
+    <div data-screen-label="04 Settings phone" style="display:flex; flex-direction:column; gap:12px;"><div style="font-size:13px; color:oklch(0.79 0.014 40);">Settings · phone</div><dc-import name="ConcertsMaterial" view="settings" form="phone" w="{{ 412 }}" hint-size="412px,400px"></dc-import></div>
+  </div>
+</section>
+
+<section style="display:flex; flex-direction:column; gap:28px;">
+  <div style="display:flex; align-items:baseline; gap:16px;"><div style="font-family:'JetBrains Mono',monospace; font-size:12px; color:oklch(0.80 0.115 38);">05</div><div style="font-size:32px; font-weight:500;">Add a show yourself</div></div>
+  <div style="font-size:16px; line-height:1.55; color:oklch(0.79 0.014 40); max-width:860px; text-wrap:pretty;">For shows Ticketmaster doesn't list. Add show sits in the page header on desktop and is a floating button on phone. Pick an artist from your library, then add a date, venue and city. Start time and ticket link are optional. Your shows sort into the same list with an "Added by you" chip; tap the chip to edit or delete. Tickets appears only if you saved a link. Daily updates never touch these shows.</div>
+  <div style="display:flex; flex-wrap:wrap; gap:56px; align-items:flex-start;">
+    <div data-screen-label="05 Desktop add dialog" style="display:flex; flex-direction:column; gap:12px;"><div style="font-size:13px; color:oklch(0.79 0.014 40);">Add a show · filled in</div><dc-import name="ConcertsMaterial" dir="b" form="desk" add-demo="filled" hint-size="1440px,900px"></dc-import></div>
+    <div data-screen-label="05 Desktop artist search" style="display:flex; flex-direction:column; gap:12px;"><div style="font-size:13px; color:oklch(0.79 0.014 40);">Picking the artist from your library</div><dc-import name="ConcertsMaterial" dir="b" form="desk" w="{{ 1180 }}" h="{{ 760 }}" add-demo="suggest" hint-size="1180px,760px"></dc-import></div>
+    <div data-screen-label="05 Desktop list with own show" style="display:flex; flex-direction:column; gap:12px;"><div style="font-size:13px; color:oklch(0.79 0.014 40);">In the list · Wing, Fri 27 Nov (under November)</div><dc-import name="ConcertsMaterial" dir="b" form="desk" mine="{{ true }}" hint-size="1440px,900px"></dc-import></div>
+  </div>
+  <div style="display:flex; flex-wrap:wrap; gap:48px; align-items:flex-start;">
+    <div data-screen-label="05 Phone FAB" style="display:flex; flex-direction:column; gap:12px;"><div style="font-size:13px; color:oklch(0.79 0.014 40);">Phone · Add show button</div><dc-import name="ConcertsMaterial" dir="b" form="phone" w="{{ 412 }}" h="{{ 892 }}" mine="{{ true }}" hint-size="412px,892px"></dc-import></div>
+    <div data-screen-label="05 Phone add" style="display:flex; flex-direction:column; gap:12px;"><div style="font-size:13px; color:oklch(0.79 0.014 40);">Phone · full-screen form</div><dc-import name="ConcertsMaterial" dir="b" form="phone" w="{{ 412 }}" h="{{ 892 }}" add-demo="filled" hint-size="412px,892px"></dc-import></div>
+    <div data-screen-label="05 Phone add suggest" style="display:flex; flex-direction:column; gap:12px;"><div style="font-size:13px; color:oklch(0.79 0.014 40);">Phone · artist search</div><dc-import name="ConcertsMaterial" dir="b" form="phone" w="{{ 412 }}" h="{{ 892 }}" add-demo="suggest" hint-size="412px,892px"></dc-import></div>
+  </div>
+</section>
+
+
+
+</div>
+</x-dc>
+</body>
+</html>

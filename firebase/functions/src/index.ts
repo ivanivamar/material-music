@@ -1,6 +1,7 @@
 /**
  * Pelagic's only server code: one Cloud Function, `api`, behind Firebase Hosting (`/api/**`).
- * It serves `/api/auth/*` (sign-in helper), `/api/deezer/*` (Deezer proxy) and `/api/voice/*` (DJ voice).
+ * It serves `/api/auth/*` (sign-in helper), `/api/deezer/*` (Deezer proxy), `/api/voice/*` (DJ voice)
+ * and `/api/concerts/*` (Ticketmaster tour dates).
  * The handlers in ./api/ are plain Web Request → Response functions (they started life as
  * Cloudflare Pages Functions, moved here Oct 20, 2026); this file adapts Firebase's request/response
  * to them. build.mjs bundles everything into lib/index.js.
@@ -15,22 +16,28 @@
  * Secrets (once, from the repo root):  firebase functions:secrets:set GOOGLE_CLIENT_ID
  *                                       firebase functions:secrets:set GOOGLE_CLIENT_SECRET
  *                                       firebase functions:secrets:set GOOGLE_TTS_API_KEY   (DJ voice)
+ *                                       firebase functions:secrets:set TICKETMASTER_API_KEY (Concerts)
+ * A new secret needs one deploy from the PC (`firebase deploy --only functions`): the CLI grants the
+ * function access to it, which the CI account can't do.
  */
 import { onRequest } from 'firebase-functions/v2/https'
 import { defineSecret } from 'firebase-functions/params'
 import * as auth from './api/auth.ts'
 import * as deezer from './api/deezer.ts'
 import * as voice from './api/voice.ts'
+import * as concerts from './api/concerts.ts'
 
 const GOOGLE_CLIENT_ID = defineSecret('GOOGLE_CLIENT_ID')
 const GOOGLE_CLIENT_SECRET = defineSecret('GOOGLE_CLIENT_SECRET')
 /** DJ voice (step 22c): Google Cloud Text-to-Speech API key */
 const GOOGLE_TTS_API_KEY = defineSecret('GOOGLE_TTS_API_KEY')
+/** Concerts: Ticketmaster Discovery API consumer key */
+const TICKETMASTER_API_KEY = defineSecret('TICKETMASTER_API_KEY')
 
 const APP_COOKIE = '__Host-pelagic_rt'
 const FB_COOKIE = '__session'
 
-const handlers = { auth, deezer, voice } as const
+const handlers = { auth, deezer, voice, concerts } as const
 
 /** The site's own host (what the browser sees), not the function's. */
 function siteHost(headers: Record<string, string | string[] | undefined>): string {
@@ -53,14 +60,14 @@ function siteHost(headers: Record<string, string | string[] | undefined>): strin
 export const api = onRequest(
   {
     region: 'europe-west1',
-    secrets: [GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_TTS_API_KEY],
+    secrets: [GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_TTS_API_KEY, TICKETMASTER_API_KEY],
     memory: '256MiB',
     maxInstances: 3,
     invoker: 'public',
   },
   async (req, res) => {
     const url = new URL(req.originalUrl || req.url, `https://${siteHost(req.headers)}`)
-    const m = /^\/api\/(auth|deezer|voice)\/([^/]+)\/?$/.exec(url.pathname)
+    const m = /^\/api\/(auth|deezer|voice|concerts)\/([^/]+)\/?$/.exec(url.pathname)
     if (!m) {
       res.status(404).set('cache-control', 'no-store').json({ error: 'not_found' })
       return
@@ -87,6 +94,7 @@ export const api = onRequest(
       GOOGLE_CLIENT_ID: GOOGLE_CLIENT_ID.value().trim() || undefined,
       GOOGLE_CLIENT_SECRET: GOOGLE_CLIENT_SECRET.value().trim() || undefined,
       GOOGLE_TTS_API_KEY: GOOGLE_TTS_API_KEY.value().trim() || undefined,
+      TICKETMASTER_API_KEY: TICKETMASTER_API_KEY.value().trim() || undefined,
     }
 
     const handler = handlers[m[1] as keyof typeof handlers]

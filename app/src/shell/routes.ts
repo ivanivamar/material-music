@@ -1,12 +1,13 @@
 /**
  * Hash routes: #/home, #/library[/artists|albums|playlists|songs], #/album/<id>, #/artist/<id>,
- * #/playlist/<id>, #/mix/<id>, #/stats[/<year>|/<year>-<month>], #/health (Library health, opened from Settings) …
+ * #/playlist/<id>, #/mix/<id>, #/stats[/<year>|/<year>-<month>], #/health (Library health, opened from Settings),
+ * #/concerts[?loc|?add] (Concerts near you; ?loc opens the location picker, ?add the Add a show form) …
  * plus the dev reference pages (#/dev/components, #/dev/foundations).
  */
 import { useSyncExternalStore } from 'react'
 import type { IconName } from '../design/icons'
 
-export type RouteKey = 'home' | 'library' | 'new' | 'upload' | 'downloads' | 'settings' | 'health' | 'album' | 'artist' | 'playlist' | 'stats' | 'mix'
+export type RouteKey = 'home' | 'library' | 'new' | 'concerts' | 'upload' | 'downloads' | 'settings' | 'health' | 'album' | 'artist' | 'playlist' | 'stats' | 'mix'
 export type DevRoute = 'dev/components' | 'dev/foundations'
 export type LibraryTab = 'all' | 'albums' | 'artists' | 'playlists' | 'songs'
 export const LIBRARY_TABS: LibraryTab[] = ['all', 'albums', 'artists', 'playlists', 'songs']
@@ -22,6 +23,7 @@ export const NAV: NavItem[] = [
   { key: 'home', label: 'Home', icon: 'home' },
   { key: 'library', label: 'Library', icon: 'library' },
   { key: 'new', label: 'New releases', icon: 'newr' },
+  { key: 'concerts', label: 'Concerts', icon: 'concerts' },
   { key: 'upload', label: 'Upload', icon: 'upload' },
   { key: 'downloads', label: 'Downloads', icon: 'download' },
 ]
@@ -29,7 +31,7 @@ export const NAV: NavItem[] = [
 export const SETTINGS_NAV: NavItem = { key: 'settings', label: 'Settings', icon: 'gear' }
 
 type SimpleKey = Exclude<RouteKey, 'library' | 'album' | 'artist' | 'playlist' | 'stats' | 'mix'>
-const KEYS = new Set<string>(['home', 'new', 'upload', 'downloads', 'settings', 'health'])
+const KEYS = new Set<string>(['home', 'new', 'concerts', 'upload', 'downloads', 'settings', 'health'])
 const DEV = new Set<string>(['dev/components', 'dev/foundations'])
 
 export type Route =

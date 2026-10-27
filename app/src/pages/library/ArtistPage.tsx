@@ -10,6 +10,9 @@
  *   ┌ 1 [cover] Black Rainbow · Tsunami Sea ✓     64 plays  3:48 ⋮ ┐                          | EPs 2 …
  *   Show all 20
  *
+ * On tour (Concerts): top of the right column on desktop, between the actions and Most played on the
+ * phone; a "Playing near you · Thu 29 Oct" chip next to the kicker when a date is near home.
+ *
  * Following = new-release alerts for this artist (state/releases.ts: not muted). The banner
  * (artist_background, else the blurred photo) sits faintly behind the header.
  */
@@ -32,6 +35,9 @@ import { ActBtn, DetailBack, DtList, DtRow, MoreBtn, titleSize } from './detail'
 import { LibCard, albumItem } from './libgrid'
 import { initials } from '../home/art'
 import { nameHue } from '../../lib/mixing'
+import { useIsPhone } from '../../state/viewport'
+import { HeroTourChip, OnTour, useTourNear } from '../concerts/OnTour'
+import { useArtistLook } from '../concerts/parts'
 
 const ORDER: ReleaseKind[] = ['album', 'ep', 'single', 'live']
 const SONGS_COLLAPSED = 10
@@ -54,6 +60,9 @@ export function ArtistPage({ id }: { id: string }) {
   const bgId = artist?.background?.id ?? (artist?.image && artist.image.source !== 'mosaic' ? artist.image.id : undefined)
   const bg = useCover(bgId, artist?.background ? artist.background.v : artist?.image?.v)
   const blurred = !artist?.background
+  const phone = useIsPhone()
+  const tourNear = useTourNear(id)
+  const tourHue = useArtistLook(artist).H
   const counts = useMemo(() => {
     const m = new Map<string, number>()
     for (const p of history.plays) m.set(p.trackId, (m.get(p.trackId) ?? 0) + 1)
@@ -109,13 +118,21 @@ export function ArtistPage({ id }: { id: string }) {
           </div>
         </div>
         <div className="dt-hero-text">
-          <div className="dt-kicker">{['Artist', ...genres.map(cap)].join(' · ')}</div>
+          <div className="dt-kicker-row">
+            <div className="dt-kicker">{['Artist', ...genres.map(cap)].join(' · ')}</div>
+            {tourNear && !phone && <HeroTourChip show={tourNear} />}
+          </div>
           <h1 className="dt-title" style={{ '--ts': `${titleSize(artist.name)}px` } as React.CSSProperties} title={artist.name}>
             {artist.name}
           </h1>
           <div className="dt-line">
             <span className="dt-stats">{stats}</span>
           </div>
+          {tourNear && phone && (
+            <div className="dt-line">
+              <HeroTourChip show={tourNear} />
+            </div>
+          )}
           <div className="dt-actions dt-artist-actions">
             <ActBtn kind="filled" icon={ctx.playing ? 'pauseF' : 'playF'} onClick={onPlay} disabled={!ids.length}>
               {ctx.playing ? 'Pause' : ctx.active ? 'Resume' : 'Play'}
@@ -137,6 +154,8 @@ export function ArtistPage({ id }: { id: string }) {
           </div>
         </div>
       </header>
+
+      {phone && <OnTour artistId={artist.id} H={tourHue} />}
 
       <div className="dt-cols">
         <section className="dt-section">
@@ -185,6 +204,7 @@ export function ArtistPage({ id }: { id: string }) {
         </section>
 
         <div className="dt-disco">
+          {!phone && <OnTour artistId={artist.id} H={tourHue} />}
           {groups.map((g) => (
             <section key={g.kind} className="dt-section">
               <div className="hs-head">

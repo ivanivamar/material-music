@@ -6,6 +6,7 @@
  *   Your <year> recap  (step 21, Dec 18 – Jan 31 only)
  *   Made for you       Daily Mixes, Deep cuts, Rediscover (state/mixes.ts, computed after first paint)
  *   Radio for you      six stations from what's been played (or the artists with the most albums)
+ *   Concerts near you  up to four shows near the home city (Concerts; only once a city is set)
  *   Recently added
  *   Your artists       most played album artists, 90 days (or most albums)
  *   Smart playlists    + "New smart playlist" (an invite while there are none)
@@ -28,11 +29,12 @@ import { useSession } from '../state/session'
 import { useGenres } from '../state/genres'
 import { useDj } from '../state/dj'
 import { fmtN, plural } from '../state/views'
-import { libraryHref } from '../shell/routes'
+import { href, libraryHref } from '../shell/routes'
 import { usePlayingAlbumId } from './library/playback'
 import { RecapShelf } from './stats/RecapShelf'
 import { AlbumCardHome, ArtistCard, avatarSize, cardSize, MixCard, NewSmartCard, RadioCardView, SkelCard, SmartCard, SmartInvite, useHomeSize } from './home/cards'
 import { JumpBackIn, jumpTiles } from './home/JumpBackIn'
+import { ShelfCard, useConcertShelf } from './concerts/cards'
 import './home/home.css'
 
 function useMinuteClock() {
@@ -49,7 +51,7 @@ function useMinuteClock() {
 const greeting = (h: number) => (h < 5 ? 'Still up' : h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening')
 
 /** Shelf: title + note (+ "See all" on desktop, an arrow on phone); cards scroll sideways. */
-function Shelf({ label, sub, subHref, phone, className, children, row = 'scroll', inline }: { label: string; sub?: ReactNode; subHref?: string; phone?: boolean; className?: string; children: ReactNode; row?: 'scroll' | 'none'; inline?: boolean }) {
+function Shelf({ label, sub, subHref, moreLabel = 'See all', phone, className, children, row = 'scroll', inline }: { label: string; sub?: ReactNode; subHref?: string; moreLabel?: string; phone?: boolean; className?: string; children: ReactNode; row?: 'scroll' | 'none'; inline?: boolean }) {
   return (
     <section className={`hs ${className ?? ''}`}>
       <div className="hs-head">
@@ -63,7 +65,7 @@ function Shelf({ label, sub, subHref, phone, className, children, row = 'scroll'
             </a>
           ) : (
             <a className="hs-more" href={subHref}>
-              See all
+              {moreLabel}
             </a>
           ))}
       </div>
@@ -99,6 +101,7 @@ export function Home() {
   const day = mixDay(now.getTime()).key
   const mixes = useMixSet([data, history.plays, genres.doc, dj.doc.songPenalties, day])
   const radios = mixes ? radioSet(relVersion, now.getTime()) : null
+  const concerts = useConcertShelf()
 
   // pick up plays / recents from the other device (throttled; the stores also sync on focus / reconnect)
   useEffect(() => {
@@ -151,6 +154,29 @@ export function Home() {
         {(!radios || radios.items.length > 0) && (
           <Shelf label="Radio for you" sub={radioSub} phone={phone}>
             {radios ? radios.items.map((r) => <RadioCardView key={r.id} c={data} radio={r} size={cs} />) : [0, 1, 2, 3, 4, 5, 6].map((i) => <SkelCard key={i} size={cs} />)}
+          </Shelf>
+        )}
+
+        {concerts && (
+          <Shelf
+            label="Concerts near you"
+            sub={
+              <>
+                {concerts.city} · <span className="cx-mono">{concerts.radius} km</span>
+              </>
+            }
+            subHref={href('concerts')}
+            moreLabel={`See all ${concerts.total}`}
+            phone={phone}
+            row="none"
+            className="hs-concerts"
+          >
+            <div className="hs-row cx-shelf-row">
+              {concerts.shows.map((s) => (
+                <ShelfCard key={s.key} c={data} show={s} width={phone ? 216 : 248} />
+              ))}
+            </div>
+            <div className="cx-shelf-attrib">Ticket info from Ticketmaster</div>
           </Shelf>
         )}
 

@@ -4,7 +4,7 @@
  * rings) and the floating player bar. Phone: top bar on the top-level pages, mini player, tab bar.
  * Keeps the library in sync and surfaces session / sync events as toasts.
  */
-import { useEffect, useLayoutEffect, useRef, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, type ReactNode } from 'react'
 import { Icon } from '../design/icons'
 import { SHAPE_PLAYING } from '../design/shapes'
 import { playList } from '../pages/library/playback'
@@ -36,6 +36,8 @@ import { onReleasesEvent, releasesStore, useReleases } from '../state/releases'
 import { buildFeed, fmtClock } from '../state/releaseViews'
 import { historyStore, useHistory } from '../state/history'
 import { playRelease } from '../pages/releases/parts'
+import { useConcerts } from '../state/concerts'
+import { buildShows, nearbyShows } from '../state/concertViews'
 import './shell.css'
 import './phone.css'
 
@@ -157,6 +159,13 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
   const rs = useReleases()
   const plays = useHistory().plays
   const newReleases = lib.data && rs.doc.sweep.at !== null ? buildFeed(rs.doc, lib.data, plays, rs.prefs).counts.new : 0
+  // Concerts: shows near home first seen since Concerts was last opened (cleared by opening it)
+  const cs = useConcerts()
+  const newConcerts = useMemo(() => {
+    if (!lib.data || !cs.doc.home[0]) return 0
+    const b = buildShows(lib.data, cs, cs.doc, rs.doc, cs.doc.seenAt[0])
+    return nearbyShows(b, cs.doc.radius[0]).filter((s) => s.isNew).length
+  }, [lib.data, cs, rs.doc])
   useEffect(
     () =>
       onReleasesEvent((e) => {
@@ -432,7 +441,8 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
               {page}
             </main>
             <MiniPlayer />
-            <TabBar active={navKeyOf(route)} counts={{ new: newReleases }} />
+            {/* Concerts is a pushed page on the phone, reached from Home */}
+            <TabBar active={navKeyOf(route) === 'concerts' ? 'home' : navKeyOf(route)} counts={{ new: newReleases }} />
           </>
         ) : (
           <>
@@ -442,6 +452,7 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
               badges={{
                 ...(upRun.badge ? { upload: upRun.badge } : {}),
                 ...(newReleases ? { new: String(newReleases) } : {}),
+                ...(newConcerts ? { concerts: String(newConcerts) } : {}),
               }}
             />
             <div className="shell-panel">
