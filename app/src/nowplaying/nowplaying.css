@@ -139,6 +139,22 @@ a.np-from-l:hover { color: var(--np-on); text-decoration: underline; text-underl
 }
 .np .djb.is-on { background: var(--dj); color: var(--on-dj); box-shadow: 0 0 24px -6px oklch(0.84 0.09 290 / 0.55); border-radius: 12px; }
 
+/* While the DJ plays a song (not its own intro / start scene), the cover owns the colour: DJ accents
+   take the album palette instead of violet, and the DJ chip goes tonal like the quality badge. */
+.np:not(.is-dj-scene) {
+  --dj: var(--album-hi);
+  --dj-hover: color-mix(in oklch, var(--album-hi) 85%, white);
+  --dj-light: color-mix(in oklch, var(--album-hi) 70%, white);
+  --on-dj: var(--on-album);
+}
+.np:not(.is-dj-scene) .np-chip { background: transparent; color: var(--np-on-var); box-shadow: inset 0 0 0 1.5px var(--np-on-var); font-weight: 600; letter-spacing: .04em; }
+.np:not(.is-dj-scene) .djb.djb-np:not(.is-on), .np:not(.is-dj-scene) .djb.djb-phone:not(.is-on) { color: var(--np-on); box-shadow: inset 0 0 0 1px var(--np-edge); }
+.np:not(.is-dj-scene) .djb.is-on, .np:not(.is-dj-scene) .djb.is-on:hover { box-shadow: none; }
+.np:not(.is-dj-scene) .np-vbtn.is-dj-tune { color: var(--np-on); }
+.np:not(.is-dj-scene) .np-vbtn.is-dj-tune:hover { background: rgba(255, 255, 255, .1); color: var(--np-on); }
+.np:not(.is-dj-scene) .np-from-k.has-dj { color: var(--np-on-var); }
+.np:not(.is-dj-scene) .np-mode.is-dj-off, .np:not(.is-dj-scene) .np-vbtn.is-dj-off { color: var(--np-on-var); opacity: .4; }
+
 /* lyrics panel (desktop: right side popover; phone: sheet from below) */
 .np-scrim {
   position: absolute; inset: 0; z-index: 20;
