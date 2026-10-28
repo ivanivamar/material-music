@@ -136,6 +136,11 @@ export const ICON_SYMBOLS = {
   event: 'event',
   stadium: 'stadium',
   link: 'link',
+  // Player sync (step 37)
+  devices: 'devices',
+  computer: 'computer',
+  smartphone: 'smartphone',
+  speaker: 'speaker',
   dj: '',
 } as const
 

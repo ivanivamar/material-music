@@ -397,6 +397,8 @@ function follow() {
   const run = state.run
   if (!run || state.starting) return
   const p = playerStore.get()
+  // another device took over (step 37): the run here is over, quietly
+  if (p.remote) return endRun('cleared', null)
   if (p.context?.kind !== 'dj' || p.index < 0) {
     endRun(p.index < 0 ? 'cleared' : 'replaced', p.index < 0 ? null : (p.context?.label ?? null))
     return

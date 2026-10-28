@@ -28,6 +28,8 @@ export interface Settings {
   sweepHour: number
   /** Upload: look up lyrics (LRCLIB) for songs that arrive without them */
   fetchLyrics: boolean
+  /** Step 37: share the queue / playback with the other devices (Firestore) */
+  syncPlayback: boolean
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -41,6 +43,7 @@ export const DEFAULT_SETTINGS: Settings = {
   driveFallback: true,
   sweepHour: 6,
   fetchLyrics: true,
+  syncPlayback: true,
 }
 
 const KEY = 'pelagic.settings.v1'

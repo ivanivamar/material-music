@@ -274,6 +274,8 @@ export const recentStore = {
     // what was loaded at boot isn't a new play
     let last: string | null = keyNow()
     playerStore.subscribe(() => {
+      // following another device (step 37): it records what it plays
+      if (playerStore.get().remote) return
       const k = keyNow()
       if (k === last) return
       last = k

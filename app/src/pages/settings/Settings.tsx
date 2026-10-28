@@ -12,7 +12,7 @@
  * when I play an album") remain hidden.
  */
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { Chip, IconButton, Button, LinearProgress, Segmented, StorageBar, Toggle, ValueSlider, useToast, type SegOption } from '../../components/ui'
+import { Chip, IconButton, Button, LinearProgress, Segmented, StorageBar, TextField, Toggle, ValueSlider, useToast, type SegOption } from '../../components/ui'
 import { Icon } from '../../design/icons'
 import type { MotionSetting, ParticleSetting } from '../../design/tokens'
 import { DJ_TYPES, TYPE_LABEL, type DjType } from '../../dj/engine'
@@ -35,6 +35,7 @@ import { concertsStore, RADII, useConcerts, type Radius } from '../../state/conc
 import { buildShows, cityLabel, lastUpdated, nearbyShows, radiusHint, updatedLabel } from '../../state/concertViews'
 import { CitySearch } from '../concerts/parts'
 import { fmtBytes, fmtN } from '../../state/views'
+import { syncStore, useSync } from '../../sync/playerSync'
 import './settings.css'
 
 /* ── Page ───────────────────────────────────────────── */
@@ -63,6 +64,7 @@ export function Settings() {
     { id: 'account', label: 'Account', render: () => <AccountSection /> },
     { id: 'library', label: 'Library', render: () => <LibrarySection /> },
     { id: 'playback', label: 'Playback', render: () => <PlaybackSection /> },
+    { id: 'devices', label: 'Devices', render: () => <DevicesSection /> },
     ...(isNative ? [{ id: 'downloads', label: 'Downloads', render: () => <DownloadsSection /> }] : []),
     { id: 'new', label: 'New releases', render: () => <ReleasesSection /> },
     { id: 'concerts', label: 'Concerts', render: () => <ConcertsSection /> },
@@ -458,6 +460,52 @@ function PlaybackSection() {
         label="Streaming quality"
         hint={linked ? 'From Drive · the local folder always plays FLAC' : hint}
         wide={<Segmented label="Streaming quality" value={s.streamQuality} options={STREAM} onChange={(v) => settingsStore.set('streamQuality', v)} />}
+      />
+    </SectionGroup>
+  )
+}
+
+/* ── Devices (step 37: player sync) ─────────────────── */
+
+function DevicesSection() {
+  const s = useSettings()
+  const sync = useSync()
+  const [name, setName] = useState(sync.me.name)
+  const available = syncStore.available()
+  const online = sync.devices.filter((d) => d.online).length
+  const status = !available
+    ? 'Not set up yet: the Firebase web app keys are missing (config.ts)'
+    : !s.syncPlayback
+      ? 'Off · this device keeps its own queue'
+      : sync.status === 'connecting'
+        ? 'Connecting…'
+        : sync.status === 'error'
+          ? `Problem: ${sync.error ?? 'unknown'}`
+          : online
+            ? `On · ${online} other ${online === 1 ? 'device' : 'devices'} online`
+            : 'On · no other device online right now'
+  return (
+    <SectionGroup label="Devices" note="Firebase">
+      <Row
+        tile={<Icon name="devices" size={22} />}
+        label="Sync playback between devices"
+        hint={status}
+        dot={available && s.syncPlayback && sync.status === 'on' && online > 0}
+        muted={!available}
+        control={<Toggle label="Sync playback between devices" checked={available && s.syncPlayback} disabled={!available} onChange={(v) => settingsStore.set('syncPlayback', v)} />}
+      />
+      <Row
+        tile={<Icon name={isNative ? 'smartphone' : 'computer'} size={22} />}
+        label="This device’s name"
+        hint="Shown on your other devices (Play on …)"
+        below={
+          <TextField
+            label="Name"
+            value={name}
+            onChange={setName}
+            inputProps={{ maxLength: 40, onBlur: () => syncStore.rename(name), onKeyDown: (e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur() }}
+          />
+        }
       />
     </SectionGroup>
   )

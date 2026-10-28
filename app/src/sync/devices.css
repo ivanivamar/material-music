@@ -1,0 +1,57 @@
+/* Devices button + panel (step 37, sync/DevicesButton.tsx). Styled like the action menus / sheet. */
+
+.dv-btn {
+  width: 40px; height: 40px; flex: none; border: 0; padding: 0; border-radius: 999px; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: none; color: inherit;
+}
+.dv-btn .ms { font-size: 22px; }
+.dv-btn:hover { background: rgba(255, 255, 255, .08); color: oklch(0.95 0.006 40); }
+.dv-btn.is-open { background: rgba(255, 255, 255, .1); }
+/* following another device: tinted like the active shuffle / repeat toggles */
+.dv-btn.is-remote { background: var(--album-container); color: var(--album); }
+.dv-btn-np { width: 48px; height: 48px; }
+.dv-btn-np .ms { font-size: 24px; }
+
+.dv-panel {
+  position: fixed; z-index: 90; width: 340px; max-width: calc(100vw - 24px);
+  display: flex; flex-direction: column; padding: 6px;
+  border-radius: 14px; background: #161618; border: 1.5px solid rgba(255, 255, 255, .1);
+  box-shadow: 0 28px 60px -18px rgba(0, 0, 0, .85);
+  animation: am-in .28s var(--ease) both;
+  color: var(--ink-primary);
+}
+.dv-panel.is-sheet {
+  left: 0; right: 0; bottom: 0; width: auto; max-width: none;
+  padding: 10px 8px calc(20px + env(safe-area-inset-bottom));
+  border-radius: 24px 24px 0 0; border-width: 1.5px 0 0;
+  animation: dv-up .4s var(--ease) both;
+}
+@keyframes dv-up {
+  from { transform: translateY(100%); }
+  to { transform: none; }
+}
+.dv-scrim { position: fixed; inset: 0; z-index: 89; background: rgba(5, 5, 5, .6); }
+
+.dv-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding: 8px 10px 10px; }
+.dv-title { font-size: 15px; font-weight: 600; }
+.dv-meta { font-family: var(--font-mono); font-size: 9px; letter-spacing: .14em; color: var(--ink-tertiary); }
+
+.dv-row { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 6px 10px; border-radius: 10px; }
+.dv-row.is-current { background: rgba(255, 255, 255, .05); }
+.dv-row.is-off { opacity: .55; }
+.dv-ic { width: 36px; height: 36px; flex: none; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; background: var(--surface-raised); color: var(--ink-secondary); }
+.dv-row.is-current .dv-ic { background: var(--album-container); color: var(--album); }
+.dv-ic .ms { font-size: 20px; }
+.dv-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.dv-name { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dv-tag { font-family: var(--font-mono); font-size: 9px; letter-spacing: .12em; color: var(--ink-tertiary); text-transform: uppercase; margin-left: 6px; }
+.dv-sub { font-size: 12px; color: var(--ink-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dv-row .btn { flex: none; }
+
+.dv-err { margin: 6px 10px 0; font-size: 12px; color: oklch(0.75 0.13 25); overflow-wrap: anywhere; }
+.dv-foot { padding: 10px 10px 6px; font-size: 11px; color: var(--ink-tertiary); }
+
+/* "On PC" / "On Phone" chips (player bar, mini player) */
+.pb-chip.is-remote,
+.mini-chip.is-remote { background: var(--album-container); color: var(--album); }

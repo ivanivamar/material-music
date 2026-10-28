@@ -1,7 +1,7 @@
 /**
  * Pelagic's only server code: one Cloud Function, `api`, behind Firebase Hosting (`/api/**`).
  * It serves `/api/auth/*` (sign-in helper), `/api/deezer/*` (Deezer proxy), `/api/voice/*` (DJ voice)
- * and `/api/concerts/*` (Ticketmaster tour dates).
+ * `/api/concerts/*` (Ticketmaster tour dates) and `/api/sync/*` (Firebase sign-in for the player sync, step 37).
  * The handlers in ./api/ are plain Web Request → Response functions (they started life as
  * Cloudflare Pages Functions, moved here Oct 20, 2026); this file adapts Firebase's request/response
  * to them. build.mjs bundles everything into lib/index.js.
@@ -26,6 +26,7 @@ import * as auth from './api/auth.ts'
 import * as deezer from './api/deezer.ts'
 import * as voice from './api/voice.ts'
 import * as concerts from './api/concerts.ts'
+import * as sync from './api/sync.ts'
 
 const GOOGLE_CLIENT_ID = defineSecret('GOOGLE_CLIENT_ID')
 const GOOGLE_CLIENT_SECRET = defineSecret('GOOGLE_CLIENT_SECRET')
@@ -37,7 +38,7 @@ const TICKETMASTER_API_KEY = defineSecret('TICKETMASTER_API_KEY')
 const APP_COOKIE = '__Host-pelagic_rt'
 const FB_COOKIE = '__session'
 
-const handlers = { auth, deezer, voice, concerts } as const
+const handlers = { auth, deezer, voice, concerts, sync } as const
 
 /** The site's own host (what the browser sees), not the function's. */
 function siteHost(headers: Record<string, string | string[] | undefined>): string {
@@ -67,7 +68,7 @@ export const api = onRequest(
   },
   async (req, res) => {
     const url = new URL(req.originalUrl || req.url, `https://${siteHost(req.headers)}`)
-    const m = /^\/api\/(auth|deezer|voice|concerts)\/([^/]+)\/?$/.exec(url.pathname)
+    const m = /^\/api\/(auth|deezer|voice|concerts|sync)\/([^/]+)\/?$/.exec(url.pathname)
     if (!m) {
       res.status(404).set('cache-control', 'no-store').json({ error: 'not_found' })
       return

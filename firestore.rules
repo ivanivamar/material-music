@@ -1,0 +1,11 @@
+rules_version = '2';
+
+// Player sync (step 37): each signed-in user reads and writes only their own tree.
+// uid comes from /api/sync/token ("g" + the Google Drive permission id).
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{uid}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+  }
+}

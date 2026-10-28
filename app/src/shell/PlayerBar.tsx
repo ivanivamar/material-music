@@ -22,6 +22,7 @@ import { useIntroAudio } from '../dj/voice'
 import { DjButton } from '../dj/DjButton'
 import { IntroSub, LiveMark } from '../dj/DjIntro'
 import { useSettings } from '../state/settings'
+import { DevicesButton } from '../sync/DevicesButton'
 import './playerbar.css'
 
 export function PlayerBar() {
@@ -39,7 +40,15 @@ export function PlayerBar() {
   const duration = intro ? (introAudio?.duration ?? 0) : (track?.duration ?? 0)
   const empty = !track && !intro
   const radio = p.context?.kind === 'radio'
-  const djChip = dj.on ? <span className="pb-chip is-dj">{intro ? 'DJ · intro' : 'DJ'}</span> : radio ? <span className="pb-chip">Radio</span> : null
+  const djChip = p.remote ? (
+    <span className="pb-chip is-remote" title={`Playing on ${p.remote.name}. The controls here drive it.`}>
+      On {p.remote.name}
+    </span>
+  ) : dj.on ? (
+    <span className="pb-chip is-dj">{intro ? 'DJ · intro' : 'DJ'}</span>
+  ) : radio ? (
+    <span className="pb-chip">Radio</span>
+  ) : null
   // shuffle / repeat: not used by the DJ or a radio
   const fixed = dj.on || radio
   const offLabel = dj.on ? 'Not used by the DJ' : 'Not used by the radio'
@@ -155,6 +164,7 @@ export function PlayerBar() {
             <span>{fmtQ.detail}</span>
           </span>
         )}
+        <DevicesButton className="pb-ib" />
         <button type="button" className={`pb-ib ${ui.open && ui.view === 'lyrics' ? 'is-on' : ''}`} aria-label="Lyrics" title="Lyrics" disabled={empty} onClick={() => nowPlayingStore.toggleLyrics()}>
           <Icon name="lyrics" />
         </button>
@@ -181,7 +191,7 @@ export function PlayerBar() {
         </span>
       </div>
       <span className="sr-only" aria-live="polite">
-        {intro ? `DJ intro: ${dj.session?.title ?? ''}` : track ? `${p.playing ? 'Playing' : 'Paused'}: ${track.title} by ${track.artist}` : ''}
+        {intro ? `DJ intro: ${dj.session?.title ?? ''}` : track ? `${p.playing ? 'Playing' : 'Paused'}${p.remote ? ` on ${p.remote.name}` : ''}: ${track.title} by ${track.artist}` : ''}
       </span>
     </footer>
   )

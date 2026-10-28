@@ -19,3 +19,16 @@ export const RELEASES_NAME = 'releases.json'
 export const GENRES_NAME = 'genres.json'
 /** One JSON file per playlist (+ optional <id>.jpg cover) in Pelagic/playlists/ (step 9, state/playlists.ts). */
 export const PLAYLISTS_DIR = 'playlists'
+
+/**
+ * Firebase web app (step 37: player sync through Firestore). These values are public identifiers, not
+ * secrets — paste them from Firebase console → Project settings → General → Your apps → the web app
+ * (or set VITE_FIREBASE_API_KEY / VITE_FIREBASE_APP_ID in app/.env.local). While `apiKey` is empty the
+ * sync stays off and the player works exactly as before.
+ */
+export const FIREBASE_CONFIG = {
+  apiKey: (import.meta.env.VITE_FIREBASE_API_KEY as string | undefined) ?? '',
+  appId: (import.meta.env.VITE_FIREBASE_APP_ID as string | undefined) ?? '',
+  projectId: 'material-music-app',
+  authDomain: 'material-music-app.firebaseapp.com',
+}

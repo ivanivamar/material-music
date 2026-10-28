@@ -38,6 +38,7 @@ import { historyStore, useHistory } from '../state/history'
 import { playRelease } from '../pages/releases/parts'
 import { useConcerts } from '../state/concerts'
 import { buildShows, nearbyShows } from '../state/concertViews'
+import { syncStore } from '../sync/playerSync'
 import './shell.css'
 import './phone.css'
 
@@ -285,6 +286,36 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
       }),
     [toast],
   )
+
+  // Player sync (step 37): another device has a different, newer queue while this one plays
+  const offerToast = useRef<number | null>(null)
+  useEffect(() => {
+    let shown: number | null = null
+    const sync = () => {
+      const o = syncStore.get().offer
+      const key = o ? o.at : null
+      if (key === shown) return
+      if (offerToast.current !== null) toast.dismiss(offerToast.current)
+      offerToast.current = null
+      shown = key
+      if (!o) return
+      const title = o.trackId ? libraryStore.get().data?.tracks[o.trackId]?.title : undefined
+      offerToast.current = toast.show({
+        icon: o.device.platform === 'android' ? 'smartphone' : 'computer',
+        text: `${o.device.name} has a different queue.`,
+        meta: title ? title.toUpperCase() : undefined,
+        action: { label: 'Switch to it', onClick: () => syncStore.acceptOffer() },
+        duration: 12_000,
+      })
+    }
+    sync()
+    const off = syncStore.subscribe(sync)
+    return () => {
+      off()
+      if (offerToast.current !== null) toast.dismiss(offerToast.current)
+      offerToast.current = null
+    }
+  }, [toast])
 
   // DJ stopped (step 22): by Stop DJ, or because something else was played
   useEffect(

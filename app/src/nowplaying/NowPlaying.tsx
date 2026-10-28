@@ -34,6 +34,7 @@ import { DjIntroInfo, DjIntroLyrics, LiveMark } from '../dj/DjIntro'
 import { DjStart } from '../dj/DjStart'
 import { introLevel, onFrame } from '../dj/live'
 import { registerBack } from '../native/backButton'
+import { DevicesButton } from '../sync/DevicesButton'
 import '../dj/dj.css'
 import './nowplaying.css'
 
@@ -212,7 +213,7 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
     if (p.source === 'drive' && streamQuality === 'opus' && t.mobile?.id) return { kind: 'OPUS', detail: `${Number.parseInt(t.mobile.bitrate, 10) || 160}` }
     return { kind: 'FLAC', detail: `${t.flac?.bitDepth ?? 16}/${((t.flac?.sampleRate ?? 44100) / 1000).toString().replace(/\.0$/, '')}` }
   })()
-  const chip = dj.on ? (intro ? 'DJ · intro' : dj.addedByUser ? 'DJ · added by you' : 'DJ') : radioOn ? 'Radio' : ''
+  const chip = p.remote ? `On ${p.remote.name}` : dj.on ? (intro ? 'DJ · intro' : dj.addedByUser ? 'DJ · added by you' : 'DJ') : radioOn ? 'Radio' : ''
 
   const coverEl = (size: 'np' | 'panel') =>
     dj.on ? (
@@ -266,6 +267,7 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
           )}
         </div>
         <div className="np-head-r">
+          {!startView && <DevicesButton variant="np" />}
           {songTrack && !startView && (
             <IconButton icon="more" label="More: add to playlist, go to album…" title="More" size="lg" className="np-more" onClick={(e) => actions.menu({ kind: 'track', trackId: songTrack.id }, e)} />
           )}

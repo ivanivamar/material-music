@@ -66,6 +66,16 @@ export function initPlayTracker() {
     const s = playerStore.get()
     const id = s.index >= 0 ? (s.queue[s.index] ?? null) : null
     const now = Date.now()
+    // following another device (step 37): it counts its own plays
+    if (s.remote) {
+      curId = id
+      restart()
+      lastPos = s.position
+      lastWall = now
+      lastPlaying = false
+      carry = 0
+      return
+    }
     if (id !== curId) {
       curId = id
       restart()

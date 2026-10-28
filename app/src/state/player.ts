@@ -7,6 +7,11 @@
  * Until an engine is attached, transport calls only move the queue.
  *
  * PC engine: `player/htmlEngine.ts`; Android: `player/nativeEngine.ts` (attached in App.tsx).
+ *
+ * Player sync (step 37, sync/playerSync.ts): while another device plays, this one *follows* it —
+ * `remote` is set, the store mirrors that device (queue, track, position) with the local engine
+ * unloaded, and the transport / queue calls below are sent to it as commands instead of acting here.
+ * A queue taken over from another device is *detached*: nothing is loaded in the engine until Play.
  */
 import { useSyncExternalStore } from 'react'
 import { onAccountReset } from './session'
@@ -40,7 +45,40 @@ export interface PlayerState {
   repeat: RepeatMode
   /** where the current track's audio comes from (not persisted) */
   source: PlaybackSource | null
+  /** step 37: the device this one follows / remote-controls (not persisted; null = playing here) */
+  remote: RemoteDevice | null
 }
+
+export interface RemoteDevice {
+  id: string
+  name: string
+  platform: 'pc' | 'android'
+}
+
+/** What another device sends / shows (step 37): the shareable part of the state. */
+export type SharedPlayerState = Pick<PlayerState, 'queue' | 'index' | 'context' | 'position' | 'shuffle' | 'unshuffled' | 'repeat'>
+
+/** Calls a follower sends to the device it follows instead of running them (step 37). */
+export const REMOTE_OPS = [
+  'toggle',
+  'next',
+  'prev',
+  'back',
+  'seek',
+  'toggleShuffle',
+  'cycleRepeat',
+  'jump',
+  'move',
+  'remove',
+  'insert',
+  'clearUpcoming',
+  'restoreUpcoming',
+  'playNext',
+  'addToQueue',
+  'playQueue',
+  'dropTracks',
+] as const
+export type RemoteOp = (typeof REMOTE_OPS)[number]
 
 export type PlaybackSource = 'local' | 'drive'
 
@@ -87,12 +125,13 @@ const DEFAULTS: PlayerState = {
   unshuffled: null,
   repeat: 'off',
   source: null,
+  remote: null,
 }
 
 function load(): PlayerState {
   try {
     const raw = localStorage.getItem(KEY)
-    if (raw) return { ...DEFAULTS, ...(JSON.parse(raw) as Partial<Persisted>), playing: false, buffering: false, source: null }
+    if (raw) return { ...DEFAULTS, ...(JSON.parse(raw) as Partial<Persisted>), playing: false, buffering: false, source: null, remote: null }
   } catch {
     /* ignore */
   }
@@ -110,6 +149,21 @@ let frozen = false
 /** `go()` loads the track first and tells the engine about the next one afterwards */
 let holdPreload = false
 let lastPreload: string | null | undefined
+/** step 37: the engine has nothing loaded for the current row (taken over / mirrored); Play loads it */
+let detached = false
+/** step 37: sends a follower's call to the device it follows */
+let remoteCtl: ((op: RemoteOp, args: unknown[]) => void) | null = null
+/** step 37: something that only runs here (DJ, radio) starts while following: play here first */
+let localTakeover: (() => void) | null = null
+
+/** Following another device: send `op` there instead of running it here. */
+function routed(op: RemoteOp, args: unknown[]): boolean {
+  if (!state.remote) return false
+  remoteCtl?.(op, args)
+  return true
+}
+/** Engine events are stale while nothing of ours is loaded (mirroring / taken-over queue). */
+const engineQuiet = () => detached || state.remote !== null
 
 function persist() {
   window.clearTimeout(persistTimer)
@@ -142,6 +196,7 @@ function nextId(): string | null {
 /** Tell the engine which track to prepare (only when it changed, unless `force`). */
 function syncPreload(force = false) {
   if (!engine?.preload) return
+  if (detached || state.remote) return
   const id = nextId()
   if (!force && id === lastPreload) return
   lastPreload = id
@@ -192,6 +247,7 @@ function unshuffledOrder(): Pick<PlayerState, 'queue' | 'index'> | null {
 const current = () => (state.index >= 0 ? (state.queue[state.index] ?? null) : null)
 
 function go(index: number, autoplay: boolean) {
+  detached = false
   holdPreload = true
   try {
     set({ index, position: 0 })
@@ -218,13 +274,15 @@ export const playerStore = {
     engine = e
     e.setVolume(state.volume, state.muted)
     const id = current()
-    if (id) e.load(id, { autoplay: false, position: state.position })
+    if (id && !state.remote) e.load(id, { autoplay: false, position: state.position })
+    else detached = !!id
     syncPreload(true)
     return () => {
       if (engine === e) engine = null
     }
   },
   report(patch: Partial<Pick<PlayerState, 'playing' | 'buffering' | 'position' | 'source'>>) {
+    if (engineQuiet()) return
     set(patch)
   },
   notify(n: PlayerNotice) {
@@ -235,6 +293,7 @@ export const playerStore = {
    * repeat, lock-screen / headset next & previous. Only the store follows; nothing is sent back.
    */
   engineMoved(index: number) {
+    if (engineQuiet()) return
     if (index === state.index || index < 0 || index >= state.queue.length) return
     const from = state.index
     movedListeners.forEach((l) => l(from, index))
@@ -242,6 +301,7 @@ export const playerStore = {
   },
   /** Engine calls this when a track finishes. */
   ended() {
+    if (engineQuiet()) return
     if (state.repeat === 'one') return go(state.index, true)
     if (state.index < state.queue.length - 1) return go(state.index + 1, true)
     if (state.repeat === 'all' && state.queue.length) return go(0, true)
@@ -254,6 +314,7 @@ export const playerStore = {
    */
   playQueue(ids: string[], start = 0, context: PlayContext | null = null, opts: { shuffle?: boolean } = {}) {
     if (!ids.length) return
+    if (routed('playQueue', [ids, start, context, opts])) return
     const shuffle = state.shuffle || !!opts.shuffle
     let queue = ids
     let index = start
@@ -266,33 +327,39 @@ export const playerStore = {
     go(index, true)
   },
   toggle() {
+    if (routed('toggle', [])) return
     if (!engine || state.index < 0) return
+    if (detached) return void playerStore.loadDetached(true)
     if (state.playing) engine.pause()
     else engine.play()
   },
   next() {
+    if (routed('next', [])) return
     if (state.index < 0) return
     if (state.index < state.queue.length - 1) go(state.index + 1, state.playing)
     else if (state.repeat === 'all') go(0, state.playing)
   },
   /** Restarts the track when more than 3 s in, like every other player. */
   prev() {
+    if (routed('prev', [])) return
     if (state.index < 0) return
     if (state.position > 3 || state.index === 0) {
       set({ position: 0 })
-      engine?.seek(0)
+      if (!detached) engine?.seek(0)
     } else go(state.index - 1, state.playing)
   },
   /** Straight to the previous queue row (phone cover swipe) — unlike prev(), never just restarts. */
   back() {
+    if (routed('back', [])) return
     const { index, queue, repeat } = state
     if (index < 0) return
     if (index > 0) go(index - 1, state.playing)
     else if (repeat === 'all' && queue.length > 1) go(queue.length - 1, state.playing)
   },
   seek(seconds: number) {
-    set({ position: seconds })
-    engine?.seek(seconds)
+    set({ position: seconds }) // following: shown right away, the device it follows confirms it
+    if (routed('seek', [seconds])) return
+    if (!detached) engine?.seek(seconds)
   },
   setVolume(volume: number) {
     set({ volume, muted: volume === 0 ? state.muted : false })
@@ -307,6 +374,7 @@ export const playerStore = {
    * upcoming) is shuffled after it. Shuffle off: the original order comes back (see unshuffledOrder).
    */
   toggleShuffle() {
+    if (routed('toggleShuffle', [])) return
     if (state.context?.kind === 'dj' || state.context?.kind === 'radio') return // not used by the DJ / radio
     if (!state.shuffle) {
       if (state.index < 0) return set({ shuffle: true, unshuffled: null })
@@ -318,6 +386,7 @@ export const playerStore = {
     }
   },
   cycleRepeat() {
+    if (routed('cycleRepeat', [])) return
     if (state.context?.kind === 'dj' || state.context?.kind === 'radio') return
     set({ repeat: state.repeat === 'off' ? 'all' : state.repeat === 'all' ? 'one' : 'off' })
   },
@@ -333,6 +402,7 @@ export const playerStore = {
   },
   clear() {
     engine?.unload()
+    detached = false
     lastCleared = null
     set({ ...DEFAULTS, volume: state.volume, muted: state.muted })
   },
@@ -343,12 +413,14 @@ export const playerStore = {
 
   /** Play queue row `i` (click in the queue panel). */
   jump(i: number) {
+    if (routed('jump', [i])) return
     if (i < 0 || i >= state.queue.length) return
     if (i === state.index) return playerStore.toggle()
     go(i, true)
   },
   /** Move row `from` so it ends up at index `to` (drag to reorder). */
   move(from: number, to: number) {
+    if (routed('move', [from, to])) return
     const n = state.queue.length
     if (from === to || from < 0 || from >= n || to < 0 || to >= n) return
     const queue = [...state.queue]
@@ -362,12 +434,14 @@ export const playerStore = {
   },
   /** Remove an upcoming / earlier row (the current track is not removable here). */
   remove(i: number) {
+    if (routed('remove', [i])) return
     if (i < 0 || i >= state.queue.length || i === state.index) return
     const queue = state.queue.filter((_, k) => k !== i)
     set({ queue, index: i < state.index ? state.index - 1 : state.index })
   },
   /** Put a track back at row `i` (Undo after a queue row was removed). */
   insert(i: number, id: string) {
+    if (routed('insert', [i, id])) return
     if (state.index < 0) return
     const at = Math.max(0, Math.min(i, state.queue.length))
     const queue = [...state.queue]
@@ -376,6 +450,7 @@ export const playerStore = {
   },
   /** Drop everything after the current track. Returns what was removed (for "Restore queue"). */
   clearUpcoming(): string[] {
+    if (routed('clearUpcoming', [])) return []
     if (state.index < 0) return []
     const removed = state.queue.slice(state.index + 1)
     if (!removed.length) return removed
@@ -386,6 +461,7 @@ export const playerStore = {
   /** What the last "Clear" removed, while it can still be put back. */
   clearedUpcoming: () => lastCleared,
   restoreUpcoming() {
+    if (routed('restoreUpcoming', [])) return
     if (!lastCleared?.length || state.index < 0) return
     const ids = lastCleared
     lastCleared = null
@@ -394,6 +470,7 @@ export const playerStore = {
   /** Insert tracks right after the current one (or start playing them if nothing is loaded). */
   playNext(ids: string[]) {
     if (!ids.length) return
+    if (routed('playNext', [ids])) return
     if (state.index < 0) return playerStore.playQueue(ids, 0, { kind: 'queue', label: 'Queue' })
     const queue = [...state.queue]
     queue.splice(state.index + 1, 0, ...ids)
@@ -405,6 +482,7 @@ export const playerStore = {
    * playing); nothing left → the queue is cleared.
    */
   dropTracks(ids: Set<string>) {
+    if (routed('dropTracks', [[...ids]])) return
     if (lastCleared) lastCleared = lastCleared.filter((id) => !ids.has(id))
     if (!state.queue.some((id) => ids.has(id))) return
     const unshuffled = state.unshuffled ? state.unshuffled.filter((id) => !ids.has(id)) : null
@@ -429,6 +507,7 @@ export const playerStore = {
   /** Append tracks to the end of the queue. */
   addToQueue(ids: string[]) {
     if (!ids.length) return
+    if (routed('addToQueue', [ids])) return
     if (state.index < 0) return playerStore.playQueue(ids, 0, { kind: 'queue', label: 'Queue' })
     set({ queue: [...state.queue, ...ids] })
   },
@@ -444,6 +523,7 @@ export const playerStore = {
   /** Load a snapshot paused at its position (Stop DJ: "back to … where you left off"). */
   restore(snap: PlayerSnapshot) {
     engine?.pause()
+    detached = false
     lastCleared = null
     holdPreload = true
     try {
@@ -462,6 +542,8 @@ export const playerStore = {
    */
   adopt(queue: string[], index: number, context: PlayContext | null) {
     if (!queue.length || index < 0 || index >= queue.length) return
+    if (state.remote) return
+    detached = false
     lastCleared = null
     holdPreload = true
     try {
@@ -473,6 +555,9 @@ export const playerStore = {
   /** Start a DJ run or a radio: replaces the queue (shuffle and repeat off) and plays row 0. */
   playDj(ids: string[], context: PlayContext) {
     if (!ids.length) return
+    // the DJ / a radio runs on this device: following another one → play here from now on
+    if (state.remote) localTakeover?.()
+    if (state.remote) return
     lastCleared = null
     set({ queue: ids, context, shuffle: false, unshuffled: null, repeat: 'off' })
     go(0, true)
@@ -492,6 +577,79 @@ export const playerStore = {
     if (start === end && !ids.length) return
     const queue = [...state.queue.slice(0, start), ...ids, ...state.queue.slice(end)]
     set({ queue, index: state.index >= end ? state.index + ids.length - (end - start) : state.index })
+  },
+
+  /* ── Player sync (step 37, sync/playerSync.ts) ──────── */
+
+  /** Calls made while following go through `ctl`; `takeover` runs when the DJ / radio starts here. */
+  setRemoteControl(ctl: ((op: RemoteOp, args: unknown[]) => void) | null, takeover: (() => void) | null) {
+    remoteCtl = ctl
+    localTakeover = takeover
+  },
+  /** Run a call another device sent (this device plays; it isn't following anyone). */
+  runRemote(op: RemoteOp, args: unknown[]) {
+    if (state.remote || !(REMOTE_OPS as readonly string[]).includes(op)) return
+    const a = args as never[]
+    switch (op) {
+      case 'dropTracks':
+        return playerStore.dropTracks(new Set(a[0] as string[]))
+      case 'playQueue':
+        return playerStore.playQueue(a[0], a[1], a[2], a[3])
+      default:
+        return (playerStore[op] as (...x: unknown[]) => unknown)(...a)
+    }
+  },
+  /** The engine has nothing loaded for the current row (step 37). */
+  isDetached: () => detached,
+  /** Load the current row into the engine now (Play after a takeover), at the stored position. */
+  loadDetached(autoplay: boolean) {
+    const id = current()
+    if (!detached || !id || !engine || state.remote) return
+    detached = false
+    engine.setVolume(state.volume, state.muted)
+    engine.load(id, { autoplay, position: state.position })
+    syncPreload(true)
+  },
+  /**
+   * Follow another device: show its state here, with the local engine stopped. Called again on every
+   * change over there. `playing` / `position` are what it reports (the follower extrapolates).
+   */
+  mirror(shared: SharedPlayerState, playing: boolean, device: RemoteDevice) {
+    if (!state.remote) {
+      if (state.playing) engine?.pause()
+      if (!detached && current()) engine?.unload()
+      detached = true
+      lastCleared = null
+    }
+    holdPreload = true
+    try {
+      set({ ...shared, playing, buffering: false, source: null, remote: device })
+    } finally {
+      holdPreload = false
+    }
+  },
+  /** Stop following: what was mirrored stays as this device's own queue, paused and detached. */
+  unmirror() {
+    if (!state.remote) return
+    detached = state.index >= 0
+    set({ remote: null, playing: false, buffering: false })
+  },
+  /**
+   * Take another device's queue as this device's own (handoff). Paused and detached unless `play`,
+   * which starts it here at `shared.position`.
+   */
+  takeState(shared: SharedPlayerState, play: boolean) {
+    if (state.playing && !state.remote) engine?.pause()
+    if (!detached && !state.remote && current()) engine?.unload()
+    lastCleared = null
+    holdPreload = true
+    try {
+      set({ ...shared, playing: false, buffering: false, source: null, remote: null })
+    } finally {
+      holdPreload = false
+    }
+    detached = state.index >= 0
+    if (play) playerStore.loadDetached(true)
   },
 }
 

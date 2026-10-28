@@ -86,12 +86,18 @@ export function MiniPlayer() {
   if (!track && !intro) return null
   const frac = intro ? introProgress.frac : track?.duration ? Math.min(1, p.position / track.duration) : 0
   const title = intro ? (dj.session?.title ?? 'DJ') : track!.title
-  const chip = dj.on ? <span className="mini-chip is-dj">{intro ? 'DJ · intro' : 'DJ'}</span> : p.context?.kind === 'radio' ? <span className="mini-chip">Radio</span> : null
+  const chip = p.remote ? (
+    <span className="mini-chip is-remote">On {p.remote.name}</span>
+  ) : dj.on ? (
+    <span className="mini-chip is-dj">{intro ? 'DJ · intro' : 'DJ'}</span>
+  ) : p.context?.kind === 'radio' ? (
+    <span className="mini-chip">Radio</span>
+  ) : null
   const open = () => nowPlayingStore.open('np')
 
   return (
     <div className="mini" role="region" aria-label="Player">
-      <button type="button" className="mini-open" onClick={open} aria-label={intro ? `DJ intro: ${title}. Open player.` : `Now playing: ${track!.title} by ${track!.artist}. Open player.`}>
+      <button type="button" className="mini-open" onClick={open} aria-label={intro ? `DJ intro: ${title}. Open player.` : `Now playing${p.remote ? ` on ${p.remote.name}` : ''}: ${track!.title} by ${track!.artist}. Open player.`}>
         <span className="mini-cover-wrap">
           {intro && id ? <LiveMark item={id} size={52} /> : cover ? <img className="mini-cover" src={cover} alt="" /> : <span className="mini-cover mini-cover-empty" aria-hidden />}
         </span>

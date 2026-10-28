@@ -44,6 +44,7 @@ import './state/removal'
 import { releasesStore } from './state/releases'
 import { initDiscover } from './state/discover'
 import { initPlayTracker } from './player/playTracker'
+import { initPlayerSync } from './sync/playerSync'
 import { useSession } from './state/session'
 import { NowPlayingHue } from './design/NowPlayingHue'
 
@@ -90,6 +91,8 @@ initReleaseNotifications()
 initDiscover()
 // Concerts: Ticketmaster tour dates once a day; home city + hand-added shows synced through Drive concerts.json.
 concertsStore.init()
+// Player sync (step 37): queue + playback shared between PC and phone through Firestore; remote control.
+initPlayerSync()
 
 function Page({ route }: { route: Extract<Route, { kind: 'app' }> }) {
   switch (route.key) {

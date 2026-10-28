@@ -116,6 +116,8 @@ function follow() {
   if (busy) return
   const p = playerStore.get()
   if (!run) return
+  // following another device (step 37): it keeps its own queue filled
+  if (p.remote) return
   if (p.context?.kind !== 'radio' || p.context.id !== run.id) {
     // something else replaced the queue: the radio is over
     if (p.index >= 0 || p.context?.kind !== 'radio') {
