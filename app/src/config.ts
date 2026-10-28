@@ -27,8 +27,8 @@ export const PLAYLISTS_DIR = 'playlists'
  * sync stays off and the player works exactly as before.
  */
 export const FIREBASE_CONFIG = {
-  apiKey: (import.meta.env.VITE_FIREBASE_API_KEY as string | undefined) ?? '',
-  appId: (import.meta.env.VITE_FIREBASE_APP_ID as string | undefined) ?? '',
+  apiKey: (import.meta.env.VITE_FIREBASE_API_KEY as string | undefined) ?? 'AIzaSyBUNcghrujaMenmRHNwA8YgpDkhVG2-RN4',
+  appId: (import.meta.env.VITE_FIREBASE_APP_ID as string | undefined) ?? '1:1053700895476:web:6c8b8c8b8c8b8c8b8c8b8c',
   projectId: 'material-music-app',
   authDomain: 'material-music-app.firebaseapp.com',
 }
