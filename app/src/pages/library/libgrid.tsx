@@ -203,7 +203,25 @@ export function LibCard({ c, item, size, opts = {} }: { c: Catalogue; item: LibI
     const a = item.album
     const off = dl.available ? albumOffline(dl, a.id) : null
     const saved = !!off?.complete && off.wanted
-    const text = item.sub ?? (opts.withYear && a.year ? `${a.artist} · ${a.year}` : a.artist)
+    // artist name links to the artist page (unless a caller overrides the line)
+    const text =
+      item.sub ?? (
+        <span className="lb-sub-t">
+          <a
+            className="lb-ln"
+            href={artistHref(a.artistId)}
+            tabIndex={-1}
+            draggable={false}
+            onClick={(e) => {
+              e.stopPropagation()
+              opts.onOpen?.()
+            }}
+          >
+            {a.artist}
+          </a>
+          {opts.withYear && a.year ? ` · ${a.year}` : null}
+        </span>
+      )
     return (
       <CardFrame
         className="lb-card"

@@ -1,0 +1,12 @@
+/* Artist avatar (ArtistAvatar in common.tsx): round photo or mono monogram.
+   Lives beside the component so it loads wherever the avatar is used —
+   it used to sit in library.css, which is no longer imported. */
+.avatar-art {
+  position: relative; flex: none; border-radius: 50%; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--surface-1); border: 1.5px solid rgba(255, 255, 255, .14);
+}
+.avatar-art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.avatar-art-line { position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: rgba(255, 255, 255, .12); }
+.avatar-art-mono { position: relative; font-family: var(--font-mono); font-size: 32px; letter-spacing: .1em; padding-left: .1em; color: var(--ink-primary); }
+.art-tile .avatar-art-mono { font-size: clamp(22px, 2.6vw, 36px); }

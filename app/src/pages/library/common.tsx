@@ -9,6 +9,7 @@ import { monogram } from '../../state/views'
 import { albumTrackIds, playList } from './playback'
 import { albumOffline, useDownloads, useOnline } from '../../state/downloads'
 import { actions, trackDrag } from '../../actions/actions'
+import './avatar.css'
 
 /* ── Album card with a lazy cover ─────────────────── */
 

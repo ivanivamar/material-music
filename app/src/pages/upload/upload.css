@@ -124,7 +124,10 @@
 .ub-row-sub { font-size: 12px; color: var(--ink-secondary); }
 .ub-row-tracks { font-size: 12px; color: var(--ink-secondary); font-variant-numeric: tabular-nums; }
 .ub-row-tracks.is-warn, .ub-row-sub .is-warn { color: oklch(0.84 0.08 95); font-weight: 600; }
-.ub-row-line { position: relative; height: 4px; border-radius: 999px; background: oklch(0.28 0.01 40); overflow: hidden; display: block; }
+.ub-row-line { position: relative; height: 4px; border-radius: 999px; background: rgba(255, 255, 255, .09); overflow: hidden; display: block; }
+/* translucent track: reads on the plain page and on hover / checked / focused rows alike */
+.ub-row:hover .ub-row-line, .ub-row.is-checked .ub-row-line { background: rgba(255, 255, 255, .11); }
+.ub-row.is-focus .ub-row-line { background: rgba(255, 255, 255, .14); }
 .ub-row-line > span { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 999px; background: var(--brand); transition: width 0.35s linear; }
 .ub-row-line > span.is-warn { background: oklch(0.84 0.08 95); }
 
@@ -144,7 +147,7 @@
 
 /* footer */
 .ub-foot { display: flex; flex-direction: column; gap: 12px; padding-top: 16px; border-top: 1px solid oklch(0.28 0.01 40); }
-.ub-foot-bar { position: relative; height: 4px; border-radius: 999px; background: oklch(0.28 0.01 40); overflow: hidden; }
+.ub-foot-bar { position: relative; height: 4px; border-radius: 999px; background: rgba(255, 255, 255, .09); overflow: hidden; }
 .ub-foot-bar > span { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 999px; background: var(--brand); transition: width 0.35s linear; }
 .ub-foot-line { display: flex; align-items: center; justify-content: space-between; gap: 16px; font-size: 12px; }
 .ub-foot-meta { flex: 0 1 auto; min-width: 0; color: var(--ink-secondary); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
