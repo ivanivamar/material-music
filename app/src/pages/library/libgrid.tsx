@@ -3,8 +3,8 @@
  * (albums · artists · playlists), sorting and grouping, the card grid with an optional timeline rail,
  * song rows (virtualised per group), and the A–Z scrubber.
  *
- * Grouping by sort: Recently added → Added this week / this month / Last 3 months / Earlier (rail with a
- * coral ring per group); A–Z / Artist → letters (tonal cookie per letter); Year → decades. Timeline
+ * Grouping by sort: Recently added → This week / Earlier this month / one per month / one per year
+ * (rail with a coral ring per group); A–Z / Artist → letters (tonal cookie per letter); Year → decades. Timeline
  * view shows the group heads and the rail; Grid view is one plain grid (letters still feed the scrubber).
  */
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from 'react'
@@ -78,10 +78,24 @@ export interface Group<T> {
   items: T[]
 }
 
-const DAY = 86_400_000
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+/**
+ * Calendar sections (local time): This week (since Monday 00:00) → Earlier this month (since the 1st)
+ * → one section per month for the last 12 months ("September"; "December 2025" for the previous year)
+ * → one per year ("2024"). Items are sorted by date, so each label forms one consecutive group.
+ */
 export function addedBucket(t: number, now = Date.now()): string {
-  const d = (now - t) / DAY
-  return d <= 7 ? 'Added this week' : d <= 31 ? 'Added this month' : d <= 90 ? 'Last 3 months' : 'Earlier'
+  if (!t) return 'Earlier'
+  const today = new Date(now)
+  const monday = new Date(today.getFullYear(), today.getMonth(), today.getDate() - ((today.getDay() + 6) % 7)).getTime()
+  if (t >= monday) return 'This week'
+  const d = new Date(t)
+  const y = d.getFullYear()
+  const m = d.getMonth()
+  const back = (today.getFullYear() - y) * 12 + today.getMonth() - m
+  if (back === 0) return 'Earlier this month'
+  if (back < 12) return y === today.getFullYear() ? MONTHS[m] : `${MONTHS[m]} ${y}`
+  return String(y)
 }
 /** A–Z or '#'. */
 export const letterOf = (name: string) => {
