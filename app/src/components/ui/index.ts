@@ -18,11 +18,13 @@ export {
   Sonar,
   OfflineBanner,
   EmptyState,
+  LinearProgress,
+  StorageBar,
   type DownloadState,
   type ReleaseType,
 } from './Status'
 export { ToastProvider, useToast, type ToastInput } from './Toast'
 export { TrackRow, AlbumCard } from './Media'
-export { CookieButton, WaveProgress, AlbumEq, WaveSeek, ThinSlider, ModeToggle, LoadingShape } from './Material'
+export { CookieButton, WaveProgress, AlbumEq, WaveSeek, ThinSlider, ValueSlider, ModeToggle, LoadingShape } from './Material'
 
 export { TextField, Dropdown, type DropOption } from './Fields'

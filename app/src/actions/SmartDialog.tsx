@@ -12,10 +12,9 @@
  *                                             Cancel  [Create]
  */
 import { useMemo, useState } from 'react'
-import { Dropdown, Segmented, TextField, useToast } from '../components/ui'
+import { Chip, IconButton, Button, Dropdown, Segmented, TextField, useToast } from '../components/ui'
 import { Icon } from '../design/icons'
-import { useCover } from '../lib/covers'
-import { MosaicTiles } from '../pages/playlists/PlaylistCover'
+import { CoverMosaic } from '../pages/playlists/PlaylistCover'
 import { useGenres } from '../state/genres'
 import { GenreCombo } from './GenreCombo'
 import { useHistory } from '../state/history'
@@ -49,10 +48,6 @@ import { createSmartPlaylist, saveSmartRules } from './ops'
 
 const BLANK: SmartRules = { match: 'all', rules: [], sort: { by: 'added' }, limit: null }
 
-function MiniTile({ id }: { id?: string }) {
-  const url = useCover(id)
-  return <div className="plc-one">{url && <img className="plc-full" src={url} alt="" />}</div>
-}
 
 export function SmartDialog({ playlistId }: { playlistId?: string }) {
   const toast = useToast()
@@ -122,15 +117,14 @@ export function SmartDialog({ playlistId }: { playlistId?: string }) {
         {!editing && (
           <div className="sm-presets" role="radiogroup" aria-label="Start from">
             {PRESETS.map((p) => (
-              <button key={p.key} type="button" role="radio" aria-checked={preset === p.key} className={`sm-preset ${preset === p.key ? 'is-on' : ''}`} onClick={() => pickPreset(p.key)}>
+              <Chip key={p.key} role="radio" check={false} selected={preset === p.key} onClick={() => pickPreset(p.key)}>
                 {p.name}
-              </button>
+              </Chip>
             ))}
-            <button
-              type="button"
+            <Chip
               role="radio"
-              aria-checked={preset === null}
-              className={`sm-preset ${preset === null ? 'is-on' : ''}`}
+              check={false}
+              selected={preset === null}
               onClick={() => {
                 setPreset(null)
                 setDraft({ ...BLANK, rules: [defaultRule('genre', facets)] })
@@ -139,14 +133,12 @@ export function SmartDialog({ playlistId }: { playlistId?: string }) {
               }}
             >
               Custom
-            </button>
+            </Chip>
           </div>
         )}
 
         <div className="dlg-new-row">
-          <div className={`plc dlg-new-cover ${covers.length > 1 ? 'is-mosaic' : covers.length ? '' : 'is-empty'}`}>
-            {covers.length > 1 ? <MosaicTiles covers={covers} /> : covers.length ? <MiniTile id={covers[0]} /> : <Icon name="smart" />}
-          </div>
+          <CoverMosaic className="dlg-new-cover" covers={covers} icon="smart" />
           <div className="dlg-new-field">
             {editing ? (
               <div className="sm-name">{editing.name}</div>
@@ -192,9 +184,9 @@ export function SmartDialog({ playlistId }: { playlistId?: string }) {
               FILLING IN GENRES FROM MUSICBRAINZ · {pass.done}/{pass.total} ARTISTS
             </div>
           )}
-          <button type="button" className="dlg-link sm-add" onClick={addRule}>
+          <Button variant="tonal" className="sm-add" onClick={addRule}>
             <Icon name="plus" /> Add rule
-          </button>
+          </Button>
         </div>
 
         <div className="sm-block sm-order">
@@ -228,12 +220,12 @@ export function SmartDialog({ playlistId }: { playlistId?: string }) {
         </div>
 
         <div className="dlg-buttons">
-          <button type="button" className="dlg-cancel" onClick={() => actions.closeDialog()}>
+          <Button variant="ghost" onClick={() => actions.closeDialog()}>
             Cancel
-          </button>
-          <button type="submit" className="dlg-ok" disabled={!ok}>
+          </Button>
+          <Button type="submit" variant="brand" disabled={!ok}>
             {editing ? 'Save' : 'Create'}
-          </button>
+          </Button>
         </div>
       </form>
     </Shell>
@@ -364,9 +356,7 @@ function RuleRow({ r, f, onChange, onRemove }: { r: Rule; f: Facets | null; onCh
         }}
       />
       {rest}
-      <button type="button" className="sm-x" aria-label="Remove rule" title="Remove rule" onClick={onRemove}>
-        <Icon name="x" />
-      </button>
+      <IconButton icon="x" label="Remove rule" className="sm-x" onClick={onRemove} />
     </div>
   )
 }

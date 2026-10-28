@@ -4,6 +4,7 @@
  * rows and the footer (overall progress + status line).
  */
 import type { MouseEvent } from 'react'
+import { Button } from '../../components/ui'
 import { Icon, type IconName } from '../../design/icons'
 import { useCover } from '../../lib/covers'
 import type { Catalogue } from '../../state/library'
@@ -100,23 +101,23 @@ export function ReleaseList({ s, cat, view, phone = false, onInspect }: { s: Upl
 function BatchButton({ view }: { view: BatchView }) {
   if (view.button === 'upload')
     return (
-      <button type="button" className="ub-batch is-pri" onClick={start} disabled={!view.canUpload}>
+      <Button variant="brand" onClick={start} disabled={!view.canUpload}>
         <Icon name="upload" />
         Upload
-      </button>
+      </Button>
     )
   if (view.button === 'pause')
     return (
-      <button type="button" className="ub-batch is-sec" onClick={pause}>
+      <Button variant="outlined" onClick={pause}>
         <Icon name="pauseF" />
         Pause all
-      </button>
+      </Button>
     )
   return (
-    <button type="button" className="ub-batch is-sec" onClick={resume}>
+    <Button variant="outlined" onClick={resume}>
       <Icon name="playF" />
       Resume
-    </button>
+    </Button>
   )
 }
 

@@ -5,7 +5,7 @@
  * (64px rows on 0.21 surfaces, 2px apart, 24px outer corners; the playing row coral with 20px corners).
  */
 import type { CSSProperties, HTMLAttributes, MouseEvent, ReactNode } from 'react'
-import { AlbumEq, ProgressRing, Toggle, type DownloadState } from '../../components/ui'
+import { IconButton, Button, AlbumEq, ProgressRing, Toggle, type DownloadState } from '../../components/ui'
 import { Icon, type IconName } from '../../design/icons'
 import { useLazyCover } from '../../lib/covers'
 import { back as goBack } from '../../shell/routes'
@@ -18,9 +18,7 @@ import './detail.css'
 export function DetailBack({ fallback, parts }: { fallback: string; parts: { label: string; href?: string }[] }) {
   return (
     <nav className="dt-back" aria-label="Breadcrumb">
-      <button type="button" className="dt-back-btn" aria-label="Back" title="Back" onClick={() => goBack(fallback)}>
-        <Icon name="back" />
-      </button>
+      <IconButton icon="back" label="Back" size="lg" variant="strong" className="dt-back-btn" onClick={() => goBack(fallback)} />
       {parts.map((p, i) => (
         <span key={i} className="dt-back-part">
           {i > 0 && <Icon name="chevR" className="dt-back-sep" />}
@@ -57,20 +55,21 @@ export function DetailHero({ art, kicker, title, onTitleDouble, children, classN
 
 /* ── Actions ────────────────────────────────────────── */
 
+const ACT_VARIANT = { filled: 'filled', tonal: 'secondary', outlined: 'outlined-ink' } as const
+
+/** The 56px actions of the detail pages (Play / Shuffle / Following …): the kit Button at size xl. */
 export function ActBtn({ kind, icon, filled, children, onClick, disabled, title, className }: { kind: 'filled' | 'tonal' | 'outlined'; icon?: IconName; filled?: boolean; children: ReactNode; onClick?: (e: MouseEvent<HTMLButtonElement>) => void; disabled?: boolean; title?: string; className?: string }) {
   return (
-    <button type="button" className={`dt-btn is-${kind} ${className ?? ''}`} onClick={onClick} disabled={disabled} title={title}>
+    <Button variant={ACT_VARIANT[kind]} size="xl" className={`dt-btn ${className ?? ''}`} onClick={onClick} disabled={disabled} title={title}>
       {icon && <Icon name={icon} filled={filled} />}
       <span className="dt-btn-l">{children}</span>
-    </button>
+    </Button>
   )
 }
 
 export function MoreBtn({ onClick, label = 'More' }: { onClick: (e: MouseEvent<HTMLButtonElement>) => void; label?: string }) {
   return (
-    <button type="button" className="dt-more" aria-label={label} title={label} onClick={onClick}>
-      <Icon name="more" />
-    </button>
+    <IconButton icon="more" label={label} size="xl" onClick={onClick} />
   )
 }
 
@@ -202,9 +201,7 @@ export function DtRow({ n, title, sub, cover, showCover, current, playing, dl, h
       <div className="dt-end">
         {end ?? (
           onMore && (
-            <button type="button" className="dt-dots" aria-label="More" title="More" onClick={(e) => (e.stopPropagation(), onMore(e))}>
-              <Icon name="more" />
-            </button>
+            <IconButton icon="more" label="More" className="dt-dots" onClick={(e) => (e.stopPropagation(), onMore(e))} />
           )
         )}
         {grip}

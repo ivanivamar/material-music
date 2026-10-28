@@ -159,10 +159,7 @@
 .hinvite-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
 .hinvite-t { font-size: 16px; font-weight: 600; }
 .hinvite-b { font-size: 14px; color: var(--ink-secondary); line-height: 1.5; text-wrap: pretty; }
-.hinvite-btn {
-  flex: none; height: 40px; padding: 0 20px 0 16px; border: 0; border-radius: 999px; cursor: pointer; font: inherit; font-size: 14px; font-weight: 600;
-  background: oklch(0.36 0.035 38); color: oklch(0.92 0.025 38); display: inline-flex; align-items: center; gap: 8px;
-}
+.hinvite-btn { flex: none; }
 .hinvite.is-phone { flex-direction: column; align-items: stretch; gap: 14px; }
 .hinvite-head { display: flex; align-items: center; gap: 14px; }
 .hinvite.is-phone .hinvite-btn { align-self: flex-start; }
@@ -170,11 +167,6 @@
 /* placeholders */
 .hskel { pointer-events: none; }
 .hskel-lines { display: flex; flex-direction: column; gap: 8px; padding-top: 2px; }
-.hskel-bar {
-  display: block; border-radius: 6px; flex: none;
-  background: linear-gradient(90deg, oklch(0.22 0.008 40) 30%, oklch(0.27 0.01 40) 50%, oklch(0.22 0.008 40) 70%); background-size: 200% 100%;
-  animation: pm-shimmer 1.6s linear infinite;
-}
 
 /* reduced motion */
 html[data-motion='reduced'] .jt, html[data-motion='reduced'] .jt-art, html[data-motion='reduced'] .jt-play, html[data-motion='reduced'] .hcard-art,

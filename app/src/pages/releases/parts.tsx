@@ -1,6 +1,6 @@
 /** New Releases pieces shared by the feed, the hero and the detail panel / sheet. */
 import { useLayoutEffect, useMemo, useRef, useState, type PointerEvent, type ReactNode } from 'react'
-import { useToast } from '../../components/ui'
+import { LoadingShape, useToast } from '../../components/ui'
 import { Icon, type IconName } from '../../design/icons'
 import { cookie } from '../../design/shapes'
 import { coverUrl, mbReleaseGroupUrl } from '../../lib/musicbrainz'
@@ -100,12 +100,9 @@ export function ReleaseCover({ item, size = 'sm' }: { item: FeedItem; size?: 'xs
   )
 }
 
+/** Small inline busy mark (buttons, veils): the shared M3 loading indicator. */
 export function Spinner() {
-  return (
-    <span className="nr-spin" aria-hidden>
-      <span className="pg-anim" />
-    </span>
-  )
+  return <LoadingShape size={16} />
 }
 
 /** Cover overlay while "I've got it" waits for the album to show up. */

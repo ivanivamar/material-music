@@ -30,11 +30,10 @@
 .ptb-word { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ptb-title { flex: 1; min-width: 0; margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ptb-actions { display: flex; align-items: center; gap: 2px; flex: none; }
-.ptb-ib, .ptb-av {
+.ptb-av {
   width: 48px; height: 48px; padding: 0; border: 0; border-radius: 999px; background: none; cursor: pointer; color: var(--ink-primary);
   display: inline-flex; align-items: center; justify-content: center;
 }
-.ptb-ib .ms { font-size: 24px; }
 
 .tabs {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;

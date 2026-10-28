@@ -19,7 +19,7 @@
  * from the phone; without a connection the offline banner shows and unplayable albums dim.
  */
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { Button, EmptyState, OfflineBanner, Toggle, useToast } from '../../components/ui'
+import { Chip, IconButton, Button, EmptyState, OfflineBanner, Toggle, useToast } from '../../components/ui'
 import { offlineIndex, useDownloads, useOnline, type OfflineIndex } from '../../state/downloads'
 import { Icon, type IconName } from '../../design/icons'
 import { actions } from '../../actions/actions'
@@ -170,9 +170,7 @@ export function Library({ tab: routeTab }: { tab: LibraryTab | null }) {
       {phone ? (
         phoneSearching && (
           <div className="lb-phsearch">
-            <button type="button" className="lb-phback" aria-label="Close search" onClick={closePhoneSearch}>
-              <Icon name="back" />
-            </button>
+            <IconButton icon="back" label="Close search" size="lg" variant="strong" className="lb-phback" onClick={closePhoneSearch} />
             {field}
           </div>
         )
@@ -183,10 +181,10 @@ export function Library({ tab: routeTab }: { tab: LibraryTab | null }) {
             <div className="lb-meta">{headMeta}</div>
           </div>
           {!empty && field}
-          <button type="button" className="shuffle-all lb-shuffle" onClick={shuffleAll} disabled={empty}>
+          <Button variant="filled" size="xl" className="shuffle-all lb-shuffle" onClick={shuffleAll} disabled={empty}>
             <Icon name="shuffle" />
             Shuffle library
-          </button>
+          </Button>
         </header>
       )}
 
@@ -196,11 +194,9 @@ export function Library({ tab: routeTab }: { tab: LibraryTab | null }) {
             {LIBRARY_TABS.map((t) => {
               const on = t === chip
               return (
-                <button key={t} type="button" role="tab" aria-selected={on} className={`lb-chip ${on ? 'is-on' : ''}`} onClick={() => pick(t)}>
-                  {on && <Icon name="done" className="lb-chip-ck" />}
+                <Chip key={t} role="tab" selected={on} size={phone ? 'sm' : 'md'} count={phone ? undefined : fmtN(counts[t])} onClick={() => pick(t)}>
                   {TAB_LABEL[t]}
-                  {!phone && <span className="lb-chip-n">{fmtN(counts[t])}</span>}
-                </button>
+                </Chip>
               )
             })}
           </div>
@@ -516,14 +512,14 @@ function SongsView({ c, filter, phone }: { c: Catalogue; filter: OfflineIndex | 
   return (
     <div className={letters ? 'lb-has-scrub' : undefined}>
       <div className="lb-actions">
-        <button type="button" className="lb-btn is-tonal" disabled={!tracks.length} onClick={() => (ctx.active ? playerStore.toggle() : playList(ids(), context, { start: 0 }))}>
+        <Button variant="tonal" disabled={!tracks.length} onClick={() => (ctx.active ? playerStore.toggle() : playList(ids(), context, { start: 0 }))}>
           <Icon name={ctx.playing ? 'pauseF' : 'playF'} />
           {ctx.playing ? 'Pause' : ctx.active ? 'Resume' : 'Play'}
-        </button>
-        <button type="button" className="lb-btn is-outline" disabled={!tracks.length} onClick={() => playList(ids(), context, { shuffle: true })}>
+        </Button>
+        <Button variant="outlined-ink" disabled={!tracks.length} onClick={() => playList(ids(), context, { shuffle: true })}>
           <Icon name="shuffle" />
           Shuffle
-        </button>
+        </Button>
       </div>
       <SongGroups c={c} groups={groups} timeline={view === 'timeline'} phone={phone} onPlay={play} />
       {letters && <Scrubber present={present} />}

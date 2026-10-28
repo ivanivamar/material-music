@@ -1,54 +1,5 @@
 /* Pelagic core components — handoff section 03 ("Core components and states"). */
 
-/* ── Buttons ──────────────────────────────────────────── */
-.btn {
-  height: var(--btn-h);
-  padding: 0 24px;
-  border-radius: var(--r-button);
-  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
-  font-size: 15px; font-weight: 500; line-height: 1;
-  border: var(--bw-control) solid transparent;
-  cursor: pointer; flex: none; user-select: none; white-space: nowrap;
-  transition: background .25s var(--ease), border-color .25s var(--ease), box-shadow .35s var(--ease), color .25s var(--ease);
-}
-.btn .btn-ic { font-size: var(--icon-button); display: inline-flex; }
-.btn:focus-visible { outline: 1.5px solid #fff; outline-offset: 4px; }
-.btn:disabled { opacity: .45; cursor: default; }
-.btn-lg { height: var(--btn-h-android); }
-.btn-sm { height: 36px; padding: 0 14px; font-size: 13px; gap: 8px; }
-.btn-sm .btn-ic { font-size: 17px; }
-
-.btn-primary { background: var(--ink-primary); color: var(--bg-1); }
-.btn-primary:hover:not(:disabled) { background: #fff; box-shadow: var(--glow-primary-hover); }
-.btn-primary:active:not(:disabled) { background: #bdbdbd; box-shadow: none; }
-
-.btn-secondary { background: transparent; color: var(--ink-primary); border-color: var(--border-strong); padding: 0 20px; }
-.btn-secondary:hover:not(:disabled) { border-color: rgba(255, 255, 255, .4); background: var(--surface-1); }
-.btn-secondary:active:not(:disabled) { border-color: var(--border-strong); background: var(--surface-2); }
-
-.btn-danger { background: var(--danger-bg); color: var(--danger); border-color: var(--danger-border); padding: 0 20px; }
-.btn-danger:hover:not(:disabled) { background: rgba(230, 150, 140, .09); }
-
-.btn-ghost { background: transparent; color: var(--ink-primary); padding: 0 14px; }
-.btn-ghost:hover:not(:disabled) { background: var(--surface-2); }
-
-/* Icon button (round, 44px hit target) */
-.ibtn {
-  width: 44px; height: 44px; border-radius: 50%; flex: none;
-  display: inline-flex; align-items: center; justify-content: center;
-  font-size: 22px; color: var(--ink-secondary);
-  background: transparent; border: 0; padding: 0; cursor: pointer;
-  transition: color .25s var(--ease), background .25s var(--ease);
-}
-.ibtn:hover:not(:disabled) { color: var(--ink-primary); background: var(--surface-1); }
-.ibtn:active:not(:disabled) { color: #fff; background: var(--surface-2); }
-.ibtn:focus-visible { color: var(--ink-primary); outline: 1.5px solid #fff; outline-offset: 2px; }
-.ibtn[aria-pressed='true'] { color: #fff; }
-.ibtn:disabled { color: var(--ink-ghost); cursor: default; }
-.ibtn-sq { border-radius: var(--r-icon-button); }
-.ibtn-sm { width: 32px; height: 32px; font-size: 18px; }
-.ibtn-bare:hover:not(:disabled) { background: transparent; }
-
 /* Round play button (now-playing 60, player bar 38) */
 .playbtn {
   position: relative; border-radius: 50%; flex: none; padding: 0; cursor: pointer;
@@ -110,19 +61,6 @@
 }
 .seg-meta { font-family: var(--font-mono); font-size: var(--fs-mono-sm); color: var(--ink-secondary); font-weight: 400; }
 
-/* ── Chips ────────────────────────────────────────────── */
-.chips { display: flex; flex-wrap: wrap; gap: 8px; }
-.chip {
-  height: var(--chip-h); padding: 0 16px; border-radius: var(--r-pill);
-  display: inline-flex; align-items: center; gap: 8px; font-size: 14px;
-  color: var(--ink-secondary); background: transparent; cursor: pointer;
-  border: var(--bw-control) solid var(--border);
-  transition: background .3s var(--ease), color .3s var(--ease), border-color .3s var(--ease);
-}
-.chip:hover { color: var(--ink-primary); border-color: var(--border-strong); }
-.chip[aria-pressed='true'], .chip[aria-checked='true'] { background: var(--ink-primary); color: var(--bg-1); border-color: var(--ink-primary); font-weight: 500; }
-.chip-lg { height: 36px; }
-
 /* ── Slider / waterline seek ──────────────────────────── */
 .slider { position: relative; flex: 1; min-width: 0; cursor: pointer; touch-action: none; outline: none; }
 .slider-track, .slider-fill { position: absolute; left: 0; height: 1px; top: 50%; margin-top: -.5px; }
@@ -182,9 +120,10 @@ html[data-motion='reduced'] .swell-head, html[data-motion='reduced'] .swell-tip 
 
 /* ── Skeleton ─────────────────────────────────────────── */
 .skel {
-  background: linear-gradient(100deg, var(--surface-1) 30%, #222226 50%, var(--surface-1) 70%);
-  background-size: 250% 100%;
-  animation: pg-shimmer 2.8s var(--ease-shimmer) infinite;
+  display: block; flex: none;
+  background: linear-gradient(90deg, oklch(0.22 0.008 40) 30%, oklch(0.27 0.01 40) 50%, oklch(0.22 0.008 40) 70%);
+  background-size: 200% 100%;
+  animation: pm-shimmer 1.6s linear infinite;
 }
 
 /* ── Track row ────────────────────────────────────────── */

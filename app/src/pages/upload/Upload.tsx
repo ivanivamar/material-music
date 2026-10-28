@@ -8,7 +8,7 @@
  */
 import { useEffect, useRef, useState, type DragEvent, type FormEvent } from 'react'
 import { createPortal } from 'react-dom'
-import { useToast } from '../../components/ui'
+import { Button, useToast } from '../../components/ui'
 import { Icon } from '../../design/icons'
 import { registerBack } from '../../native/backButton'
 import { useLibrary } from '../../state/library'
@@ -50,10 +50,10 @@ export function Upload() {
             title="Upload"
             tools={
               phone ? (
-                <button type="button" className="ub-add-btn" onClick={pick.files}>
+                <Button variant="brand" onClick={pick.files}>
                   <Icon name="plus" />
                   Add
-                </button>
+                </Button>
               ) : (
                 <div className="ub-strip">
                   <span className="ub-strip-ic" aria-hidden>
@@ -114,13 +114,13 @@ function EmptyState({ reading, onFolders, onFiles }: { reading: number; onFolder
           <p className="ub-zone-sub">Drop as many folders or files as you like. They’re sorted into releases using their tags, and releases with no problems are added to your library automatically.</p>
         </div>
         <div className="ub-zone-btns">
-          <button type="button" className="ub-zone-pri" onClick={onFolders}>
+          <Button variant="brand" size="lg" className="ub-zone-btn" onClick={onFolders}>
             <Icon name="folder" />
             Choose folders
-          </button>
-          <button type="button" className="ub-zone-sec" onClick={onFiles}>
+          </Button>
+          <Button variant="outlined" size="lg" className="ub-zone-btn" onClick={onFiles}>
             Choose files
-          </button>
+          </Button>
         </div>
         <div className="ub-zone-hint">{reading > 0 ? `Reading ${plural(reading, 'file', 'files')}…` : 'One folder per release works best · loose files are grouped by tags'}</div>
       </div>

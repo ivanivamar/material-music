@@ -9,7 +9,7 @@
  * Opened from the player bar / mini player. Esc or Back closes (AppShell + history).
  */
 import { useEffect, useRef, useState, type CSSProperties, type MouseEvent, type PointerEvent } from 'react'
-import { ThinSlider, WaveSeek } from '../components/ui'
+import { IconButton, ThinSlider, WaveSeek } from '../components/ui'
 import { Icon } from '../design/icons'
 import { useCover } from '../lib/covers'
 import { useLibrary } from '../state/library'
@@ -267,9 +267,7 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
         </div>
         <div className="np-head-r">
           {songTrack && !startView && (
-            <button type="button" className="np-more" aria-label="More: add to playlist, go to album…" title="More" onClick={(e) => actions.menu({ kind: 'track', trackId: songTrack.id }, e)}>
-              <Icon name="more" />
-            </button>
+            <IconButton icon="more" label="More: add to playlist, go to album…" title="More" size="lg" className="np-more" onClick={(e) => actions.menu({ kind: 'track', trackId: songTrack.id }, e)} />
           )}
         </div>
       </header>
@@ -386,9 +384,7 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
                     <div className="np-panel-sub">{intro ? `${dj.session?.title ?? 'DJ'} · spoken intro` : songTrack ? `${songTrack.title} · ${songTrack.artist}` : ''}</div>
                   </div>
                   {!phone && (
-                    <button type="button" className="np-panel-x" title="Close" aria-label="Close lyrics" onClick={closeLyrics}>
-                      <Icon name="x" />
-                    </button>
+                    <IconButton icon="x" label="Close lyrics" title="Close" className="np-panel-x" onClick={closeLyrics} />
                   )}
                 </div>
               </div>

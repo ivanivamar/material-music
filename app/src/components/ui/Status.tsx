@@ -67,7 +67,7 @@ export type DownloadState = { kind: 'none' } | { kind: 'downloading'; progress: 
 /** Icon-only status for track rows (28px column). */
 export function DownloadIcon({ state }: { state: DownloadState }) {
   if (state.kind === 'done') return <span className="dl-done" title="Stored offline"><Icon name="checkCircle" filled /></span>
-  if (state.kind === 'downloading') return <span className="dl-busy" title={`Downloading ${Math.round(state.progress * 100)}%`}><ProgressRing progress={state.progress} size={22} /></span>
+  if (state.kind === 'downloading') return <span className="dlm-busy" title={`Downloading ${Math.round(state.progress * 100)}%`}><ProgressRing progress={state.progress} size={22} /></span>
   return <span className="dl-cloud" title="Stream only"><Icon name="cloud" /></span>
 }
 
@@ -82,8 +82,44 @@ export function DownloadStatus({ state }: { state: DownloadState }) {
 
 /* ── Skeleton ───────────────────────────────────────── */
 
-export function Skeleton({ width, height, radius = 6, style }: { width: number | string; height: number | string; radius?: number | string; style?: CSSProperties }) {
-  return <div className="skel pg-anim" style={{ width, height, borderRadius: radius, ...style }} aria-hidden />
+/** Shimmering placeholder block. No `width` = fills the row. */
+export function Skeleton({ width, height, radius = 6, style, className }: { width?: number | string; height: number | string; radius?: number | string; style?: CSSProperties; className?: string }) {
+  return <span className={`skel pg-anim ${className ?? ''}`} style={{ width, height, borderRadius: radius, ...style }} aria-hidden />
+}
+
+/* ── Linear progress ─────────────────────────────── */
+
+/**
+ * 4px M3 linear progress. `value` 0..1; leave it out for the indeterminate sweep.
+ * Pages position / tint it through `className` (vars `--lp-h`, `--lp-track`, `--lp-fill`).
+ */
+export function LinearProgress({ value, className, label }: { value?: number; className?: string; label?: string }) {
+  const indet = value == null
+  const pct = indet ? 0 : Math.round(Math.max(0, Math.min(1, value)) * 1000) / 10
+  return (
+    <div
+      className={`mm-lprog ${indet ? 'is-indet' : ''} ${className ?? ''}`}
+      role={label ? 'progressbar' : undefined}
+      aria-label={label}
+      aria-valuenow={label && !indet ? pct : undefined}
+      aria-hidden={label ? undefined : true}
+    >
+      <span className="mm-lprog-bar" style={indet ? undefined : { width: `${pct}%` }} />
+    </div>
+  )
+}
+
+/** Device storage split: this app · other apps · free (Downloads, Settings). Bytes in. */
+export function StorageBar({ used, free, total, className }: { used: number; free: number; total: number; className?: string }) {
+  const pct = (b: number) => (total > 0 ? `${Math.max(0, Math.min(100, (b / total) * 100))}%` : '0%')
+  const other = Math.max(0, total - free - used)
+  return (
+    <div className={`mm-store-bar ${className ?? ''}`} aria-hidden>
+      <span className="mm-store-me" style={{ width: pct(used), minWidth: used ? 6 : 0 }} />
+      <span className="mm-store-other" style={{ width: pct(other) }} />
+      <span className="mm-store-free" />
+    </div>
+  )
 }
 
 /* ── Divider ("SIDE A ──── 06 TRACKS") ──────────────── */

@@ -4,7 +4,7 @@
  * one type: Genre (multi-select chips), Never played, Forgotten, New additions — each with the songs available.
  */
 import { useMemo, useState } from 'react'
-import { useToast } from '../components/ui'
+import { Chip, LinearProgress, useToast } from '../components/ui'
 import { Icon } from '../design/icons'
 import { djLibrary, djStore, downloadedOnly, typeCounts, useDj } from '../state/dj'
 import { useDownloads, useOnline } from '../state/downloads'
@@ -73,22 +73,18 @@ export function DjStart({ phone }: { phone: boolean; onBack?: () => void }) {
         <div className="djs-sub">{reading ? `Reading genres · ${fmt(lib.withGenre)} of ${fmt(counts.total)}` : 'Pick one or more'}</div>
       </div>
       {reading && (
-        <div className="djs-progress" aria-hidden>
-          <span style={{ width: `${(lib.withGenre / Math.max(1, counts.total)) * 100}%` }} />
-        </div>
+        <LinearProgress className="djs-progress" value={lib.withGenre / Math.max(1, counts.total)} />
       )}
       <div className="djs-chips">
         {chips.map((g) => {
           const on = picked.includes(g.key)
           return (
-            <button key={g.key} type="button" className={`djs-chip ${on ? 'is-on' : ''}`} aria-pressed={on} onClick={() => toggle(g.key)}>
-              {on && <Icon name="done" size={16} />}
+            <Chip key={g.key} className="djs-chip" selected={on} count={reading ? `${fmt(g.count)} so far` : fmt(g.count)} onClick={() => toggle(g.key)}>
               {g.name}
-              <span className="djs-chip-n">{reading ? `${fmt(g.count)} so far` : fmt(g.count)}</span>
-            </button>
+            </Chip>
           )
         })}
-        {reading && [120, 96, 140, 84].map((w, i) => <span key={i} className="djs-chip is-skel pg-anim" style={{ width: w }} aria-hidden />)}
+        {reading && [120, 96, 140, 84].map((w, i) => <span key={i} className="chip djs-chip is-skel pg-anim" style={{ width: w }} aria-hidden />)}
         {!chips.length && !reading && <div className="djs-note">No genres yet. Endless mode and the other types already work.</div>}
       </div>
       {reading && <div className="djs-note">Counts so far. Endless mode and the other types already work; genre sessions pick from tagged songs only.</div>}

@@ -14,7 +14,7 @@
  * the grip). Songs that left the library stay as dimmed rows with ✕ until removed.
  */
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type DragEvent, type PointerEvent as ReactPointerEvent } from 'react'
-import { Button, EmptyState, formatTime, useToast, type DownloadState } from '../../components/ui'
+import { IconButton, Button, EmptyState, formatTime, useToast, type DownloadState } from '../../components/ui'
 import { Icon, type IconName } from '../../design/icons'
 import { useArtTint } from '../../design/tint'
 import { useCover } from '../../lib/covers'
@@ -462,9 +462,7 @@ function Row({
       onMore={target ? (e) => actions.menu(target, e) : undefined}
       end={
         missing ? (
-          <button type="button" className="dt-x" aria-label="Remove from playlist" title="Remove from playlist" onClick={(e) => (e.stopPropagation(), onRemove())}>
-            <Icon name="x" />
-          </button>
+          <IconButton icon="x" label="Remove from playlist" onClick={(e) => (e.stopPropagation(), onRemove())} />
         ) : undefined
       }
       grip={

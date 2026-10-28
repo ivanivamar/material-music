@@ -8,7 +8,7 @@
  *                         Use automatic   Cancel  [Save]
  */
 import { useMemo, useState } from 'react'
-import { useToast } from '../components/ui'
+import { Button, useToast } from '../components/ui'
 import { Icon } from '../design/icons'
 import { albumGenresOf, artistGenresOf, cleanGenres, genresStore, SOURCE_LABEL, useGenres, type GenresDoc } from '../state/genres'
 import { useLibrary } from '../state/library'
@@ -121,16 +121,16 @@ export function GenreDialog({ target, id }: { target: 'album' | 'artist'; id: st
         </div>
         <div className="dlg-buttons">
           {own && (
-            <button type="button" className="dlg-link gd-auto" onClick={() => save(null)}>
+            <Button variant="ghost" size="sm" className="gd-auto" onClick={() => save(null)}>
               Use automatic
-            </button>
+            </Button>
           )}
-          <button type="button" className="dlg-cancel" onClick={() => actions.closeDialog()}>
+          <Button variant="ghost" onClick={() => actions.closeDialog()}>
             Cancel
-          </button>
-          <button type="submit" className="dlg-ok">
+          </Button>
+          <Button type="submit" variant="brand">
             Save
-          </button>
+          </Button>
         </div>
       </form>
     </Shell>

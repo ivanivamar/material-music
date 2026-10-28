@@ -7,28 +7,9 @@
 .dl-set-s { font-size: 12px; color: var(--ink-secondary); margin-top: 2px; }
 
 /* Segmented quality pill (M3 morphing corners) */
-.dl-seg { display: inline-flex; gap: 2px; }
-.dl-seg.is-full { display: flex; width: 100%; }
-.dl-seg-btn {
-  position: relative; overflow: hidden;
-  height: 44px; padding: 0 18px; border: 0; border-radius: 8px; cursor: pointer;
-  background: oklch(0.28 0.01 40); color: oklch(0.86 0.01 40);
-  font: inherit; font-size: 14px; font-weight: 600; white-space: nowrap;
-  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  transition: border-radius 350ms var(--ease-shape), background-color 200ms var(--ease-std), color 200ms var(--ease-std);
-}
-.dl-seg-btn:hover:not(.is-on) { background: oklch(0.32 0.01 40); color: var(--ink-primary); }
-.dl-seg.is-full .dl-seg-btn { flex: 1; padding: 0 12px; }
-.dl-seg-btn.is-first, .dl-seg-btn:first-child { border-radius: 22px 8px 8px 22px; }
-.dl-seg-btn.is-last, .dl-seg-btn:last-child { border-radius: 8px 22px 22px 8px; }
-.dl-seg-btn.is-on { border-radius: 22px; background: var(--brand); color: var(--on-brand); }
 
 /* Storage bar (3-part 10px bar with 3px gap) */
 .dl-storage { display: flex; flex-direction: column; gap: 10px; }
-.dl-bar { height: 10px; display: flex; gap: 3px; }
-.dl-bar-me { border-radius: 999px; background: var(--brand); transition: width 0.5s var(--ease); }
-.dl-bar-other { border-radius: 999px; background: oklch(0.34 0.012 40); }
-.dl-bar-free { flex: 1; border-radius: 999px; background: oklch(0.24 0.008 40); }
 .dl-legend { display: flex; gap: 24px; font-size: 12px; color: var(--ink-secondary); font-variant-numeric: tabular-nums; }
 .dl-legend span { display: flex; align-items: center; gap: 8px; }
 .dl-legend b { font-weight: 600; color: var(--ink-primary); }
@@ -69,24 +50,14 @@
 .dl-sub-row { display: flex; align-items: center; gap: 8px; margin-top: 2px; font-size: 12px; font-variant-numeric: tabular-nums; }
 
 .dl-prog { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
-.dl-line { position: relative; height: 4px; border-radius: 999px; background: oklch(0.30 0.01 40); overflow: hidden; }
-.dl-line span { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 999px; background: var(--brand); transition: width 0.35s var(--ease); }
-.dl-busy.is-wait .dl-line span { background: oklch(0.55 0.02 40); }
+.dl-line { --lp-track: oklch(0.30 0.01 40); }
+.dl-busy.is-wait .dl-line { --lp-fill: oklch(0.55 0.02 40); }
 .dl-status { font-size: 12px; color: var(--ink-secondary); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .dl-n { font-size: 13px; color: var(--ink-secondary); font-variant-numeric: tabular-nums; }
 .dl-q { display: flex; }
 .dl-size { font-size: 13px; color: var(--ink-primary); text-align: right; font-variant-numeric: tabular-nums; }
 
 .dl-btns { display: flex; justify-content: flex-end; gap: 6px; flex: none; }
-.dl-ibtn {
-  width: 44px; height: 44px; border-radius: 999px; border: 0; background: transparent; color: var(--ink-secondary);
-  display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex: none;
-  transition: background-color 180ms var(--ease-std), color 180ms var(--ease-std);
-}
-.dl-ibtn .ms { font-size: 20px; }
-.dl-ibtn:hover { background: oklch(0.28 0.01 40); color: var(--ink-primary); }
-.dl-ibtn.is-tonal { background: oklch(0.36 0.035 38); color: oklch(0.92 0.025 38); }
-.dl-ibtn.is-tonal:hover { background: oklch(0.40 0.04 38); color: oklch(0.95 0.02 38); }
 
 /* More popover menu */
 .dl-more-wrap { position: relative; display: flex; justify-content: flex-end; }
@@ -104,26 +75,6 @@
 
 /* Footer & Empty state */
 .dl-foot { display: flex; flex-wrap: wrap; gap: 12px; margin: 4px 0 32px; }
-.dl-btn-pri {
-  height: 44px; padding: 0 22px 0 16px; border-radius: 999px; border: 0; cursor: pointer;
-  background: var(--brand); color: var(--on-brand); font: inherit; font-size: 14px; font-weight: 600;
-  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-}
-.dl-btn-pri .ms, .dl-btn-sec .ms, .dl-btn-danger .ms { font-size: 18px; }
-.dl-btn-sec {
-  height: 44px; padding: 0 20px 0 16px; border-radius: 999px; border: 0; cursor: pointer;
-  background: transparent; box-shadow: inset 0 0 0 1.5px oklch(0.40 0.02 40); color: var(--brand);
-  font: inherit; font-size: 14px; font-weight: 600;
-  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-}
-.dl-btn-sec:hover { background: oklch(0.80 0.115 38 / 0.1); }
-.dl-btn-danger {
-  height: 44px; padding: 0 20px 0 16px; border-radius: 999px; border: 0; cursor: pointer;
-  background: transparent; box-shadow: inset 0 0 0 1.5px oklch(0.50 0.08 22); color: oklch(0.78 0.11 22);
-  font: inherit; font-size: 14px; font-weight: 600;
-  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-}
-.dl-btn-danger:hover { background: oklch(0.78 0.11 22 / 0.1); }
 
 .dl-empty-card {
   border-radius: 28px; background: oklch(0.205 0.008 40); box-shadow: inset 0 0 0 2px oklch(0.34 0.015 40);

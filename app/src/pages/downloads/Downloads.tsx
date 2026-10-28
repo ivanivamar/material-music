@@ -8,7 +8,7 @@
  * On this device: complete albums with track count, tonal quality pill and size, plus a menu to remove.
  */
 import { useEffect, useRef, useState } from 'react'
-import { QualityBadge, Toggle, qualityKind, useToast } from '../../components/ui'
+import { IconButton, Button, LinearProgress, QualityBadge, StorageBar, Segmented, Toggle, qualityKind, useToast } from '../../components/ui'
 import { Icon } from '../../design/icons'
 import { useCover } from '../../lib/covers'
 import { albumOffline, downloadsStore, libraryBytes, qualityOf, useDownloadProgress, useDownloads, type AlbumPlan, type DownloadQuality, type DownloadsState } from '../../state/downloads'
@@ -26,28 +26,7 @@ const QUALITY: { value: DownloadQuality; label: string }[] = [
 ]
 
 function QualitySeg({ value, onChange, full }: { value: DownloadQuality; onChange: (q: DownloadQuality) => void; full?: boolean }) {
-  return (
-    <div className={`dl-seg ${full ? 'is-full' : ''}`} role="group" aria-label="Download quality">
-      {QUALITY.map((o, i) => {
-        const on = value === o.value
-        return (
-          <button
-            key={o.value}
-            type="button"
-            className={`dl-seg-btn ${on ? 'is-on' : ''} ${i === 0 ? 'is-first' : 'is-last'}`}
-            aria-pressed={on}
-            onPointerDown={(e) => {
-              if (e.button === 0 && e.pointerType === 'mouse') onChange(o.value)
-            }}
-            onClick={() => onChange(o.value)}
-          >
-            {on && <Icon name="done" size={16} />}
-            {o.label}
-          </button>
-        )
-      })}
-    </div>
-  )
+  return <Segmented label="Download quality" value={value} options={QUALITY} onChange={onChange} size={44} full={full} />
 }
 
 export function Downloads() {
@@ -123,7 +102,7 @@ export function Downloads() {
           )
         }
       />
-      <StorageBar s={dl} phone={phone} />
+      <StorageSummary s={dl} phone={phone} />
       {phone && (
         <div className="dl-card">
           <label className="dl-set">
@@ -164,14 +143,14 @@ export function Downloads() {
             <p className="dl-empty-sub">Download an album, playlist, artist or song to play it without a connection.</p>
           </div>
           <div className="dl-empty-btns">
-            <button type="button" className="dl-btn-pri" onClick={() => go(libraryHref('albums'))}>
+            <Button variant="brand" size="lg" onClick={() => go(libraryHref('albums'))}>
               <Icon name="library" />
               Browse library
-            </button>
-            <button type="button" className="dl-btn-sec" onClick={downloadAll}>
+            </Button>
+            <Button variant="outlined" size="lg" onClick={downloadAll}>
               <Icon name="download" />
               Everything · {fmtBytes(libraryBytes(data, dl.prefs))}
-            </button>
+            </Button>
           </div>
         </div>
       ) : (
@@ -198,15 +177,15 @@ export function Downloads() {
           )}
           <div className="dl-foot">
             {!hasAll && (
-              <button type="button" className="dl-btn-sec" onClick={downloadAll}>
+              <Button variant="outlined" size="lg" onClick={downloadAll}>
                 <Icon name="download" />
                 Download everything · {fmtBytes(libraryBytes(data, dl.prefs))}
-              </button>
+              </Button>
             )}
-            <button type="button" className="dl-btn-danger" onClick={removeAll}>
+            <Button variant="danger-outlined" size="lg" onClick={removeAll}>
               <Icon name="delete" />
               Remove all downloads
-            </button>
+            </Button>
           </div>
         </>
       )}
@@ -214,18 +193,13 @@ export function Downloads() {
   )
 }
 
-function StorageBar({ s, phone }: { s: DownloadsState; phone: boolean }) {
+function StorageSummary({ s, phone }: { s: DownloadsState; phone: boolean }) {
   const n = s.native
   if (!n || !n.total) return null
-  const pct = (b: number) => `${Math.max(0, Math.min(100, (b / n.total) * 100))}%`
   const other = Math.max(0, n.total - n.free - n.used)
   return (
     <div className="dl-storage">
-      <div className="dl-bar" aria-hidden>
-        <span className="dl-bar-me" style={{ width: pct(n.used), minWidth: n.used ? 6 : 0 }} />
-        <span className="dl-bar-other" style={{ width: pct(other) }} />
-        <span className="dl-bar-free" />
-      </div>
+      <StorageBar used={n.used} free={n.free} total={n.total} />
       {phone ? (
         <div className="dl-legend dl-legend-phone">
           <span>
@@ -351,28 +325,16 @@ function BusyRow({ c, ap, s, first, phone }: { c: Catalogue; ap: AlbumPlan; s: D
             <div className="dl-sub">{name.sub}</div>
           </div>
           <div className="dl-prog">
-            <div className="dl-line">
-              <span style={{ width: `${Math.round(ratio * 1000) / 10}%` }} />
-            </div>
+            <LinearProgress className="dl-line" value={ratio} />
             <div className="dl-status">{status}</div>
           </div>
         </>
       )}
       <div className="dl-btns">
         {first && (
-          <button
-            type="button"
-            className="dl-ibtn is-tonal"
-            aria-label={paused ? 'Resume downloads' : 'Pause downloads'}
-            title={paused ? 'Resume downloads' : 'Pause downloads'}
-            onClick={() => downloadsStore.setPaused(!paused)}
-          >
-            <Icon name={paused ? 'playF' : 'pauseF'} />
-          </button>
+          <IconButton icon={paused ? 'playF' : 'pauseF'} label={paused ? 'Resume downloads' : 'Pause downloads'} size="lg" variant="tonal" onClick={() => downloadsStore.setPaused(!paused)} />
         )}
-        <button type="button" className="dl-ibtn" aria-label={`Cancel ${name.title}`} title={`Cancel ${name.title}`} onClick={remove}>
-          <Icon name="x" />
-        </button>
+        <IconButton icon="x" label={`Cancel ${name.title}`} size="lg" onClick={remove} />
       </div>
     </div>
   )
@@ -427,15 +389,7 @@ function DoneRow({ c, ap, count, bytes, quality, phone }: { c: Catalogue; ap: Al
         </>
       )}
       <div ref={menuRef} className="dl-more-wrap">
-        <button
-          type="button"
-          className="dl-ibtn"
-          aria-label={`More actions for ${name.title}`}
-          aria-expanded={menuOpen}
-          onClick={() => setMenuOpen((v) => !v)}
-        >
-          <Icon name="more" />
-        </button>
+        <IconButton icon="more" label={`More actions for ${name.title}`} size="lg" aria-expanded={menuOpen} onClick={() => setMenuOpen((v) => !v)} />
         {menuOpen && (
           <div className="dl-menu" role="menu">
             <button

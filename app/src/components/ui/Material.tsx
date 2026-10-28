@@ -283,6 +283,68 @@ export function ThinSlider({ value, onChange, label, width = 72, knob = false }:
   )
 }
 
+/**
+ * M3 value slider: 8px track, 4px handle with a gap ring, optional leading icon and trailing value.
+ * Colours come from CSS vars (`--vs-accent`, `--vs-handle`, `--vs-track`, `--vs-gap`) so a page can
+ * tint it (DJ = violet) through its `className`.
+ */
+export function ValueSlider({
+  value,
+  onChange,
+  label,
+  valueText,
+  shown,
+  icon,
+  disabled,
+  step = 0.05,
+  className,
+}: {
+  /** 0..1 */
+  value: number
+  onChange: (v: number) => void
+  label: string
+  /** aria-valuetext */
+  valueText?: string
+  /** trailing value label (omit for none) */
+  shown?: React.ReactNode
+  icon?: IconName
+  disabled?: boolean
+  step?: number
+  className?: string
+}) {
+  const snap = (v: number) => Math.round(Math.max(0, Math.min(1, v)) * 100) / 100
+  const handlers = useDrag((v) => !disabled && onChange(snap(v)))
+  const pct = `${value * 100}%`
+  return (
+    <div className={`mm-vslider ${disabled ? 'is-off' : ''} ${className ?? ''}`}>
+      {icon && <Icon name={icon} />}
+      <div
+        className="mm-vslider-track"
+        role="slider"
+        tabIndex={disabled ? -1 : 0}
+        aria-label={label}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.round(value * 100)}
+        aria-valuetext={valueText}
+        aria-disabled={disabled}
+        {...handlers}
+        onKeyDown={(e) => {
+          if (disabled) return
+          if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') onChange(snap(value - step))
+          if (e.key === 'ArrowRight' || e.key === 'ArrowUp') onChange(snap(value + step))
+        }}
+      >
+        <span className="mm-vslider-line">
+          <span className="mm-vslider-fill" style={{ width: pct }} />
+        </span>
+        <span className="mm-vslider-knob" style={{ left: pct }} />
+      </div>
+      {shown != null && <span className="mm-vslider-val">{shown}</span>}
+    </div>
+  )
+}
+
 /** Shuffle / repeat style toggle: off = plain 46px icon, on = 34px album-colour rounded square. */
 export function ModeToggle({ icon, on, label, disabled, onClick, badge }: { icon: IconName; on: boolean; label: string; disabled?: boolean; onClick: () => void; badge?: string }) {
   return (

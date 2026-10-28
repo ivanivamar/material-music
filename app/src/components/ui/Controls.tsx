@@ -1,4 +1,5 @@
-import { useCallback, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react'
+import { useCallback, useRef, useState, type CSSProperties, type KeyboardEvent, type MouseEvent, type PointerEvent, type ReactNode } from 'react'
+import { Icon } from '../../design/icons'
 
 /* ── Toggle ─────────────────────────────────────────── */
 
@@ -37,9 +38,20 @@ interface SegmentedProps<T extends string> {
   options: SegOption<T>[]
   onChange: (v: T) => void
   label: string
+  /** button height in px (default 40); the outer / picked corners follow it */
+  size?: number
+  /** stretch to the container width, options share it equally */
+  full?: boolean
+  /** show the check on the picked option (default true) */
+  checks?: boolean
+  /** keep clicks from reaching a clickable parent (e.g. a card) */
+  isolate?: boolean
+  /** page-specific look on top of the shared one */
+  className?: string
 }
 
-export function Segmented<T extends string>({ value, options, onChange, label }: SegmentedProps<T>) {
+/** M3 connected button group (radio semantics: arrow keys move the pick). */
+export function Segmented<T extends string>({ value, options, onChange, label, size, full, checks = true, isolate, className }: SegmentedProps<T>) {
   const onKey = (e: KeyboardEvent) => {
     const i = options.findIndex((o) => o.value === value)
     if (e.key === 'ArrowRight' || e.key === 'ArrowDown') onChange(options[Math.min(options.length - 1, i + 1)].value)
@@ -48,7 +60,13 @@ export function Segmented<T extends string>({ value, options, onChange, label }:
     e.preventDefault()
   }
   return (
-    <div className="seg" role="radiogroup" aria-label={label} onKeyDown={onKey}>
+    <div
+      className={`seg ${full ? 'is-full' : ''} ${checks ? '' : 'no-checks'} ${className ?? ''}`}
+      style={size ? ({ '--seg-h': `${size}px` } as CSSProperties) : undefined}
+      role="radiogroup"
+      aria-label={label}
+      onKeyDown={onKey}
+    >
       {options.map((o) => {
         const on = o.value === value
         return (
@@ -62,7 +80,10 @@ export function Segmented<T extends string>({ value, options, onChange, label }:
             onPointerDown={(e) => {
               if (e.button === 0 && e.pointerType === 'mouse') onChange(o.value)
             }}
-            onClick={() => onChange(o.value)}
+            onClick={(e) => {
+              if (isolate) e.stopPropagation()
+              onChange(o.value)
+            }}
           >
             {o.label}
             {o.meta != null && <span className="seg-meta">{o.meta}</span>}
@@ -77,16 +98,29 @@ export function Segmented<T extends string>({ value, options, onChange, label }:
 
 interface ChipProps {
   selected: boolean
-  onClick: () => void
+  onClick?: (e: MouseEvent<HTMLButtonElement>) => void
   children: ReactNode
-  size?: 'md' | 'lg'
+  /** md 36 · sm 32 (phone) */
+  size?: 'md' | 'sm'
+  /** trailing count, e.g. "Albums 18" */
+  count?: ReactNode
+  /** show the check when selected (default true) */
+  check?: boolean
+  /** a11y role: toggle (aria-pressed, default) · tab (aria-selected) · radio (aria-checked) */
+  role?: 'toggle' | 'tab' | 'radio'
+  disabled?: boolean
+  title?: string
+  className?: string
 }
 
-/** Filter chip. Selected = solid #EDEDED with dark text. */
-export function Chip({ selected, onClick, children, size = 'md' }: ChipProps) {
+/** M3 filter chip: outlined surface, coral tonal with a check when picked. */
+export function Chip({ selected, onClick, children, size = 'md', count, check = true, role = 'toggle', disabled, title, className }: ChipProps) {
+  const a11y = role === 'tab' ? { role: 'tab', 'aria-selected': selected } : role === 'radio' ? { role: 'radio', 'aria-checked': selected } : { 'aria-pressed': selected }
   return (
-    <button type="button" className={`chip ${size === 'lg' ? 'chip-lg' : ''}`} aria-pressed={selected} onClick={onClick}>
+    <button type="button" className={['chip', size === 'sm' && 'chip-sm', selected && 'is-on', className].filter(Boolean).join(' ')} {...a11y} disabled={disabled} title={title} onClick={onClick}>
+      {selected && check && <Icon name="done" className="chip-ck" />}
       {children}
+      {count != null && <span className="chip-n">{count}</span>}
     </button>
   )
 }

@@ -6,7 +6,7 @@
  */
 import { useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent, type PointerEvent, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
-import { Skeleton, Toggle } from '../../components/ui'
+import { IconButton, Skeleton, Toggle } from '../../components/ui'
 import { Icon } from '../../design/icons'
 import { bandcampSearchUrl, mbReleaseGroupUrl } from '../../lib/musicbrainz'
 import { tracksByAlbum, type Catalogue } from '../../state/library'
@@ -269,19 +269,9 @@ export function PanelHead({ kicker, externalUrl, onClose }: { kicker: string; ex
       <span className="nrp-kicker">{kicker}</span>
       <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
         {externalUrl && (
-          <button
-            type="button"
-            className="nrp-x"
-            onClick={() => openExternal(externalUrl)}
-            aria-label="Open on MusicBrainz"
-            title="Open on MusicBrainz"
-          >
-            <Icon name="ext" />
-          </button>
+          <IconButton icon="ext" label="Open on MusicBrainz" onClick={() => openExternal(externalUrl)} />
         )}
-        <button type="button" className="nrp-x" onClick={onClose} aria-label="Close" title="Close">
-          <Icon name="x" />
-        </button>
+        <IconButton icon="x" label="Close" onClick={onClose} />
       </div>
     </div>
   )

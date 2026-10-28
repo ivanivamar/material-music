@@ -15,7 +15,7 @@
  */
 import { useMemo, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from 'react'
 import type React from 'react'
-import { AlbumEq, CookieButton, formatTime, qualityLabel, useToast } from '../../components/ui'
+import { IconButton, Button, AlbumEq, CookieButton, formatTime, qualityLabel, useToast } from '../../components/ui'
 import { SHAPE_CLOVER, SHAPE_PLAYING } from '../../design/shapes'
 import { Icon } from '../../design/icons'
 import { actions, trackDrag } from '../../actions/actions'
@@ -152,31 +152,23 @@ function MixView({ c, mix, backBtn }: { c: Catalogue; mix: MixPlan; backBtn: Rea
 
       {phone ? (
         <div className="mx-actions">
-          <button type="button" className="mx-ib" aria-label="Shuffle" onClick={() => playMix(mix, { shuffle: true })}>
-            <Icon name="shuffle" />
-          </button>
-          <button type="button" className="mx-ib" aria-label={saved ? 'Saved as playlist' : 'Save as playlist'} onClick={save}>
-            <Icon name={saved ? 'bookmarked' : 'bookmark'} filled={saved} />
-          </button>
-          <button type="button" className="mx-ib" aria-label="More" onClick={menu}>
-            <Icon name="more" />
-          </button>
+          <IconButton icon="shuffle" label="Shuffle" size="lg" variant="strong" className="mx-ib" onClick={() => playMix(mix, { shuffle: true })} />
+          <IconButton icon={saved ? 'bookmarked' : 'bookmark'} label={saved ? 'Saved as playlist' : 'Save as playlist'} size="lg" variant="strong" className="mx-ib" filled={saved} onClick={save} />
+          <IconButton icon="more" label="More" size="lg" variant="strong" className="mx-ib" onClick={menu} />
           <span className="mx-flex" />
           <CookieButton size={64} iconSize={32} playing={playing} icon={playing ? 'pauseF' : 'playF'} label={playing ? 'Pause' : 'Play'} onClick={playAll} />
         </div>
       ) : (
         <div className="mx-buttons">
-          <button type="button" className="mx-btn is-tonal" onClick={() => playMix(mix, { shuffle: true })}>
+          <Button variant="tonal" onClick={() => playMix(mix, { shuffle: true })}>
             <Icon name="shuffle" />
             Shuffle
-          </button>
-          <button type="button" className="mx-btn is-outline" onClick={save}>
+          </Button>
+          <Button variant="outlined-ink" onClick={save}>
             <Icon name={saved ? 'bookmarked' : 'bookmark'} filled={saved} />
             {saved ? 'Saved as playlist' : 'Save as playlist'}
-          </button>
-          <button type="button" className="mx-btn is-icon" aria-label="More" title="More" onClick={menu}>
-            <Icon name="moreH" />
-          </button>
+          </Button>
+          <IconButton icon="moreH" label="More" onClick={menu} />
           <span className="mx-flex" />
           <span className="mx-ro">
             <Icon name="lock" />

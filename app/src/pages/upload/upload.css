@@ -32,13 +32,6 @@
 .ub-strip-btn:hover { filter: brightness(1.06); }
 .ub-strip-btn:active { transform: scale(0.97); }
 
-.ub-add-btn {
-  height: 44px; padding: 0 18px 0 14px; border-radius: 999px; border: 0; cursor: pointer;
-  background: var(--brand); color: var(--on-brand); font: inherit; font-size: 14px; font-weight: 600;
-  display: inline-flex; align-items: center; gap: 6px; flex: none;
-}
-.ub-add-btn .ms { font-size: 20px; }
-
 .ub-alert {
   display: flex; align-items: center; gap: 12px; padding: 14px 18px;
   border-radius: 20px; background: oklch(0.30 0.045 95); color: oklch(0.94 0.04 95); font-size: 14px;
@@ -74,18 +67,6 @@
 .ub-pill[aria-pressed='true'] { background: oklch(0.36 0.035 38); box-shadow: none; color: oklch(0.92 0.025 38); font-weight: 600; }
 .ub-pill-n { font-size: 12px; opacity: 0.72; font-variant-numeric: tabular-nums; }
 .ub-pill.is-warn .ub-pill-n { color: oklch(0.84 0.08 95); opacity: 1; }
-
-.ub-batch {
-  height: 40px; padding: 0 18px 0 14px; border-radius: 999px; border: 0; cursor: pointer; flex: none;
-  display: inline-flex; align-items: center; gap: 8px; font: inherit; font-size: 14px; font-weight: 600;
-  transition: filter 200ms var(--ease-std), background-color 200ms var(--ease-std), transform 200ms var(--ease-std);
-}
-.ub-batch .ms { font-size: 18px; }
-.ub-batch.is-pri { background: var(--brand); color: var(--on-brand); }
-.ub-batch.is-pri:hover:not(:disabled) { filter: brightness(1.06); }
-.ub-batch.is-pri:disabled { opacity: 0.45; cursor: default; }
-.ub-batch.is-sec { background: transparent; box-shadow: inset 0 0 0 1.5px oklch(0.40 0.02 40); color: var(--brand); }
-.ub-batch.is-sec:hover:not(:disabled) { background: oklch(0.80 0.115 38 / 0.1); }
 
 /* phone summary card */
 .ub-phone-sum {
@@ -219,24 +200,6 @@
 .ub-tag-v.is-mixed { color: var(--ink-secondary); }
 
 .ub-insp-btns { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.ub-btn-pri {
-  height: 40px; padding: 0 20px; border-radius: 999px; border: 0; cursor: pointer;
-  background: var(--brand); color: var(--on-brand); font: inherit; font-size: 14px; font-weight: 600;
-}
-.ub-btn-pri:disabled { opacity: 0.45; cursor: default; }
-.ub-btn-sec {
-  height: 40px; padding: 0 18px; border-radius: 999px; border: 0; cursor: pointer;
-  background: transparent; box-shadow: inset 0 0 0 1.5px oklch(0.40 0.02 40); color: var(--brand);
-  font: inherit; font-size: 14px; font-weight: 600;
-}
-.ub-btn-sec:hover:not(:disabled) { background: oklch(0.80 0.115 38 / 0.1); }
-.ub-btn-sec:disabled { opacity: 0.45; cursor: default; }
-.ub-textbtn {
-  height: 40px; padding: 0 14px; border: 0; border-radius: 999px; background: none; cursor: pointer;
-  font: inherit; font-size: 14px; font-weight: 600; color: var(--ink-secondary);
-}
-.ub-textbtn:hover:not(:disabled) { color: var(--ink-primary); }
-.ub-textbtn:disabled { opacity: 0.45; cursor: default; }
 
 /* multi: cover stack + needs strip */
 .ub-stack { display: flex; flex: none; }
@@ -272,17 +235,6 @@
 .ub-zone-title { margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.02em; }
 .ub-zone-sub { margin: 0; font-size: 14px; line-height: 1.5; color: var(--ink-secondary); text-wrap: pretty; }
 .ub-zone-btns { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
-.ub-zone-pri {
-  height: 48px; padding: 0 24px 0 18px; border-radius: 999px; border: 0; cursor: pointer;
-  background: var(--brand); color: var(--on-brand); font: inherit; font-size: 14px; font-weight: 600;
-  display: inline-flex; align-items: center; gap: 10px;
-}
-.ub-zone-pri .ms { font-size: 20px; }
-.ub-zone-sec {
-  height: 48px; padding: 0 24px; border-radius: 999px; border: 0; cursor: pointer;
-  background: transparent; box-shadow: inset 0 0 0 1.5px oklch(0.40 0.02 40); color: var(--brand);
-  font: inherit; font-size: 14px; font-weight: 600;
-}
 .ub-zone-hint { font-size: 12px; color: var(--ink-tertiary); }
 
 /* ── Drop overlay ──────────────────────────────────── */
@@ -328,7 +280,7 @@
 .shell.is-phone .ub-tile { width: 72px; height: 72px; font-size: 34px; }
 .shell.is-phone .ub-zone-title { font-size: 22px; }
 .shell.is-phone .ub-zone-btns { flex-direction: column; align-self: stretch; }
-.shell.is-phone .ub-zone-pri, .shell.is-phone .ub-zone-sec { justify-content: center; }
+.shell.is-phone .ub-zone-btn { justify-content: center; }
 .shell.is-phone .ub-overlay { display: none; }
 
 /* Phone inspector bottom sheet */

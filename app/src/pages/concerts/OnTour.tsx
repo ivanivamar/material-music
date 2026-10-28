@@ -14,13 +14,14 @@
  * `useTourNear` feeds the hero chip "Playing near you · Thu 29 Oct".
  */
 import { useEffect, useMemo, useState } from 'react'
+import { Button, Skeleton } from '../../components/ui'
 import { Icon } from '../../design/icons'
 import { concertsStore, useConcerts } from '../../state/concerts'
 import { buildShows, dateLine, isNear, metaLine, regionsLabel, shortDate, statusLook, type Show } from '../../state/concertViews'
 import { useLibrary } from '../../state/library'
 import { useReleases } from '../../state/releases'
 import { go } from '../../shell/routes'
-import { DateBlock, Shim, StatusChip, TicketsIcon, TicketsPill, hueVars } from './parts'
+import { DateBlock, StatusChip, TicketsIcon, TicketsPill, hueVars } from './parts'
 import './concerts.css'
 
 export const ON_TOUR_ID = 'on-tour'
@@ -131,13 +132,13 @@ export function OnTour({ artistId, H }: { artistId: string; H: number }) {
     body = (
       <div className="ot-skel">
         <div className="ot-skel-row">
-          <Shim w={52} h={56} r={16} />
+          <Skeleton width={52} height={56} radius={16} />
           <div className="ot-skel-lines">
-            <Shim w="60%" h={14} r={7} />
-            <Shim w="40%" h={10} r={5} />
+            <Skeleton width="60%" height={14} radius={7} />
+            <Skeleton width="40%" height={10} radius={5} />
           </div>
         </div>
-        <Shim h={52} r="8px 8px 24px 24px" />
+        <Skeleton height={52} radius="8px 8px 24px 24px" />
       </div>
     )
   else if (error)
@@ -145,9 +146,9 @@ export function OnTour({ artistId, H }: { artistId: string; H: number }) {
       <div className="ot-error">
         <Icon name="offline" />
         <div className="ot-error-l">Couldn't load tour dates</div>
-        <button type="button" className="cx-text" onClick={() => void concertsStore.ensureArtist(artistId, true)}>
+        <Button variant="ghost" onClick={() => void concertsStore.ensureArtist(artistId, true)}>
           Retry
-        </button>
+        </Button>
       </div>
     )
   else if (!home)
@@ -160,9 +161,9 @@ export function OnTour({ artistId, H }: { artistId: string; H: number }) {
           <div className="ot-prompt-title">See which dates are near you</div>
           <div className="ot-prompt-sub">{`${all.length} upcoming ${all.length === 1 ? 'date' : 'dates'}`} · set a home city</div>
         </div>
-        <button type="button" className="cx-btn is-coral" onClick={() => go('#/settings?city')}>
+        <Button variant="brand" className="cx-btn" onClick={() => go('#/settings?city')}>
           Set city
-        </button>
+        </Button>
       </div>
     )
   else {

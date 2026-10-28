@@ -12,7 +12,7 @@
  * when I play an album") remain hidden.
  */
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { Toggle, useToast, type SegOption } from '../../components/ui'
+import { Chip, IconButton, Button, LinearProgress, Segmented, StorageBar, Toggle, ValueSlider, useToast, type SegOption } from '../../components/ui'
 import { Icon } from '../../design/icons'
 import type { MotionSetting, ParticleSetting } from '../../design/tokens'
 import { DJ_TYPES, TYPE_LABEL, type DjType } from '../../dj/engine'
@@ -141,9 +141,7 @@ export function Settings() {
       {phone ? (
         <div className="st st-phone">
           <header className="st-phead">
-            <button type="button" className="st-back" aria-label="Back" onClick={() => back(href('home'))}>
-              <Icon name="back" />
-            </button>
+            <IconButton icon="back" label="Back" size="lg" variant="strong" onClick={() => back(href('home'))} />
             <h1 className="st-ptitle">Settings</h1>
             <span className="st-saved">Saved</span>
           </header>
@@ -238,9 +236,9 @@ function Row({ label, hint, dot, muted, tile, round, control, wide, below }: Row
 
 function Act({ children, onClick, danger, disabled }: { children: ReactNode; onClick: () => void; danger?: boolean; disabled?: boolean }) {
   return (
-    <button type="button" className={`st-act ${danger ? 'is-danger' : ''}`} disabled={disabled} onClick={onClick}>
+    <Button variant={danger ? 'danger-outlined' : 'outlined'} className="st-act" disabled={disabled} onClick={onClick}>
       {children}
-    </button>
+    </Button>
   )
 }
 
@@ -254,79 +252,8 @@ function ValueBtn({ children, onClick, open, label }: { children: ReactNode; onC
   )
 }
 
-function Tog({ label, checked, onChange, disabled }: { label: string; checked: boolean; onChange: (v: boolean) => void; disabled?: boolean }) {
-  return <Toggle label={label} checked={checked} onChange={onChange} disabled={disabled} />
-}
 
-function Seg<T extends string>({ label, value, options, onChange }: { label: string; value: T; options: SegOption<T>[]; onChange: (v: T) => void }) {
-  return (
-    <div className="st-seg" role="group" aria-label={label}>
-      {options.map((o, i) => {
-        const on = value === o.value
-        const first = i === 0
-        const last = i === options.length - 1
-        return (
-          <button
-            key={o.value}
-            type="button"
-            className={`st-seg-btn ${on ? 'is-on' : ''} ${first ? 'is-first' : ''} ${last ? 'is-last' : ''}`}
-            aria-pressed={on}
-            onPointerDown={(e) => {
-              if (e.button === 0 && e.pointerType === 'mouse') onChange(o.value)
-            }}
-            onClick={() => onChange(o.value)}
-          >
-            {on && <Icon name="done" size={16} />}
-            {o.label}
-          </button>
-        )
-      })}
-    </div>
-  )
-}
 
-function SliderCtl({ label, value, shown, onChange, disabled }: { label: string; value: number; shown: string; onChange: (v: number) => void; disabled?: boolean; step?: number }) {
-  const ref = useRef<HTMLDivElement>(null)
-  const at = (x: number) => {
-    const r = ref.current!.getBoundingClientRect()
-    return Math.round(Math.max(0, Math.min(1, (x - r.left) / r.width)) * 100) / 100
-  }
-  return (
-    <div className={`st-slider ${disabled ? 'is-off' : ''}`}>
-      <div
-        ref={ref}
-        className="st-slider-track"
-        role="slider"
-        tabIndex={disabled ? -1 : 0}
-        aria-label={label}
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-valuenow={Math.round(value * 100)}
-        aria-valuetext={shown}
-        aria-disabled={disabled}
-        onPointerDown={(e) => {
-          if (disabled) return
-          e.currentTarget.setPointerCapture(e.pointerId)
-          onChange(at(e.clientX))
-        }}
-        onPointerMove={(e) => {
-          if (disabled || !e.currentTarget.hasPointerCapture(e.pointerId)) return
-          onChange(at(e.clientX))
-        }}
-        onKeyDown={(e) => {
-          if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') onChange(Math.max(0, Math.round((value - 0.05) * 100) / 100))
-          if (e.key === 'ArrowRight' || e.key === 'ArrowUp') onChange(Math.min(1, Math.round((value + 0.05) * 100) / 100))
-        }}
-      >
-        <span className="st-slider-line">
-          <span className="st-slider-fill" style={{ width: `${value * 100}%` }} />
-        </span>
-        <span className="st-slider-knob" style={{ left: `${value * 100}%` }} />
-      </div>
-      <span className="st-sval">{shown}</span>
-    </div>
-  )
-}
 
 function useConfirm(id: string) {
   const { conf, setConf } = useContext(SettingsCtx)
@@ -341,12 +268,11 @@ function useConfirm(id: string) {
           </span>
           <span className="st-conf-text">{text}</span>
           <span className="st-conf-btns">
-            <button type="button" className="st-conf-cancel" onClick={() => setConf(null)}>
+            <Button variant="plain" onClick={() => setConf(null)}>
               Cancel
-            </button>
-            <button
-              type="button"
-              className="st-conf-go"
+            </Button>
+            <Button
+              variant="error"
               autoFocus
               onClick={() => {
                 setConf(null)
@@ -354,7 +280,7 @@ function useConfirm(id: string) {
               }}
             >
               {btn}
-            </button>
+            </Button>
           </span>
         </div>
       ) : null,
@@ -473,7 +399,7 @@ function LibrarySection() {
             tile={<Icon name="cloud" size={22} />}
             label="Stream from Drive when the folder is missing"
             hint={s.driveFallback ? 'Keeps playing if the disk is unplugged' : 'Tracks not in the folder won’t play'}
-            control={<Tog label="Stream from Drive when the folder is missing" checked={s.driveFallback} onChange={(v) => settingsStore.set('driveFallback', v)} />}
+            control={<Toggle label="Stream from Drive when the folder is missing" checked={s.driveFallback} onChange={(v) => settingsStore.set('driveFallback', v)} />}
           />
         </>
       ) : (
@@ -494,7 +420,7 @@ function LibrarySection() {
             {lib.refreshing ? 'Checking…' : 'Check now'}
           </Act>
         }
-        below={lib.refreshing ? <div className="st-prog pg-anim" aria-hidden /> : undefined}
+        below={lib.refreshing ? <LinearProgress className="pg-anim" /> : undefined}
       />
       <Row
         tile={<Icon name="health" size={22} />}
@@ -507,7 +433,7 @@ function LibrarySection() {
         tile={<Icon name="lyrics" size={22} />}
         label="Look up lyrics for new uploads"
         hint={s.fetchLyrics ? 'Songs without lyrics get them from LRCLIB after upload' : 'Only lyrics from the file tags'}
-        control={<Tog label="Look up lyrics for new uploads" checked={s.fetchLyrics} onChange={(v) => settingsStore.set('fetchLyrics', v)} />}
+        control={<Toggle label="Look up lyrics for new uploads" checked={s.fetchLyrics} onChange={(v) => settingsStore.set('fetchLyrics', v)} />}
       />
     </SectionGroup>
   )
@@ -531,7 +457,7 @@ function PlaybackSection() {
         tile={<Icon name="highQuality" size={22} />}
         label="Streaming quality"
         hint={linked ? 'From Drive · the local folder always plays FLAC' : hint}
-        wide={<Seg label="Streaming quality" value={s.streamQuality} options={STREAM} onChange={(v) => settingsStore.set('streamQuality', v)} />}
+        wide={<Segmented label="Streaming quality" value={s.streamQuality} options={STREAM} onChange={(v) => settingsStore.set('streamQuality', v)} />}
       />
     </SectionGroup>
   )
@@ -553,8 +479,6 @@ function DownloadsSection() {
   const used = n?.used ?? 0
   const whole = data ? libraryBytes(data, { quality: dl.prefs.quality, albumQuality: {} }) : 0
   const hasPins = dl.prefs.pins.length > 0
-  const other = n ? Math.max(0, n.total - n.free - used) : 0
-  const pct = (b: number) => (n?.total ? `${Math.min(100, (b / n.total) * 100)}%` : '0%')
 
   const setQuality = (q: DownloadQuality) => {
     const before = dl.prefs.quality
@@ -580,12 +504,12 @@ function DownloadsSection() {
         tile={<Icon name="cloudDownload" size={22} />}
         label="Download quality"
         hint={whole ? `Whole library ≈ ${fmtBytes(whole)}` : undefined}
-        wide={<Seg label="Download quality" value={dl.prefs.quality} options={DQ} onChange={setQuality} />}
+        wide={<Segmented label="Download quality" value={dl.prefs.quality} options={DQ} onChange={setQuality} />}
       />
       <Row
         tile={<Icon name="wifi" size={22} />}
         label="Download on Wi-Fi only"
-        control={<Tog label="Download on Wi-Fi only" checked={dl.prefs.wifiOnly} onChange={(v) => downloadsStore.setWifiOnly(v)} />}
+        control={<Toggle label="Download on Wi-Fi only" checked={dl.prefs.wifiOnly} onChange={(v) => downloadsStore.setWifiOnly(v)} />}
       />
       <Row
         tile={<Icon name="sdStorage" size={22} />}
@@ -599,11 +523,7 @@ function DownloadsSection() {
           <>
             {n && (
               <div className="st-store">
-                <div className="st-bar">
-                  <span className="st-bar-me" style={{ width: pct(used), minWidth: used ? 6 : 0 }} />
-                  <span className="st-bar-other" style={{ width: pct(other) }} />
-                  <span className="st-bar-free" />
-                </div>
+                <StorageBar used={used} free={n.free} total={n.total} />
                 <div className="st-store-line">
                   <span>
                     <i className="st-sdot st-sdot-me" />
@@ -648,12 +568,12 @@ function ReleasesSection() {
         tile={<Icon name="radar" size={22} />}
         label="Daily sonar sweep"
         hint={nextLabel}
-        wide={<Seg label="Daily sonar sweep" value={String(s.sweepHour)} options={SWEEP} onChange={(v) => settingsStore.set('sweepHour', Number(v))} />}
+        wide={<Segmented label="Daily sonar sweep" value={String(s.sweepHour)} options={SWEEP} onChange={(v) => settingsStore.set('sweepHour', Number(v))} />}
       />
       <Row
         tile={<Icon name="album" size={22} />}
         label="Hide reissues and deluxe editions"
-        control={<Tog label="Hide reissues and deluxe editions" checked={rs.doc.hideReissues[0]} onChange={(v) => releasesStore.setHideReissues(v)} />}
+        control={<Toggle label="Hide reissues and deluxe editions" checked={rs.doc.hideReissues[0]} onChange={(v) => releasesStore.setHideReissues(v)} />}
       />
       <Row
         tile={<Icon name="artist" size={22} />}
@@ -708,7 +628,7 @@ function ConcertsSection() {
             ) : undefined
           }
         />
-        <Row label="Radius" hint={radiusHint(radius)} wide={<Seg label="Radius" value={String(radius)} options={RADIUS_OPTS} onChange={(v) => concertsStore.setRadius(Number(v) as Radius)} />} />
+        <Row label="Radius" hint={radiusHint(radius)} wide={<Segmented label="Radius" value={String(radius)} options={RADIUS_OPTS} onChange={(v) => concertsStore.setRadius(Number(v) as Radius)} />} />
         <Row
           label="Concerts near you"
           hint={st.sweeping ? `Checking now · ${st.sweeping.done} of ${st.sweeping.total} artists` : updated ? `Last checked ${updatedLabel(updated)}` : home ? 'Not checked yet' : 'Set a home city first'}
@@ -745,17 +665,19 @@ function DjSection() {
         tile={<Icon name="recordVoiceOver" size={22} />}
         label="Voice intros"
         hint={p.voice ? 'Male English voice before each session' : 'Intros appear as text for 5 seconds'}
-        control={<Tog label="Voice intros" checked={p.voice} onChange={(v) => djStore.setPref('voice', v)} />}
+        control={<Toggle label="Voice intros" checked={p.voice} onChange={(v) => djStore.setPref('voice', v)} />}
       />
       <Row
         tile={<Icon name="volume" size={22} />}
         label="Voice volume"
         hint="Relative to the music"
         wide={
-          <SliderCtl
+          <ValueSlider
+            className="st-slider"
             label="Voice volume"
             value={p.voice ? p.voiceVolume : 0}
             shown={p.voice ? `${Math.round(p.voiceVolume * 100)}%` : 'Off'}
+            valueText={p.voice ? `${Math.round(p.voiceVolume * 100)}%` : 'Off'}
             disabled={!p.voice}
             step={0.05}
             onChange={(v) => p.voice && djStore.setPref('voiceVolume', Math.round(v * 100) / 100)}
@@ -777,10 +699,9 @@ function DjSection() {
               {DJ_TYPES.map((t) => {
                 const on = p.types.includes(t)
                 return (
-                  <button key={t} type="button" className={`st-chip ${on ? 'is-on' : ''}`} aria-pressed={on} disabled={on && p.types.length === 1} onClick={() => toggleType(t)}>
-                    {on && <Icon name="done" size={16} />}
+                  <Chip key={t} selected={on} disabled={on && p.types.length === 1} onClick={() => toggleType(t)}>
                     {TYPE_LABEL[t]}
-                  </button>
+                  </Chip>
                 )
               })}
             </div>
@@ -792,7 +713,7 @@ function DjSection() {
           tile={<Icon name="cloudDownload" size={22} />}
           label="Only downloaded songs on mobile data"
           hint="Offline always uses downloaded songs"
-          control={<Tog label="Only downloaded songs on mobile data" checked={p.dataSaver} onChange={(v) => djStore.setPref('dataSaver', v)} />}
+          control={<Toggle label="Only downloaded songs on mobile data" checked={p.dataSaver} onChange={(v) => djStore.setPref('dataSaver', v)} />}
         />
       )}
       <Row
@@ -836,18 +757,18 @@ function AtmosphereSection() {
         tile={<Icon name="spark" size={22} />}
         label="Motion"
         hint={s.motion === 'system' ? (sysReduced ? 'System asks for reduced motion' : 'System allows motion') : undefined}
-        wide={<Seg label="Motion" value={s.motion} options={MOTION} onChange={(v) => settingsStore.set('motion', v)} />}
+        wide={<Segmented label="Motion" value={s.motion} options={MOTION} onChange={(v) => settingsStore.set('motion', v)} />}
       />
       <Row
         tile={<Icon name="palette" size={22} />}
         label="Drifting particles"
         hint="Marine snow · fades out with reduced motion"
-        wide={<Seg label="Drifting particles" value={s.particles} options={PARTICLES} onChange={(v) => settingsStore.set('particles', v)} />}
+        wide={<Segmented label="Drifting particles" value={s.particles} options={PARTICLES} onChange={(v) => settingsStore.set('particles', v)} />}
       />
       <Row
         tile={<Icon name="grid" size={22} />}
         label="Stone, grain and contour texture"
-        control={<Tog label="Stone, grain and contour texture" checked={s.texture} onChange={(v) => settingsStore.set('texture', v)} />}
+        control={<Toggle label="Stone, grain and contour texture" checked={s.texture} onChange={(v) => settingsStore.set('texture', v)} />}
       />
     </SectionGroup>
   )

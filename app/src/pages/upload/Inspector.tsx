@@ -9,7 +9,7 @@
  * shared tags and Skip selected.
  */
 import { useState, type FormEvent } from 'react'
-import { TextField, QualityBadge } from '../../components/ui'
+import { Button, TextField, QualityBadge } from '../../components/ui'
 import { Icon } from '../../design/icons'
 import type { Catalogue } from '../../state/library'
 import {
@@ -102,23 +102,22 @@ function Single({ a, s, cat, onPickMissing }: { a: UploadAlbum; s: UploadState; 
 
           <div className="ub-insp-btns">
             {a.phase === 'added' ? (
-              <button type="button" className="ub-btn-sec" onClick={() => go(albumHref(a.albumId))}>
+              <Button variant="outlined" onClick={() => go(albumHref(a.albumId))}>
                 View album
-              </button>
+              </Button>
             ) : (
               <>
-                <button
-                  type="button"
-                  className="ub-btn-sec"
+                <Button
+                  variant="outlined"
                   disabled={!canEdit}
                   title={canEdit ? undefined : 'Tags can’t change once the release has started uploading'}
                   onClick={() => setEditing(true)}
                 >
                   Edit tags
-                </button>
-                <button type="button" className="ub-textbtn" disabled={a.phase !== 'pending'} onClick={() => setSkipped([a.key], !a.skipped)}>
+                </Button>
+                <Button variant="plain" className="ub-textbtn" disabled={a.phase !== 'pending'} onClick={() => setSkipped([a.key], !a.skipped)}>
                   {a.skipped ? 'Include again' : 'Skip this release'}
-                </button>
+                </Button>
               </>
             )}
           </div>
@@ -236,16 +235,16 @@ function EditTags({ a, s, onDone }: { a: UploadAlbum; s: UploadState; onDone: ()
       </div>
       <p className="ub-note">Changes go into your library and the Opus copies. The FLAC files keep the tags they have.</p>
       <div className="ub-insp-btns">
-        <button type="submit" className="ub-btn-pri" disabled={!yearOk || !artist.trim() || !album.trim()}>
+        <Button type="submit" variant="brand" disabled={!yearOk || !artist.trim() || !album.trim()}>
           Save
-        </button>
-        <button type="button" className="ub-btn-sec" onClick={onDone}>
+        </Button>
+        <Button variant="outlined" onClick={onDone}>
           Cancel
-        </button>
+        </Button>
         {Object.keys(a.edits).length > 0 && (
-          <button type="button" className="ub-textbtn" onClick={() => void reset()}>
+          <Button variant="plain" className="ub-textbtn" onClick={() => void reset()}>
             Use file tags
-          </button>
+          </Button>
         )}
       </div>
     </form>
@@ -307,12 +306,11 @@ function Multi({ s, cat }: { s: UploadState; cat: Catalogue | null }) {
             <TagRow k="Format" v={formats.size === 1 ? [...formats][0] : 'Mixed'} mixed={formats.size !== 1} />
           </div>
           <div className="ub-insp-btns">
-            <button type="button" className="ub-btn-sec" disabled={!sel.some((a) => editable(a, s))} onClick={() => setEditing(true)}>
+            <Button variant="outlined" disabled={!sel.some((a) => editable(a, s))} onClick={() => setEditing(true)}>
               Edit shared tags
-            </button>
-            <button
-              type="button"
-              className="ub-textbtn"
+            </Button>
+            <Button
+              variant="plain" className="ub-textbtn"
               disabled={!sel.some((a) => a.phase === 'pending' && !a.skipped)}
               onClick={() => {
                 setSkipped(
@@ -323,7 +321,7 @@ function Multi({ s, cat }: { s: UploadState; cat: Catalogue | null }) {
               }}
             >
               Skip selected
-            </button>
+            </Button>
           </div>
         </>
       )}
@@ -366,12 +364,12 @@ function EditShared({ sel, s, onDone }: { sel: UploadAlbum[]; s: UploadState; on
         {locked > 0 && ` ${plural(locked, 'release', 'releases')} already uploading ${locked === 1 ? 'keeps its' : 'keep their'} tags.`}
       </p>
       <div className="ub-insp-btns">
-        <button type="submit" className="ub-btn-pri" disabled={!yearOk}>
+        <Button type="submit" variant="brand" disabled={!yearOk}>
           Save
-        </button>
-        <button type="button" className="ub-btn-sec" onClick={onDone}>
+        </Button>
+        <Button variant="outlined" onClick={onDone}>
           Cancel
-        </button>
+        </Button>
       </div>
     </form>
   )

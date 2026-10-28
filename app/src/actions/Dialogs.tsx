@@ -7,10 +7,9 @@
  *                                      Cancel  [Create]
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { TextField, useToast } from '../components/ui'
-import { Icon } from '../design/icons'
+import { IconButton, Button, TextField, useToast } from '../components/ui'
 import { useCover } from '../lib/covers'
-import { MosaicTiles, PlaylistCover } from '../pages/playlists/PlaylistCover'
+import { CoverMosaic, PlaylistCover } from '../pages/playlists/PlaylistCover'
 import { useLibrary } from '../state/library'
 import { playlistsStore, usePlaylists } from '../state/playlists'
 import { useSession } from '../state/session'
@@ -31,9 +30,7 @@ export function Shell({ label, children, onClose, wide }: { label: string; child
       <div className={`dlg pg-anim ${on ? 'is-on' : ''} ${wide ? 'is-wide' : ''}`} role="dialog" aria-modal="true" aria-label={label}>
         <div className="dlg-top">
           <div className="dlg-label">{label}</div>
-          <button type="button" className="dlg-x" aria-label="Close" onClick={onClose}>
-            <Icon name="x" />
-          </button>
+          <IconButton icon="x" label="Close" onClick={onClose} />
         </div>
         {children}
       </div>
@@ -41,10 +38,6 @@ export function Shell({ label, children, onClose, wide }: { label: string; child
   )
 }
 
-function MiniTile({ id }: { id?: string }) {
-  const url = useCover(id)
-  return <div className="plc-one">{url && <img className="plc-full" src={url} alt="" />}</div>
-}
 
 export function NewPlaylistDialog({ trackIds, hint, open, name: initial }: { trackIds: string[]; hint: string; open: boolean; name?: string }) {
   const toast = useToast()
@@ -78,20 +71,18 @@ export function NewPlaylistDialog({ trackIds, hint, open, name: initial }: { tra
         }}
       >
         <div className="dlg-new-row">
-          <div className={`plc dlg-new-cover ${covers.length > 1 ? 'is-mosaic' : covers.length ? '' : 'is-empty'}`}>
-            {covers.length > 1 ? <MosaicTiles covers={covers} /> : covers.length ? <MiniTile id={covers[0]} /> : <Icon name="playlist" />}
-          </div>
+          <CoverMosaic className="dlg-new-cover" covers={covers} icon="playlist" />
           <div className="dlg-new-field">
             <TextField label="Name" value={name} onChange={setName} supporting={trackIds.length ? hint : 'Empty for now · add songs from any album'} inputProps={{ autoFocus: true, maxLength: 120, enterKeyHint: 'done' }} />
           </div>
         </div>
         <div className="dlg-buttons">
-          <button type="button" className="dlg-cancel" onClick={() => actions.closeDialog()}>
+          <Button variant="ghost" onClick={() => actions.closeDialog()}>
             Cancel
-          </button>
-          <button type="submit" className="dlg-ok" disabled={!name.trim()}>
+          </Button>
+          <Button type="submit" variant="brand" disabled={!name.trim()}>
             Create
-          </button>
+          </Button>
         </div>
       </form>
     </Shell>
@@ -173,13 +164,13 @@ export function EditPlaylistDialog({ playlistId }: { playlistId: string }) {
             <PlaylistCover playlist={showCustom === null ? { ...p, cover: null } : p} className="dlg-edit-img" />
           )}
           <div className="dlg-edit-cover-btns">
-            <button type="button" className="dlg-link" disabled={!online} title={online ? undefined : 'Needs a connection to Drive'} onClick={() => file.current?.click()}>
+            <Button variant="ghost" size="sm" disabled={!online} title={online ? undefined : 'Needs a connection to Drive'} onClick={() => file.current?.click()}>
               {p.cover || cover instanceof Blob ? 'Change image' : 'Choose image'}
-            </button>
+            </Button>
             {(cover instanceof Blob || (p.cover && cover !== 'mosaic')) && (
-              <button type="button" className="dlg-link" onClick={() => setCover(cover instanceof Blob && !p.cover ? null : 'mosaic')}>
+              <Button variant="ghost" size="sm" onClick={() => setCover(cover instanceof Blob && !p.cover ? null : 'mosaic')}>
                 Use mosaic
-              </button>
+              </Button>
             )}
           </div>
           <input ref={file} type="file" accept="image/*" hidden onChange={(e) => void pick(e.target.files?.[0])} />
@@ -189,12 +180,12 @@ export function EditPlaylistDialog({ playlistId }: { playlistId: string }) {
           <TextField label="Description" value={desc} onChange={setDesc} multiline rows={3} supporting={`${desc.length} / 300`} areaProps={{ maxLength: 300 }} />
         </div>
         <div className="dlg-buttons">
-          <button type="button" className="dlg-cancel" onClick={() => actions.closeDialog()}>
+          <Button variant="ghost" onClick={() => actions.closeDialog()}>
             Cancel
-          </button>
-          <button type="submit" className="dlg-ok" disabled={!name.trim()}>
+          </Button>
+          <Button type="submit" variant="brand" disabled={!name.trim()}>
             Save
-          </button>
+          </Button>
         </div>
       </form>
     </Shell>
@@ -269,12 +260,12 @@ export function RemoveDialog({ target }: { target: RemoveTarget }) {
         </p>
         {!online && <div className="dlg-hint">Needs a connection to Drive</div>}
         <div className="dlg-buttons">
-          <button type="button" className="dlg-cancel" onClick={() => actions.closeDialog()} autoFocus>
+          <Button variant="ghost" onClick={() => actions.closeDialog()} autoFocus>
             Cancel
-          </button>
-          <button type="submit" className="dlg-ok is-danger" disabled={!online}>
+          </Button>
+          <Button type="submit" variant="error" disabled={!online}>
             Remove
-          </button>
+          </Button>
         </div>
       </form>
     </Shell>

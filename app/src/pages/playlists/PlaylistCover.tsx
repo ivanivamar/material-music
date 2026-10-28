@@ -4,7 +4,7 @@
  * three → they repeat across the four tiles (a b / b a, a b / c a); none → the playlist glyph.
  */
 import type { CSSProperties } from 'react'
-import { Icon } from '../../design/icons'
+import { Icon, type IconName } from '../../design/icons'
 import { useCover, useLazyCover } from '../../lib/covers'
 import { useLibrary } from '../../state/library'
 import { playlistInfo } from '../../state/playlistViews'
@@ -44,29 +44,38 @@ export function PlaylistCover({
         <img className="plc-full" src={custom} alt="" draggable={false} />
       </div>
     )
+  return <CoverMosaic covers={covers} lazy={lazy} className={className} style={st} />
+}
+
+/**
+ * Cover tile from a list of album covers: none → the glyph, one → it fills the tile, two or more →
+ * the 2×2 mosaic. Used by PlaylistCover and the New / Smart playlist dialogs.
+ */
+export function CoverMosaic({ covers, lazy = false, icon = 'playlist', className, style }: { covers: string[]; lazy?: boolean; icon?: IconName; className?: string; style?: CSSProperties }) {
+  const cls = ['plc', className].filter(Boolean).join(' ')
   if (covers.length === 0)
     return (
-      <div className={`${cls} is-empty`} style={st}>
-        <Icon name="playlist" />
+      <div className={`${cls} is-empty`} style={style}>
+        <Icon name={icon} />
       </div>
     )
   if (covers.length === 1)
     return (
-      <div className={cls} style={st}>
+      <div className={cls} style={style}>
         <div className="plc-one">
           <Tile id={covers[0]} lazy={lazy} />
         </div>
       </div>
     )
   return (
-    <div className={`${cls} is-mosaic`} style={st}>
+    <div className={`${cls} is-mosaic`} style={style}>
       <MosaicTiles covers={covers} lazy={lazy} />
     </div>
   )
 }
 
 /** The four tiles of a mosaic (inside a `.plc.is-mosaic`), repeating 2 or 3 covers. */
-export function MosaicTiles({ covers, lazy = false }: { covers: string[]; lazy?: boolean }) {
+function MosaicTiles({ covers, lazy = false }: { covers: string[]; lazy?: boolean }) {
   const tiles = covers.length === 2 ? [covers[0], covers[1], covers[1], covers[0]] : covers.length === 3 ? [covers[0], covers[1], covers[2], covers[0]] : covers.slice(0, 4)
   return (
     <>

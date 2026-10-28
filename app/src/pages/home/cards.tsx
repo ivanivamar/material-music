@@ -7,7 +7,7 @@
  * Playing context: a coral pill with the equaliser on the art, the title in coral.
  */
 import { useSyncExternalStore, type MouseEvent, type ReactNode } from 'react'
-import { AlbumEq } from '../../components/ui'
+import { Button, AlbumEq, Skeleton } from '../../components/ui'
 import { Icon } from '../../design/icons'
 import { SHAPE_CLOVER } from '../../design/shapes'
 import { actions, trackDrag } from '../../actions/actions'
@@ -292,10 +292,10 @@ export function NewSmartCard({ size }: { size: number }) {
 
 export function SmartInvite({ phone }: { phone: boolean }) {
   const btn = (
-    <button type="button" className="hinvite-btn" onClick={() => actions.smartPlaylist()}>
+    <Button variant="tonal" className="hinvite-btn" onClick={() => actions.smartPlaylist()}>
       <Icon name="plus" size={22} />
       New smart playlist
-    </button>
+    </Button>
   )
   const mark = (s: number) => (
     <span className="hinvite-mark" style={{ width: s, height: s, clipPath: SHAPE_CLOVER }}>
@@ -331,10 +331,10 @@ export function SmartInvite({ phone }: { phone: boolean }) {
 export function SkelCard({ size }: { size: number; kind?: 'mix' | 'radio' }) {
   return (
     <div className="hcard hskel" style={{ width: size }} aria-hidden>
-      <span className="hskel-bar mm-anim" style={{ width: size, height: size, borderRadius: radiusFor(size) }} />
+      <Skeleton width={size} height={size} radius={radiusFor(size)} />
       <span className="hskel-lines">
-        <span className="hskel-bar mm-anim" style={{ width: Math.round(size * 0.72), height: 12 }} />
-        <span className="hskel-bar mm-anim" style={{ width: Math.round(size * 0.5), height: 10 }} />
+        <Skeleton width={Math.round(size * 0.72)} height={12} />
+        <Skeleton width={Math.round(size * 0.5)} height={10} />
       </span>
     </div>
   )

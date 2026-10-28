@@ -7,7 +7,7 @@
  *   Discover: Related artist recommendations to follow for sweeps.
  */
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent } from 'react'
-import { EmptyState } from '../../components/ui'
+import { EmptyState, LinearProgress } from '../../components/ui'
 import { Icon } from '../../design/icons'
 import { useOnline } from '../../state/downloads'
 import { useHistory } from '../../state/history'
@@ -342,9 +342,7 @@ function Header({
         </div>
       </div>
       {sw && (
-        <div className="nr-progress" aria-hidden>
-          <div className="nr-progress-bar" style={{ width: `${pct}%` }} />
-        </div>
+        <LinearProgress className="nr-progress" value={pct / 100} />
       )}
     </>
   )
@@ -467,7 +465,7 @@ function Filters({
   const artistChip = (
     <button
       type="button"
-      className="chip nr-chip"
+      className={`chip nr-chip ${artist !== null ? 'is-on' : ''}`}
       aria-pressed={artist !== null}
       aria-haspopup="listbox"
       aria-expanded={pop}

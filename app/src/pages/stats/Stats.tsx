@@ -13,7 +13,7 @@
  * cards with rank badges; and top songs on the detail-page segmented list.
  */
 import { useEffect, useState, type CSSProperties, type ReactNode } from 'react'
-import { AlbumEq, EmptyState, formatTime } from '../../components/ui'
+import { Chip, AlbumEq, EmptyState, formatTime } from '../../components/ui'
 import { Icon, type IconName } from '../../design/icons'
 import { SHAPE_BURST, SHAPE_CLOVER, cookie } from '../../design/shapes'
 import { useArtTint } from '../../design/tint'
@@ -104,10 +104,9 @@ export function Stats({ period: raw }: { period: string | null }) {
           {years.map((y) => {
             const on = y === period.year
             return (
-              <button key={y} type="button" className={`stats-chip ${on ? 'is-on' : ''}`} aria-pressed={on} onClick={() => go({ year: y, month: null })}>
-                {on && <Icon name="done" className="stats-chip-ck" />}
+              <Chip key={y} selected={on} onClick={() => go({ year: y, month: null })}>
                 {y}
-              </button>
+              </Chip>
             )
           })}
         </div>

@@ -11,7 +11,7 @@
  * DJ start view (or the player while on air); right-click / long-press opens the DJ panel.
  */
 import { useRef, useState, type CSSProperties, type ReactNode } from 'react'
-import { AlbumEq } from '../../components/ui'
+import { AlbumEq, Skeleton } from '../../components/ui'
 import { Icon, type IconName } from '../../design/icons'
 import { actions, type ActionTarget } from '../../actions/actions'
 import { playPlaylist } from '../../actions/ops'
@@ -144,7 +144,7 @@ function tileOf(c: Catalogue, r: RecentItem, lists: Map<string, Playlist>, mixes
         icon: daily ? 'today' : r.id === 'deepcuts' ? 'explore' : 'history',
         name: m?.title ?? r.label ?? 'Mix',
         at: r.at,
-        art: (s) => (m ? <MixCover c={c} mix={m} size={s} /> : <span className="jt-cover hskel-bar" style={{ width: s, height: s, borderRadius: radiusFor(s) }} />),
+        art: (s) => (m ? <MixCover c={c} mix={m} size={s} /> : <Skeleton className="jt-cover" width={s} height={s} radius={radiusFor(s)} />),
         hue: m ? { hue: m.hue } : null,
         ctxKind: 'mix',
         ctxId: r.id,

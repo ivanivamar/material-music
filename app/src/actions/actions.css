@@ -146,8 +146,6 @@
 .dlg.is-on { opacity: 1; transform: translate(-50%, -50%); }
 .dlg-top { display: flex; align-items: center; justify-content: space-between; margin: -4px -6px -4px 0; }
 .dlg-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: .16em; color: var(--ink-tertiary); }
-.dlg-x { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; color: var(--ink-secondary); border: 0; background: none; cursor: pointer; }
-.dlg-x:hover { color: var(--ink-primary); background: rgba(255, 255, 255, .06); }
 .dlg-new, .dlg-edit { display: flex; flex-direction: column; gap: 22px; }
 .dlg-new-row { display: flex; gap: 18px; align-items: center; }
 .dlg-new-cover { width: 96px; height: 96px; border-radius: 12px; flex: none; }
@@ -161,13 +159,6 @@
 .dlg-textarea { height: auto; padding: 12px 14px; resize: none; line-height: 1.45; }
 .dlg-hint { font-family: var(--font-mono); font-size: 10px; letter-spacing: .12em; color: var(--ink-tertiary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .dlg-buttons { display: flex; justify-content: flex-end; gap: 10px; }
-.dlg-cancel { height: 44px; padding: 0 18px; border-radius: 12px; border: 0; background: none; font: inherit; font-size: 15px; color: #BDBDBD; cursor: pointer; }
-.dlg-cancel:hover { color: var(--ink-primary); background: rgba(255, 255, 255, .05); }
-.dlg-ok { height: 44px; padding: 0 22px; border-radius: 12px; border: 0; background: var(--ink-primary); color: var(--bg-1); font: inherit; font-size: 15px; font-weight: 500; cursor: pointer; transition: background .2s, box-shadow .3s; }
-.dlg-ok:hover:not(:disabled) { background: #fff; box-shadow: 0 0 32px -6px rgba(255, 255, 255, .5); }
-.dlg-ok:disabled { opacity: .35; cursor: default; }
-.dlg-ok.is-danger { background: var(--danger); color: #1a0e0c; }
-.dlg-ok.is-danger:hover:not(:disabled) { background: rgb(240, 168, 158); box-shadow: 0 0 32px -6px rgba(230, 150, 140, .55); }
 
 /* Remove from library */
 .dlg-rm { display: flex; flex-direction: column; gap: 22px; }
@@ -184,9 +175,6 @@
 .dlg-edit-cover { display: flex; flex-direction: column; gap: 10px; align-items: center; }
 .dlg-edit-img { width: 160px; height: 160px; border-radius: 14px; }
 .dlg-edit-cover-btns { display: flex; flex-direction: column; align-items: center; gap: 4px; }
-.dlg-link { border: 0; background: none; padding: 4px 6px; font: inherit; font-size: 13px; color: var(--ink-secondary); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: rgba(255, 255, 255, .25); }
-.dlg-link:hover:not(:disabled) { color: var(--ink-primary); }
-.dlg-link:disabled { color: var(--ink-ghost); cursor: default; text-decoration: none; }
 .dlg-edit-fields { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 .dlg-field { display: flex; flex-direction: column; gap: 8px; }
 
@@ -210,13 +198,6 @@
 /* ── Smart playlist dialog (step 20) ──────────────── */
 .dlg.is-wide:has(.sm) { width: 640px; }
 .sm { gap: 20px; }
-.sm-presets { display: flex; flex-wrap: wrap; gap: 8px; }
-.sm-preset {
-  height: 32px; padding: 0 13px; border-radius: 16px; border: 1px solid rgba(255, 255, 255, .12); background: none;
-  font: inherit; font-size: 13px; color: var(--ink-secondary); cursor: pointer; transition: color .2s, border-color .2s, background .2s;
-}
-.sm-preset:hover { color: var(--ink-primary); border-color: rgba(255, 255, 255, .25); }
-.sm-preset.is-on { color: var(--bg-1); background: var(--ink-primary); border-color: var(--ink-primary); }
 .sm-name { font-size: 20px; font-weight: 500; color: var(--ink-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sm-count { color: var(--ink-secondary); }
 .sm-block { display: flex; flex-direction: column; gap: 10px; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, .07); }
@@ -236,10 +217,9 @@
 .sm .dlg-input.sm-text { flex: 1; min-width: 120px; height: 36px; padding: 0 12px; font-size: 13.5px; border-radius: 10px; }
 .sm-num:disabled { opacity: .4; }
 .sm-word { font-size: 13.5px; color: var(--ink-secondary); }
-.sm-x { margin-left: auto; width: 32px; height: 32px; flex: none; border: 0; border-radius: 8px; background: none; color: var(--ink-tertiary); font-size: 16px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
-.sm-x:hover { color: var(--ink-primary); background: rgba(255, 255, 255, .06); }
-.sm-add { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; padding-left: 2px; }
-.sm-add svg { font-size: 15px; }
+.sm-presets { display: flex; flex-wrap: wrap; gap: 8px; }
+.sm-add { align-self: flex-start; }
+.sm-x { margin-left: auto; }
 .sm-order { flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 20px; }
 .sm-sort, .sm-limit { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .sm-limit input[type='checkbox'] { width: 16px; height: 16px; margin: 0; accent-color: var(--ink-primary); cursor: pointer; }
@@ -337,8 +317,6 @@ html[data-phone] .gc-opt { height: 44px; font-size: 15px; }
 .dlg { padding: 24px; gap: 20px; background: oklch(0.21 0.008 40); }
 .dlg-top { margin: 0 -8px 0 0; }
 .dlg-label { font-family: var(--font-sans); font-size: 24px; font-weight: 400; letter-spacing: 0; color: var(--ink-primary); }
-.dlg-x { width: 40px; height: 40px; border-radius: 999px; color: var(--ink-secondary); }
-.dlg-x:hover { background: rgba(255, 255, 255, .08); }
 .dlg-input {
   height: 56px; padding: 0 16px; border-radius: 8px; border: 0; background: none; color: var(--ink-primary); font: inherit; font-size: 16px;
   box-shadow: inset 0 0 0 1px oklch(0.50 0.012 40); outline: none; transition: box-shadow 150ms var(--ease-std);
@@ -352,23 +330,11 @@ html[data-phone] .gc-opt { height: 44px; font-size: 15px; }
 .dlg-new-cover { border-radius: 16px; }
 .dlg-edit-img { border-radius: 20px; }
 .dlg-buttons { gap: 8px; }
-.dlg-cancel { height: 40px; padding: 0 16px; border-radius: 999px; font-size: 14px; font-weight: 600; color: var(--brand); }
-.dlg-cancel:hover { color: var(--brand); background: rgba(255, 255, 255, .06); }
-.dlg-ok { height: 40px; padding: 0 24px; border-radius: 999px; background: var(--brand); color: var(--on-brand); font-size: 14px; font-weight: 600; }
-.dlg-ok:hover:not(:disabled) { background: oklch(0.85 0.10 38); box-shadow: none; }
-.dlg-ok:disabled { opacity: 1; background: oklch(0.30 0.01 40); color: oklch(0.55 0.012 40); }
-.dlg-ok.is-danger { background: oklch(0.72 0.13 25); color: oklch(0.22 0.05 25); }
-.dlg-ok.is-danger:hover:not(:disabled) { background: oklch(0.78 0.12 25); box-shadow: none; }
-.dlg-link { color: var(--brand); text-decoration: none; font-weight: 600; font-size: 14px; padding: 8px 12px; border-radius: 999px; }
-.dlg-link:hover:not(:disabled) { color: var(--brand); background: rgba(255, 255, 255, .06); }
 .dlg-rm-title { font-size: 20px; font-weight: 600; }
 .dlg-rm-cover { border-radius: 16px; }
 
 /* smart playlist dialog */
 .dlg.is-wide:has(.sm) { width: 680px; }
-.sm-preset { height: 36px; padding: 0 14px; border-radius: 12px; border: 0; box-shadow: inset 0 0 0 1px oklch(0.38 0.012 40); background: oklch(0.20 0.007 40); font-size: 14px; font-weight: 600; color: oklch(0.86 0.01 40); }
-.sm-preset:hover { background: oklch(0.235 0.008 40); color: var(--ink-primary); }
-.sm-preset.is-on { background: oklch(0.36 0.035 38); color: oklch(0.92 0.025 38); box-shadow: none; }
 .sm-name { font-size: 20px; font-weight: 600; }
 .sm-block { border-top: 0; padding-top: 0; gap: 12px; }
 .sm-rules { gap: 8px; }
@@ -378,8 +344,4 @@ html[data-phone] .gc-opt { height: 44px; font-size: 15px; }
 .sm-select select option { background: oklch(0.26 0.009 40); }
 .sm .dlg-input.sm-num, .sm .dlg-input.sm-text { height: 40px; border-radius: 12px; font-size: 14px; }
 .sm-word { font-size: 14px; }
-.sm-x { width: 36px; height: 36px; border-radius: 999px; font-size: 20px; }
-.sm-x .ms { font-size: 20px; }
-.sm-add { height: 40px; padding: 0 18px 0 14px; border-radius: 999px; background: oklch(0.36 0.035 38); color: oklch(0.92 0.025 38); font-weight: 600; font-size: 14px; }
-.sm-add:hover:not(:disabled) { background: oklch(0.40 0.045 38); color: oklch(0.92 0.025 38); }
 .sm-limit input[type='checkbox'] { accent-color: var(--brand); width: 18px; height: 18px; }

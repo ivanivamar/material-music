@@ -7,6 +7,7 @@
  * Keys: Enter opens the top result · Esc clears (then blurs) · ↓ moves into the results.
  */
 import { forwardRef, type KeyboardEvent, type ReactNode } from 'react'
+import { IconButton } from '../../components/ui'
 import { Icon } from '../../design/icons'
 import { SHAPE_PLAYING } from '../../design/shapes'
 import { searchStore } from '../../state/search'
@@ -67,9 +68,7 @@ export const LibrarySearchField = forwardRef<HTMLInputElement, FieldProps>(funct
           onBlur={() => onFocused(false)}
         />
         {query && (
-          <button type="button" className="lb-field-x" aria-label="Clear search" onMouseDown={keepFocus} onClick={onClear}>
-            <Icon name="x" />
-          </button>
+          <IconButton icon="x" label="Clear search" onMouseDown={keepFocus} onClick={onClear} />
         )}
       </div>
       {recent}

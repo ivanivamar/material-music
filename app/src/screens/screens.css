@@ -31,8 +31,8 @@
 }
 
 /* Top bar & progress bar */
-.scr-prog { position: absolute; left: 0; right: 0; top: 0; height: 4px; background: oklch(0.26 0.01 40); z-index: 2; }
-.scr-prog > span { display: block; height: 100%; border-radius: 0 999px 999px 0; background: var(--brand); transition: width 0.35s var(--ease); }
+.scr-prog { position: absolute; left: 0; right: 0; top: 0; z-index: 2; border-radius: 0; --lp-track: oklch(0.26 0.01 40); }
+.scr-prog .mm-lprog-bar { border-radius: 0 999px 999px 0; }
 
 .scr-top {
   position: absolute; left: 28px; right: 28px; top: 24px; z-index: 2;
@@ -160,24 +160,5 @@
 
 .scr-btns { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
 .scr.is-phone .scr-btns { flex-direction: column; width: 100%; }
-
-.scr-btn-pri {
-  height: 48px; padding: 0 24px 0 18px; border-radius: 999px; border: 0; cursor: pointer;
-  background: var(--brand); color: var(--on-brand); font: inherit; font-size: 14px; font-weight: 600;
-  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  transition: filter 200ms var(--ease-std), transform 200ms var(--ease-std);
-}
-.scr-btn-pri.is-lg { height: 52px; padding: 0 26px 0 24px; box-shadow: 0 20px 36px -14px oklch(0.80 0.115 38 / 0.45); }
-.scr.is-phone .scr-btn-pri.is-lg { width: 100%; height: 54px; }
-.scr-btn-pri .ms { font-size: 18px; }
-.scr-btn-pri:hover:not(:disabled) { filter: brightness(1.06); }
-.scr-btn-pri:disabled { opacity: 0.5; cursor: default; }
-
-.scr-btn-sec {
-  height: 48px; padding: 0 22px; border-radius: 999px; border: 0; cursor: pointer;
-  background: transparent; box-shadow: inset 0 0 0 1.5px oklch(0.40 0.02 40); color: var(--brand);
-  font: inherit; font-size: 14px; font-weight: 600;
-  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-}
-.scr-btn-sec:hover:not(:disabled) { background: oklch(0.80 0.115 38 / 0.1); }
-.scr-btn-sec:disabled { opacity: 0.5; cursor: default; }
+.scr-cta { height: 52px; padding: 0 26px 0 24px; box-shadow: 0 20px 36px -14px oklch(0.80 0.115 38 / 0.45); }
+.scr.is-phone .scr-cta { width: 100%; height: 54px; }

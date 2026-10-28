@@ -8,7 +8,7 @@
  * view shows the group heads and the rail; Grid view is one plain grid (letters still feed the scrubber).
  */
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from 'react'
-import { AlbumEq, formatTime, qualityLabel } from '../../components/ui'
+import { AlbumEq, IconButton, formatTime, qualityLabel } from '../../components/ui'
 import { Icon, type IconName } from '../../design/icons'
 import { SHAPE_CLOVER, SHAPE_PLAYING } from '../../design/shapes'
 import { actions, trackDrag } from '../../actions/actions'
@@ -484,9 +484,7 @@ export function SongRowM({
         </>
       )}
       {phone && (
-        <button type="button" className="lb-sdots" aria-label="More" onClick={(e) => (e.stopPropagation(), actions.menu(target, e))}>
-          <Icon name="more" />
-        </button>
+        <IconButton icon="more" label="More" className="lb-sdots" onClick={(e) => (e.stopPropagation(), actions.menu(target, e))} />
       )}
     </div>
   )

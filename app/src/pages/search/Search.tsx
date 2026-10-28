@@ -8,7 +8,7 @@
  * Matched text is marked (coral tint). ↑ / ↓ move between results; ↑ from the first goes back to the field.
  */
 import { useMemo, useRef, type CSSProperties, type KeyboardEvent, type ReactNode } from 'react'
-import { CookieButton } from '../../components/ui'
+import { Button, CookieButton } from '../../components/ui'
 import { useCover } from '../../lib/covers'
 import { useArtTint } from '../../design/tint'
 import { nameHue } from '../../lib/mixing'
@@ -83,18 +83,18 @@ function NoMatch({ query, suggestion, scoped, onClear }: { query: string; sugges
       </div>
       <div className="sr-none-btns">
         {suggestion && (
-          <button type="button" className="lb-btn is-tonal" onClick={() => searchStore.setQuery(suggestion)}>
+          <Button variant="tonal" onClick={() => searchStore.setQuery(suggestion)}>
             Search {suggestion}
-          </button>
+          </Button>
         )}
         {scoped ? (
-          <button type="button" className="lb-btn is-tonal" onClick={() => searchStore.setFilter('all')}>
+          <Button variant="tonal" onClick={() => searchStore.setFilter('all')}>
             Show all results
-          </button>
+          </Button>
         ) : (
-          <button type="button" className={`lb-btn ${suggestion ? 'is-outline' : 'is-tonal'}`} onClick={onClear}>
+          <Button variant={suggestion ? 'outlined-ink' : 'tonal'} onClick={onClear}>
             Clear search
-          </button>
+          </Button>
         )}
       </div>
     </div>
@@ -333,9 +333,9 @@ function SongsList({ c, r, phone }: { c: Catalogue; r: SearchResults; phone: boo
   return (
     <div className="sr-songs">
       <div className="lb-actions">
-        <button type="button" className="lb-btn is-tonal" onClick={() => (ctx.active ? playerStore.toggle() : playTracks(ids, 0, r.query))}>
+        <Button variant="tonal" onClick={() => (ctx.active ? playerStore.toggle() : playTracks(ids, 0, r.query))}>
           {ctx.playing ? 'Pause' : ctx.active ? 'Resume' : 'Play all'}
-        </button>
+        </Button>
       </div>
       <SongCard
         c={c}

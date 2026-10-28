@@ -8,7 +8,7 @@
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { useToast } from '../../components/ui'
+import { IconButton, Button, useToast } from '../../components/ui'
 import { Icon, type IconName } from '../../design/icons'
 import { useCover } from '../../lib/covers'
 import { concertsStore, isoDay, type ManualShow } from '../../state/concerts'
@@ -45,9 +45,7 @@ function PickedArtist({ artist, onClear }: { artist: Artist; onClear: () => void
     <div className="cx-field is-picked" style={hueVars(look.H)}>
       <ArtistPhoto artist={artist} photo={look.photo} size={36} className="has-ring is-raised" />
       <span className="cx-picked-name">{artist.name}</span>
-      <button type="button" className="cx-ib" title="Change artist" aria-label="Change artist" onClick={onClear}>
-        <Icon name="x" />
-      </button>
+      <IconButton icon="x" label="Change artist" onClick={onClear} />
     </div>
   )
 }
@@ -186,9 +184,7 @@ export function ShowDialog({ state, phone, homeCity, onClose }: { state: DialogS
     return createPortal(
       <div className={`cx-full ${on ? 'is-on' : ''}`} role="dialog" aria-modal="true" aria-label={title}>
         <div className="cx-full-bar">
-          <button type="button" className="cx-ib is-48" aria-label="Close" onClick={onClose}>
-            <Icon name="x" />
-          </button>
+          <IconButton icon="x" label="Close" size="lg" variant="strong" onClick={onClose} />
           <div className="cx-full-title">{title}</div>
           <button type="button" className={`cx-save ${canSave ? 'is-ok' : ''}`} onClick={save} aria-disabled={!canSave}>
             {saveLabel}
@@ -223,15 +219,15 @@ export function ShowDialog({ state, phone, homeCity, onClose }: { state: DialogS
         {fields}
         <div className="cx-dlg-foot">
           {edit && (
-            <button type="button" className="cx-text is-danger" onClick={remove}>
+            <Button variant="ghost" className="cx-text-danger" onClick={remove}>
               <Icon name="delete" />
               Delete
-            </button>
+            </Button>
           )}
           <span className="cx-flex" />
-          <button type="button" className="cx-text" onClick={onClose}>
+          <Button variant="ghost" onClick={onClose}>
             Cancel
-          </button>
+          </Button>
           <button type="button" className={`cx-save ${canSave ? 'is-ok' : ''}`} onClick={save} aria-disabled={!canSave}>
             {saveLabel}
           </button>

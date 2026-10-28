@@ -221,25 +221,19 @@ html[data-motion='reduced'] .dji-line > span { transition: none; }
 }
 .djs-card-h { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
 .djs-card-t { font-size: 16px; font-weight: 700; color: var(--ink-primary); }
-.djs-progress { height: 3px; border-radius: 999px; background: oklch(0.84 0.09 290 / 0.14); overflow: hidden; margin-top: -4px; }
-.djs-progress > span { display: block; height: 100%; border-radius: 999px; background: var(--dj); }
+.djs-progress { --lp-h: 3px; --lp-track: oklch(0.84 0.09 290 / 0.14); --lp-fill: var(--dj); margin-top: -4px; }
 .djs-chips { display: flex; flex-wrap: wrap; gap: 8px; }
-.djs-chip {
-  height: 40px; padding: 0 14px; border-radius: 12px; border: 0;
-  background: oklch(0.84 0.09 290 / 0.04); box-shadow: inset 0 0 0 1px var(--djs-line); cursor: pointer;
-  display: inline-flex; align-items: center; gap: 8px; font: inherit; font-size: 14px; font-weight: 500; color: var(--ink-secondary);
-  transition: background-color 220ms var(--ease-std), color 220ms var(--ease-std), box-shadow 220ms var(--ease-std);
-}
-.djs-chip:hover { color: var(--ink-primary); background: oklch(0.84 0.09 290 / 0.10); box-shadow: inset 0 0 0 1px var(--djs-line-hover); }
-.djs-chip-n { font-size: 11px; color: oklch(0.84 0.09 290 / 0.62); font-variant-numeric: tabular-nums; }
-.djs-chip.is-on { background: var(--dj); box-shadow: none; color: var(--on-dj); font-weight: 600; }
-.djs-chip.is-on .djs-chip-n { color: var(--on-dj); opacity: 0.72; }
+/* genre chips: the shared Chip in DJ violet */
+.djs-chip { --chip-on-bg: var(--dj); --chip-on-fg: var(--on-dj); --chip-on-n: var(--on-dj); height: 40px; font-weight: 500; color: var(--ink-secondary); background: oklch(0.84 0.09 290 / 0.04); box-shadow: inset 0 0 0 1px var(--djs-line); }
+.djs-chip:hover:not(:disabled):not(.is-on) { background: oklch(0.84 0.09 290 / 0.10); box-shadow: inset 0 0 0 1px var(--djs-line-hover); }
+.djs-chip.is-on { font-weight: 600; }
+.djs-chip .chip-n { font-size: 11px; color: oklch(0.84 0.09 290 / 0.62); }
+.djs-chip.is-on .chip-n { opacity: 0.72; }
 .djs-chip.is-skel {
   box-shadow: none; cursor: default;
   background: linear-gradient(90deg, oklch(0.84 0.09 290 / 0.05) 0%, oklch(0.84 0.09 290 / 0.14) 40%, oklch(0.84 0.09 290 / 0.05) 80%);
   background-size: 250% 100%; animation: pg-shimmer 2.8s linear infinite;
 }
-@keyframes pg-shimmer { 0% { background-position: 100% 0; } 100% { background-position: -150% 0; } }
 .djs-note { font-size: 13px; line-height: 1.5; color: var(--ink-secondary); }
 .djs-card-f { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .djs-genre-go {
@@ -353,14 +347,6 @@ html[data-motion='reduced'] .dji-line > span { transition: none; }
 .djp-head-t { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .djp-name { font-size: 16px; font-weight: 700; }
 .djp-status { font-size: 12px; font-weight: 500; color: var(--dj); }
-.djp-x {
-  width: 40px; height: 40px; border-radius: 999px; border: 0;
-  background: rgba(255, 255, 255, 0.06); color: var(--ink-secondary);
-  display: flex; align-items: center; justify-content: center; cursor: pointer;
-  transition: background-color 200ms var(--ease-std), color 200ms var(--ease-std);
-}
-.djp-x .ms { font-size: 20px; }
-.djp-x:hover { background: rgba(255, 255, 255, 0.12); color: var(--ink-primary); }
 
 .djp-sec { display: flex; flex-direction: column; gap: 10px; }
 .djp-sec.is-tight { gap: 4px; }
@@ -371,48 +357,21 @@ html[data-motion='reduced'] .dji-line > span { transition: none; }
 .djp-rule { height: 1px; background: oklch(0.30 0.015 60); flex: none; }
 .djp-row-h { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .djp-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.djp-chip {
-  height: 36px; padding: 0 14px; border-radius: 10px; border: 0;
-  background: transparent; box-shadow: inset 0 0 0 1px oklch(0.40 0.02 40); color: var(--ink-secondary);
-  font: inherit; font-size: 14px; font-weight: 500; cursor: pointer;
-  display: inline-flex; align-items: center; gap: 6px;
-  transition: background-color 200ms var(--ease-std), color 200ms var(--ease-std), box-shadow 200ms var(--ease-std);
-}
+.djp-chip { --chip-on-bg: var(--dj); --chip-on-fg: var(--on-dj); }
 .djp.is-sheet .djp-chip { height: 40px; }
-.djp-chip.is-on { background: var(--dj); box-shadow: none; color: var(--on-dj); font-weight: 600; }
 
 .djp-toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .djp-label { font-size: 14px; font-weight: 600; color: var(--ink-primary); }
 .djp-note { font-size: 12px; line-height: 1.45; color: var(--ink-tertiary); margin-top: 2px; }
 
-.djp-toggle {
-  position: relative; width: 52px; height: 32px; border-radius: 999px; border: 0;
-  background: oklch(0.30 0.015 40); box-shadow: inset 0 0 0 1.5px oklch(0.45 0.02 40);
-  padding: 0; cursor: pointer; flex: none;
-  transition: background-color 200ms var(--ease-std), box-shadow 200ms var(--ease-std);
-}
-.djp-toggle-thumb {
-  position: absolute; left: 4px; top: 4px; width: 24px; height: 24px; border-radius: 50%;
-  background: oklch(0.75 0.014 40); color: var(--dj);
-  display: inline-flex; align-items: center; justify-content: center;
-  transition: left 200ms var(--ease-shape), background-color 200ms var(--ease-std);
-}
-.djp-toggle.is-on { background: var(--dj); box-shadow: none; }
-.djp-toggle.is-on .djp-toggle-thumb { left: 24px; background: var(--on-dj); }
+.djp .toggle { flex: none; }
+.djp .toggle[aria-checked='true'] { background: var(--dj); }
+.djp .toggle[aria-checked='true']::after { background: var(--on-dj); color: var(--dj); }
 
-.djp-vol { display: flex; align-items: center; gap: 12px; transition: opacity 0.25s; }
-.djp-vol.is-off { opacity: 0.35; pointer-events: none; }
-.djp-vol > .ms { font-size: 20px; color: var(--ink-secondary); flex: none; }
-.djp-vol-track { position: relative; flex: 1; height: 24px; display: flex; align-items: center; cursor: pointer; touch-action: none; outline: none; }
-.djp.is-sheet .djp-vol-track { height: 28px; }
-.djp-vol-line { width: 100%; height: 8px; border-radius: 999px; background: oklch(0.32 0.015 40); overflow: hidden; display: block; }
-.djp-vol-fill { display: block; height: 100%; border-radius: 999px; background: var(--dj); }
-.djp-vol-knob {
-  position: absolute; top: 50%; width: 4px; height: 24px; margin: -12px 0 0 -2px; border-radius: 2px;
-  background: var(--dj-light); box-shadow: 0 0 0 4px oklch(0.22 0.012 60);
-}
-.djp-vol-track:focus-visible .djp-vol-knob { outline: 2px solid #fff; outline-offset: 2px; }
-.djp-vol-n { width: 32px; text-align: right; font-size: 12px; color: var(--ink-secondary); font-variant-numeric: tabular-nums; }
+/* voice volume: the shared ValueSlider in DJ violet */
+.djp-vol { --vs-accent: var(--dj); --vs-handle: var(--dj-light); --vs-track: oklch(0.32 0.015 40); --vs-gap: oklch(0.22 0.012 60); gap: 12px; }
+.djp.is-sheet .djp-vol .mm-vslider-track { height: 28px; }
+.djp-vol .mm-vslider-val { width: 32px; font-size: 12px; }
 
 .djp-small {
   height: 32px; padding: 0 12px; border-radius: 999px; border: 0;

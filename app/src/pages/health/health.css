@@ -534,22 +534,8 @@
   gap: 10px;
 }
 
-.hl-bar-track {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 3px;
-  background: oklch(0.28 0.01 40);
-}
-
-.hl-bar-fill {
-  height: 100%;
-  border-radius: 999px;
-  background: var(--brand);
-  transition: width 0.4s var(--ease);
-  box-shadow: 0 0 8px var(--brand);
-}
+.hl-bar-track { position: absolute; left: 0; right: 0; bottom: 0; --lp-h: 3px; border-radius: 0; overflow: visible; }
+.hl-bar-track .mm-lprog-bar { box-shadow: 0 0 8px var(--brand); transition: width 0.4s var(--ease); }
 
 /* ── Duplicates View ────────────────────────────────── */
 .hl-dup-container {

@@ -7,6 +7,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { Icon } from '../../design/icons'
+import { Button, Segmented } from '../../components/ui'
 import { SHAPE_CLOVER } from '../../design/shapes'
 import { useCover } from '../../lib/covers'
 import { nameHue } from '../../lib/mixing'
@@ -125,30 +126,10 @@ export function TicketsIcon({ show, size = 40, plain }: { show: Show; size?: num
 
 /* ── Radius ─────────────────────────────────────────── */
 
+const RADIUS_OPTS = RADII.map((r) => ({ value: String(r), label: `${r} km` }))
+
 export function RadiusSeg({ value, onChange, size = 40, checks = true }: { value: Radius; onChange: (r: Radius) => void; size?: number; checks?: boolean }) {
-  return (
-    <div className="cx-seg" role="group" aria-label="Radius">
-      {RADII.map((r, i) => {
-        const on = r === value
-        return (
-          <button
-            key={r}
-            type="button"
-            className={`cx-seg-btn ${on ? 'is-on' : ''} ${i === 0 ? 'is-first' : ''} ${i === RADII.length - 1 ? 'is-last' : ''}`}
-            style={{ height: size }}
-            aria-pressed={on}
-            onClick={(e) => {
-              e.stopPropagation()
-              onChange(r)
-            }}
-          >
-            {on && checks && <Icon name="done" />}
-            {r} km
-          </button>
-        )
-      })}
-    </div>
-  )
+  return <Segmented label="Radius" className="cx-seg" value={String(value)} options={RADIUS_OPTS} onChange={(v) => onChange(Number(v) as Radius)} size={size} checks={checks} full isolate />
 }
 
 /* ── City search ────────────────────────────────────── */
@@ -265,9 +246,9 @@ function LocationBody({ home, radius, phone, onDone }: { home: City | null; radi
       </div>
       <div className="cx-loc-hint">No GPS. Shows are matched to this city and refreshed once a day.</div>
       <div className="cx-loc-foot">
-        <button type="button" className="cx-btn is-coral" onClick={onDone}>
+        <Button variant="brand" className="cx-btn" onClick={onDone}>
           Done
-        </button>
+        </Button>
       </div>
     </>
   )
@@ -335,6 +316,3 @@ export function Attribution({ short, children }: { short?: boolean; children?: R
   )
 }
 
-export function Shim({ w, h, r, className }: { w?: number | string; h: number; r?: number | string; className?: string }) {
-  return <span className={`cx-shim ${className ?? ''}`} style={{ width: w, height: h, borderRadius: r }} />
-}

@@ -21,6 +21,7 @@ import {
   EmptyState,
   formatTime,
   IconButton,
+  LinearProgress,
   QualityBadge,
   Segmented,
   Skeleton,
@@ -890,9 +891,7 @@ function LyricsBar({ songs }: { songs: Track[] }) {
         )}
       </div>
       {job.running && (
-        <div className="hl-bar-track" aria-hidden>
-          <div className="hl-bar-fill" style={{ width: `${pct * 100}%` }} />
-        </div>
+        <LinearProgress className="hl-bar-track" value={pct} />
       )}
     </div>
   )

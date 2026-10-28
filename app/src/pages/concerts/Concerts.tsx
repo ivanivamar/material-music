@@ -14,7 +14,7 @@
  * Opening the page clears the sidebar badge; shows first seen since the last visit wear "New".
  */
 import { useEffect, useMemo, useState } from 'react'
-import { useToast } from '../../components/ui'
+import { Chip, IconButton, Button, Skeleton, useToast } from '../../components/ui'
 import { Icon } from '../../design/icons'
 import { concertsStore, useConcerts, type City, type Radius } from '../../state/concerts'
 import { FILTERS, buildShows, filterFn, lastUpdated, monthGroups, nearbyShows, statusLook, updatedLabel, type Show, type ShowFilter } from '../../state/concertViews'
@@ -23,7 +23,7 @@ import { useReleases } from '../../state/releases'
 import { useIsPhone } from '../../state/viewport'
 import { back, href, replace } from '../../shell/routes'
 import { PosterCard, ShowCard } from './cards'
-import { Attribution, CitySearch, Clover, LocationPicker, RadiusSeg, Shim } from './parts'
+import { Attribution, CitySearch, Clover, LocationPicker, RadiusSeg } from './parts'
 import { ShowDialog, type DialogState } from './ShowDialog'
 import './concerts.css'
 
@@ -120,14 +120,14 @@ export function Concerts() {
         <div className="cx-empty-title">Ticketmaster isn't connected yet</div>
         <div className="cx-empty-body">The concerts helper has no Ticketmaster key. Set the TICKETMASTER_API_KEY secret on the Firebase function and deploy it once from the PC.</div>
         <div className="cx-empty-acts">
-          <button type="button" className="cx-btn is-filled is-lg" onClick={() => concertsStore.retry()}>
+          <Button variant="filled" size="lg" className="cx-btn" onClick={() => concertsStore.retry()}>
             <Icon name="refresh" />
             Try again
-          </button>
+          </Button>
         </div>
       </div>
     )
-  else if (firstRun) body = <Skeleton phone={phone} />
+  else if (firstRun) body = <ListSkeleton phone={phone} />
   else if (!near.length)
     body = (
       <div className="cx-empty">
@@ -138,21 +138,20 @@ export function Concerts() {
         </div>
         <div className="cx-empty-acts">
           {radius < 250 && (
-            <button type="button" className="cx-btn is-filled is-lg" onClick={() => changeRadius(radius === 25 ? 50 : radius === 50 ? 100 : 250)}>
+            <Button variant="filled" size="lg" className="cx-btn" onClick={() => changeRadius(radius === 25 ? 50 : radius === 50 ? 100 : 250)}>
               <Icon name="radar" />
               Widen to {radius === 25 ? 50 : radius === 50 ? 100 : 250} km
-            </button>
+            </Button>
           )}
-          <button
-            type="button"
-            className="cx-btn is-tonal is-lg"
+          <Button
+            variant="secondary" size="lg" className="cx-btn"
             onClick={(e) => {
               e.stopPropagation()
               setLocOpen(true)
             }}
           >
             Change city
-          </button>
+          </Button>
         </div>
       </div>
     )
@@ -197,9 +196,7 @@ export function Concerts() {
       <div className="cx-glow" aria-hidden />
       {phone && (
         <div className="cx-backrow">
-          <button type="button" className="cx-ib is-48" aria-label="Back" onClick={() => back(href('home'))}>
-            <Icon name="back" />
-          </button>
+          <IconButton icon="back" label="Back" size="lg" variant="strong" onClick={() => back(href('home'))} />
         </div>
       )}
       {header}
@@ -221,11 +218,9 @@ export function Concerts() {
       {ready && (
         <div className="cx-chips" role="group" aria-label="Filter">
           {FILTERS.map((f) => (
-            <button key={f.id} type="button" className={`cx-fchip ${filter === f.id ? 'is-on' : ''}`} aria-pressed={filter === f.id} onClick={() => setFilter(f.id)}>
-              {filter === f.id && <Icon name="done" />}
+            <Chip key={f.id} selected={filter === f.id} count={<span className="cx-mono">{counts[f.id]}</span>} onClick={() => setFilter(f.id)}>
               {f.label}
-              <span className="cx-fchip-n cx-mono">{counts[f.id]}</span>
-            </button>
+            </Chip>
           ))}
         </div>
       )}
@@ -264,9 +259,8 @@ function SetupCard({ phone, artists }: { phone: boolean; artists: number }) {
         <RadiusSeg value={radius} onChange={setRadius} size={48} />
       </div>
       <div className="cx-setup-foot">
-        <button
-          type="button"
-          className="cx-btn is-filled is-lg"
+        <Button
+          variant="filled" size="lg" className="cx-btn"
           disabled={!city}
           onClick={() => {
             if (!city) return
@@ -277,7 +271,7 @@ function SetupCard({ phone, artists }: { phone: boolean; artists: number }) {
         >
           <Icon name="concerts" />
           Show concerts
-        </button>
+        </Button>
         {!phone && <span className="cx-setup-note">You can change this in Settings.</span>}
       </div>
       {phone && <span className="cx-setup-note">You can change this in Settings.</span>}
@@ -287,7 +281,7 @@ function SetupCard({ phone, artists }: { phone: boolean; artists: number }) {
 
 /* ── Loading ────────────────────────────────────────── */
 
-function Skeleton({ phone }: { phone: boolean }) {
+function ListSkeleton({ phone }: { phone: boolean }) {
   const rows: [string, string][] = [
     ['46%', '28%'],
     ['62%', '34%'],
@@ -299,16 +293,16 @@ function Skeleton({ phone }: { phone: boolean }) {
     <div className="cx-skel" aria-label="Loading concerts">
       {rows.map(([w1, w2], i) => (
         <div key={i} className="cx-skel-row">
-          <Shim w={phone ? 52 : 64} h={phone ? 58 : 64} r={16} />
+          <Skeleton width={phone ? 52 : 64} height={phone ? 58 : 64} radius={16} />
           <div className="cx-skel-main">
-            <Shim w={phone ? 40 : 48} h={phone ? 40 : 48} r={999} />
+            <Skeleton width={phone ? 40 : 48} height={phone ? 40 : 48} radius={999} />
             <div className="cx-skel-lines">
-              <Shim w={w1} h={14} r={7} />
-              <Shim w={w2} h={10} r={5} />
+              <Skeleton width={w1} height={14} radius={7} />
+              <Skeleton width={w2} height={10} radius={5} />
             </div>
           </div>
-          {!phone && <Shim w={96} h={28} r={8} />}
-          {!phone && <Shim w={112} h={40} r={999} />}
+          {!phone && <Skeleton width={96} height={28} radius={8} />}
+          {!phone && <Skeleton width={112} height={40} radius={999} />}
         </div>
       ))}
     </div>

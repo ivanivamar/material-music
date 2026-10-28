@@ -6,6 +6,7 @@
  */
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { AppMark } from '../components/Logo'
+import { Button, LinearProgress } from '../components/ui'
 import { Icon } from '../design/icons'
 import { libraryStats, libraryStore, useLibrary, type Catalogue } from '../state/library'
 import { useMotion } from '../state/motion'
@@ -69,9 +70,7 @@ function ScreenShell({ tag, topAccount, progress, children }: { tag: string; top
           <i className="sd-ring sd-r3" />
         </div>
         {progress != null && (
-          <div className="scr-prog" aria-hidden>
-            <span style={{ width: `${Math.max(0, Math.min(100, progress))}%` }} />
-          </div>
+          <LinearProgress className="scr-prog" value={progress / 100} />
         )}
         <div className="scr-top">
           {!phone ? (
@@ -153,10 +152,10 @@ export function LoadingLibrary({ onDone }: { onDone: () => void }) {
         </div>
         <div className="loading-foot">
           {done ? (
-            <button type="button" className="scr-btn-pri is-lg" onClick={onDone} autoFocus>
+            <Button variant="brand" size="lg" className="scr-cta" onClick={onDone} autoFocus>
               Go to Home
               <Icon name="forward" />
-            </button>
+            </Button>
           ) : (
             <div className="loading-now">{now}</div>
           )}
@@ -186,13 +185,13 @@ export function NoLibrary() {
         </div>
         <AccountPill />
         <div className="scr-btns">
-          <button type="button" className="scr-btn-pri" disabled={busy} onClick={() => libraryStore.sync()}>
+          <Button variant="brand" size="lg" disabled={busy} onClick={() => libraryStore.sync()}>
             <Icon name="refresh" />
             {busy ? 'Checking…' : 'Check again'}
-          </button>
-          <button type="button" className="scr-btn-sec" disabled={pending} onClick={() => sessionStore.signIn({ switchAccount: true })}>
+          </Button>
+          <Button variant="outlined" size="lg" disabled={pending} onClick={() => sessionStore.signIn({ switchAccount: true })}>
             Switch account
-          </button>
+          </Button>
         </div>
         <div className="scr-meta">Looked for My Drive / Pelagic / library.json</div>
       </div>
@@ -220,13 +219,13 @@ export function LibraryError() {
         </div>
         <AccountPill />
         <div className="scr-btns">
-          <button type="button" className="scr-btn-pri" disabled={busy} onClick={() => libraryStore.sync({ force: true })}>
+          <Button variant="brand" size="lg" disabled={busy} onClick={() => libraryStore.sync({ force: true })}>
             <Icon name="refresh" />
             Try again
-          </button>
-          <button type="button" className="scr-btn-sec" disabled={pending} onClick={() => sessionStore.signIn({ switchAccount: true })}>
+          </Button>
+          <Button variant="outlined" size="lg" disabled={pending} onClick={() => sessionStore.signIn({ switchAccount: true })}>
             Switch account
-          </button>
+          </Button>
         </div>
         {error && <div className="scr-meta scr-error">{error}</div>}
       </div>

@@ -8,7 +8,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, type ReactNode } from 'rea
 import { Icon } from '../design/icons'
 import { SHAPE_PLAYING } from '../design/shapes'
 import { playList } from '../pages/library/playback'
-import { useToast } from '../components/ui'
+import { IconButton, Button, useToast } from '../components/ui'
 import { libraryStore, onLibraryUpdated, useLibrary } from '../state/library'
 import { NowPlaying } from '../nowplaying/NowPlaying'
 import { QueuePanel } from '../nowplaying/QueuePanel'
@@ -427,13 +427,9 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
                   actions={
                     <>
                       {key === 'library' && (
-                        <button type="button" className="ptb-ib" aria-label="Shuffle library" onClick={shuffleAll}>
-                          <Icon name="shuffle" />
-                        </button>
+                        <IconButton icon="shuffle" label="Shuffle library" size="lg" variant="strong" onClick={shuffleAll} />
                       )}
-                      <button type="button" className="ptb-ib" aria-label="Search your library" onClick={focusLibrarySearch}>
-                        <Icon name="search" />
-                      </button>
+                      <IconButton icon="search" label="Search your library" size="lg" variant="strong" onClick={focusLibrarySearch} />
                     </>
                   }
                 />
@@ -474,10 +470,10 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
                     </button>
                     <span className="topbar-gap" />
                     {key === 'home' && (
-                      <button type="button" className="shuffle-all" onClick={shuffleAll}>
+                      <Button variant="filled" size="xl" className="shuffle-all" onClick={shuffleAll}>
                         <Icon name="shuffle" />
                         Shuffle all
-                      </button>
+                      </Button>
                     )}
                   </div>
                 )}

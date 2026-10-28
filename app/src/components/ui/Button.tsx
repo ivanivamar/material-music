@@ -1,12 +1,25 @@
 import { useState, type ButtonHTMLAttributes, type ReactNode } from 'react'
 import { Icon, type IconName } from '../../design/icons'
 
-type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost'
+/** See material.css (Buttons). `primary` = `filled` (kept for older call sites). */
+export type ButtonVariant =
+  | 'filled'
+  | 'primary'
+  | 'brand'
+  | 'tonal'
+  | 'secondary'
+  | 'outlined'
+  | 'outlined-ink'
+  | 'ghost'
+  | 'plain'
+  | 'danger'
+  | 'danger-outlined'
+  | 'error'
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant
-  /** md = 46 desktop, lg = 54 Android primary, sm = 36 compact */
-  size?: 'sm' | 'md' | 'lg'
+  /** sm 32 · md 40 · lg 48 · xl 56 (detail-page actions) */
+  size?: 'sm' | 'md' | 'lg' | 'xl'
   icon?: IconName
   children?: ReactNode
 }
@@ -25,25 +38,33 @@ export function Button({ variant = 'primary', size = 'md', icon, children, class
   )
 }
 
-interface IconButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'> {
+interface IconButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children' | 'title'> {
   icon: IconName
   /** accessible name (required: icon-only) */
   label: string
-  size?: 'sm' | 'md'
+  /** sm 32 · md 40 · lg 48 (back / top-bar) · xl 56 (next to the xl actions) */
+  size?: 'sm' | 'md' | 'lg' | 'xl'
+  /** standard = grey icon · strong = light icon (back arrows, top bars) · soft = faint fill · tonal = coral tint */
+  variant?: 'standard' | 'strong' | 'soft' | 'tonal'
   shape?: 'round' | 'square'
   /** no hover fill — for dense bars (player bar) */
   bare?: boolean
   /** toggle state, e.g. Queue / Lyrics panels */
   pressed?: boolean
+  /** filled icon glyph */
+  filled?: boolean
+  /** tooltip; defaults to `label`, pass null for none */
+  title?: string | null
 }
 
-export function IconButton({ icon, label, size = 'md', shape = 'round', bare, pressed, className, type = 'button', ...rest }: IconButtonProps) {
-  const cls = ['ibtn', size === 'sm' && 'ibtn-sm', shape === 'square' && 'ibtn-sq', bare && 'ibtn-bare', className]
+/** Round icon-only button. The one definition for close ✕, back ←, more ⋮ and toolbar icons. */
+export function IconButton({ icon, label, size = 'md', variant = 'standard', shape = 'round', bare, pressed, filled, title, className, type = 'button', ...rest }: IconButtonProps) {
+  const cls = ['ibtn', size !== 'md' && `ibtn-${size}`, variant !== 'standard' && `ibtn-${variant}`, shape === 'square' && 'ibtn-sq', bare && 'ibtn-bare', className]
     .filter(Boolean)
     .join(' ')
   return (
-    <button type={type} className={cls} aria-label={label} title={label} aria-pressed={pressed} {...rest}>
-      <Icon name={icon} />
+    <button type={type} className={cls} aria-label={label} title={title === null ? undefined : (title ?? label)} aria-pressed={pressed} {...rest}>
+      <Icon name={icon} filled={filled} />
     </button>
   )
 }

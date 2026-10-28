@@ -3,7 +3,7 @@
  * right-click / long-press on the DJ button or click the tune button while the DJ plays.
  * Desktop: 420px M3 popover 12px above the button. Phone: bottom sheet.
  */
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Icon } from '../design/icons'
 import { registerBack } from '../native/backButton'
@@ -13,57 +13,7 @@ import { isNative } from '../native/bridge'
 import { usePlayer } from '../state/player'
 import { DJ_TYPES, TYPE_LABEL, type DjType } from './engine'
 import { LiveMark } from './DjIntro'
-
-function Toggle({ on, label, onChange }: { on: boolean; label: string; onChange: (v: boolean) => void }) {
-  return (
-    <button type="button" role="switch" aria-checked={on} aria-label={label} className={`djp-toggle ${on ? 'is-on' : ''}`} onClick={() => onChange(!on)}>
-      <span className="djp-toggle-thumb">{on && <Icon name="done" size={16} />}</span>
-    </button>
-  )
-}
-
-function VolumeSlider({ value, disabled, onChange }: { value: number; disabled: boolean; onChange: (v: number) => void }) {
-  const ref = useRef<HTMLDivElement>(null)
-  const at = (x: number) => {
-    const r = ref.current!.getBoundingClientRect()
-    return Math.round(Math.max(0, Math.min(1, (x - r.left) / r.width)) * 100) / 100
-  }
-  return (
-    <div className={`djp-vol ${disabled ? 'is-off' : ''}`}>
-      <Icon name="volume" />
-      <div
-        ref={ref}
-        className="djp-vol-track"
-        role="slider"
-        tabIndex={disabled ? -1 : 0}
-        aria-label="Voice volume"
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-valuenow={Math.round(value * 100)}
-        aria-disabled={disabled}
-        onPointerDown={(e) => {
-          if (disabled) return
-          e.currentTarget.setPointerCapture(e.pointerId)
-          onChange(at(e.clientX))
-        }}
-        onPointerMove={(e) => {
-          if (disabled || !e.currentTarget.hasPointerCapture(e.pointerId)) return
-          onChange(at(e.clientX))
-        }}
-        onKeyDown={(e) => {
-          if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') onChange(Math.max(0, Math.round((value - 0.05) * 100) / 100))
-          if (e.key === 'ArrowRight' || e.key === 'ArrowUp') onChange(Math.min(1, Math.round((value + 0.05) * 100) / 100))
-        }}
-      >
-        <span className="djp-vol-line">
-          <span className="djp-vol-fill" style={{ width: `${value * 100}%` }} />
-        </span>
-        <span className="djp-vol-knob" style={{ left: `${value * 100}%` }} />
-      </div>
-      <span className="djp-vol-n">{Math.round(value * 100)}</span>
-    </div>
-  )
-}
+import { Chip, IconButton, Toggle, ValueSlider } from '../components/ui'
 
 function PanelBody({ sheet }: { sheet: boolean }) {
   const { run, doc } = useDj()
@@ -91,9 +41,7 @@ function PanelBody({ sheet }: { sheet: boolean }) {
             {view.intro ? ' · Intro' : ''}
           </div>
         </div>
-        <button type="button" className="djp-x" aria-label="Close" onClick={() => djUi.closePanel()}>
-          <Icon name="x" />
-        </button>
+        <IconButton icon="x" label="Close" variant="soft" onClick={() => djUi.closePanel()} />
       </div>
       <div className="djp-sec">
         <div className="djp-k">Now</div>
@@ -117,10 +65,9 @@ function PanelBody({ sheet }: { sheet: boolean }) {
           {DJ_TYPES.map((t) => {
             const on = types.includes(t)
             return (
-              <button key={t} type="button" className={`djp-chip ${on ? 'is-on' : ''}`} aria-pressed={on} onClick={() => toggleType(t)}>
-                {on && <Icon name="done" size={16} />}
+              <Chip key={t} className="djp-chip" selected={on} onClick={() => toggleType(t)}>
                 {TYPE_LABEL[t]}
-              </button>
+              </Chip>
             )
           })}
         </div>
@@ -132,16 +79,16 @@ function PanelBody({ sheet }: { sheet: boolean }) {
             <div className="djp-label">Voice intros</div>
             <div className="djp-note">{doc.prefs.voice ? 'Male English voice, over silence' : 'Intros appear as text for 5 seconds'}</div>
           </div>
-          <Toggle on={doc.prefs.voice} label="Voice intros" onChange={(v) => djStore.setPref('voice', v)} />
+          <Toggle checked={doc.prefs.voice} label="Voice intros" onChange={(v) => djStore.setPref('voice', v)} />
         </div>
-        <VolumeSlider value={doc.prefs.voiceVolume} disabled={!doc.prefs.voice} onChange={(v) => djStore.setPref('voiceVolume', v)} />
+        <ValueSlider className="djp-vol" icon="volume" label="Voice volume" value={doc.prefs.voiceVolume} shown={Math.round(doc.prefs.voiceVolume * 100)} disabled={!doc.prefs.voice} onChange={(v) => djStore.setPref('voiceVolume', v)} />
         {isNative && (
           <div className="djp-toggle-row">
             <div>
               <div className="djp-label">Only downloaded songs on mobile data</div>
               <div className="djp-note">Offline always uses downloaded songs</div>
             </div>
-            <Toggle on={doc.prefs.dataSaver} label="Only downloaded songs on mobile data" onChange={(v) => djStore.setPref('dataSaver', v)} />
+            <Toggle checked={doc.prefs.dataSaver} label="Only downloaded songs on mobile data" onChange={(v) => djStore.setPref('dataSaver', v)} />
           </div>
         )}
       </div>
