@@ -18,7 +18,7 @@ npm run build
 | `src/styles/base.css` | Reset, type helpers (`.t-hero`, `.t-page`, `.t-mono`…), shared keyframes, reduced-motion rules |
 | `src/design/icons.tsx` | `<Icon name="…" />`: the 24-grid, 1.25-stroke icon set |
 | `src/design/textures.ts` | `STONE`, `GRAIN`, `CONTOUR_SMOOTH`, `CONTOUR_LIVE` texture data URIs |
-| `src/components/Logo.tsx` | Porthole mark (app icon, `tile` option), wordmark, lockup |
+| `src/components/Logo.tsx` | `AppMark`: app icon 8a "Play & disc, dark" (`tile` = 30 % corners), wordmark, lockup. Launcher / PWA / splash / notification assets: `icon-masters/` + `public/icons/` + Android `res/` (generator in the Claude project, `claude/material-music-icon-build/`) |
 | `src/components/Atmosphere.tsx` | Background layers: stone, breathing contours, grain, light pools, marine snow. Follows the Motion / particles / texture settings |
 | `src/components/ui/` | Core components: `Button`, `IconButton`, `PlayButton`, `Toggle`, `Segmented`, `Chip`, `Slider`, `SeekBar`, `Waveform`, `QualityBadge`, `ReleaseBadge`, `Eq`, `DownloadStatus`/`DownloadIcon`, `Skeleton`, `Rule`, `Sonar`, `OfflineBanner`, `EmptyState`, `TrackRow`, `AlbumCard`, toasts (`ToastProvider` + `useToast()`) |
 | `src/state/settings.ts` | Settings store (`useSettings`, `settingsStore.set`), saved instantly to localStorage (Drive sync later) |
@@ -192,7 +192,7 @@ Until then, the Fontshare CDN link in `index.html` loads the font online. On And
 
 | File | What |
 |---|---|
-| `public/manifest.webmanifest` + `public/icons/` | Install metadata: standalone window, `#0b0b0c` theme, 192/512 icons (+ maskable, apple-touch), Search / Library shortcuts, `launch_handler: focus-existing` (opening Pelagic again focuses the running window instead of starting a second player) |
+| `public/manifest.webmanifest` + `public/icons/` | Install metadata: standalone window, `#0b0b0c` theme, 192/512 icons (+ maskable, apple-touch, favicon-32), Search / Library shortcuts, `launch_handler: focus-existing` (opening Pelagic again focuses the running window instead of starting a second player) |
 | `public/sw.js` | Besides the Drive proxy: offline app shell. On install it precaches index.html, JS, CSS, icons and Latin fonts; other hashed assets (CJK font subsets…) are cached on first use; Fontshare CSS/fonts stale-while-revalidate. Navigations get the cached index.html, so the installed app opens offline (the cached library and covers already come from IndexedDB). In dev (`BUILD = null`) caching is off |
 | `vite.config.ts` → `pelagic-sw` | After `vite build`, fills `BUILD` (hash of the precached files), `PRECACHE` and `ASSETS` into `dist/sw.js`. Also defines `__PELAGIC_VERSION__` (date · commit, shown at the bottom of the account menu) |
 | `src/lib/pwa.ts` | `initPwa()` (App.tsx): watches for a waiting worker (checks hourly and when the window becomes visible) → `usePwa().updateReady` → shell toast “A new version of Pelagic is ready · Reload” (also in the account menu); keeps `beforeinstallprompt` for the menu's “Install Pelagic app”; applies the launch URL's #route when a launch is focused into the open window |

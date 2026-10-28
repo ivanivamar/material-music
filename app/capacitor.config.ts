@@ -20,7 +20,7 @@ const config: CapacitorConfig = {
     // New Releases reminders (native/releaseNotify.ts): the Material Music mark in the status bar
     LocalNotifications: {
       smallIcon: 'ic_wg_mark',
-      iconColor: '#FEA387',
+      iconColor: '#E55745', // icon 8a play red
     },
   },
 }
