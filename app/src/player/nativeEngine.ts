@@ -218,7 +218,11 @@ export function createNativeEngine(): PlayerEngine {
   })
 
   /* ── native → store ── */
-  function apply(st: NativePlayerState) {
+  /**
+   * `fresh`: the state comes from a getState() call (what native is doing right now), not from an
+   * event. On wake-up it is followed at once, without the second-report check below.
+   */
+  function apply(st: NativePlayerState, fresh = false) {
     if (st.count === 0) return
     if (playerStore.get().index < 0 && !sentQueue && !loadReq) {
       void adoptNative()
@@ -238,7 +242,7 @@ export function createNativeEngine(): PlayerEngine {
     // moved by itself (auto-advance, lock screen): follow, but only if the row really matches and
     // a second report agrees
     if (st.index >= 0 && st.index !== s.index && st.mediaId && s.queue[st.index] === st.mediaId) {
-      if (candidate && candidate.index === st.index && candidate.mediaId === st.mediaId) {
+      if (fresh || (candidate && candidate.index === st.index && candidate.mediaId === st.mediaId)) {
         candidate = null
         window.clearTimeout(confirmTimer)
         playerStore.engineMoved(st.index)
@@ -259,7 +263,34 @@ export function createNativeEngine(): PlayerEngine {
       source: isStored(st.mediaId) ? 'local' : 'drive',
     })
   }
-  void PelagicPlayer.addListener('state', apply)
+  /**
+   * Native state events are coalesced: only the newest one is applied, once per frame (or right
+   * after the current task while the app is in the background, where frames don't run).
+   * With the screen off the WebView sleeps and Android queues every event native sends (several a
+   * second, for every song that played); on wake-up they all arrive at once. Applied one by one, each
+   * rendered: the slider ran to the end of every song in turn until it caught up (Oct 29, 2026).
+   */
+  let pendingState: NativePlayerState | null = null
+  let drainRaf = 0
+  let drainTimer = 0
+  function drain() {
+    if (drainRaf) cancelAnimationFrame(drainRaf)
+    window.clearTimeout(drainTimer)
+    drainRaf = 0
+    drainTimer = 0
+    const st = pendingState
+    pendingState = null
+    if (st) apply(st)
+  }
+  function onNativeState(st: NativePlayerState) {
+    pendingState = st
+    if (drainRaf || drainTimer) return
+    const visible = document.visibilityState === 'visible'
+    if (visible) drainRaf = requestAnimationFrame(drain)
+    // fallback: the page may be hidden before the frame comes (rAF doesn't run in the background)
+    drainTimer = window.setTimeout(drain, visible ? 250 : 0)
+  }
+  void PelagicPlayer.addListener('state', onNativeState)
 
   // The service retries a 401 once and skips broken tracks (max 3 in a row) by itself; wait a moment
   // to see how that went before telling the user.
@@ -277,9 +308,16 @@ export function createNativeEngine(): PlayerEngine {
     }, 1500)
   })
 
-  // back in the foreground: catch up with whatever happened while JS was asleep
+  // back in the foreground: jump straight to what native plays now (song + position), whatever
+  // happened while JS was asleep; the backlog of queued events is dropped
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') void PelagicPlayer.getState().then(apply).catch(() => {})
+    if (document.visibilityState !== 'visible') return
+    void PelagicPlayer.getState()
+      .then((st) => {
+        pendingState = null
+        apply(st, true)
+      })
+      .catch(() => {})
   })
 
   /* ── auth for native Drive requests ── */

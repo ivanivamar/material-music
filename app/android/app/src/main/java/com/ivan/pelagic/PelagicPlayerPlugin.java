@@ -38,6 +38,11 @@ import java.util.List;
  * Holds a MediaController connected to PelagicPlaybackService (which starts the service). All
  * controller calls happen on the main thread. Sends "state" events (index, media id, position,
  * playing, buffering, ended) on every change and twice a second while playing, and "error" events.
+ *
+ * In the background (activity stopped, e.g. screen locked) the twice-a-second ticks stop: the
+ * WebView sleeps and Android queues every event until wake-up, when the whole backlog was replayed
+ * (the slider ran through every song that had played, Oct 29, 2026). Changes (track, play/pause)
+ * are still sent; on return to the foreground one fresh state goes out right away.
  */
 @CapacitorPlugin(name = "PelagicPlayer")
 public class PelagicPlayerPlugin extends Plugin {
@@ -46,15 +51,38 @@ public class PelagicPlayerPlugin extends Plugin {
     private final List<Runnable> pending = new ArrayList<>();
     private ListenableFuture<MediaController> future;
     private MediaController controller;
+    /** the activity is started (visible); main thread only */
+    private boolean foreground = true;
 
     private final Runnable ticker = new Runnable() {
         @Override
         public void run() {
             if (controller == null) return;
             emitState();
-            if (controller.isPlaying()) main.postDelayed(this, 500);
+            if (foreground && controller.isPlaying()) main.postDelayed(this, 500);
         }
     };
+
+    @Override
+    protected void handleOnStart() {
+        super.handleOnStart();
+        main.post(() -> {
+            foreground = true;
+            main.removeCallbacks(ticker);
+            if (controller == null) return;
+            emitState();
+            if (controller.isPlaying()) main.postDelayed(ticker, 500);
+        });
+    }
+
+    @Override
+    protected void handleOnStop() {
+        super.handleOnStop();
+        main.post(() -> {
+            foreground = false;
+            main.removeCallbacks(ticker);
+        });
+    }
 
     @Override
     public void load() {
@@ -77,7 +105,7 @@ public class PelagicPlayerPlugin extends Plugin {
                 public void onEvents(@NonNull Player player, @NonNull Player.Events events) {
                     emitState();
                     main.removeCallbacks(ticker);
-                    if (player.isPlaying()) main.postDelayed(ticker, 500);
+                    if (foreground && player.isPlaying()) main.postDelayed(ticker, 500);
                 }
 
                 @Override
