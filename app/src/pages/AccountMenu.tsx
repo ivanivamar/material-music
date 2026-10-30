@@ -118,15 +118,26 @@ export function AccountChip() {
   const { account, metas, rows, foot, synced } = useAccountMenu()
   const [open, setOpen] = useState(false)
   const wrap = useRef<HTMLDivElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
+  /* The sidebar clips its overflow, so the menu is portalled to <body> and pinned above the chip. */
+  const [pos, setPos] = useState<{ left: number; bottom: number } | null>(null)
   useEffect(() => {
     if (!open) return
-    const onDown = (e: PointerEvent) => !wrap.current?.contains(e.target as Node) && setOpen(false)
+    const place = () => {
+      const r = wrap.current?.getBoundingClientRect()
+      if (r) setPos({ left: r.left, bottom: window.innerHeight - r.top + 8 })
+    }
+    place()
+    const inside = (t: EventTarget | null) => wrap.current?.contains(t as Node) || menuRef.current?.contains(t as Node)
+    const onDown = (e: PointerEvent) => !inside(e.target) && setOpen(false)
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false)
     document.addEventListener('pointerdown', onDown)
     document.addEventListener('keydown', onKey)
+    window.addEventListener('resize', place)
     return () => {
       document.removeEventListener('pointerdown', onDown)
       document.removeEventListener('keydown', onKey)
+      window.removeEventListener('resize', place)
     }
   }, [open])
   return (
@@ -139,8 +150,8 @@ export function AccountChip() {
         </span>
         <Icon name="unfold" />
       </button>
-      {open && (
-        <div className="menu" role="menu">
+      {open && pos && createPortal(
+        <div className="menu sb-acct-menu" role="menu" ref={menuRef} style={{ left: pos.left, bottom: pos.bottom }}>
           <div className="menu-head">
             <span className="menu-name">{account?.name || 'Signed in'}</span>
             <span className="menu-email">{account?.email}</span>
@@ -158,7 +169,8 @@ export function AccountChip() {
             }}
           />
           <div className="menu-foot">{foot}</div>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   )

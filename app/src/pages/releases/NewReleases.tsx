@@ -1039,18 +1039,20 @@ function Card({
                 disabled={item.status === 'acq'}
               >
                 <Icon name="check" />
-                {item.status === 'acq' ? 'Matching' : 'Got it'}
+                <span className="nr-card-btn-label">{item.status === 'acq' ? 'Matching' : 'Got it'}</span>
               </button>
               <button
                 type="button"
-                className="nr-card-btn"
+                className="nr-card-btn is-icon"
+                aria-label="Mark seen"
                 onClick={stop(() => act.toggleSeen(item))}
               >
                 <Icon name="eye" />
               </button>
               <button
                 type="button"
-                className="nr-card-btn"
+                className="nr-card-btn is-icon"
+                aria-label="Dismiss"
                 onClick={stop(() => act.dismiss(item))}
               >
                 <Icon name="x" />

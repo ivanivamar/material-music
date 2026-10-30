@@ -1293,6 +1293,11 @@
   transition: transform 350ms cubic-bezier(0.42, 1.67, 0.21, 0.9), box-shadow 350ms;
 }
 
+/* Size the hover actions to the cover, not the viewport */
+.nr-card-art {
+  container-type: inline-size;
+}
+
 .nr-card:hover .nr-card-art {
   transform: rotate(-3deg) scale(1.02);
   box-shadow: 0 16px 24px -8px rgba(0, 0, 0, 0.6);
@@ -1379,6 +1384,34 @@
 
 .nr-card-btn .ms {
   font-size: 18px;
+}
+
+.nr-card-btn {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.nr-card-btn.is-icon {
+  width: 36px;
+  padding: 0;
+  justify-content: center;
+}
+
+/* Narrow covers: drop the label so all three buttons fit inside the art */
+@container (max-width: 190px) {
+  .nr-card-acts {
+    gap: 4px;
+  }
+
+  .nr-card-btn.is-primary {
+    width: 36px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .nr-card-btn-label {
+    display: none;
+  }
 }
 
 .nr-card-text {

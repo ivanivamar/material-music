@@ -105,4 +105,5 @@ html[data-dragging-tracks] .sb-pl:not(.is-drop):not(.is-active) { box-shadow: in
 .sb-acct-name { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sb-acct-sub { font-size: 12px; color: var(--ink-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sb-acct-btn > .ms { font-size: 16px; color: var(--ink-tertiary); }
-.sb-acct .menu { left: 0; right: auto; top: auto; bottom: calc(100% + 8px); transform-origin: bottom left; }
+/* portalled to <body> (the sidebar clips overflow); left/bottom set inline from the chip's position */
+.sb-acct-menu { position: fixed; right: auto; top: auto; z-index: 100; transform-origin: bottom left; }
