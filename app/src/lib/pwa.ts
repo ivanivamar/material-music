@@ -136,6 +136,9 @@ export function initPwa() {
       window.location.reload()
     })
     const pending = takePending()
+    // finishing a Reload: initPwa() runs before the player attaches, so its restored track stays
+    // unloaded and no Drive stream keeps the old worker busy
+    if (pending) playerStore.holdForUpdate()
     void initDriveStream().then(async () => {
       const reg = await navigator.serviceWorker.getRegistration()
       if (!reg) return
@@ -145,7 +148,15 @@ export function initPwa() {
       if (reg.waiting && navigator.serviceWorker.controller) {
         reloading = true
         reg.waiting.postMessage({ type: 'pelagic:skip-waiting' })
-      } else if (reg.active) {
+        // still blocked (e.g. another Pelagic window is streaming): give up quietly, so the toast's
+        // Reload works again instead of being swallowed by `reloading`
+        window.setTimeout(() => {
+          reloading = false
+          playerStore.releaseUpdateHold()
+        }, FALLBACK_MS)
+      } else {
+        playerStore.releaseUpdateHold()
+        if (!reg.active) return
         // the new worker took over while this page was loading (maybe from the old cache): reload once more
         window.location.reload()
       }
@@ -156,7 +167,8 @@ export function initPwa() {
 export const appUpdate = {
   /** Activate the waiting version and reload into it. */
   apply() {
-    if (reloading) return
+    // pressed again while a hand-over is pending: don't wait any longer
+    if (reloading) return reloadPending()
     // a newer deploy may have replaced the worker we saw first
     const w = registration?.waiting ?? (waiting?.state === 'installed' ? waiting : null)
     if (!w) return window.location.reload()

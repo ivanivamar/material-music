@@ -146,6 +146,8 @@ const movedListeners = new Set<(from: number, to: number) => void>()
 let persistTimer = 0
 /** set by suspendForReload(): the page is about to reload, keep the saved position as it is */
 let frozen = false
+/** set by holdForUpdate(): an app update is finishing at boot, don't open a Drive stream yet */
+let holdLoad = false
 /** `go()` loads the track first and tells the engine about the next one afterwards */
 let holdPreload = false
 let lastPreload: string | null | undefined
@@ -274,7 +276,7 @@ export const playerStore = {
     engine = e
     e.setVolume(state.volume, state.muted)
     const id = current()
-    if (id && !state.remote) e.load(id, { autoplay: false, position: state.position })
+    if (id && !state.remote && !holdLoad) e.load(id, { autoplay: false, position: state.position })
     else detached = !!id
     syncPreload(true)
     return () => {
@@ -399,6 +401,19 @@ export const playerStore = {
     persist()
     frozen = true
     engine?.unload()
+    // nothing may reopen a stream (preload, sync) before the reload; Play would load it again
+    detached = current() !== null
+  },
+  /**
+   * App update finishing at boot (lib/pwa.ts, before attach()): keep the restored queue detached so
+   * no Drive stream holds the old service worker. Play loads it as usual if the update gives up.
+   */
+  holdForUpdate() {
+    holdLoad = true
+  },
+  /** The boot-time update didn't go through: back to normal (the queue stays detached until Play). */
+  releaseUpdateHold() {
+    holdLoad = false
   },
   clear() {
     engine?.unload()
