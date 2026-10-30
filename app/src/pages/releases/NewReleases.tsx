@@ -876,10 +876,10 @@ function Hero({
               Play
             </button>
           ) : item.status === 'acq' ? (
-            <div className="nr-hero-acq-btn">
+            <button type="button" className="nr-hero-acq-btn" title="Stop matching" onClick={stop(() => act.got(item))}>
               <span className="btn-ic"><Spinner /></span>
               Matching your files…
-            </div>
+            </button>
           ) : (
             <>
               <button
@@ -960,7 +960,7 @@ function Hero({
                 type="button"
                 className={`btn ${item.status === 'acq' ? 'btn-secondary' : 'btn-primary'}`}
                 onClick={stop(() => act.got(item))}
-                disabled={item.status === 'acq'}
+                title={item.status === 'acq' ? 'Stop matching' : undefined}
               >
                 <span className="btn-ic">{item.status === 'acq' ? <Spinner /> : <Icon name="check" />}</span>
                 {item.status === 'acq' ? 'Matching…' : "I’ve got it"}
@@ -1036,7 +1036,7 @@ function Card({
                 type="button"
                 className="nr-card-btn is-primary"
                 onClick={stop(() => act.got(item))}
-                disabled={item.status === 'acq'}
+                title={item.status === 'acq' ? 'Stop matching' : undefined}
               >
                 <Icon name="check" />
                 <span className="nr-card-btn-label">{item.status === 'acq' ? 'Matching' : 'Got it'}</span>

@@ -11,7 +11,7 @@ import { Icon } from '../../design/icons'
 import { bandcampSearchUrl, mbReleaseGroupUrl } from '../../lib/musicbrainz'
 import { tracksByAlbum, type Catalogue } from '../../state/library'
 import { releasesStore, useReleases } from '../../state/releases'
-import { countdown, fmtLength, fmtRelDate, fmtRelShort, followedArtists, isOwned, trackMatches, type FeedItem } from '../../state/releaseViews'
+import { countdown, fmtLength, fmtRelDate, fmtRelShort, followedArtists, isOwned, linkCandidates, trackMatches, type FeedItem } from '../../state/releaseViews'
 import { artistHref, go } from '../../shell/routes'
 import { ArtistAvatar } from '../library/common'
 import { useNowPlaying } from '../library/playback'
@@ -440,10 +440,10 @@ export function ReleaseDetail({
               </button>
             </div>
           ) : item.status === 'acq' ? (
-            <div className="nrp-acq-pill">
+            <button type="button" className="nrp-acq-pill" title="Stop matching" onClick={() => act.got(item)}>
               <span className="btn-ic"><Spinner /></span>
               Matching your files…
-            </div>
+            </button>
           ) : (
             <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
               <button
@@ -506,7 +506,7 @@ export function ReleaseDetail({
                 type="button"
                 className={`btn ${item.status === 'acq' ? 'btn-secondary' : 'btn-primary'}`}
                 onClick={() => act.got(item)}
-                disabled={item.status === 'acq'}
+                title={item.status === 'acq' ? 'Stop matching' : undefined}
               >
                 <span className="btn-ic">{item.status === 'acq' ? <Spinner /> : <Icon name="check" />}</span>
                 {item.status === 'acq' ? 'Matching…' : "I’ve got it"}
@@ -533,6 +533,8 @@ export function ReleaseDetail({
           )
         )}
       </div>
+
+      {item.status === 'acq' && <LinkPicker item={item} c={c} act={act} />}
 
       <div className="nrp-card">
         {facts.map(([k, v]) => (
@@ -623,6 +625,53 @@ export function ReleaseDetail({
                 </div>
               ))}
       </div>
+    </div>
+  )
+}
+
+/* ── "It's in my library as…" (MATCHING) ─────────────── */
+
+/**
+ * While a release is MATCHING: the album may already be in the library under another title (another
+ * edition, a renamed folder) or another artist. Its artists' albums, newest first, or any album by
+ * search; picking one links the release to it.
+ */
+function LinkPicker({ item, c, act }: { item: FeedItem; c: Catalogue; act: ReleaseActions }) {
+  const [q, setQ] = useState('')
+  const cands = useMemo(() => linkCandidates(c, item), [c, item])
+  const fq = q.trim().toLowerCase()
+  const shown = fq
+    ? Object.values(c.albums)
+        .filter((a) => a.title.toLowerCase().includes(fq) || a.artist.toLowerCase().includes(fq))
+        .slice(0, 30)
+    : cands.slice(0, 30)
+  return (
+    <div className="nrp-card nrp-link">
+      <div className="nrp-card-head">
+        <span>ALREADY IN YOUR LIBRARY?</span>
+      </div>
+      <p className="nrp-link-note">
+        Still looking for an album called {item.rel.t}. If you have it under another name, pick it:
+      </p>
+      <input
+        className="nrp-link-q"
+        type="search"
+        placeholder="Search your albums"
+        value={q}
+        onChange={(e) => setQ(e.target.value)}
+        aria-label="Search your albums"
+      />
+      {shown.length ? (
+        shown.map((a) => (
+          <button key={a.id} type="button" className="nrp-trow nrp-link-row" onClick={() => act.linkTo(item, a.id, a.title)}>
+            <span className="nrp-trow-t">{a.title}</span>
+            <span className="nrp-trow-d">{fq ? a.artist : (a.year ?? '')}</span>
+            <Icon name="check" style={{ fontSize: '16px' }} />
+          </button>
+        ))
+      ) : (
+        <p className="nrp-link-note">{fq ? 'No album matches.' : 'No albums by this artist in your library. Search for it above.'}</p>
+      )}
     </div>
   )
 }

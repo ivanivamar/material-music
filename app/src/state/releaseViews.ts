@@ -11,15 +11,16 @@
  *   pre   — upcoming, but an album of that name is already in the catalogue (the singles released so
  *           far): playable, PRE-RELEASE · 4 OF 11 SONGS, reminder on by default (state/releases.ts)
  *   part  — out and in the catalogue, but with fewer songs than the MusicBrainz tracklist (INCOMPLETE)
- *   acq   — "I've got it": watching the catalogue for it (MATCHING)
+ *   acq   — "I've got it": watching the catalogue for it (MATCHING). If the album is already there
+ *           under another title, it's linked to it (doc.own) and counts as in library.
  *   seen / new
  */
 import { foldTitle, type RelDetail } from '../lib/musicbrainz'
 import { qualityLabel } from '../components/ui/Status'
 import { albumTrackIds } from '../pages/library/playback'
 import type { Play } from './history'
-import { tracksByAlbum, type Artist, type Catalogue } from './library'
-import { SHOWN_TYPES, dayOf, followedExternal, isUpcoming, nextSweepAt, setMatcher, sweepTargets, releasesStore, type Mark, type Rel, type ReleasePrefs, type ReleasesDoc } from './releases'
+import { tracksByAlbum, type Album, type Artist, type Catalogue } from './library'
+import { SHOWN_TYPES, dayOf, followedExternal, isUpcoming, nextSweepAt, setLinker, setMatcher, sweepTargets, releasesStore, type Mark, type Rel, type ReleasePrefs, type ReleasesDoc } from './releases'
 import { artistInfos } from './views'
 
 export type RelStatus = 'new' | 'seen' | 'acq' | 'lib' | 'pre' | 'part' | 'gone'
@@ -158,13 +159,30 @@ const strict = (s: string) =>
     .toLowerCase()
     .replace(/[^\p{L}\p{N}]+/gu, ' ')
     .trim()
-/** Same title, ignoring case, accents, punctuation and bracketed suffixes ("(Deluxe)", "- Single"). */
+/** Roman numerals as numbers, word by word ("phase i soft violence" → "phase 1 soft violence"). */
+const ROMAN: Record<string, number> = { i: 1, v: 5, x: 10, l: 50, c: 100 }
+const roman = (w: string) => {
+  if (!/^[ivxlc]+$/.test(w) || !/^(c{0,3})(xc|xl|l?x{0,3})(ix|iv|v?i{0,3})$/.test(w)) return w
+  let n = 0
+  for (let i = 0; i < w.length; i++) {
+    const v = ROMAN[w[i]]
+    n += v < (ROMAN[w[i + 1]] ?? 0) ? -v : v
+  }
+  return String(n)
+}
+const numerals = (s: string) => s.split(' ').map(roman).join(' ')
+/** foldTitle, with roman numerals as numbers. */
+const fold = (s: string) => numerals(foldTitle(s))
+/**
+ * Same title, ignoring case, accents, punctuation, bracketed suffixes ("(Deluxe)", "- Single") and
+ * roman vs arabic numerals ("PHASE I : Soft Violence" = "PHASE 1 : Soft Violence").
+ */
 const same = (a: string, b: string) => {
-  const fa = foldTitle(a)
-  return (fa !== '' && fa === foldTitle(b)) || strict(a) === strict(b)
+  const fa = fold(a)
+  return (fa !== '' && fa === fold(b)) || numerals(strict(a)) === numerals(strict(b))
 }
 /** A reissue / anniversary edition only matches itself, not the original album. */
-const sameRelease = (libTitle: string, rel: Rel) => (rel.re ? strict(libTitle) === strict(rel.t) : same(libTitle, rel.t))
+const sameRelease = (libTitle: string, rel: Rel) => (rel.re ? numerals(strict(libTitle)) === numerals(strict(rel.t)) : same(libTitle, rel.t))
 
 function bestQuality(c: Catalogue, ids: string[]): string {
   let bd = 0
@@ -177,8 +195,15 @@ function bestQuality(c: Catalogue, ids: string[]): string {
   return qualityLabel('flac', { bitDepth: bd || undefined, sampleRate: sr || undefined })
 }
 
-/** Is the release already in the library? Album title by one of its artists; a single also by song. */
-export function matchRelease(c: Catalogue, rel: Rel, ownerIds: string[]): Match | null {
+/**
+ * Is the release already in the library? The album it was linked to ("I've got it"), else album title
+ * by one of its artists; a single also by song.
+ */
+export function matchRelease(c: Catalogue, rel: Rel, ownerIds: string[], linked?: string | null): Match | null {
+  if (linked && c.albums[linked]) {
+    const ids = albumTrackIds(c, linked)
+    if (ids.length) return { albumId: linked, trackIds: ids, quality: bestQuality(c, ids) }
+  }
   const infos = artistInfos(c)
   for (const aid of ownerIds) {
     const album = infos.get(aid)?.albums.find((a) => sameRelease(a.title, rel))
@@ -211,6 +236,62 @@ export function releaseProgress(c: Catalogue, match: Match, detail: RelDetail | 
   let have = 0
   for (const [title] of tl) if (mine.some((t) => same(t.title, title)) || others.some((t) => same(t.title, title))) have++
   return { have, total: tl.length }
+}
+
+/**
+ * "I've got it" when the titles don't match: the library album this release most likely is.
+ * Looser than matchRelease (it's only asked for releases the user says they have):
+ *   - albums by the release's artists, or by any library artist named in the credit
+ *     ("Spiritbox & Joey Valence" → Spiritbox), or any album with the same title;
+ *   - scored by title (same title, ignoring editions / reissue tags; one title starting with the
+ *     other: "Wildfire" ↔ "Wildfire (Deluxe Edition)" ↔ "Wildfire Deluxe") and by tracklist overlap
+ *     when MusicBrainz' tracklist is known (60 % of its songs on the album);
+ *   - a single: the song by one of those artists, anywhere in the library.
+ */
+export function looseMatch(c: Catalogue, rel: Rel, ownerIds: string[], detail: RelDetail | null): string | null {
+  const ft = fold(rel.t) || numerals(strict(rel.t))
+  const credit = ` ${strict(rel.a)} `
+  const owners = new Set(ownerIds)
+  for (const a of Object.values(c.artists)) {
+    const n = strict(a.name)
+    if (n.length >= 2 && credit.includes(` ${n} `)) owners.add(a.id)
+  }
+  const byAlbum = tracksByAlbum(c)
+  const tl = detail?.tracks ?? []
+  let best: { id: string; score: number } | null = null
+  for (const al of Object.values(c.albums)) {
+    const mine = owners.has(al.artistId)
+    const fa = fold(al.title) || numerals(strict(al.title))
+    let score = 0
+    if (fa === ft) score = mine ? 1 : 0.7
+    else if (mine && Math.min(fa.length, ft.length) >= 3 && (fa.startsWith(`${ft} `) || ft.startsWith(`${fa} `))) score = 0.8
+    if (tl.length >= 2 && (mine || score)) {
+      const tracks = byAlbum.get(al.id) ?? []
+      const have = tl.filter(([t]) => tracks.some((x) => same(x.title, t))).length
+      const frac = have / tl.length
+      if (frac >= 0.6) score = Math.max(score, 0.6 + frac * 0.4)
+      else if (score && score < 1 && have === 0) score = 0 // same-ish title, none of the songs
+    }
+    if (score && (!best || score > best.score)) best = { id: al.id, score }
+  }
+  if (best) return best.id
+  if (rel.type === 'single') {
+    const t = Object.values(c.tracks).find((x) => owners.has(x.artistId) && same(x.title, rel.t))
+    if (t) return t.albumId
+  }
+  return null
+}
+
+/** Library albums worth offering when linking a release by hand: its artists' albums, newest first. */
+export function linkCandidates(c: Catalogue, item: FeedItem): Album[] {
+  const ids = new Set(item.owners.map((a) => a.id))
+  const credit = ` ${strict(item.rel.a)} `
+  for (const a of Object.values(c.artists)) {
+    const n = strict(a.name)
+    if (n.length >= 2 && credit.includes(` ${n} `)) ids.add(a.id)
+  }
+  const infos = artistInfos(c)
+  return [...ids].flatMap((id) => infos.get(id)?.albums ?? [])
 }
 
 /** Status of a matched release: upcoming → pre-release; out with songs missing → incomplete. */
@@ -254,10 +335,22 @@ setMatcher((c, rel) => {
   const owners = Object.entries(doc.artists)
     .filter(([, e]) => e.rel.some((r) => r.id === rel.id))
     .flatMap(([mbid]) => map.get(mbid) ?? [])
-  const match = matchRelease(c, rel, owners)
+  const linked = doc.own[rel.id]?.[0] ?? null
+  const match = matchRelease(c, rel, owners, linked)
   if (!match) return null
+  // linked by the user: it's the album they have, whatever the tracklist says
+  if (linked && match.albumId === linked) return { have: match.trackIds.length, total: 0, complete: true }
   const p = releaseProgress(c, match, doc.details[rel.id] ?? null, owners)
   return { ...p, complete: !p.total || p.have >= p.total }
+})
+
+setLinker((c, rel) => {
+  const doc = releasesStore.get().doc
+  const map = mbidMap(c, doc)
+  const owners = Object.entries(doc.artists)
+    .filter(([, e]) => e.rel.some((r) => r.id === rel.id))
+    .flatMap(([mbid]) => map.get(mbid) ?? [])
+  return looseMatch(c, rel, owners, doc.details[rel.id] ?? null)
 })
 
 /* ── Per-track matches in the detail panel ───────────── */
@@ -416,8 +509,13 @@ export function buildFeed(doc: ReleasesDoc, c: Catalogue, plays: readonly Play[]
     const mark = doc.marks[it.rel.id]?.[0] ?? 'new'
     it.mark = mark
     it.external = it.owners.every((a) => !c.artists[a.id])
-    it.match = mark === 'gone' ? null : matchRelease(c, it.rel, ids)
-    if (it.match) {
+    const linked = doc.own[it.rel.id]?.[0] ?? null
+    it.match = mark === 'gone' ? null : matchRelease(c, it.rel, ids, linked)
+    if (it.match && linked && it.match.albumId === linked) {
+      // linked by hand: complete by definition
+      it.have = it.match.trackIds.length
+      it.total = 0
+    } else if (it.match) {
       const p = releaseProgress(c, it.match, it.detail, ids)
       it.have = p.have
       it.total = p.total

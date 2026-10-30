@@ -77,6 +77,11 @@ export interface ReleasesDoc {
   details: Record<string, RelDetail>
   links: Record<string, ArtistLinks & { at: number }>
   marks: Record<string, Stamped<Mark>>
+  /**
+   * "I've got it" linked to the library album it's in, when the titles don't match (another edition,
+   * a retitled folder…): release group id → catalogue album id (null = unlinked)
+   */
+  own: Record<string, Stamped<string | null>>
   remind: Record<string, Stamped<boolean>>
   /** keyed by catalogue artist id */
   muted: Record<string, Stamped<boolean>>
@@ -200,6 +205,7 @@ const emptyDoc = (): ReleasesDoc => ({
   details: {},
   links: {},
   marks: {},
+  own: {},
   remind: {},
   muted: {},
   hideReissues: [true, 0],
@@ -251,6 +257,7 @@ export function mergeDocs(a: ReleasesDoc, b: ReleasesDoc): ReleasesDoc {
     details: mergeAt(a.details, b.details),
     links: mergeAt(a.links, b.links),
     marks: mergeStamped(a.marks, b.marks),
+    own: mergeStamped(a.own, b.own),
     remind: mergeStamped(a.remind, b.remind),
     muted: mergeStamped(a.muted, b.muted),
     hideReissues: b.hideReissues[1] > a.hideReissues[1] ? b.hideReissues : a.hideReissues,
@@ -270,6 +277,7 @@ function normalise(raw: Partial<ReleasesFile> | null | undefined): ReleasesDoc {
     details: raw.details ?? {},
     links: raw.links ?? {},
     marks: raw.marks ?? {},
+    own: raw.own ?? {},
     remind: raw.remind ?? {},
     muted: raw.muted ?? {},
     hideReissues: Array.isArray(raw.hideReissues) ? raw.hideReissues : d.hideReissues,
@@ -297,6 +305,7 @@ function prune(doc: ReleasesDoc, now = Date.now()): ReleasesDoc {
     // marks of releases out of the window are kept a month longer (a release can re-enter after a date fix)
     marks: Object.fromEntries(Object.entries(doc.marks).filter(([k, v]) => keep.has(k) || !oldEnough(v[1]))),
     remind: pick(doc.remind),
+    own: Object.fromEntries(Object.entries(doc.own).filter(([k, v]) => keep.has(k) || !oldEnough(v[1]))),
     // Discover: releases out of the window go; artists not checked for two weeks (no longer suggested) go
     discover: Object.fromEntries(
       Object.entries(doc.discover)
@@ -751,6 +760,30 @@ export const releasesStore = {
     for (const id of ids) marks[id] = [mark, now]
     change({ ...state.doc, marks })
   },
+  /**
+   * "I've got it": if the release is already in the library under another title (or another
+   * artist's folder), link it to that album right away; otherwise watch the catalogue for it
+   * (MATCHING). Returns the linked album id, or null when it's now matching.
+   */
+  acquire(id: string): string | null {
+    const c = libraryStore.get().data
+    const r = findRel(id)
+    const album = c && r && linker ? linker(c, r) : null
+    const now = Date.now()
+    if (album) {
+      change({ ...state.doc, own: { ...state.doc.own, [id]: [album, now] }, marks: { ...state.doc.marks, [id]: ['seen', now] } })
+      return album
+    }
+    change({ ...state.doc, marks: { ...state.doc.marks, [id]: ['acq', now] } })
+    // the tracklist helps the loose match: fetch it, then look again
+    void releasesStore.ensureDetail(id, 0).then(() => resolveAcquired())
+    return null
+  },
+  /** Link a release to a library album by hand (null: unlink), and stop matching. */
+  link(id: string, albumId: string | null, mark: Mark = 'seen') {
+    const now = Date.now()
+    change({ ...state.doc, own: { ...state.doc.own, [id]: [albumId, now] }, marks: { ...state.doc.marks, [id]: [mark, now] } })
+  },
   setReminder(id: string, on: boolean) {
     change({ ...state.doc, remind: { ...state.doc.remind, [id]: [on, Date.now()] } })
   },
@@ -812,6 +845,7 @@ export const releasesStore = {
     void releasesStore.load().then(() => {
       checkReminders()
       autoRemind()
+      resolveAcquired()
     })
     let kickTimer = 0
     const kick = (ms: number) => {
@@ -841,6 +875,7 @@ export const releasesStore = {
         watchAcquired(prev, c)
         autoRemind()
       }
+      resolveAcquired()
     })
     window.addEventListener('online', () => {
       if (state.offline) set({ offline: false })
@@ -958,6 +993,38 @@ let matcher: ((c: Catalogue, rel: Rel) => MatchProgress | null) | null = null
 export function setMatcher(fn: (c: Catalogue, rel: Rel) => MatchProgress | null) {
   matcher = fn
 }
+/**
+ * Loose match for "I've got it" (state/releaseViews.ts): the library album a release most likely is
+ * when the titles differ. Only asked for releases the user said they have, never for the whole feed.
+ */
+let linker: ((c: Catalogue, rel: Rel) => string | null) | null = null
+export function setLinker(fn: (c: Catalogue, rel: Rel) => string | null) {
+  linker = fn
+}
+/** Releases left MATCHING whose album is already in the library under another name: link them. */
+function resolveAcquired() {
+  const c = libraryStore.get().data
+  if (!c || !linker || !matcher || !state.loaded) return
+  const found: [Rel, string][] = []
+  for (const [id, [m]] of Object.entries(state.doc.marks)) {
+    if (m !== 'acq') continue
+    const r = findRel(id)
+    if (!r || matcher(c, r)) continue
+    const album = linker(c, r)
+    if (album) found.push([r, album])
+  }
+  if (!found.length) return
+  const now = Date.now()
+  const own = { ...state.doc.own }
+  const marks = { ...state.doc.marks }
+  for (const [r, album] of found) {
+    own[r.id] = [album, now]
+    marks[r.id] = ['seen', now]
+  }
+  change({ ...state.doc, own, marks })
+  for (const [r] of found) emit({ kind: 'matched', id: r.id, title: r.t })
+}
+
 /** Watching acquired / incomplete releases: announce the ones the catalogue change completed. */
 function watchAcquired(prev: Catalogue, next: Catalogue) {
   if (!matcher) return

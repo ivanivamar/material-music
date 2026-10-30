@@ -5,6 +5,7 @@ import { Icon, type IconName } from '../../design/icons'
 import { cookie } from '../../design/shapes'
 import { coverUrl, mbReleaseGroupUrl } from '../../lib/musicbrainz'
 import { PelagicNative, isNative } from '../../native/bridge'
+import { libraryStore } from '../../state/library'
 import { releasesStore } from '../../state/releases'
 import { countdown, fmtLength, fmtRelDate, fmtRelShort, isOwned, type FeedItem } from '../../state/releaseViews'
 import { playList } from '../library/playback'
@@ -152,9 +153,38 @@ export function useReleaseActions(opts: { onDismissed?: (id: string) => void } =
         releasesStore.mark(it.rel.id, it.status === 'seen' ? 'new' : 'seen')
       },
       got(it: FeedItem) {
-        if (it.status === 'acq' || isOwned(it.status)) return
-        releasesStore.mark(it.rel.id, 'acq')
-        toast.show({ icon: 'check', text: `Watching your library for ${it.rel.t}.`, meta: 'MATCHES ON NEXT SCAN' })
+        if (isOwned(it.status)) return
+        const prev = releasesStore.get().doc.marks[it.rel.id]?.[0] ?? 'new'
+        // tapping MATCHING again stops watching
+        if (it.status === 'acq') {
+          releasesStore.mark(it.rel.id, 'seen')
+          toast.show({
+            icon: 'x',
+            mutedIcon: true,
+            text: `Stopped matching ${it.rel.t}.`,
+            action: { label: 'Undo', onClick: () => releasesStore.mark(it.rel.id, 'acq') },
+          })
+          return
+        }
+        const album = releasesStore.acquire(it.rel.id)
+        const title = album ? libraryStore.get().data?.albums[album]?.title : null
+        if (album)
+          toast.show({
+            icon: 'check',
+            text: title && title !== it.rel.t ? `${it.rel.t} is in your library as ${title}.` : `${it.rel.t} is in your library.`,
+            action: { label: 'Undo', onClick: () => releasesStore.link(it.rel.id, null, prev === 'acq' ? 'seen' : prev) },
+          })
+        else toast.show({ icon: 'check', text: `Watching your library for ${it.rel.t}.`, meta: 'OR PICK THE ALBUM IN ITS DETAILS' })
+      },
+      /** Link by hand to a library album (the panel's "It's in my library as…" list). */
+      linkTo(it: FeedItem, albumId: string, albumTitle: string) {
+        const prev = releasesStore.get().doc.marks[it.rel.id]?.[0] ?? 'new'
+        releasesStore.link(it.rel.id, albumId)
+        toast.show({
+          icon: 'check',
+          text: `Linked ${it.rel.t} to ${albumTitle}.`,
+          action: { label: 'Undo', onClick: () => releasesStore.link(it.rel.id, null, prev) },
+        })
       },
       remind(it: FeedItem) {
         const on = !it.reminded
@@ -202,7 +232,7 @@ export function actionsFor(it: FeedItem, act: ReleaseActions, online: boolean): 
   const acq = it.status === 'acq'
   const out: ActionDef[] = [
     { key: 'seen', icon: 'eye', label: seen ? 'Mark unseen' : 'Mark seen', short: seen ? 'Unseen' : 'Seen', on: seen, run: () => act.toggleSeen(it) },
-    { key: 'got', icon: 'check', label: acq ? 'Matching…' : 'I’ve got it', short: acq ? 'Matching' : 'Got it', on: acq, run: () => act.got(it) },
+    { key: 'got', icon: 'check', label: acq ? 'Stop matching' : 'I’ve got it', short: acq ? 'Matching' : 'Got it', on: acq, run: () => act.got(it) },
     { key: 'ext', icon: 'ext', label: 'Open on MusicBrainz', short: 'Open', on: false, disabled: !online, run: () => act.external(it) },
   ]
   if (it.upcoming)
