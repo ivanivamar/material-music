@@ -387,10 +387,25 @@ function onPlayer() {
   busy = true
   try {
     follow()
+    if (!state.run) adoptOrphan()
   } finally {
     busy = false
     lastIndex = playerStore.get().index
   }
+}
+
+/**
+ * A DJ queue with no run on this device: the run ended without the queue changing, or this device
+ * took the queue over from another one that was running the DJ (step 37; runs aren't synced). Left
+ * as is, its "dj" context hides the queue panel and blocks shuffle / repeat with no DJ to stop, so it
+ * becomes a plain queue (the intro rows can't play without their run: they go).
+ */
+function adoptOrphan() {
+  const p = playerStore.get()
+  if (state.starting || p.remote || p.context?.kind !== 'dj' || p.index < 0) return
+  stripIntros()
+  const q = playerStore.get()
+  if (q.context?.kind === 'dj' && q.index >= 0) playerStore.setContext({ kind: 'queue', label: 'Queue' })
 }
 
 function follow() {
@@ -860,6 +875,7 @@ export const djStore = {
       lastId = p.queue[p.index] ?? null
     }
     playerStore.subscribe(onPlayer)
+    onPlayer()
   },
 }
 
