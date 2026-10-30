@@ -214,14 +214,27 @@ export function toMeta(info: FlacInfo, rel: string): TrackMeta {
 /* ── Ids (same as tools/import/src/library.js) ──────── */
 
 export function slug(s: string): string {
-  return (
-    s
-      .normalize('NFKD')
-      .replace(/[̀-ͯ]/g, '')
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '') || 'x'
-  )
+  const ascii = s
+    .normalize('NFKD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+  if (ascii) return ascii
+  // No Latin letters/digits at all (e.g. 超越, 絶望の淵でも): these all used to collapse to 'x' and
+  // every such album by one artist merged into `<artist>--x`. Hash the real text instead.
+  const key = s.normalize('NFKC').trim().toLowerCase()
+  return key ? `u-${fnv1a(key)}` : 'x'
+}
+
+/** FNV-1a 32-bit over UTF-16 code units, 8 hex chars (sync; must match tools/import/src/library.js). */
+function fnv1a(s: string): string {
+  let h = 0x811c9dc5
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i)
+    h = Math.imul(h, 0x01000193) >>> 0
+  }
+  return h.toString(16).padStart(8, '0')
 }
 
 export async function hashId(...parts: (string | number)[]): Promise<string> {
