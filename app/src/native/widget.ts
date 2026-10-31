@@ -6,19 +6,23 @@
  *
  * Here:
  *  - setInfo: what only the app knows — the "playing from" label, shuffle (and whether it applies),
- *    the DJ's "3/7", the library size and the picks of the "nothing playing" grid (Daily Mix 1, a
- *    radio for you, Daily Mix 2, Rediscover). Sent when it changes (at most every 1.5 s).
- *  - widget taps the app performs: open (full-screen player), shuffle, repeat, dj, mix:<id>,
- *    radio:<id>, shuffle-all. When the tap launched the app, it waits for the catalogue first.
+ *    the DJ's "3/7", the library size and the picks of the "nothing playing" widget
+ *    (design_handoff_widget_idle: the Daily mix chip, recents = a radio, Daily mix 2, Rediscover, the
+ *    last album). Sent when it changes (at most every 1.5 s).
+ *  - widget taps the app performs: open (full-screen player), search (Library's field), shuffle,
+ *    repeat, dj, mix:<id>, radio:<id>, album:<id>, shuffle-all. When the tap launched the app, it
+ *    waits for the catalogue first.
  */
 import { isNative, PelagicWidget, type WidgetInfo, type WidgetPick } from './bridge'
-import { playList } from '../pages/library/playback'
+import { albumTrackIds, playList } from '../pages/library/playback'
 import { djStore, djViewOf } from '../state/dj'
 import { libraryStore, libraryStats, type Catalogue } from '../state/library'
 import { findMix, mixSet, playMix, radioSet } from '../state/mixes'
 import { nowPlayingStore } from '../state/nowPlaying'
 import { playerStore } from '../state/player'
 import { radioStore } from '../state/radio'
+import { recentStore } from '../state/recent'
+import { focusLibrarySearch } from '../state/search'
 
 const DRIVE = 'https://www.googleapis.com/drive/v3/files/'
 const media = (fileId: string) => `${DRIVE}${encodeURIComponent(fileId)}?alt=media`
@@ -28,27 +32,41 @@ function albumArt(c: Catalogue, albumId: string | null | undefined): string | un
   return cover ? media(cover) : undefined
 }
 
-/** The grid's picks after Resume and DJ: Daily mix 1, a radio, Daily mix 2, Rediscover (as there are). */
+/**
+ * The "nothing playing" widget's picks (design_handoff_widget_idle): the Daily mix chip (Daily mix 1)
+ * and the recents list — a radio, Daily mix 2, Rediscover, the last album played (as there are, at most 4).
+ */
 function picks(c: Catalogue): WidgetPick[] {
   const out: WidgetPick[] = []
+  const list: WidgetPick[] = []
   const set = mixSet()
-  if (!set) return out
-  const daily = set.items.filter((m) => m.kind === 'daily')
-  const redis = set.items.find((m) => m.kind === 'redis')
-  const radio = radioSet(0)?.items[0]
-  const mixPick = (m: (typeof set.items)[number], title: string, sub: string): WidgetPick => ({ action: `mix:${m.id}`, title, sub, art: albumArt(c, m.coverAlbums[0]) })
-  if (daily[0]) out.push(mixPick(daily[0], `Daily mix ${daily[0].n ?? 1}`, 'Made for you'))
-  if (radio) {
-    const albumId = radio.albumId ?? Object.values(c.albums).find((a) => a.artistId === radio.artistId)?.id
-    out.push({ action: `radio:${radio.id}`, title: radio.title, sub: 'Radio', art: albumArt(c, albumId) })
+  if (set) {
+    const daily = set.items.filter((m) => m.kind === 'daily')
+    const redis = set.items.find((m) => m.kind === 'redis')
+    const radio = radioSet(0)?.items[0]
+    const mixPick = (m: (typeof set.items)[number], title: string, sub: string, slot: WidgetPick['slot']): WidgetPick => ({ action: `mix:${m.id}`, title, sub, art: albumArt(c, m.coverAlbums[0]), slot })
+    if (daily[0]) out.push(mixPick(daily[0], 'Daily mix', 'Made for you', 'chip'))
+    if (radio) {
+      const albumId = radio.albumId ?? Object.values(c.albums).find((a) => a.artistId === radio.artistId)?.id
+      list.push({ action: `radio:${radio.id}`, title: radio.title, sub: 'Radio', art: albumArt(c, albumId), slot: 'list' })
+    }
+    if (daily[1]) list.push(mixPick(daily[1], `Daily mix ${daily[1].n ?? 2}`, 'Made for you', 'list'))
+    if (redis) {
+      const season = /loved in (.+)$/i.exec(redis.sub)?.[1]
+      list.push(mixPick(redis, 'Rediscover', season ? `Loved in ${season}` : 'Rediscover', 'list'))
+    }
   }
-  if (daily[1]) out.push(mixPick(daily[1], `Daily mix ${daily[1].n ?? 2}`, 'Made for you'))
-  if (redis) {
-    const season = /loved in (.+)$/i.exec(redis.sub)?.[1]
-    out.push(mixPick(redis, 'Rediscover', season ? `Loved in ${season}` : 'Rediscover'))
+  const album = recentStore
+    .get()
+    .items.filter((r) => r.kind === 'album')
+    .map((r) => c.albums[r.id])
+    .find((a) => !!a)
+  if (album) {
+    const artist = c.artists[album.artistId]?.name
+    list.push({ action: `album:${album.id}`, title: album.title, sub: artist ? `${artist} · Album` : 'Album', art: albumArt(c, album.id), slot: 'list' })
   }
-  for (const m of daily.slice(2)) if (out.length < 4) out.push(mixPick(m, `Daily mix ${m.n ?? ''}`.trim(), 'Made for you'))
-  return out
+  if (set) for (const m of set.items.filter((x) => x.kind === 'daily').slice(2)) if (list.length < 4) list.push({ action: `mix:${m.id}`, title: `Daily mix ${m.n ?? ''}`.trim(), sub: 'Made for you', art: albumArt(c, m.coverAlbums[0]), slot: 'list' })
+  return [...out, ...list.slice(0, 4)]
 }
 
 function buildInfo(): WidgetInfo {
@@ -60,7 +78,7 @@ function buildInfo(): WidgetInfo {
   try {
     mixesAndRadio = c ? picks(c) : []
   } catch {
-    /* mixes not ready: the grid shows Resume and DJ */
+    /* mixes not ready: the widget shows Resume, DJ and Shuffle */
   }
   return {
     context: p.context?.label ?? '',
@@ -97,6 +115,7 @@ async function run(action: string) {
     if (playerStore.get().index >= 0) nowPlayingStore.open('np')
     return
   }
+  if (action === 'search') return focusLibrarySearch()
   if (action === 'shuffle') return playerStore.toggleShuffle()
   if (action === 'repeat') return playerStore.cycleRepeat()
   const c = await whenLibrary()
@@ -110,6 +129,9 @@ async function run(action: string) {
     if (m) playMix(m)
   } else if (action.startsWith('radio:')) {
     radioStore.startById(action.slice(6))
+  } else if (action.startsWith('album:')) {
+    const album = c.albums[action.slice(6)]
+    if (album) playList(albumTrackIds(c, album.id), { kind: 'album', id: album.id, label: album.title })
   }
 }
 
@@ -136,5 +158,6 @@ export function initWidget() {
   playerStore.subscribe(changed)
   libraryStore.subscribe(changed)
   djStore.subscribe(changed)
+  recentStore.subscribe(changed)
   changed()
 }

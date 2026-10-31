@@ -1,45 +1,47 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Quick-start card on the idle grid: card bg + top art (or DJ knob) as one bitmap, title and sub at bottom -->
+<!--
+    Recents row of the idle widget (design_handoff_widget_idle, 3×3+): 44dp (46 at 4 rows, set in
+    WidgetRenderer), 8dp side padding past the content edges, pressed = high (radius 12).
+    Art 36 (radius 10) · title 14 / 500 · sub 12 onVar · play_arrow 22 onVar. Tap = start it.
+-->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:orientation="horizontal">
+    android:id="@+id/wg_pick"
+    android:layout_width="match_parent"
+    android:layout_height="44dp"
+    android:background="@drawable/wg_i_row"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingStart="8dp"
+    android:paddingEnd="8dp">
 
-    <FrameLayout
-        android:id="@+id/wg_pick_gap"
-        android:layout_width="8dp"
-        android:layout_height="1dp" />
+    <ImageView
+        android:id="@+id/wg_pick_img"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:importantForAccessibility="no"
+        android:scaleType="fitXY" />
 
-    <FrameLayout
-        android:id="@+id/wg_pick"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content">
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:layout_weight="1"
+        android:orientation="vertical">
 
-        <ImageView
-            android:id="@+id/wg_pick_img"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:importantForAccessibility="no" />
+        <TextView
+            android:id="@+id/wg_pick_title"
+            style="@style/WgI" />
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_gravity="bottom"
-            android:layout_marginStart="12dp"
-            android:layout_marginEnd="12dp"
-            android:layout_marginBottom="8dp"
-            android:orientation="vertical">
+        <TextView
+            android:id="@+id/wg_pick_sub"
+            style="@style/WgI.Sub" />
+    </LinearLayout>
 
-            <TextView
-                android:id="@+id/wg_pick_title"
-                style="@style/WgText.Medium"
-                android:textSize="14dp" />
-
-            <TextView
-                android:id="@+id/wg_pick_sub"
-                style="@style/WgText.Muted"
-                android:layout_width="match_parent"
-                android:textSize="11dp" />
-        </LinearLayout>
-    </FrameLayout>
+    <ImageView
+        android:layout_width="22dp"
+        android:layout_height="22dp"
+        android:layout_marginStart="8dp"
+        android:importantForAccessibility="no"
+        android:src="@drawable/ic_wg_play"
+        android:tint="@color/wg_i_onvar" />
 </LinearLayout>

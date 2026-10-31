@@ -11,6 +11,18 @@
     <color name="wg_lilac">#FFD9B9FF</color>
     <color name="wg_hair">#24FFFFFF</color>
 
+    <!-- Nothing playing (design_handoff_widget_idle): warm hue 38, fixed -->
+    <color name="wg_i_on">#FFF8EBE7</color>
+    <color name="wg_i_onvar">#FFD0B8B0</color>
+    <color name="wg_i_primary">#FFFFB7A0</color>
+    <color name="wg_i_onprimary">#FF39160A</color>
+    <color name="wg_i_high">#B8301C15</color>
+    <color name="wg_i_rim2">#47A57262</color>
+    <color name="wg_dj_bg">#FF2E274E</color>
+    <color name="wg_dj_rim">#737F75B8</color>
+    <color name="wg_dj_fg">#FFEEEDFB</color>
+    <color name="wg_dj_knob">#FFC9C1FF</color>
+
     <dimen name="wg_radius">28dp</dimen>
 
     <string name="wg_name">Now playing</string>
@@ -23,6 +35,49 @@
     <string name="wg_repeat">Repeat</string>
     <string name="wg_shuffle_library">Shuffle library</string>
     <string name="wg_start_dj">Start the DJ</string>
+    <string name="wg_resume">Resume</string>
+    <string name="wg_search">Search</string>
+    <string name="wg_brand">Material Music</string>
+
+    <!-- idle layouts: one line, fixed line box (the handoff's line heights), warm text -->
+    <style name="WgI">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">20dp</item>
+        <item name="android:gravity">center_vertical|start</item>
+        <item name="android:singleLine">true</item>
+        <item name="android:ellipsize">end</item>
+        <item name="android:includeFontPadding">false</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textSize">14dp</item>
+        <item name="android:textColor">@color/wg_i_on</item>
+    </style>
+    <!-- 12 / 16, onVar -->
+    <style name="WgI.Sub">
+        <item name="android:layout_height">16dp</item>
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:textSize">12dp</item>
+        <item name="android:textColor">@color/wg_i_onvar</item>
+    </style>
+    <!-- 11 / 16 600 +0.04em, primary ("Resume · 2:29 left") -->
+    <style name="WgI.Label">
+        <item name="android:layout_height">16dp</item>
+        <item name="android:textSize">11dp</item>
+        <item name="android:letterSpacing">0.04</item>
+        <item name="android:textColor">@color/wg_i_primary</item>
+    </style>
+    <!-- 13 / 20 600: header name, chip text -->
+    <style name="WgI.Small">
+        <item name="android:textSize">13dp</item>
+    </style>
+    <!-- icon in the primary play button -->
+    <style name="WgIPlayIcon">
+        <item name="android:layout_width">28dp</item>
+        <item name="android:layout_height">28dp</item>
+        <item name="android:layout_gravity">center</item>
+        <item name="android:src">@drawable/ic_wg_play</item>
+        <item name="android:tint">@color/wg_i_onprimary</item>
+        <item name="android:importantForAccessibility">no</item>
+    </style>
 
     <style name="WgText">
         <item name="android:layout_width">match_parent</item>

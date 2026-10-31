@@ -148,13 +148,15 @@ export const PelagicDownloads = registerPlugin<PelagicDownloadsPlugin>('PelagicD
 /* ── Home screen widget ──────────────────────────────── */
 
 export interface WidgetPick {
-  /** what tapping it does (handled in native/widget.ts): "mix:<id>", "radio:<id>" */
+  /** what tapping it does (handled in native/widget.ts): "mix:<id>", "radio:<id>", "album:<id>" */
   action: string
   title: string
   /** mono sub line, e.g. MADE FOR YOU */
   sub: string
   /** Drive alt=media URL of a cover (the widget loads it itself) */
   art?: string
+  /** where the idle widget shows it: the Daily mix chip or the recents list */
+  slot: 'chip' | 'list'
 }
 
 export interface WidgetInfo {
@@ -167,13 +169,13 @@ export interface WidgetInfo {
   djStep: string
   /** library size, for Shuffle library */
   songs: number
-  /** the "nothing playing" grid after Resume and DJ: Daily Mix 1, a radio, Daily Mix 2, Rediscover */
+  /** the "nothing playing" widget: the Daily mix chip, then the recents (radio, Daily mix 2, Rediscover, last album) */
   picks: WidgetPick[]
 }
 
 interface PelagicWidgetPlugin {
   setInfo(info: WidgetInfo): Promise<void>
-  /** a widget tap the app performs: open, shuffle, repeat, dj, mix:<id>, radio:<id>, shuffle-all */
+  /** a widget tap the app performs: open, search, shuffle, repeat, dj, mix:<id>, radio:<id>, album:<id>, shuffle-all */
   addListener(event: 'action', cb: (e: { action: string }) => void): Promise<PluginListenerHandle>
 }
 

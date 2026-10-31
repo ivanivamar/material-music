@@ -23,11 +23,13 @@ import java.util.Map;
  * size in dp, with the thresholds between the handoff's span sizes:
  *
  *   width  < 128 → 1 column  (mTiny / iTiny)
- *   width  < 224 → 2 columns (mPill / iPill when 1 row, else mSq / iDual column)
- *   else           3–4 columns: mBar / iDual row (1 row), mPlayer / iGrid (2 rows), mPlayer + Up next / iGrid + Shuffle (3–4 rows)
+ *   width  < 224 → 2 columns (mPill / iPill when 1 row, else mSq / iSq)
+ *   else           3–4 columns: mBar / iBar (1 row), mPlayer / iFull (2 rows), mPlayer + Up next / iFull + recents (3–4 rows)
  *
  * Android 12+ gives the sizes the launcher may show (portrait / landscape): one layout per size.
  * Earlier versions: the portrait size (min width × max height).
+ *
+ * Nothing playing: design_handoff_widget_idle (iTiny, iPill, iSq, iBar, iFull).
  *
  * No like / favourite button anywhere (Material Music rule).
  */
@@ -246,100 +248,170 @@ final class WidgetRenderer {
         shuffle(v, r);
     }
 
-    /* ── Nothing playing (idle) ──────────────────────── */
+    /* ── Nothing playing (idle, design_handoff_widget_idle) ── */
+
+    /*
+     * Warm brand scheme (hue 38), whatever played last. The whole widget opens the app; only the
+     * buttons (play, DJ, Daily mix, Shuffle, search, a recents row, the 2×1 art) do something else.
+     * With no session to resume, "Resume" becomes "Shuffle library".
+     */
+
+    /** What the idle layouts show for the last session (or the Shuffle library fallback). */
+    private static final class Last {
+        final boolean has;
+        final String label, title, artist, sub;
+        @Nullable final Bitmap art;
+        final float frac;
+        final PendingIntent play;
+
+        Last(R2 r) {
+            WidgetState.Resume res = r.m.resume;
+            has = res != null;
+            if (res != null) {
+                String t = !res.title.isEmpty() ? res.title : !res.album.isEmpty() ? res.album : "Your last session";
+                String left = res.left();
+                title = t;
+                artist = res.artist;
+                label = left.isEmpty() ? "Resume" : "Resume · " + left;
+                boolean albumKnown = !res.title.isEmpty() && !res.album.isEmpty() && !res.album.equals(res.title);
+                sub = res.artist.isEmpty() ? (albumKnown ? res.album : "") : albumKnown ? res.artist + " · " + res.album : res.artist;
+                art = WidgetArt.load(r.ctx, res.art);
+                frac = res.fraction();
+                play = PelagicWidget.command(r.ctx, "resume", -1, null);
+            } else {
+                int n = r.m.info.songs;
+                title = "Shuffle library";
+                artist = n > 0 ? n + (n == 1 ? " song" : " songs") : "Material Music";
+                label = "Start";
+                sub = artist;
+                art = null;
+                frac = 0;
+                play = app(r, "shuffle-all");
+            }
+        }
+    }
 
     private static RemoteViews idle(R2 r) {
-        WidgetState.Resume res = r.m.resume;
-        String album = res != null && !res.album.isEmpty() ? res.album : null;
-        Bitmap resArt = res != null ? WidgetArt.load(r.ctx, res.art) : null;
-        PendingIntent resume = res != null ? PelagicWidget.command(r.ctx, "resume", -1, null) : PelagicWidget.openApp(r.ctx, null);
+        Last l = new Last(r);
         WidgetArt.Bg bg = bg(r);
+        bg.idle = true;
         RemoteViews v;
         if (r.cols == 1) {
+            // iTiny: icon + play
             v = new RemoteViews(r.ctx.getPackageName(), R.layout.widget_idle_tile);
-            v.setImageViewBitmap(R.id.wg_play, WidgetArt.playButton(48, 48, 16, 28, r.s.primary, r.s.onPrimary, false, r.k));
-            v.setOnClickPendingIntent(R.id.wg_play, resume);
-            v.setOnClickPendingIntent(android.R.id.background, resume);
+            v.setOnClickPendingIntent(R.id.wg_play, l.play);
         } else if (r.cols == 2 && r.rows == 1) {
+            // iPill: the art is the resume button
             v = new RemoteViews(r.ctx.getPackageName(), R.layout.widget_idle_compact);
-            v.setImageViewBitmap(R.id.wg_art, WidgetArt.resumePillArt(resArt, r.s, r.k));
-            v.setTextViewText(R.id.wg_title, "Resume");
-            v.setTextColor(R.id.wg_title, r.s.on);
-            v.setTextViewText(R.id.wg_sub, album != null ? album : "Material Music");
-            v.setTextColor(R.id.wg_sub, r.s.onVar);
-            v.setOnClickPendingIntent(android.R.id.background, resume);
-        } else if (r.cols == 2 || r.rows == 1) {
-            boolean col = r.cols == 2;
-            bg.dualMode = col ? 1 : 2;
-            v = new RemoteViews(r.ctx.getPackageName(), col ? R.layout.widget_idle_cover : R.layout.widget_idle_bar);
-            v.setImageViewBitmap(R.id.wg_art, WidgetArt.cover(resArt, 40, 12, 1f, r.k));
-            v.setTextViewText(R.id.wg_title, "Resume");
-            v.setTextColor(R.id.wg_title, r.s.on);
-            v.setTextViewText(R.id.wg_sub, album != null ? album : "Material Music");
-            v.setTextColor(R.id.wg_sub, r.s.onVar);
-            v.setImageViewBitmap(R.id.wg_knob, WidgetArt.knobBitmap(40, WidgetArt.DJ_KNOB, r.k));
-            v.setTextColor(R.id.wg_dj_title, WidgetArt.DJ_CARD_FG);
-            v.setTextColor(R.id.wg_dj_sub, WidgetArt.DJ_CARD_SUB);
-            v.setOnClickPendingIntent(R.id.wg_play, resume);
+            bg.gx = 12;
+            bg.gy = Math.max(8, (r.h - 56) * 0.5f);
+            bg.gs = 56;
+            bg.gr = 16;
+            v.setImageViewBitmap(R.id.wg_art, WidgetArt.resumeBadgeArt(l.art, l.has, r.k));
+            v.setOnClickPendingIntent(R.id.wg_art, l.play);
+            v.setTextViewText(R.id.wg_title, l.title);
+        } else if (r.cols == 2) {
+            // iSq: header · art + play · title / "Resume · artist"
+            v = new RemoteViews(r.ctx.getPackageName(), R.layout.widget_idle_cover);
+            float gap = Math.max(0, (r.h - 30 - 24 - 64 - 36) / 2f);
+            bg.gx = 16;
+            bg.gy = 14 + 24 + gap;
+            bg.gs = 64;
+            bg.gr = 16;
+            v.setImageViewBitmap(R.id.wg_art, idleArt(r, l, 64, 16));
+            v.setOnClickPendingIntent(R.id.wg_play, l.play);
+            v.setTextViewText(R.id.wg_title, l.title);
+            v.setTextViewText(R.id.wg_sub, l.has ? (l.artist.isEmpty() ? "Resume" : "Resume · " + l.artist) : l.artist);
+        } else if (r.rows == 1) {
+            // iBar: icon · Resume / title / artist · DJ · play
+            v = new RemoteViews(r.ctx.getPackageName(), R.layout.widget_idle_bar);
+            v.setTextViewText(R.id.wg_label, l.has ? "Resume" : l.label);
+            v.setTextViewText(R.id.wg_title, l.title);
+            v.setTextViewText(R.id.wg_sub, l.artist);
+            v.setViewVisibility(R.id.wg_sub, l.artist.isEmpty() ? View.GONE : View.VISIBLE);
             v.setOnClickPendingIntent(R.id.wg_dj, app(r, "dj"));
-            v.setOnClickPendingIntent(android.R.id.background, PelagicWidget.openApp(r.ctx, null));
+            v.setOnClickPendingIntent(R.id.wg_play, l.play);
         } else {
-            v = grid(r, res, resArt, resume);
+            v = full(r, l, bg);
         }
+        v.setOnClickPendingIntent(android.R.id.background, PelagicWidget.openApp(r.ctx, null));
         background(v, bg);
         return v;
     }
 
-    /** 3+ columns, 2+ rows (iGrid): 3 or 6 quick-start cards + "Shuffle library" pill from 3 rows. */
-    private static RemoteViews grid(R2 r, @Nullable WidgetState.Resume res, @Nullable Bitmap resArt, PendingIntent resume) {
+    /** 3–4 columns, 2+ rows (iFull): header + search · resume row · chips · recents from 3 rows. */
+    private static RemoteViews full(R2 r, Last l, WidgetArt.Bg bg) {
         RemoteViews v = new RemoteViews(r.ctx.getPackageName(), R.layout.widget_idle_grid);
-        boolean showShuffle = r.rows >= 3;
-        boolean twoRows = r.rows >= 4;
+        bg.gx = 16;
+        bg.gy = 14 + 24 + 10;
+        bg.gs = 64;
+        bg.gr = 16;
 
-        v.setViewVisibility(R.id.wg_grid2, twoRows ? View.VISIBLE : View.GONE);
-        v.setViewVisibility(R.id.wg_gap2, showShuffle ? View.VISIBLE : View.GONE);
-        v.setViewVisibility(R.id.wg_shuffle_all, showShuffle ? View.VISIBLE : View.GONE);
-        if (showShuffle) {
-            v.setImageViewBitmap(R.id.wg_shuffle_bg, WidgetArt.pillButton(r.w - 16, 56, r.s.primary, r.k));
-            v.setInt(R.id.wg_shuffle_ic, "setColorFilter", r.s.onPrimary);
-            v.setTextColor(R.id.wg_shuffle_text, r.s.onPrimary);
-            v.setOnClickPendingIntent(R.id.wg_shuffle_all, app(r, "shuffle-all"));
+        // header: search opens the app on its search field (always in the foreground)
+        v.setOnClickPendingIntent(R.id.wg_search, PelagicWidget.openApp(r.ctx, "search"));
+
+        // resume row
+        v.setImageViewBitmap(R.id.wg_art, idleArt(r, l, 64, 16));
+        v.setTextViewText(R.id.wg_label, l.label);
+        v.setTextViewText(R.id.wg_title, l.title);
+        v.setTextViewText(R.id.wg_sub, l.sub);
+        v.setViewVisibility(R.id.wg_sub, l.sub.isEmpty() ? View.GONE : View.VISIBLE);
+        v.setViewVisibility(R.id.wg_progress, l.has ? View.VISIBLE : View.GONE);
+        if (l.has) {
+            float col = Math.max(40, r.w - 32 - 64 - 12 - 12 - 56);
+            v.setImageViewBitmap(R.id.wg_progress, WidgetArt.progressBar(col, 3, l.frac, WidgetArt.IDLE_TRACK, WidgetArt.IDLE_PRIMARY, r.k));
+        }
+        v.setOnClickPendingIntent(R.id.wg_play, l.play);
+
+        // chips: DJ · Daily mix (4 columns) · Shuffle
+        v.setOnClickPendingIntent(R.id.wg_dj, app(r, "dj"));
+        v.setOnClickPendingIntent(R.id.wg_shuffle_all, app(r, "shuffle-all"));
+        WidgetState.Pick chip = null;
+        List<WidgetState.Pick> list = new ArrayList<>();
+        for (WidgetState.Pick p : r.m.info.picks) {
+            if (chip == null && "chip".equals(p.slot)) chip = p;
+            else if ("list".equals(p.slot)) list.add(p);
+        }
+        boolean mix = r.cols >= 4 && chip != null;
+        v.setViewVisibility(R.id.wg_mix, mix ? View.VISIBLE : View.GONE);
+        if (mix) {
+            v.setImageViewBitmap(R.id.wg_mix_art, WidgetArt.cover(WidgetArt.load(r.ctx, chip.art), 24, 12, 1f, r.k));
+            v.setTextViewText(R.id.wg_mix_title, chip.title);
+            v.setContentDescription(R.id.wg_mix, chip.title);
+            v.setOnClickPendingIntent(R.id.wg_mix, app(r, chip.action));
         }
 
-        float cardW = Math.max(64, (r.w - 16 - 16) / 3f);
-        float availH = r.h - 16 - (showShuffle ? 56 + 8 : 0) - (twoRows ? 8 : 0);
-        float targetH = r.rows >= 4 ? 140 : r.rows == 3 ? 136 : 144;
-        float cardH = Math.max(88, Math.min(targetH, twoRows ? availH / 2f : availH));
-        float artH = Math.max(36, cardH - 60);
-
-        List<WidgetState.Pick> picks = new ArrayList<>();
-        if (res != null) {
-            picks.add(new WidgetState.Pick("resume", res.album.isEmpty() ? "Resume" : res.album, "Resume", res.art));
-        } else {
-            picks.add(new WidgetState.Pick("resume", "Resume", "Tap to open", null));
+        // recents: 2 rows at 3 rows, 4 at 4 rows, as many as fit
+        v.removeAllViews(R.id.wg_rows);
+        int count = 0;
+        if (r.rows >= 3) {
+            float rowH = r.rows >= 4 ? 46 : 44;
+            int want = r.rows >= 4 ? 4 : 2;
+            // above the list: padding 14, header 24, resume 64, chips 40, three 10dp gaps, divider + 4; at least 4dp below
+            float avail = r.h - (14 + 24 + 10 + 64 + 10 + 40 + 10 + 5) - 4;
+            count = Math.min(Math.min(want, list.size()), Math.max(0, (int) Math.floor(avail / rowH)));
+            for (int i = 0; i < count; i++) {
+                WidgetState.Pick p = list.get(i);
+                RemoteViews row = new RemoteViews(r.ctx.getPackageName(), R.layout.widget_idle_pick);
+                if (Build.VERSION.SDK_INT >= 31 && rowH != 44) {
+                    row.setViewLayoutHeight(R.id.wg_pick, rowH, android.util.TypedValue.COMPLEX_UNIT_DIP);
+                }
+                row.setImageViewBitmap(R.id.wg_pick_img, WidgetArt.cover(WidgetArt.load(r.ctx, p.art), 36, 10, 1f, r.k));
+                row.setTextViewText(R.id.wg_pick_title, p.title);
+                row.setTextViewText(R.id.wg_pick_sub, p.sub);
+                row.setViewVisibility(R.id.wg_pick_sub, p.sub.isEmpty() ? View.GONE : View.VISIBLE);
+                row.setContentDescription(R.id.wg_pick, p.title);
+                row.setOnClickPendingIntent(R.id.wg_pick, app(r, p.action));
+                v.addView(R.id.wg_rows, row);
+            }
         }
-        picks.add(new WidgetState.Pick("dj", "DJ", "Start a session", null));
-        picks.addAll(r.m.info.picks);
-
-        v.removeAllViews(R.id.wg_grid1);
-        v.removeAllViews(R.id.wg_grid2);
-        int count = Math.min(picks.size(), twoRows ? 6 : 3);
-        for (int i = 0; i < count; i++) {
-            WidgetState.Pick p = picks.get(i);
-            boolean dj = "dj".equals(p.action);
-            Bitmap pArt = dj ? null : ("resume".equals(p.action) ? resArt : WidgetArt.load(r.ctx, p.art));
-            RemoteViews t = new RemoteViews(r.ctx.getPackageName(), R.layout.widget_idle_pick);
-            t.setViewVisibility(R.id.wg_pick_gap, i % 3 == 0 ? View.GONE : View.VISIBLE);
-            t.setImageViewBitmap(R.id.wg_pick_img, WidgetArt.pick(pArt, dj, cardW, cardH, artH, r.s, r.k));
-            t.setTextViewText(R.id.wg_pick_title, p.title);
-            t.setTextColor(R.id.wg_pick_title, dj ? WidgetArt.DJ_CARD_FG : r.s.on);
-            t.setTextViewText(R.id.wg_pick_sub, p.sub);
-            t.setTextColor(R.id.wg_pick_sub, dj ? WidgetArt.DJ_CARD_SUB : r.s.onVar);
-            t.setOnClickPendingIntent(R.id.wg_pick, "resume".equals(p.action) ? resume : app(r, p.action));
-            v.addView(i < 3 ? R.id.wg_grid1 : R.id.wg_grid2, t);
-        }
-        v.setOnClickPendingIntent(android.R.id.background, PelagicWidget.openApp(r.ctx, null));
+        v.setViewVisibility(R.id.wg_list, count > 0 ? View.VISIBLE : View.GONE);
         return v;
+    }
+
+    /** The resume art; with nothing to resume, a warm tile with the shuffle glyph. */
+    private static Bitmap idleArt(R2 r, Last l, float size, float radius) {
+        return l.has ? WidgetArt.cover(l.art, size, radius, 1f, r.k) : WidgetArt.shuffleTile(size, radius, r.k);
     }
 
     /* ── Shared pieces ───────────────────────────────── */

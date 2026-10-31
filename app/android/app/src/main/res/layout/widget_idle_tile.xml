@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Widget 1×1, nothing playing (iTiny): 48×48 rounded play square centred. Tap = resume. -->
+<!--
+    Widget 1×1, nothing playing (design_handoff_widget_idle iTiny): app icon 40dp (radius 12) at
+    (12, 12), 36dp play button (radius 12) inset 6 from the bottom-right corner, in a 48dp touch box.
+    Play = resume the last session; the rest opens the app.
+-->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@android:id/background"
     android:layout_width="match_parent"
@@ -15,9 +19,33 @@
         android:scaleType="fitXY" />
 
     <ImageView
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_gravity="top|start"
+        android:layout_marginStart="12dp"
+        android:layout_marginTop="12dp"
+        android:importantForAccessibility="no"
+        android:scaleType="fitXY"
+        android:src="@drawable/wg_app_icon" />
+
+    <FrameLayout
         android:id="@+id/wg_play"
-        style="@style/WgPlay"
         android:layout_width="48dp"
         android:layout_height="48dp"
-        android:layout_gravity="center" />
+        android:layout_gravity="bottom|end"
+        android:contentDescription="@string/wg_resume">
+
+        <FrameLayout
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_gravity="center"
+            android:background="@drawable/wg_i_play_sm"
+            android:duplicateParentState="true">
+
+            <ImageView
+                style="@style/WgIPlayIcon"
+                android:layout_width="22dp"
+                android:layout_height="22dp" />
+        </FrameLayout>
+    </FrameLayout>
 </FrameLayout>

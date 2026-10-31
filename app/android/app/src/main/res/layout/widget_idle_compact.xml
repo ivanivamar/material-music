@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Widget 2×1, nothing playing (iPill): 56dp resume art + 28dp play badge, Resume, album -->
+<!--
+    Widget 2×1, nothing playing (design_handoff_widget_idle iPill): padding 12, gap 12.
+    56dp resume art (radius 16, glow in the background bitmap) with a 28 % scrim and a 32dp round
+    play badge: the whole art resumes. Then the brand line (14dp icon + name) and the track title.
+-->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@android:id/background"
     android:layout_width="match_parent"
@@ -23,28 +27,45 @@
 
         <ImageView
             android:id="@+id/wg_art"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:importantForAccessibility="no" />
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:contentDescription="@string/wg_resume"
+            android:scaleType="fitXY" />
 
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
+            android:layout_marginStart="12dp"
             android:layout_weight="1"
             android:orientation="vertical">
 
-            <TextView
-                android:id="@+id/wg_title"
-                style="@style/WgText.Medium"
-                android:text="Resume"
-                android:textSize="14dp" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="16dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
+                    android:importantForAccessibility="no"
+                    android:scaleType="fitXY"
+                    android:src="@drawable/wg_app_icon" />
+
+                <TextView
+                    style="@style/WgI.Label"
+                    android:layout_width="0dp"
+                    android:layout_marginStart="5dp"
+                    android:layout_weight="1"
+                    android:letterSpacing="0"
+                    android:text="@string/wg_brand"
+                    android:textColor="@color/wg_i_onvar" />
+            </LinearLayout>
 
             <TextView
-                android:id="@+id/wg_sub"
-                style="@style/WgText.Muted"
-                android:layout_marginTop="2dp"
-                android:textSize="12dp" />
+                android:id="@+id/wg_title"
+                style="@style/WgI"
+                android:layout_marginTop="2dp" />
         </LinearLayout>
     </LinearLayout>
 </FrameLayout>

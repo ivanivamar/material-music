@@ -1,7 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    Widget 3×2+ / 4×2+, nothing playing (iGrid): one or two rows of three quick-start cards
-    (Resume · DJ · Daily mix 1, plus Radio · Daily mix 2 · Rediscover at 4 rows) and Shuffle library.
+    Widget 3×2+ / 4×2+, nothing playing (design_handoff_widget_idle iFull). Padding 14 / 16 / 16,
+    gap 10:
+      1. header: 22dp icon + name, 32dp search button (opens the app's search)
+      2. resume row: art 64 (glow in the background bitmap) · "Resume · 2:29 left" / title / artist ·
+         album / 3dp progress · 56dp play
+      3. chips (40dp pills, flex 1): DJ · Daily mix (4 columns) · Shuffle
+      4. from 3 rows: recents list (1dp divider, rows 44 / 46dp)
+    Buttons start playback; everything else opens the app.
 -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@android:id/background"
@@ -20,68 +26,223 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:clipChildren="false"
-        android:clipToPadding="false"
         android:orientation="vertical"
-        android:padding="8dp">
+        android:paddingStart="16dp"
+        android:paddingTop="14dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="16dp">
 
+        <!-- 1. header -->
         <LinearLayout
-            android:id="@+id/wg_grid1"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal" />
-
-        <LinearLayout
-            android:id="@+id/wg_grid2"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:orientation="horizontal"
-            android:visibility="gone" />
-
-        <FrameLayout
-            android:id="@+id/wg_gap2"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:visibility="gone" />
-
-        <FrameLayout
-            android:id="@+id/wg_shuffle_all"
-            android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:contentDescription="@string/wg_shuffle_library"
-            android:visibility="gone">
+            android:layout_height="24dp"
+            android:layout_marginEnd="-6dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
             <ImageView
-                android:id="@+id/wg_shuffle_bg"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:importantForAccessibility="no"
+                android:scaleType="fitXY"
+                android:src="@drawable/wg_app_icon" />
+
+            <TextView
+                style="@style/WgI.Small"
+                android:layout_width="0dp"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:text="@string/wg_brand" />
+
+            <FrameLayout
+                android:id="@+id/wg_search"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:background="@drawable/wg_i_round"
+                android:contentDescription="@string/wg_search">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:layout_gravity="center"
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/ic_wg_search"
+                    android:tint="@color/wg_i_onvar" />
+            </FrameLayout>
+        </LinearLayout>
+
+        <!-- 2. resume row -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="64dp"
+            android:layout_marginTop="10dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:id="@+id/wg_art"
+                android:layout_width="64dp"
+                android:layout_height="64dp"
                 android:importantForAccessibility="no"
                 android:scaleType="fitXY" />
 
             <LinearLayout
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
+                android:layout_marginStart="12dp"
+                android:layout_marginEnd="12dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/wg_label"
+                    style="@style/WgI.Label" />
+
+                <TextView
+                    android:id="@+id/wg_title"
+                    style="@style/WgI"
+                    android:layout_height="22dp"
+                    android:textSize="16dp" />
+
+                <TextView
+                    android:id="@+id/wg_sub"
+                    style="@style/WgI.Sub" />
 
                 <ImageView
-                    android:id="@+id/wg_shuffle_ic"
+                    android:id="@+id/wg_progress"
+                    android:layout_width="match_parent"
+                    android:layout_height="3dp"
+                    android:layout_marginTop="6dp"
+                    android:importantForAccessibility="no"
+                    android:scaleType="fitXY" />
+            </LinearLayout>
+
+            <FrameLayout
+                android:id="@+id/wg_play"
+                android:layout_width="56dp"
+                android:layout_height="56dp"
+                android:background="@drawable/wg_i_play"
+                android:contentDescription="@string/wg_resume">
+
+                <ImageView style="@style/WgIPlayIcon" />
+            </FrameLayout>
+        </LinearLayout>
+
+        <!-- 3. chips -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="40dp"
+            android:layout_marginTop="10dp"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:id="@+id/wg_dj"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:background="@drawable/wg_i_chip_dj"
+                android:contentDescription="@string/wg_start_dj"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="8dp"
+                android:paddingEnd="12dp">
+
+                <ImageView
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:importantForAccessibility="no"
-                    android:src="@drawable/ic_wg_shuffle" />
+                    android:src="@drawable/ic_dj"
+                    android:tint="@color/wg_dj_knob" />
 
                 <TextView
-                    android:id="@+id/wg_shuffle_text"
-                    style="@style/WgText.Medium"
-                    android:layout_width="wrap_content"
+                    style="@style/WgI.Small"
+                    android:layout_width="0dp"
                     android:layout_marginStart="8dp"
-                    android:text="@string/wg_shuffle_library"
-                    android:textSize="16dp" />
+                    android:layout_weight="1"
+                    android:text="DJ"
+                    android:textColor="@color/wg_dj_fg" />
             </LinearLayout>
-        </FrameLayout>
+
+            <LinearLayout
+                android:id="@+id/wg_mix"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:background="@drawable/wg_i_chip"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="8dp"
+                android:paddingEnd="12dp"
+                android:visibility="gone">
+
+                <ImageView
+                    android:id="@+id/wg_mix_art"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:importantForAccessibility="no"
+                    android:scaleType="fitXY" />
+
+                <TextView
+                    android:id="@+id/wg_mix_title"
+                    style="@style/WgI.Small"
+                    android:layout_width="0dp"
+                    android:layout_marginStart="8dp"
+                    android:layout_weight="1" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/wg_shuffle_all"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:background="@drawable/wg_i_chip"
+                android:contentDescription="@string/wg_shuffle_library"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="8dp"
+                android:paddingEnd="12dp">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:importantForAccessibility="no"
+                    android:padding="2dp"
+                    android:src="@drawable/ic_wg_shuffle"
+                    android:tint="@color/wg_i_primary" />
+
+                <TextView
+                    style="@style/WgI.Small"
+                    android:layout_width="0dp"
+                    android:layout_marginStart="8dp"
+                    android:layout_weight="1"
+                    android:text="@string/wg_shuffle" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- 4. recents -->
+        <LinearLayout
+            android:id="@+id/wg_list"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/wg_i_rim2" />
+
+            <LinearLayout
+                android:id="@+id/wg_rows"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="-8dp"
+                android:layout_marginEnd="-8dp"
+                android:orientation="vertical"
+                android:paddingTop="4dp" />
+        </LinearLayout>
     </LinearLayout>
 </FrameLayout>

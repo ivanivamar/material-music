@@ -36,10 +36,11 @@ import java.util.Arrays;
  *
  *  - background(): album-tinted surface s.bg, blurred album light top-left, radial scrim from
  *    bottom-right, dot grid (w >= 176dp) and ring (w >= 320dp, h >= 128dp), cover glow, full-bleed
- *    1×1 cover, "Up next" card surface (4×3 / 4×4), dual idle cards (2×2 / 4×1), and the 1.5dp rim.
- *  - cover(), resumePillArt(), pick(), progressBar(), playButton(), shuffleButton(), pillButton(),
- *    knobBitmap(): M3 Expressive rounded covers, quick-start cards, 4dp progress bar, morphing
+ *    1×1 cover, "Up next" card surface (4×3 / 4×4), the 1.5dp rim (+ the idle top highlight).
+ *  - cover(), resumeBadgeArt(), shuffleTile(), progressBar(), playButton(), shuffleButton(),
+ *    knobBitmap(): M3 Expressive rounded covers, the idle 2×1 resume art, progress bars, morphing
  *    play/pause & shuffle buttons, and the 8-lobe scalloped DJ knob.
+ *  The idle layouts' buttons and chips are XML drawables (fixed warm colours, res/drawable/wg_i_*).
  *
  * Covers are Drive files: a downloaded copy (Offline) first, then a small disk cache, then Drive with
  * the account's token (DriveAuth). Runs on PelagicWidget.BG only.
@@ -48,12 +49,10 @@ final class WidgetArt {
     static final float BRAND_HUE = 38f;
     static final float DJ_HUE = 290f;
 
-    /** DJ card palette (WidgetMaterial.dc.html: oklch(0.30 0.07 290) etc.) */
-    static final int DJ_CARD_BG = oklch(0.30, 0.07, 290, 1.0);
-    static final int DJ_CARD_RIM = oklch(0.60, 0.10, 290, 0.45);
-    static final int DJ_CARD_FG = oklch(0.95, 0.02, 290, 1.0);
-    static final int DJ_CARD_SUB = oklch(0.82, 0.04, 290, 1.0);
-    static final int DJ_KNOB = oklch(0.84, 0.09, 290, 1.0);
+    /** Idle (nothing playing) accents: the warm brand scheme at hue 38 (also res/values/widget.xml wg_i_*) */
+    static final int IDLE_PRIMARY = oklch(0.84, 0.09, BRAND_HUE, 1.0);
+    static final int IDLE_ON_PRIMARY = oklch(0.25, 0.06, BRAND_HUE, 1.0);
+    static final int IDLE_TRACK = oklch(0.40, 0.05, BRAND_HUE, 1.0);
 
     private static final int MAX_DISK = 60;
     private static final LruCache<String, Bitmap> art = new LruCache<>(10);
@@ -281,14 +280,14 @@ final class WidgetArt {
         float gx, gy, gs, gr = 16;
         /** Up next surface card (mPlayer + hasUp) */
         boolean hasUp;
-        /** iDual surface cards: 0 = none, 1 = column (2×2+), 2 = row (3×1 / 4×1) */
-        int dualMode;
+        /** nothing playing (design_handoff_widget_idle): adds the 1dp top highlight inside the rim */
+        boolean idle;
 
         String key() {
             return w + "x" + h + "@" + scale + "/" + radius + "/" + scheme.hue + ":" + scheme.hc + "/"
                 + System.identityHashCode(light) + ":" + lightAlpha + "/"
                 + System.identityHashCode(full) + ":" + fullAlpha + "/"
-                + gx + "," + gy + "," + gs + "," + gr + "/" + hasUp + "/" + dualMode;
+                + gx + "," + gy + "," + gs + "," + gr + "/" + hasUp + "/" + idle;
         }
     }
 
@@ -365,19 +364,6 @@ final class WidgetArt {
             drawSurfaceCard(c, new RectF(8 * k, 176 * k, W - 8 * k, H - 8 * k), 20 * k, sc.high, sc.rim2, k);
         }
 
-        // 9. iDual cards (Resume + DJ)
-        if (s.dualMode == 1) {
-            // column (2×2+): two stacked cards, 8dp padding and 8dp gap
-            float ch = (H - 24 * k) / 2f;
-            drawSurfaceCard(c, new RectF(8 * k, 8 * k, W - 8 * k, 8 * k + ch), 20 * k, sc.high, sc.rim2, k);
-            drawSurfaceCard(c, new RectF(8 * k, 16 * k + ch, W - 8 * k, H - 8 * k), 20 * k, DJ_CARD_BG, DJ_CARD_RIM, k);
-        } else if (s.dualMode == 2) {
-            // row (3×1 / 4×1): two side-by-side cards, 8dp padding and 8dp gap
-            float cw = (W - 24 * k) / 2f;
-            drawSurfaceCard(c, new RectF(8 * k, 8 * k, 8 * k + cw, H - 8 * k), 20 * k, sc.high, sc.rim2, k);
-            drawSurfaceCard(c, new RectF(16 * k + cw, 8 * k, W - 8 * k, H - 8 * k), 20 * k, DJ_CARD_BG, DJ_CARD_RIM, k);
-        }
-
         // 10. outer rim: inset 0 0 0 1.5dp s.rim
         float r = s.radius * k;
         Paint rim = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -386,6 +372,18 @@ final class WidgetArt {
         rim.setColor(sc.rim);
         float inset = 0.75f * k;
         c.drawRoundRect(new RectF(inset, inset, W - inset, H - inset), r - inset, r - inset, rim);
+
+        // 11. idle: top highlight, inset 0 1dp 0 rgba(255,255,255,.14) — the rounded shape minus itself moved down 1dp
+        if (s.idle) {
+            Path outer = new Path();
+            outer.addRoundRect(new RectF(0, 0, W, H), r, r, Path.Direction.CW);
+            Path inner = new Path();
+            inner.addRoundRect(new RectF(0, k, W, H + k), r, r, Path.Direction.CW);
+            outer.op(inner, Path.Op.DIFFERENCE);
+            Paint hi = new Paint(Paint.ANTI_ALIAS_FLAG);
+            hi.setColor(0x24FFFFFF);
+            c.drawPath(outer, hi);
+        }
 
         Bitmap out = rounded(full, r);
         full.recycle();
@@ -532,26 +530,37 @@ final class WidgetArt {
         return out;
     }
 
-    /** 2×1 idle pill art (iPill): 56dp cover (radius 16dp) with a 28dp circular coral play badge at bottom-right. */
-    static Bitmap resumePillArt(@Nullable Bitmap src, Scheme s, float k) {
-        int W = Math.max(1, Math.round(60 * k)), S = Math.max(1, Math.round(56 * k));
-        Bitmap out = Bitmap.createBitmap(W, W, Bitmap.Config.ARGB_8888);
+    /**
+     * 2×1 idle art (design_handoff_widget_idle iPill): 56dp cover (radius 16), 28 % black scrim and a
+     * centred 32dp round play badge (icon 20). Nothing to resume: the shuffle tile with the badge.
+     */
+    static Bitmap resumeBadgeArt(@Nullable Bitmap src, boolean has, float k) {
+        Bitmap out = has ? cover(src, 56, 16, 1f, k) : shuffleTile(56, 16, k);
         Canvas c = new Canvas(out);
-        Bitmap cov = cover(src, 56, 16, 1f, k);
-        c.drawBitmap(cov, 0, 0, null);
-        cov.recycle();
-
-        float cx = 46 * k, cy = 46 * k;
-        Paint ring = new Paint(Paint.ANTI_ALIAS_FLAG);
-        ring.setColor(s.bg);
-        c.drawCircle(cx, cy, 17 * k, ring);
-
+        int S = out.getWidth();
+        if (has) {
+            Paint scrim = new Paint(Paint.ANTI_ALIAS_FLAG);
+            scrim.setColor(0x47000000);
+            c.drawRoundRect(new RectF(0, 0, S, S), 16 * k, 16 * k, scrim);
+        }
+        float cx = S * 0.5f, cy = S * 0.5f;
         Paint bg = new Paint(Paint.ANTI_ALIAS_FLAG);
-        bg.setColor(s.primary);
-        c.drawCircle(cx, cy, 14 * k, bg);
+        bg.setColor(IDLE_PRIMARY);
+        c.drawCircle(cx, cy, 16 * k, bg);
+        if (has) {
+            drawPlayPauseGlyph(c, cx, cy, 20 * k, IDLE_ON_PRIMARY, false);
+        } else {
+            drawShuffleGlyph(c, cx, cy, 18 * k, IDLE_ON_PRIMARY);
+        }
+        return out;
+    }
 
-        drawPlayPauseGlyph(c, cx, cy, 18 * k, s.onPrimary, false);
-        out.setDensity(densityOf(k));
+    /** Idle art when there's nothing to resume: a warm tile with the shuffle glyph in primary. */
+    static Bitmap shuffleTile(float sizeDp, float radiusDp, float k) {
+        Bitmap out = cover(null, sizeDp, radiusDp, 1f, k);
+        Canvas c = new Canvas(out);
+        float S = out.getWidth();
+        drawShuffleGlyph(c, S * 0.5f, S * 0.5f, sizeDp * 0.42f * k, IDLE_PRIMARY);
         return out;
     }
 
@@ -643,7 +652,12 @@ final class WidgetArt {
 
     /** 4dp M3 progress bar: 2dp rounded track in `trackColor`, 2dp rounded fill in `fillColor`. */
     static Bitmap progressBar(float widthDp, float frac, int trackColor, int fillColor, float k) {
-        int W = Math.max(1, Math.round(widthDp * k)), H = Math.max(1, Math.round(4 * k));
+        return progressBar(widthDp, 4, frac, trackColor, fillColor, k);
+    }
+
+    /** Progress bar of `heightDp` (idle resume row: 3dp), fully rounded. */
+    static Bitmap progressBar(float widthDp, float heightDp, float frac, int trackColor, int fillColor, float k) {
+        int W = Math.max(1, Math.round(widthDp * k)), H = Math.max(1, Math.round(heightDp * k));
         Bitmap out = Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888);
         Canvas c = new Canvas(out);
         float r = H * 0.5f;
@@ -659,20 +673,7 @@ final class WidgetArt {
         return out;
     }
 
-    /** Full-width pill background (e.g. "Shuffle library" 56dp button on iGrid). */
-    static Bitmap pillButton(float wDp, float hDp, int bg, float k) {
-        int W = Math.max(1, Math.round(wDp * k)), H = Math.max(1, Math.round(hDp * k));
-        Bitmap out = Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888);
-        Canvas c = new Canvas(out);
-        Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
-        p.setColor(bg);
-        float r = H * 0.5f;
-        c.drawRoundRect(new RectF(0, 0, W, H), r, r, p);
-        out.setDensity(densityOf(k));
-        return out;
-    }
-
-    /** Scalloped 8-lobe DJ knob bitmap (16dp in mPlayer, 40dp in iDual). */
+    /** Scalloped 8-lobe DJ knob bitmap (16dp in mPlayer). */
     static Bitmap knobBitmap(float sizeDp, int color, float k) {
         int S = Math.max(1, Math.round(sizeDp * k));
         Bitmap out = Bitmap.createBitmap(S, S, Bitmap.Config.ARGB_8888);
@@ -710,47 +711,6 @@ final class WidgetArt {
         paint.setColor(color);
         paint.setStyle(Paint.Style.FILL);
         c.drawPath(p, paint);
-    }
-
-    /**
-     * Quick-start card of the "nothing playing" grid (iGrid, WidgetMaterial.dc.html):
-     * 20dp rounded card with 1dp inner rim, 8dp padding, top art (radius 12dp) or centered 64dp DJ knob.
-     */
-    static Bitmap pick(@Nullable Bitmap src, boolean dj, float cardWDp, float cardHDp, float artHDp, Scheme s, float k) {
-        int W = Math.max(1, Math.round(cardWDp * k)), H = Math.max(1, Math.round(cardHDp * k));
-        Bitmap out = Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888);
-        Canvas c = new Canvas(out);
-        RectF cardRect = new RectF(0, 0, W, H);
-        drawSurfaceCard(c, cardRect, 20 * k, dj ? DJ_CARD_BG : s.high, dj ? DJ_CARD_RIM : s.rim2, k);
-
-        float pad = 8 * k;
-        float artW = Math.max(1, W - 2 * pad);
-        float artH = Math.max(1, artHDp * k);
-        RectF artRect = new RectF(pad, pad, pad + artW, pad + artH);
-
-        if (dj) {
-            float knobPx = Math.min(64 * k, Math.min(artW, artH));
-            drawKnob(c, artRect.centerX(), artRect.centerY(), knobPx, DJ_KNOB);
-        } else if (src != null) {
-            int aw = Math.max(1, Math.round(artW)), ah = Math.max(1, Math.round(artH));
-            Bitmap crop = Bitmap.createBitmap(aw, ah, Bitmap.Config.ARGB_8888);
-            new Canvas(crop).drawBitmap(src, coverCrop(src, aw, ah), new RectF(0, 0, aw, ah), new Paint(Paint.FILTER_BITMAP_FLAG));
-            Paint ap = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
-            BitmapShader sh = new BitmapShader(crop, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
-            Matrix m = new Matrix();
-            m.postTranslate(pad, pad);
-            sh.setLocalMatrix(m);
-            ap.setShader(sh);
-            c.drawRoundRect(artRect, 12 * k, 12 * k, ap);
-            crop.recycle();
-        } else {
-            Paint ap = new Paint(Paint.ANTI_ALIAS_FLAG);
-            ap.setColor(oklch(0.20, 0.015, BRAND_HUE, 1.0));
-            c.drawRoundRect(artRect, 12 * k, 12 * k, ap);
-        }
-
-        out.setDensity(densityOf(k));
-        return out;
     }
 
     /* ── Helpers ─────────────────────────────────────── */

@@ -129,12 +129,15 @@ final class WidgetState {
         final String title;
         final String sub;
         @Nullable final String art;
+        /** where the idle widget shows it: "chip" (the Daily mix chip) or "list" (the recents) */
+        final String slot;
 
-        Pick(String action, String title, String sub, @Nullable String art) {
+        Pick(String action, String title, String sub, @Nullable String art, String slot) {
             this.action = action;
             this.title = title;
             this.sub = sub;
             this.art = art;
+            this.slot = slot;
         }
     }
 
@@ -147,7 +150,7 @@ final class WidgetState {
         /** "3/7" while the DJ plays, else empty */
         String djStep = "";
         int songs;
-        /** after Resume and DJ: Daily Mix 1, a radio, Daily Mix 2, Rediscover */
+        /** the idle widget's Daily mix chip ("chip") and recents ("list"): Daily mix 1 · a radio, Daily mix 2, Rediscover, a recent album */
         final List<Pick> picks = new ArrayList<>();
     }
 
@@ -174,7 +177,9 @@ final class WidgetState {
                     String action = p.optString("action", "");
                     if (action.isEmpty()) continue;
                     String art = p.optString("art", "");
-                    info.picks.add(new Pick(action, p.optString("title", ""), p.optString("sub", ""), art.isEmpty() ? null : art));
+                    // blobs from before the slots: the first pick (Daily mix 1) was the chip's
+                    String slot = p.optString("slot", i == 0 ? "chip" : "list");
+                    info.picks.add(new Pick(action, p.optString("title", ""), p.optString("sub", ""), art.isEmpty() ? null : art, slot));
                 }
             }
         } catch (Exception ignored) {
@@ -186,13 +191,34 @@ final class WidgetState {
     /* ── Resume ──────────────────────────────────────── */
 
     static final class Resume {
-        /** the album of the track it was on (shown as "Resume <album>") */
+        /** the track it was on; title / artist are empty for positions saved by older versions */
+        final String title;
+        final String artist;
+        /** its album (or the title when it has none) */
         final String album;
         @Nullable final String art;
+        final long positionMs;
+        /** 0 = unknown */
+        final long durationMs;
 
-        Resume(String album, @Nullable String art) {
+        Resume(String title, String artist, String album, @Nullable String art, long positionMs, long durationMs) {
+            this.title = title;
+            this.artist = artist;
             this.album = album;
             this.art = art;
+            this.positionMs = positionMs;
+            this.durationMs = durationMs;
+        }
+
+        float fraction() {
+            return durationMs > 0 ? Math.max(0f, Math.min(1f, positionMs / (float) durationMs)) : 0f;
+        }
+
+        /** "2:29 left", or "" when the length isn't known */
+        String left() {
+            if (durationMs <= 0) return "";
+            long s = Math.max(0, (durationMs - positionMs) / 1000);
+            return (s / 60) + ":" + (s % 60 < 10 ? "0" : "") + (s % 60) + " left";
         }
     }
 
@@ -220,6 +246,9 @@ final class WidgetState {
             .putLong("resumePos", n.positionNow())
             .putString("resumeAlbum", n.cur.album.isEmpty() ? n.cur.title : n.cur.album)
             .putString("resumeArt", n.cur.art)
+            .putString("resumeTitle", n.cur.title)
+            .putString("resumeArtist", n.cur.artist)
+            .putLong("resumeDur", n.durationMs)
             .apply();
     }
 
@@ -228,7 +257,8 @@ final class WidgetState {
         SharedPreferences p = prefs(ctx);
         String id = p.getString("resumeId", null);
         if (id == null || !new File(ctx.getFilesDir(), QUEUE_FILE).isFile()) return null;
-        return new Resume(p.getString("resumeAlbum", ""), p.getString("resumeArt", null));
+        return new Resume(p.getString("resumeTitle", ""), p.getString("resumeArtist", ""), p.getString("resumeAlbum", ""),
+            p.getString("resumeArt", null), p.getLong("resumePos", 0), p.getLong("resumeDur", 0));
     }
 
     static final class Queue {

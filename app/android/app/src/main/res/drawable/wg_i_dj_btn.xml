@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Idle widget 3×1 / 4×1: 48dp round DJ button, djBg + 1dp djRim -->
+<ripple xmlns:android="http://schemas.android.com/apk/res/android" android:color="#26C9C1FF">
+    <item>
+        <shape android:shape="oval">
+            <solid android:color="@color/wg_dj_bg" />
+            <stroke android:width="1dp" android:color="@color/wg_dj_rim" />
+        </shape>
+    </item>
+</ripple>
