@@ -2,7 +2,7 @@
 <!--
     Widget 2×1, nothing playing (design_handoff_widget_idle iPill): padding 12, gap 12.
     56dp resume art (radius 16, glow in the background bitmap) with a 28 % scrim and a 32dp round
-    play badge: the whole art resumes. Then the brand line (14dp icon + name) and the track title.
+    play badge: the whole art resumes. Then the track title and artist (no app name, Ivan Nov 1).
 -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@android:id/background"
@@ -39,32 +39,13 @@
             android:layout_weight="1"
             android:orientation="vertical">
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="16dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <ImageView
-                    android:layout_width="14dp"
-                    android:layout_height="14dp"
-                    android:importantForAccessibility="no"
-                    android:scaleType="fitXY"
-                    android:src="@drawable/wg_app_icon" />
-
-                <TextView
-                    style="@style/WgI.Label"
-                    android:layout_width="0dp"
-                    android:layout_marginStart="5dp"
-                    android:layout_weight="1"
-                    android:letterSpacing="0"
-                    android:text="@string/wg_brand"
-                    android:textColor="@color/wg_i_onvar" />
-            </LinearLayout>
-
             <TextView
                 android:id="@+id/wg_title"
-                style="@style/WgI"
+                style="@style/WgI" />
+
+            <TextView
+                android:id="@+id/wg_sub"
+                style="@style/WgI.Sub"
                 android:layout_marginTop="2dp" />
         </LinearLayout>
     </LinearLayout>

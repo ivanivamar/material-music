@@ -1,12 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    Widget 3×2+ / 4×2+, nothing playing (design_handoff_widget_idle iFull). Padding 14 / 16 / 16,
-    gap 10:
-      1. header: 22dp icon + name, 32dp search button (opens the app's search)
-      2. resume row: art 64 (glow in the background bitmap) · "Resume · 2:29 left" / title / artist ·
+    Widget 3×2+ / 4×2+, nothing playing (design_handoff_widget_idle iFull, without the header:
+    no name / search, Ivan Nov 1). Padding 14 / 16 / 16, gap 10:
+      1. resume row: art 64 (glow in the background bitmap) · "Resume · 2:29 left" / title / artist ·
          album / 3dp progress · 56dp play
-      3. chips (40dp pills, flex 1): DJ · Daily mix (4 columns) · Shuffle
-      4. from 3 rows: recents list (1dp divider, rows 44 / 46dp)
+      2. chips (40dp pills, flex 1): DJ · Daily mix (4 columns) · Shuffle
+      3. from 3 rows: recents list (1dp divider, rows 44 / 46dp)
     Buttons start playback; everything else opens the app.
 -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
@@ -24,6 +23,7 @@
         android:scaleType="fitXY" />
 
     <LinearLayout
+        android:id="@+id/wg_col"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
@@ -32,50 +32,10 @@
         android:paddingEnd="16dp"
         android:paddingBottom="16dp">
 
-        <!-- 1. header -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="24dp"
-            android:layout_marginEnd="-6dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
-
-            <ImageView
-                android:layout_width="22dp"
-                android:layout_height="22dp"
-                android:importantForAccessibility="no"
-                android:scaleType="fitXY"
-                android:src="@drawable/wg_app_icon" />
-
-            <TextView
-                style="@style/WgI.Small"
-                android:layout_width="0dp"
-                android:layout_marginStart="8dp"
-                android:layout_weight="1"
-                android:text="@string/wg_brand" />
-
-            <FrameLayout
-                android:id="@+id/wg_search"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:background="@drawable/wg_i_round"
-                android:contentDescription="@string/wg_search">
-
-                <ImageView
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
-                    android:layout_gravity="center"
-                    android:importantForAccessibility="no"
-                    android:src="@drawable/ic_wg_search"
-                    android:tint="@color/wg_i_onvar" />
-            </FrameLayout>
-        </LinearLayout>
-
-        <!-- 2. resume row -->
+        <!-- 1. resume row -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="64dp"
-            android:layout_marginTop="10dp"
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
@@ -128,7 +88,7 @@
             </FrameLayout>
         </LinearLayout>
 
-        <!-- 3. chips -->
+        <!-- 2. chips -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="40dp"
@@ -221,7 +181,7 @@
             </LinearLayout>
         </LinearLayout>
 
-        <!-- 4. recents -->
+        <!-- 3. recents -->
         <LinearLayout
             android:id="@+id/wg_list"
             android:layout_width="match_parent"

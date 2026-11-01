@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
     Widget 2×2+ (2 columns, 2+ rows), nothing playing (design_handoff_widget_idle iSq):
-    padding 14 / 16 / 16, space-between: header (22dp icon + name), art 64 + play 56 (bottom-aligned),
-    title + "Resume · artist". Play resumes; the rest opens the app.
+    padding 16, space-between: art 64 + play 56 (bottom-aligned), title + "Resume · artist"
+    (the handoff's header with the name left out, Ivan Nov 1). Play resumes; the rest opens the app.
 -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@android:id/background"
@@ -23,35 +23,9 @@
         android:layout_height="match_parent"
         android:orientation="vertical"
         android:paddingStart="16dp"
-        android:paddingTop="14dp"
+        android:paddingTop="16dp"
         android:paddingEnd="16dp"
         android:paddingBottom="16dp">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="24dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
-
-            <ImageView
-                android:layout_width="22dp"
-                android:layout_height="22dp"
-                android:importantForAccessibility="no"
-                android:scaleType="fitXY"
-                android:src="@drawable/wg_app_icon" />
-
-            <TextView
-                style="@style/WgI.Small"
-                android:layout_width="0dp"
-                android:layout_marginStart="8dp"
-                android:layout_weight="1"
-                android:text="@string/wg_brand" />
-        </LinearLayout>
-
-        <FrameLayout
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1" />
 
         <LinearLayout
             android:layout_width="match_parent"

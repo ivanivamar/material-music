@@ -7,6 +7,7 @@ import android.graphics.Bitmap;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.SizeF;
+import android.view.Gravity;
 import android.view.View;
 import android.widget.RemoteViews;
 
@@ -310,12 +311,13 @@ final class WidgetRenderer {
             v.setImageViewBitmap(R.id.wg_art, WidgetArt.resumeBadgeArt(l.art, l.has, r.k));
             v.setOnClickPendingIntent(R.id.wg_art, l.play);
             v.setTextViewText(R.id.wg_title, l.title);
+            v.setTextViewText(R.id.wg_sub, l.artist);
+            v.setViewVisibility(R.id.wg_sub, l.artist.isEmpty() ? View.GONE : View.VISIBLE);
         } else if (r.cols == 2) {
-            // iSq: header · art + play · title / "Resume · artist"
+            // iSq: art + play at the top · title / "Resume · artist" at the bottom
             v = new RemoteViews(r.ctx.getPackageName(), R.layout.widget_idle_cover);
-            float gap = Math.max(0, (r.h - 30 - 24 - 64 - 36) / 2f);
             bg.gx = 16;
-            bg.gy = 14 + 24 + gap;
+            bg.gy = 16;
             bg.gs = 64;
             bg.gr = 16;
             v.setImageViewBitmap(R.id.wg_art, idleArt(r, l, 64, 16));
@@ -339,16 +341,13 @@ final class WidgetRenderer {
         return v;
     }
 
-    /** 3–4 columns, 2+ rows (iFull): header + search · resume row · chips · recents from 3 rows. */
+    /** 3–4 columns, 2+ rows (iFull, no header): resume row · chips · recents from 3 rows. */
     private static RemoteViews full(R2 r, Last l, WidgetArt.Bg bg) {
         RemoteViews v = new RemoteViews(r.ctx.getPackageName(), R.layout.widget_idle_grid);
         bg.gx = 16;
-        bg.gy = 14 + 24 + 10;
+        bg.gy = 14;
         bg.gs = 64;
         bg.gr = 16;
-
-        // header: search opens the app on its search field (always in the foreground)
-        v.setOnClickPendingIntent(R.id.wg_search, PelagicWidget.openApp(r.ctx, "search"));
 
         // resume row
         v.setImageViewBitmap(R.id.wg_art, idleArt(r, l, 64, 16));
@@ -387,8 +386,8 @@ final class WidgetRenderer {
         if (r.rows >= 3) {
             float rowH = r.rows >= 4 ? 46 : 44;
             int want = r.rows >= 4 ? 4 : 2;
-            // above the list: padding 14, header 24, resume 64, chips 40, three 10dp gaps, divider + 4; at least 4dp below
-            float avail = r.h - (14 + 24 + 10 + 64 + 10 + 40 + 10 + 5) - 4;
+            // above the list: padding 14, resume 64, chips 40, two 10dp gaps, divider + 4; at least 4dp below
+            float avail = r.h - (14 + 64 + 10 + 40 + 10 + 5) - 4;
             count = Math.min(Math.min(want, list.size()), Math.max(0, (int) Math.floor(avail / rowH)));
             for (int i = 0; i < count; i++) {
                 WidgetState.Pick p = list.get(i);
@@ -406,6 +405,11 @@ final class WidgetRenderer {
             }
         }
         v.setViewVisibility(R.id.wg_list, count > 0 ? View.VISIBLE : View.GONE);
+        if (count == 0) {
+            // no recents (2 rows): resume row + chips centred in the height, the glow follows the art
+            v.setInt(R.id.wg_col, "setGravity", Gravity.CENTER_VERTICAL);
+            bg.gy = 14 + Math.max(0, (r.h - 30 - 114) / 2f);
+        }
         return v;
     }
 
