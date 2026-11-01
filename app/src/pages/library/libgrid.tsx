@@ -7,7 +7,7 @@
  * (rail with a coral ring per group); A–Z / Artist → letters (tonal cookie per letter); Year → decades. Timeline
  * view shows the group heads and the rail; Grid view is one plain grid (letters still feed the scrubber).
  */
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from 'react'
 import { AlbumEq, IconButton, formatTime, qualityLabel } from '../../components/ui'
 import { Icon, type IconName } from '../../design/icons'
 import { SHAPE_CLOVER, SHAPE_PLAYING } from '../../design/shapes'
