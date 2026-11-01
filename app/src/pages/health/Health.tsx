@@ -208,9 +208,10 @@ export function Health() {
 
 function Body({ kind, h, c }: { kind: IssueKind; h: HealthData; c: Catalogue }) {
   const [shown, setShown] = useState(PAGE)
+  const { lyricState } = useHealthState()
   useEffect(() => setShown(PAGE), [kind])
   const n = issueCount(h)[kind]
-  if (!n) {
+  if (!n && !(kind === 'lyrics' && h.lyricsNotFound.length)) {
     return (
       <div className="hl-empty">
         <EmptyState icon="checkCircle" title={EMPTY[kind].title} body={EMPTY[kind].body} />
@@ -264,18 +265,25 @@ function Body({ kind, h, c }: { kind: IssueKind; h: HealthData; c: Catalogue }) 
           {more(h.genres.length)}
         </>
       )
-    case 'lyrics':
+    case 'lyrics': {
+      // a song leaves the list the moment its lyrics are found (they are written to Drive in batches
+      // a few seconds later); songs LRCLIB doesn't know move to their own group below
+      const todo = h.lyrics.filter((t) => lyricState[t.id] !== 'found')
       return (
         <>
-          <LyricsBar songs={h.lyrics} />
-          <div className="dt-list has-cover hl-list" role="list">
-            {h.lyrics.slice(0, shown).map((t, i) => (
-              <LyricsRow key={t.id} index={i} track={t} c={c} />
-            ))}
-          </div>
-          {more(h.lyrics.length)}
+          <LyricsBar songs={todo} />
+          {todo.length > 0 && (
+            <div className="dt-list has-cover hl-list" role="list">
+              {todo.slice(0, shown).map((t, i) => (
+                <LyricsRow key={t.id} index={i} track={t} c={c} />
+              ))}
+            </div>
+          )}
+          {more(todo.length)}
+          <NotFoundGroup songs={h.lyricsNotFound.filter((t) => lyricState[t.id] !== 'found')} c={c} />
         </>
       )
+    }
     case 'duplicate':
       return (
         <>
@@ -827,10 +835,13 @@ function GenreRow({ index, album, c }: { index: number; album: Album; c: Catalog
 /* ── Lyrics ─────────────────────────────────────────── */
 
 function LyricsBar({ songs }: { songs: Track[] }) {
-  const { job, misses } = useHealthState()
-  const now = Date.now()
-  const worth = songs.filter((t) => (misses[t.id] ?? 0) < now - 14 * 86_400_000).length
+  const { job } = useHealthState()
   const pct = job.total ? Math.min(1, job.done / job.total) : 0
+  const left = songs.length
+  const tail = [
+    job.missed ? `${fmtN(job.missed)} not on LRCLIB` : '',
+    job.failed ? `${fmtN(job.failed)} couldn't be reached` : '',
+  ].filter(Boolean)
 
   return (
     <div className="hl-bar">
@@ -842,13 +853,14 @@ function LyricsBar({ songs }: { songs: Track[] }) {
           <>
             <div className="hl-bar-title">Fetching lyrics from LRCLIB</div>
             <div className="hl-bar-sub">
-              {fmtN(job.done)} of {fmtN(job.total)} songs processed · {fmtN(job.saved)} saved
+              {fmtN(job.done)} of {fmtN(job.total)} · {fmtN(job.found)} found
+              {tail.length ? ` · ${tail.join(' · ')}` : ''}
             </div>
           </>
         ) : job.offline ? (
           <>
             <div className="hl-bar-title">LRCLIB is not responding</div>
-            <div className="hl-bar-sub">Several requests failed · Please try again in a moment</div>
+            <div className="hl-bar-sub">Several requests in a row failed · Try again in a moment</div>
           </>
         ) : job.error ? (
           <>
@@ -857,17 +869,15 @@ function LyricsBar({ songs }: { songs: Track[] }) {
           </>
         ) : job.total && job.done ? (
           <>
-            <div className="hl-bar-title">{plural(job.saved, 'song', 'songs')} updated with lyrics</div>
-            <div className="hl-bar-sub">
-              {job.done - job.saved > 0
-                ? `${fmtN(job.done - job.saved)} songs not available on LRCLIB (skipped for 2 weeks)`
-                : 'All done!'}
+            <div className="hl-bar-title">
+              {job.saved ? `Lyrics saved for ${plural(job.saved, 'song', 'songs')}` : 'No new lyrics found'}
             </div>
+            <div className="hl-bar-sub">{tail.length ? tail.join(' · ') : 'All done'}</div>
           </>
         ) : (
           <>
             <div className="hl-bar-title">
-              {worth ? `${fmtN(worth)} ${plural(worth, 'song', 'songs')} to look up` : 'All remaining songs were recently checked'}
+              {left ? `${fmtN(left)} ${plural(left, 'song', 'songs')} to look up` : 'Every song has been looked up'}
             </div>
             <div className="hl-bar-sub">Synced (LRC) lyrics when available, otherwise plain text lyrics</div>
           </>
@@ -883,15 +893,48 @@ function LyricsBar({ songs }: { songs: Track[] }) {
             variant="primary"
             size="sm"
             icon="lyrics"
-            disabled={!worth}
+            disabled={!left}
             onClick={() => void fetchLyrics(songs.map((t) => t.id))}
           >
             Fetch all
           </Button>
         )}
       </div>
-      {job.running && (
-        <LinearProgress className="hl-bar-track" value={pct} />
+      {job.running && <LinearProgress className="hl-bar-track" value={pct} />}
+    </div>
+  )
+}
+
+/** Songs LRCLIB had nothing for: kept out of the to-do list, folded by default. */
+function NotFoundGroup({ songs, c }: { songs: Track[]; c: Catalogue }) {
+  const [open, setOpen] = useState(false)
+  const { job } = useHealthState()
+  if (!songs.length) return null
+  return (
+    <div className="hl-nf">
+      <div className="hl-nf-head">
+        <button type="button" className={`hl-nf-toggle ${open ? 'is-open' : ''}`} aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+          <Icon name="chevD" size={20} />
+          <span className="hl-nf-title">Not on LRCLIB</span>
+          <span className="hl-nf-count">{fmtN(songs.length)}</span>
+        </button>
+        <span className="hl-nf-hint">LRCLIB has no lyrics for these yet · Retry later, or hide the instrumentals</span>
+        <Button
+          variant="secondary"
+          size="sm"
+          icon="refresh"
+          disabled={job.running}
+          onClick={() => void fetchLyrics(songs.map((t) => t.id), { force: true })}
+        >
+          Retry all
+        </Button>
+      </div>
+      {open && (
+        <div className="dt-list has-cover hl-list" role="list">
+          {songs.map((t, i) => (
+            <LyricsRow key={t.id} index={i} track={t} c={c} />
+          ))}
+        </div>
       )}
     </div>
   )
@@ -901,7 +944,7 @@ function LyricsRow({ index, track, c }: { index: number; track: Track; c: Catalo
   const { lyricState, misses } = useHealthState()
   const album = c.albums[track.albumId]
   const s = lyricState[track.id]
-  const missed = (misses[track.id] ?? 0) > 0
+  const missed = !!misses[track.id]
   const now = useNowPlaying()
   const isPlaying = now.id === track.id
 
@@ -912,6 +955,8 @@ function LyricsRow({ index, track, c }: { index: number; track: Track; c: Catalo
       </span>
     ) : s === 'none' || (missed && !s) ? (
       <span className="hl-status-pill is-muted">Not on LRCLIB</span>
+    ) : s === 'failed' ? (
+      <span className="hl-status-pill is-error">Couldn't reach LRCLIB</span>
     ) : s === 'error' ? (
       <span className="hl-status-pill is-error">Save failed</span>
     ) : undefined
@@ -947,11 +992,11 @@ function LyricsRow({ index, track, c }: { index: number; track: Track; c: Catalo
           <Button
             variant="secondary"
             size="sm"
-            icon={s === 'none' || (missed && !s) ? 'refresh' : 'lyrics'}
+            icon={missed || s === 'failed' || s === 'error' ? 'refresh' : 'lyrics'}
             disabled={s === 'looking'}
             onClick={() => void fetchLyrics([track.id], { force: true })}
           >
-            {s === 'none' || (missed && !s) ? 'Retry' : 'Fetch'}
+            {missed || s === 'failed' || s === 'error' ? 'Retry' : 'Fetch'}
           </Button>
           <IgnoreBtn kind="lyrics" id={track.id} label="Instrumental / ignore" />
         </>

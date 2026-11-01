@@ -52,7 +52,10 @@ export interface Health {
   covers: Album[]
   years: Album[]
   genres: Album[]
+  /** songs without lyrics still to look up */
   lyrics: Track[]
+  /** songs without lyrics that LRCLIB had nothing for (own section on the page, not counted as issues) */
+  lyricsNotFound: Track[]
   duplicates: DupGroup[]
   bitrate: LowBitrate[]
 }
@@ -145,9 +148,16 @@ export function analyse(c: Catalogue, genres: GenresDoc, ignored: Ignored): Heal
     years: albums.filter((a) => !a.year && !sYear.has(a.id)),
     genres: albums.filter((a) => !albumGenresOf(genres, a).genres.length && !sGenre.has(a.id)),
     lyrics: tracks.filter((t) => !hasLyrics(t) && !sLyrics.has(t.id)).sort((a, b) => a.artist.localeCompare(b.artist) || albumName(a).localeCompare(albumName(b)) || a.disc - b.disc || (a.track ?? 999) - (b.track ?? 999)),
+    lyricsNotFound: [],
     duplicates: duplicates(c).filter((g) => !sDup.has(g.id)),
     bitrate,
   }
+}
+
+/** Move the songs LRCLIB didn't know out of the to-do list into their own group. */
+export function splitLyrics(h: Health, misses: Record<string, number>): Health {
+  const all = [...h.lyrics, ...h.lyricsNotFound]
+  return { ...h, lyrics: all.filter((t) => !misses[t.id]), lyricsNotFound: all.filter((t) => !!misses[t.id]) }
 }
 
 export const issueCount = (h: Health): Record<IssueKind, number> => ({
@@ -165,17 +175,36 @@ export type Ignored = Partial<Record<IssueKind, string[]>>
 
 interface Local {
   ignored: Ignored
-  /** trackId → ms LRCLIB had nothing (skipped by "Fetch all" for 2 weeks) */
+  /** trackId → ms LRCLIB had nothing (left out of "Fetch all"; Retry asks again) */
   misses: Record<string, number>
 }
 const KEY = 'health'
-const MISS_TTL = 14 * 86_400_000
 
-type LyricState = 'looking' | 'found' | 'none' | 'instrumental' | 'error'
+/**
+ * looking  being looked up now          found         lyrics found (row leaves straight away; saved in batches)
+ * none     LRCLIB has nothing           instrumental  LRCLIB says no words (auto-ignored)
+ * failed   LRCLIB could not be reached  error         found, but saving to Drive failed
+ */
+export type LyricState = 'looking' | 'found' | 'none' | 'instrumental' | 'failed' | 'error'
+export interface LyricsJob {
+  running: boolean
+  total: number
+  done: number
+  saved: number
+  /** lyrics found this run (saved a few seconds later, in batches) */
+  found: number
+  /** not on LRCLIB */
+  missed: number
+  /** could not reach LRCLIB */
+  failed: number
+  offline: boolean
+  error: string | null
+}
+const IDLE_JOB: LyricsJob = { running: false, total: 0, done: 0, saved: 0, found: 0, missed: 0, failed: 0, offline: false, error: null }
 export interface HealthState extends Local {
   loaded: boolean
   /** lyrics lookups */
-  job: { running: boolean; total: number; done: number; saved: number; offline: boolean; error: string | null }
+  job: LyricsJob
   lyricState: Record<string, LyricState>
 }
 
@@ -183,7 +212,7 @@ let state: HealthState = {
   ignored: {},
   misses: {},
   loaded: false,
-  job: { running: false, total: 0, done: 0, saved: 0, offline: false, error: null },
+  job: IDLE_JOB,
   lyricState: {},
 }
 const listeners = new Set<() => void>()
@@ -229,7 +258,7 @@ export const healthStore = {
 onAccountReset(() => {
   loading = null
   jobQueue.length = 0
-  set({ ignored: {}, misses: {}, loaded: false, lyricState: {}, job: { running: false, total: 0, done: 0, saved: 0, offline: false, error: null } })
+  set({ ignored: {}, misses: {}, loaded: false, lyricState: {}, job: IDLE_JOB })
   void idbSet('kv', KEY, { ignored: {}, misses: {} })
 })
 
@@ -241,13 +270,15 @@ export function useHealthState(): HealthState {
 export function useHealth(): Health | null {
   const { data } = useLibrary()
   const { doc, loaded: genresLoaded } = useGenres()
-  const { ignored, loaded } = useHealthState()
+  const { ignored, misses, loaded } = useHealthState()
   useEffect(() => {
     void healthStore.load()
     void genresStore.load()
   }, [])
   // wait for genres.json and the ignore list, or every album would show up as genre-less for a moment
-  return useMemo(() => (data && loaded && genresLoaded ? analyse(data, doc, ignored) : null), [data, doc, ignored, loaded, genresLoaded])
+  const base = useMemo(() => (data && loaded && genresLoaded ? analyse(data, doc, ignored) : null), [data, doc, ignored, loaded, genresLoaded])
+  // cheap second pass, so a "not on LRCLIB" during Fetch all doesn't re-run the whole analysis
+  return useMemo(() => (base ? splitLyrics(base, misses) : null), [base, misses])
 }
 
 /* ── Lyrics ─────────────────────────────────────────── */
@@ -275,6 +306,8 @@ let runTried = 0
 let runSaved = 0
 const CONCURRENCY = 3
 const BATCH = 12
+/** ms: found lyrics are written at least this often during a long run */
+const FLUSH_MS = 8000
 
 const patchLyric = (id: string, s: LyricState) => set({ lyricState: { ...state.lyricState, [id]: s } })
 const errMsg = (e: unknown) => (e instanceof AuthError ? 'Google session expired — sign in again' : ((e as Error)?.message ?? 'Something went wrong'))
@@ -301,24 +334,26 @@ async function commitLyrics(batch: Map<string, { text: string; synced: boolean }
 }
 
 /**
- * Look up lyrics for these songs on LRCLIB and save what is found. Songs that already have lyrics are
- * skipped. Adds to the running job if there is one.
+ * Look up lyrics for these songs on LRCLIB and save what is found, in the order given (the page passes
+ * its list order, so the lookups walk down the list). Songs that already have lyrics are skipped, and so
+ * are songs LRCLIB didn't know unless `force` (Retry). Adds to the running job if there is one; a single
+ * song asked for by hand goes to the front.
  */
 export function fetchLyrics(trackIds: string[], opts: { auto?: boolean; force?: boolean } = {}): Promise<void> {
   const c = libraryStore.get().data
   if (!c) return Promise.resolve()
-  const now = Date.now()
   const queued = new Set(jobQueue)
   const fresh = trackIds.filter((id) => {
     const t = c.tracks[id]
     if (!t || hasLyrics(t) || queued.has(id) || state.lyricState[id] === 'looking') return false
-    if (!opts.force && (state.misses[id] ?? 0) > now - MISS_TTL) return false
+    if (!opts.force && state.misses[id]) return false
     return true
   })
   if (!fresh.length) return runPromise ?? Promise.resolve()
-  jobQueue.push(...fresh)
+  if (opts.force && fresh.length === 1) jobQueue.unshift(fresh[0])
+  else jobQueue.push(...fresh)
   const job = state.job
-  set({ job: { ...job, running: true, total: job.running ? job.total + fresh.length : fresh.length, done: job.running ? job.done : 0, saved: job.running ? job.saved : 0, offline: false, error: null } })
+  set({ job: job.running ? { ...job, total: job.total + fresh.length } : { ...IDLE_JOB, running: true, total: fresh.length } })
   if (!runPromise) {
     runAuto = opts.auto ?? false
     runTried = 0
@@ -335,7 +370,9 @@ async function runJobs(): Promise<void> {
   let stop = false
   let failStreak = 0
   let writing: Promise<void> = Promise.resolve()
+  let lastFlush = Date.now()
   const flush = () => {
+    lastFlush = Date.now()
     if (!pending.size) return
     const batch = new Map(pending)
     pending.clear()
@@ -369,28 +406,33 @@ async function runJobs(): Promise<void> {
         failStreak = 0
         if (r.kind === 'found') {
           pending.set(id, { text: r.text, synced: r.synced })
-          patchLyric(id, 'found')
-          if (pending.size >= BATCH) flush()
+          if (state.misses[id]) {
+            const rest = { ...state.misses }
+            delete rest[id]
+            set({ misses: rest })
+            persist()
+          }
+          set({ lyricState: { ...state.lyricState, [id]: 'found' }, job: { ...state.job, found: state.job.found + 1 } })
         } else if (r.kind === 'instrumental') {
           patchLyric(id, 'instrumental')
           healthStore.ignore('lyrics', [id])
         } else {
-          patchLyric(id, 'none')
-          set({ misses: { ...state.misses, [id]: Date.now() } })
+          // one update, so the row moves to "Not on LRCLIB" in the same render its pill changes
+          set({ misses: { ...state.misses, [id]: Date.now() }, lyricState: { ...state.lyricState, [id]: 'none' }, job: { ...state.job, missed: state.job.missed + 1 } })
           persist()
         }
       } catch (e) {
-        if (e instanceof LyricsOffline) {
-          // a request failed even after retries: skip this song (not marked as missing, "Fetch" tries it
-          // again); only give up the whole run when several in a row fail, i.e. LRCLIB / the network is down
-          patchLyric(id, 'error')
-          if (++failStreak >= 5) {
-            stop = true
-            set({ job: { ...state.job, offline: true } })
-            return
-          }
-        } else patchLyric(id, 'error')
+        // a request failed even after retries: skip this song (not marked as missing, "Fetch" tries it
+        // again); only give up the whole run when several in a row fail, i.e. LRCLIB / the network is down
+        patchLyric(id, 'failed')
+        set({ job: { ...state.job, failed: state.job.failed + 1 } })
+        if (e instanceof LyricsOffline && ++failStreak >= 5) {
+          stop = true
+          set({ job: { ...state.job, done: state.job.done + 1, offline: true } })
+          return
+        }
       }
+      if (pending.size >= BATCH || (pending.size && Date.now() - lastFlush > FLUSH_MS)) flush()
       set({ job: { ...state.job, done: state.job.done + 1 } })
     }
   }

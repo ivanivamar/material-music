@@ -753,3 +753,64 @@
   flex-basis: 100%;
   padding-left: 44px;
 }
+
+/* ── Lyrics: "Not on LRCLIB" group ──────────────────── */
+.hl-nf {
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.hl-nf-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  padding: 6px 6px 6px 4px;
+}
+
+.hl-nf-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 12px 0 8px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--ink-primary);
+  font: inherit;
+  cursor: pointer;
+}
+.hl-nf-toggle:hover { background: oklch(0.28 0.01 40 / 0.6); }
+.hl-nf-toggle:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.hl-nf-toggle svg { transition: transform 0.2s var(--ease); transform: rotate(-90deg); }
+.hl-nf-toggle.is-open svg { transform: none; }
+
+.hl-nf-title { font-size: 15px; font-weight: 600; }
+
+.hl-nf-count {
+  min-width: 24px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: oklch(0.28 0.01 40);
+  color: var(--ink-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 22px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.hl-nf-hint {
+  flex: 1;
+  min-width: 180px;
+  font-size: 13px;
+  color: var(--ink-secondary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hl-nf-toggle svg { transition: none; }
+}
