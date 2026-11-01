@@ -7,7 +7,7 @@
  * (rail with a coral ring per group); A–Z / Artist → letters (tonal cookie per letter); Year → decades. Timeline
  * view shows the group heads and the rail; Grid view is one plain grid (letters still feed the scrubber).
  */
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from 'react'
 import { AlbumEq, IconButton, formatTime, qualityLabel } from '../../components/ui'
 import { Icon, type IconName } from '../../design/icons'
 import { SHAPE_CLOVER, SHAPE_PLAYING } from '../../design/shapes'
@@ -125,16 +125,20 @@ export function sortItems(items: LibItem[], sort: 'added' | 'name'): LibItem[] {
 /* ── Grid size: as many columns of ≥ 150px as fit ─── */
 
 export function useGridSize(min: number, gap: number, phoneCols: number | null) {
-  const ref = useRef<HTMLDivElement>(null)
   const [w, setW] = useState(0)
-  useLayoutEffect(() => {
-    const el = ref.current
+  const ro = useRef<ResizeObserver | null>(null)
+  // Callback ref: re-measure whenever the grid element mounts or is swapped
+  // (plain ↔ timeline, chip switch, data arriving after first render).
+  const ref = useCallback((el: HTMLDivElement | null) => {
+    ro.current?.disconnect()
+    ro.current = null
     if (!el) return
     setW(el.clientWidth)
-    const ro = new ResizeObserver(() => setW(el.clientWidth))
-    ro.observe(el)
-    return () => ro.disconnect()
+    const obs = new ResizeObserver(() => setW(el.clientWidth))
+    obs.observe(el)
+    ro.current = obs
   }, [])
+  useEffect(() => () => ro.current?.disconnect(), [])
   const cols = phoneCols ?? Math.max(2, Math.floor((w + gap) / (min + gap)))
   const S = w ? Math.floor((w - (cols - 1) * gap) / cols) : min
   return { ref, S, cols }
