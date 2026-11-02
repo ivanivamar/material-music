@@ -1,9 +1,12 @@
 /**
- * Playlists (step 9): one JSON file per playlist in Drive `Pelagic/playlists/<playlistId>.json`
- * (+ an optional `<playlistId>.jpg` custom cover). No "Liked songs" playlist (see the plan).
+ * Playlists (step 9): one Firestore doc per playlist, `users/<uid>/playlists/<playlistId>` (step 39;
+ * before that one JSON file per playlist in Drive `Pelagic/playlists/<playlistId>.json`, read once
+ * per device to migrate). A custom cover is still a Drive file, `Pelagic/playlists/<playlistId>.jpg`.
+ * No "Liked songs" playlist (see the plan).
  *
  * Offline-first: every edit lands in the local copy (IndexedDB `kv.playlists`) at once and is
- * pushed to Drive a moment later, or whenever the device is back online. Two devices editing the
+ * pushed to the cloud a moment later (read, merge, write in a transaction), or whenever the device
+ * is back online; a live listener brings the other device's edits in. Two devices editing the
  * same playlist merge entry by entry, so nothing is lost:
  *
  *   - entries are keyed by `entryId`; adds from both devices survive (union);
@@ -12,20 +15,22 @@
  *   - order is a fractional index (`pos`); the latest move of an entry wins (`movedAt`);
  *   - name / description / cover / deleted: the latest edit of each field wins (`stamps`).
  *
- * Deleting a playlist writes `deleted: true` into its file and moves the file to the Drive trash
- * (the other device still sees it there and drops the playlist; restoring brings it back). Once
- * the trash is emptied the file is gone and the local tombstone is dropped as well.
+ * Deleting a playlist writes `deleted: true` into its doc (a tombstone the other device sees, so it
+ * drops the playlist; restoring brings it back). The doc stays.
  *
  * Each entry keeps the track's `isrc`, `title` and `artist` next to its `trackId`, so a track
  * whose id changes after a tag edit can still be found (state/playlistViews.ts).
  */
 import { useSyncExternalStore } from 'react'
-import { DRIVE_ROOT, PLAYLISTS_DIR } from '../config'
-import { AuthError, download, driveFetch, findChild, FOLDER_MIME, getMeta } from '../lib/drive'
+import { PLAYLISTS_DIR } from '../config'
+import { AuthError } from '../lib/drive'
 import { idbGet, idbSet } from '../lib/idb'
-import { folder, putFile } from '../upload/driveWrite'
+import { cloudFailed, migrateOnce, onCloud, stable, whenCloud, withTimeout } from '../sync/cloud'
+import type { SyncBackend } from '../sync/firebase'
+import { readPlaylistFiles } from '../sync/legacyDrive'
+import { putFile } from '../upload/driveWrite'
 import { genresStore } from './genres'
-import { historyStore } from './history'
+import { DEVICE, historyStore } from './history'
 import { libraryStore, type Track } from './library'
 import { onAccountReset, sessionStore } from './session'
 import { normaliseSmart, type SmartRules } from './smart'
@@ -87,7 +92,7 @@ export interface Playlist {
 
 export const isSmart = (p: Playlist | undefined | null): boolean => !!p?.smart
 
-/** playlists/<id>.json on Drive */
+/** playlists/<id>.json on Drive (before step 39) */
 interface PlaylistFile extends Playlist {
   format: 'pelagic-playlist'
   v: 1
@@ -95,16 +100,20 @@ interface PlaylistFile extends Playlist {
 
 interface Rec {
   doc: Playlist
-  /** Drive file + the version our copy was merged with (null: never written) */
-  fileId: string | null
-  version: string | null
+  /** the cloud has a doc for it */
+  synced: boolean
   /** changed here since the last write */
   dirty: boolean
+  /** it was on Drive before the move (a deletion must still reach the cloud) */
+  shared?: boolean
 }
+
+/** older cache records (Drive): a file id meant it had been written */
+type CachedRec = Rec & { fileId?: string | null }
 
 interface CacheRecord {
   email: string | null
-  recs: Record<string, Rec>
+  recs: Record<string, CachedRec>
   syncedAt: number | null
 }
 
@@ -116,13 +125,12 @@ export interface PlaylistsState {
   loaded: boolean
   syncing: boolean
   syncedAt: number | null
-  /** playlists changed here that Drive doesn't have yet */
+  /** playlists changed here that the cloud doesn't have yet */
   pending: number
   error: string | null
 }
 
 const CACHE_KEY = 'playlists'
-const UPLOAD = 'https://www.googleapis.com/upload/drive/v3/files'
 const GAP = 1024
 
 /* ── Helpers ────────────────────────────────────────── */
@@ -218,7 +226,6 @@ let recs = new Map<string, Rec>()
 /** edit counter per playlist: a write only clears `dirty` if nothing changed while it ran */
 const revs = new Map<string, number>()
 let generation = 0
-let folderId: string | null = null
 
 let state: PlaylistsState = { list: [], byId: new Map(), loaded: false, syncing: false, syncedAt: null, pending: 0, error: null }
 const listeners = new Set<() => void>()
@@ -271,79 +278,64 @@ function trackFields(t: Track) {
   return { trackId: t.id, isrc: t.isrc || undefined, title: t.title, artist: t.artist }
 }
 
-/* ── Drive ──────────────────────────────────────────── */
+/* ── Cloud ──────────────────────────────────────────── */
 
-interface ListedFile {
-  id: string
-  name: string
-  version?: string
-  trashed?: boolean
-}
+/** `a` holds everything `b` has (merging b in changes nothing). */
+const covers = (a: Playlist, b: Playlist) => stable(mergePlaylists(a, b)) === stable(mergePlaylists(a, a))
 
-async function findFolder(): Promise<string | null> {
-  if (folderId) return folderId
-  const root = await findChild(DRIVE_ROOT, 'root', true)
-  if (!root) return null
-  const f = await findChild(PLAYLISTS_DIR, root.id, true)
-  folderId = f?.id ?? null
-  return folderId
-}
-
-/** Every playlist file in the folder, trashed ones too (they carry deletions). */
-async function listFiles(parent: string): Promise<ListedFile[]> {
-  const out: ListedFile[] = []
-  let pageToken: string | undefined
-  do {
-    const params = new URLSearchParams({
-      q: `'${parent}' in parents and mimeType != '${FOLDER_MIME}'`,
-      fields: 'nextPageToken,files(id,name,version,trashed)',
-      spaces: 'drive',
-      pageSize: '1000',
-    })
-    if (pageToken) params.set('pageToken', pageToken)
-    const res = await driveFetch(`/files?${params}`)
-    const j = (await res.json()) as { files: ListedFile[]; nextPageToken?: string }
-    out.push(...j.files.filter((f) => f.name.endsWith('.json')))
-    pageToken = j.nextPageToken
-  } while (pageToken)
-  return out
-}
-
-async function readFile(fileId: string, id: string): Promise<Playlist> {
-  const raw = JSON.parse(new TextDecoder().decode(await download(fileId))) as Partial<PlaylistFile>
-  return normalise(raw, id)
-}
-
-async function writeFile(doc: Playlist, parent: string, existingId: string | null, trashed: boolean | undefined): Promise<{ id: string; version: string | null }> {
-  const body = JSON.stringify({ format: 'pelagic-playlist', v: 1, ...doc } satisfies PlaylistFile)
-  let res: Response
-  if (existingId) {
-    res = await driveFetch(`${UPLOAD}/${existingId}?uploadType=media&fields=id,version`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body,
-    })
-  } else {
-    const boundary = `pelagic${Math.random().toString(36).slice(2)}`
-    res = await driveFetch(`${UPLOAD}?uploadType=multipart&fields=id,version`, {
-      method: 'POST',
-      headers: { 'Content-Type': `multipart/related; boundary=${boundary}` },
-      body:
-        `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify({ name: `${doc.id}.json`, parents: [parent], mimeType: 'application/json' })}\r\n` +
-        `--${boundary}\r\nContent-Type: application/json\r\n\r\n${body}\r\n--${boundary}--`,
-    })
+/** Before step 39: every Drive playlists/<id>.json (trashed = deleted), merged in once per device. */
+async function pullDrive() {
+  const files = await readPlaylistFiles()
+  for (const f of files) {
+    const remote = normalise(f.raw as Partial<PlaylistFile>, f.id)
+    if (f.trashed) remote.deleted = true
+    const cur = recs.get(f.id)
+    // marked dirty: the cloud may not have it yet (the push merges with whatever it has)
+    recs.set(f.id, { doc: cur ? mergePlaylists(cur.doc, remote) : remote, synced: cur?.synced ?? false, dirty: true, shared: true })
   }
-  let j = (await res.json()) as { id: string; version?: string }
-  // deleted ⇄ Drive trash
-  if (doc.deleted !== !!trashed && (doc.deleted || trashed !== undefined)) {
-    const r = await driveFetch(`/files/${j.id}?fields=id,version`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ trashed: doc.deleted }),
-    })
-    j = (await r.json()) as { id: string; version?: string }
-  }
-  return { id: j.id, version: j.version ?? null }
+  publish()
+  persist()
+}
+
+/** The other device's edits, live. */
+function listen(b: SyncBackend) {
+  const gen = generation
+  return b.watchCol<Partial<Playlist>>(
+    'playlists',
+    (docs) => {
+      if (gen !== generation) return
+      let changed = false
+      let push = false
+      for (const d of docs) {
+        const remote = normalise(d.data, d.id)
+        const cur = recs.get(d.id)
+        if (!cur) {
+          recs.set(d.id, { doc: remote, synced: true, dirty: false })
+          changed = true
+          continue
+        }
+        const doc = covers(cur.doc, remote) ? cur.doc : mergePlaylists(cur.doc, remote)
+        // ours has something the cloud doesn't → send it
+        const dirty = cur.dirty || !covers(remote, doc)
+        if (dirty && !cur.dirty) push = true
+        if (doc !== cur.doc || !cur.synced || dirty !== cur.dirty) {
+          recs.set(d.id, { doc, synced: true, dirty })
+          changed = true
+        }
+      }
+      // never reached the cloud (made offline, or before the move): send it
+      for (const r of recs.values()) if (!r.synced && !r.dirty) {
+        r.dirty = true
+        push = true
+      }
+      if (changed || push || !state.syncedAt) {
+        publish({ syncedAt: now(), error: null })
+        persist()
+      }
+      if (push) scheduleSync(2_000)
+    },
+    (e) => cloudFailed(e),
+  )
 }
 
 /* ── Public API ─────────────────────────────────────── */
@@ -367,8 +359,13 @@ export const playlistsStore = {
       const email = sessionStore.get().account?.email ?? null
       if (rec && (!email || !rec.email || rec.email === email)) {
         for (const [id, r] of Object.entries(rec.recs)) {
-          const mine = recs.get(id) // edited before the cache was read
-          recs.set(id, mine ? { ...mine, doc: mergePlaylists(normalise(r.doc, id), mine.doc), fileId: r.fileId, version: r.version } : { ...r, doc: normalise(r.doc, id) })
+          const mine = recs.get(id) // edited (or heard from the cloud) before the cache was read
+          const doc = normalise(r.doc, id)
+          const synced = !!r.synced
+          const shared = !!r.shared || !!r.fileId
+          // not in the cloud yet (e.g. only ever on Drive) → it has to go up
+          const dirty = !!r.dirty || !synced
+          recs.set(id, mine ? { doc: mergePlaylists(doc, mine.doc), synced: mine.synced || synced, dirty: mine.dirty || !!r.dirty || (!synced && !mine.synced), shared } : { doc, synced, dirty, shared })
         }
         publish({ loaded: true, syncedAt: rec.syncedAt })
       } else publish({ loaded: true })
@@ -376,7 +373,7 @@ export const playlistsStore = {
     return loading
   },
 
-  /** Pull every playlist that changed on Drive, push the ones changed here. */
+  /** Push the playlists changed here (the live listener brings the other device's edits in). */
   sync(opts: { minAge?: number } = {}): Promise<void> {
     if (inflight) return inflight
     if (sessionStore.get().status !== 'signed-in') return Promise.resolve()
@@ -387,80 +384,42 @@ export const playlistsStore = {
       await playlistsStore.load()
       set({ syncing: true, error: null })
       try {
-        let parent = await findFolder()
+        const b = await whenCloud()
         if (gen !== generation) return
-        const dirty = () => [...recs.entries()].filter(([, r]) => r.dirty)
-        if (!parent && !dirty().length) {
-          // nothing on Drive, nothing to send: playlists written before were removed with the folder
-          for (const [id, r] of recs) if (r.fileId) recs.delete(id)
-          publish({ syncing: false, syncedAt: now() })
-          persist()
+        if (!b) {
+          set({ syncing: false })
+          if (state.pending) scheduleSync(120_000)
           return
         }
-        parent ??= folderId = await folder([PLAYLISTS_DIR])
+        await migrateOnce(b, 'playlists', DEVICE, pullDrive)
         if (gen !== generation) return
-
-        const files = await listFiles(parent)
-        if (gen !== generation) return
-        const listed = new Map<string, ListedFile>()
-        for (const f of files) {
-          const id = f.name.replace(/\.json$/, '')
-          // two files for one id (written twice at once): keep the one we know, else the first
-          if (!listed.has(id) || recs.get(id)?.fileId === f.id) listed.set(id, f)
-        }
-
-        // pull
-        for (const [id, f] of listed) {
-          const rec = recs.get(id)
-          if (rec && rec.fileId === f.id && rec.version === f.version) continue
-          const remote = await readFile(f.id, id)
-          if (gen !== generation) return
-          if (f.trashed && !remote.deleted) {
-            // trashed by hand in Drive: same as deleted
-            remote.deleted = true
-          }
-          const cur = recs.get(id)
-          const doc = cur ? mergePlaylists(cur.doc, remote) : remote
-          recs.set(id, { doc, fileId: f.id, version: f.version ?? null, dirty: cur?.dirty ?? false })
-        }
-        // gone from Drive for good (trash emptied / deleted by hand): drop, unless edited here since
-        for (const [id, r] of [...recs]) if (r.fileId && !listed.has(id) && !r.dirty) recs.delete(id)
-        publish()
-
-        // push
-        for (const [id, r] of dirty()) {
+        for (const [id, r] of [...recs].filter(([, x]) => x.dirty)) {
           const rev = revs.get(id) ?? 0
-          let doc = r.doc
-          let fileId = listed.has(id) ? r.fileId : null
-          const trashed = listed.get(id)?.trashed
-          if (fileId) {
-            // someone wrote since we listed → merge their copy first
-            const meta = await getMeta(fileId).catch(() => null)
-            if (gen !== generation) return
-            if (!meta) fileId = null
-            else if (meta.version !== r.version && meta.version !== listed.get(id)?.version) {
-              doc = mergePlaylists(doc, await readFile(fileId, id))
-              if (gen !== generation) return
-            }
-          }
-          if (!fileId && doc.deleted) {
-            // created and deleted before it ever reached Drive
+          const doc = r.doc
+          if (!r.synced && !r.shared && doc.deleted) {
+            // created and deleted before it ever reached the cloud
             recs.delete(id)
             continue
           }
-          const w = await writeFile(doc, parent, fileId, fileId ? trashed : undefined)
+          const saved = await withTimeout(
+            b.update<Playlist>(`playlists/${id}`, (cur) => {
+              if (!cur) return doc
+              const remote = normalise(cur as Partial<PlaylistFile>, id)
+              return covers(remote, doc) ? null : mergePlaylists(remote, doc)
+            }),
+          )
           if (gen !== generation) return
           const cur = recs.get(id)
           if (!cur) continue
           const stillSame = (revs.get(id) ?? 0) === rev
-          recs.set(id, { doc: stillSame ? doc : mergePlaylists(cur.doc, doc), fileId: w.id, version: w.version, dirty: !stillSame })
+          const merged = saved ? mergePlaylists(cur.doc, normalise(saved, id)) : cur.doc
+          recs.set(id, { doc: merged, synced: true, dirty: !stillSame, shared: cur.shared })
         }
         publish({ syncing: false, syncedAt: now() })
         persist()
         if (state.pending) scheduleSync(3_000) // edited while writing
       } catch (e) {
         if (gen !== generation) return
-        folderId = null // it may have been deleted
         set({ syncing: false, error: e instanceof AuthError ? null : (e as Error).message || 'Could not sync playlists.' })
         persist()
         if (!(e instanceof AuthError)) scheduleSync(120_000)
@@ -489,7 +448,7 @@ export const playlistsStore = {
       entries: [],
       smart: smart ?? null,
     }
-    recs.set(id, { doc, fileId: null, version: null, dirty: true })
+    recs.set(id, { doc, synced: false, dirty: true })
     revs.set(id, 1)
     if (trackIds.length && !smart) playlistsStore.addTracks(id, trackIds)
     else {
@@ -633,7 +592,6 @@ export const playlistsStore = {
     window.clearTimeout(syncTimer)
     recs = new Map()
     revs.clear()
-    folderId = null
     inflight = null
     loading = Promise.resolve()
     set({ list: [], byId: new Map(), loaded: true, syncing: false, syncedAt: null, pending: 0, error: null })
@@ -642,6 +600,11 @@ export const playlistsStore = {
   /** Boot: read the local copy; sync on sign-in, reconnect, coming back and leaving. */
   init() {
     void playlistsStore.load()
+    onCloud((b) => {
+      const off = listen(b)
+      if (state.pending || !state.syncedAt) scheduleSync(1_500)
+      return off
+    })
     const trySync = () => void playlistsStore.sync({ minAge: 60_000 })
     sessionStore.subscribe(() => {
       if (sessionStore.get().status === 'signed-in' && !inflight && (state.pending || !state.syncedAt)) scheduleSync(1_500)

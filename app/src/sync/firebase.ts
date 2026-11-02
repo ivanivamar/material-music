@@ -11,18 +11,29 @@
  *   queues/<deviceId>    rev, queue, unshuffled         (written only when the queue changes)
  *   sync/active          deviceId, at                   (the device that plays; others pause)
  *   commands/<auto id>   to, from, op, args (JSON), at  (remote control; the target deletes it)
+ *
+ * Data stores (step 39, sync/cloud.ts), also under users/<uid>/:
+ *   history/<YYYY-MM>    plays: ["at|trackId|dev", …]    (arrayUnion, one doc per month)
+ *   playlists/<id>       one playlist (state/playlists.ts), deleted ones stay as tombstones
+ *   state/recent         items (Jump back in)
+ *   state/dj             the DJ's learning + prefs + voice usage
+ *   state/settings       values + stamps of the settings shared by every device
+ *   meta/migration       devices that copied their Drive JSON into Firestore
  */
 import { initializeApp, type FirebaseApp } from 'firebase/app'
 import { indexedDBLocalPersistence, initializeAuth, inMemoryPersistence, signInWithCustomToken, signOut, type Auth } from 'firebase/auth'
 import {
   addDoc,
+  arrayUnion,
   collection,
   deleteDoc,
   doc,
+  getDoc,
   initializeFirestore,
   memoryLocalCache,
   onSnapshot,
   query,
+  runTransaction,
   setDoc,
   where,
   type Firestore,
@@ -47,9 +58,21 @@ export interface SyncBackend {
   add(path: 'commands', data: Record<string, unknown>): Promise<void>
   remove(path: string): Promise<void>
   signOut(): Promise<void>
+  /* ── data stores (step 39) ── */
+  /** every doc of a collection, live */
+  watchCol<T>(path: string, cb: (docs: Docs<T>[]) => void, onError: (e: Error) => void): Unsubscribe
+  /** one doc, live (null: missing) */
+  watchAt<T>(path: string, cb: (data: T | null) => void, onError: (e: Error) => void): Unsubscribe
+  read<T>(path: string): Promise<T | null>
+  /** read → fn → write, in a transaction; fn returns null to leave the doc as it is */
+  update<T>(path: string, fn: (cur: T | null) => T | null): Promise<T | null>
+  /** add strings to an array field (creates the doc) */
+  union(path: string, field: string, values: string[]): Promise<void>
 }
 
 let app: FirebaseApp | null = null
+/** one sign-in at a time (the player sync and the data stores both connect) */
+let connecting: { email: string; p: Promise<SyncBackend> } | null = null
 let auth: Auth | null = null
 let db: Firestore | null = null
 
@@ -75,7 +98,17 @@ async function customToken(accessToken: string): Promise<string> {
  * Signed-in backend for `email`'s account. `accessToken` gives a fresh Google token when Firebase
  * needs a new sign-in (first time on this device, or another account).
  */
-export async function connect(email: string, accessToken: () => Promise<string | null>): Promise<SyncBackend> {
+export function connect(email: string, accessToken: () => Promise<string | null>): Promise<SyncBackend> {
+  if (connecting?.email === email) return connecting.p
+  const p = connectOnce(email, accessToken)
+  connecting = { email, p }
+  p.catch(() => {
+    if (connecting?.p === p) connecting = null
+  })
+  return p
+}
+
+async function connectOnce(email: string, accessToken: () => Promise<string | null>): Promise<SyncBackend> {
   init()
   const a = auth!
   const d = db!
@@ -112,10 +145,31 @@ export async function connect(email: string, accessToken: () => Promise<string |
     },
     remove: (path) => deleteDoc(doc(d, `${base}/${path}`)),
     signOut: () => signOut(a),
+    watchCol: (path, cb, onError) => onSnapshot(collection(d, `${base}/${path}`), (s) => cb(map(s)), onError),
+    watchAt: (path, cb, onError) =>
+      onSnapshot(
+        doc(d, `${base}/${path}`),
+        (s) => cb(s.exists() ? (s.data() as never) : null),
+        onError,
+      ),
+    read: async (path) => {
+      const s = await getDoc(doc(d, `${base}/${path}`))
+      return s.exists() ? (s.data() as never) : null
+    },
+    update: (path, fn) =>
+      runTransaction(d, async (tx) => {
+        const ref = doc(d, `${base}/${path}`)
+        const s = await tx.get(ref)
+        const next = fn(s.exists() ? (s.data() as never) : null)
+        if (next) tx.set(ref, next as Record<string, unknown>)
+        return next
+      }),
+    union: (path, field, values) => setDoc(doc(d, `${base}/${path}`), { [field]: arrayUnion(...values) }, { merge: true }),
   }
 }
 
 /** Account reset (sign-out / switch): drop the Firebase session too. */
 export async function disconnect() {
+  connecting = null
   if (auth) await signOut(auth).catch(() => {})
 }

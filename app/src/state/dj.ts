@@ -16,14 +16,17 @@
  * album, a playlist, a song from a list), or sign-out. Play / pause, Next / Previous and Lyrics
  * work as normal; shuffle, repeat and the queue panel are off while the DJ plays.
  *
- * Learning (session level) and voice usage live in Drive `Pelagic/dj.json` (local copy IndexedDB
+ * Learning (session level) and voice usage live in Firestore `users/<uid>/state/dj` since step 39
+ * (before: Drive `Pelagic/dj.json`, read once per device to migrate; local copy IndexedDB
  * `kv.dj`): outcomes are merged by id (newest 500 kept), song penalties and the monthly voice
  * character count by max, prefs latest-wins per field. Scores are recomputed from the outcomes,
  * so the PC and the phone agree.
  */
 import { useSyncExternalStore } from 'react'
-import { DRIVE_ROOT } from '../config'
-import { AuthError, download, driveFetch, findChild } from '../lib/drive'
+import { AuthError } from '../lib/drive'
+import { cloudFailed, migrateOnce, onCloud, stable, whenCloud, withTimeout } from '../sync/cloud'
+import type { SyncBackend } from '../sync/firebase'
+import { readRootJson } from '../sync/legacyDrive'
 import { idbGet, idbSet } from '../lib/idb'
 import { isNative } from '../native/bridge'
 import {
@@ -43,7 +46,7 @@ import {
 import { djVoice, setVoiceHost } from '../dj/voice'
 import { downloadsStore, offlineIndex } from './downloads'
 import { genreResolver, genresStore } from './genres'
-import { historyStore } from './history'
+import { DEVICE, historyStore } from './history'
 import { libraryStore } from './library'
 import { isIntroId, playerStore, type PlayerSnapshot, type PlayerState } from './player'
 import { onAccountReset, sessionStore } from './session'
@@ -51,7 +54,6 @@ import { onAccountReset, sessionStore } from './session'
 export const DJ_NAME = 'dj.json'
 const RUN_KEY = 'pelagic.dj.run.v1'
 const CACHE_KEY = 'dj'
-const UPLOAD = 'https://www.googleapis.com/upload/drive/v3/files'
 const MAX_OUTCOMES = 500
 const PENALTY_MS = 30 * 86_400_000
 /** a song left before this many seconds counts as skipped early */
@@ -124,6 +126,7 @@ export interface DjDoc {
   resetAt: number
 }
 
+/** dj.json on Drive (before step 39) */
 interface DjFile extends DjDoc {
   format: 'pelagic-dj'
   v: 1
@@ -526,10 +529,10 @@ function endRun(reason: DjStopReason, label: string | null) {
   noticeListeners.forEach((l) => l({ kind: 'stopped', reason, label: label?.replace(/^(Library|Search) · /, '') ?? null, mode: startOpts(run.mode) }))
 }
 
-/* ── Drive sync (dj.json) ───────────────────────────── */
+/* ── Cloud sync (state/dj) ─────────────────────────── */
 
-let fileId: string | null = null
-let version: string | null = null
+/** merged with the cloud at least once since boot */
+let synced = false
 let dirty = false
 let syncTimer = 0
 let inflight: Promise<void> | null = null
@@ -546,7 +549,7 @@ let docTimer = 0
 function persistDoc() {
   window.clearTimeout(docTimer)
   docTimer = window.setTimeout(() => {
-    void idbSet('kv', CACHE_KEY, { email: sessionStore.get().account?.email ?? null, doc: state.doc, fileId, version, dirty })
+    void idbSet('kv', CACHE_KEY, { email: sessionStore.get().account?.email ?? null, doc: state.doc, dirty })
   }, 300)
 }
 
@@ -595,23 +598,36 @@ export function mergeDj(a: DjDoc, b: DjDoc): DjDoc {
   return { outcomes, songPenalties: prunePenalties(maxMap(a.songPenalties, b.songPenalties)), voiceUsage: maxMap(a.voiceUsage, b.voiceUsage), prefs, prefsAt, resetAt }
 }
 
-async function writeFile(doc: DjDoc, parent: string, existingId: string | null): Promise<{ id: string; version: string | null }> {
-  const body = JSON.stringify({ format: 'pelagic-dj', v: 1, updatedAt: new Date().toISOString(), ...doc } satisfies DjFile)
-  let res: Response
-  if (existingId) {
-    res = await driveFetch(`${UPLOAD}/${existingId}?uploadType=media&fields=id,version`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body })
-  } else {
-    const boundary = `pelagic${Math.random().toString(36).slice(2)}`
-    res = await driveFetch(`${UPLOAD}?uploadType=multipart&fields=id,version`, {
-      method: 'POST',
-      headers: { 'Content-Type': `multipart/related; boundary=${boundary}` },
-      body:
-        `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify({ name: DJ_NAME, parents: [parent], mimeType: 'application/json' })}\r\n` +
-        `--${boundary}\r\nContent-Type: application/json\r\n\r\n${body}\r\n--${boundary}--`,
-    })
-  }
-  const j = (await res.json()) as { id: string; version?: string }
-  return { id: j.id, version: j.version ?? null }
+/** Before step 39: Drive dj.json, merged in once per device. */
+async function pullDrive() {
+  const raw = await readRootJson<Partial<DjFile>>(DJ_NAME)
+  if (raw) setDoc(mergeDj(state.doc, normalise(raw)))
+}
+
+/** The other device's learning / prefs, live. */
+function listen(b: SyncBackend) {
+  const gen = generation
+  return b.watchAt<Partial<DjDoc>>(
+    'state/dj',
+    (raw) => {
+      if (gen !== generation) return
+      const remote = normalise(raw ?? undefined)
+      const merged = mergeDj(state.doc, remote)
+      synced = true
+      if (!raw || stable(merged) !== stable(mergeDj(remote, remote))) {
+        // ours has something the cloud doesn't
+        if (!dirty) {
+          dirty = true
+          scheduleSync(3_000)
+        }
+      }
+      if (stable(merged) !== stable(state.doc)) {
+        set({ doc: merged })
+        persistDoc()
+      }
+    },
+    (e) => cloudFailed(e),
+  )
 }
 
 /* ── Public API ─────────────────────────────────────── */
@@ -794,12 +810,10 @@ export const djStore = {
   load(): Promise<void> {
     loadPromise ??= (async () => {
       const gen = generation
-      const rec = await idbGet<{ email: string | null; doc: DjDoc; fileId: string | null; version: string | null; dirty: boolean }>('kv', CACHE_KEY)
+      const rec = await idbGet<{ email: string | null; doc: DjDoc; dirty: boolean }>('kv', CACHE_KEY)
       if (gen !== generation) return
       const email = sessionStore.get().account?.email ?? null
       if (rec?.doc && (!email || !rec.email || rec.email === email)) {
-        fileId = rec.fileId
-        version = rec.version
         dirty = rec.dirty || dirty
         set({ doc: mergeDj(normalise(rec.doc), state.doc), loaded: true })
       } else set({ loaded: true })
@@ -807,6 +821,7 @@ export const djStore = {
     return loadPromise
   },
 
+  /** Send the local doc (merged with the cloud's in a transaction). */
   sync(): Promise<void> {
     if (inflight) return inflight
     if (sessionStore.get().status !== 'signed-in') return Promise.resolve()
@@ -815,36 +830,29 @@ export const djStore = {
     inflight = (async () => {
       await djStore.load()
       try {
-        const parent = (await findChild(DRIVE_ROOT, 'root', true))?.id ?? null
-        if (gen !== generation || !parent) return
-        for (let attempt = 1; ; attempt++) {
-          const meta = await findChild(DJ_NAME, parent, false)
-          if (gen !== generation) return
-          if (!meta) {
-            fileId = null
-            version = null
-            dirty = true
-          } else if (meta.id !== fileId || meta.version !== version) {
-            const raw = JSON.parse(new TextDecoder().decode(await download(meta.id))) as Partial<DjFile>
-            if (gen !== generation) return
-            const merged = mergeDj(state.doc, normalise(raw))
-            const remote = normalise(raw)
-            if (JSON.stringify(merged) !== JSON.stringify(mergeDj(remote, remote))) dirty = true
-            fileId = meta.id
-            version = meta.version ?? null
-            set({ doc: merged })
-          }
-          if (!dirty) break
-          if (meta && attempt < 4) {
-            const again = await findChild(DJ_NAME, parent, false)
-            if (again && again.version !== meta.version) continue
-          }
-          const w = await writeFile(state.doc, parent, meta?.id ?? null)
-          if (gen !== generation) return
-          fileId = w.id
-          version = w.version
-          dirty = false
-          break
+        const b = await whenCloud()
+        if (gen !== generation) return
+        if (!b) {
+          if (dirty) scheduleSync(120_000)
+          return
+        }
+        await migrateOnce(b, 'dj', DEVICE, pullDrive)
+        if (gen !== generation || !dirty) return
+        const mine = state.doc
+        const saved = await withTimeout(
+          b.update<DjDoc>('state/dj', (cur) => {
+            const remote = normalise(cur ?? undefined)
+            const merged = mergeDj(remote, mine)
+            return cur && stable(merged) === stable(mergeDj(remote, remote)) ? null : merged
+          }),
+        )
+        if (gen !== generation) return
+        synced = true
+        if (state.doc === mine) dirty = false
+        else scheduleSync(5_000) // changed while writing
+        if (saved) {
+          const merged = mergeDj(state.doc, normalise(saved))
+          if (stable(merged) !== stable(state.doc)) set({ doc: merged })
         }
         persistDoc()
       } catch (e) {
@@ -860,9 +868,10 @@ export const djStore = {
   init() {
     setVoiceHost({ voiceOn: () => state.doc.prefs.voice, allowed: (n) => djStore.voiceAllowed(n), spend: (n) => djStore.addVoiceUsage(n) })
     void djStore.load()
-    if (sessionStore.get().status === 'signed-in') scheduleSync(4_000)
-    sessionStore.subscribe(() => {
-      if (sessionStore.get().status === 'signed-in' && !inflight && !version) scheduleSync(4_000)
+    onCloud((b) => {
+      const off = listen(b)
+      if (dirty || !synced) scheduleSync(4_000)
+      return off
     })
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'hidden' && dirty) void djStore.sync()
@@ -884,8 +893,7 @@ let loadPromise: Promise<void> | null = null
 onAccountReset(() => {
   generation++
   window.clearTimeout(syncTimer)
-  fileId = null
-  version = null
+  synced = false
   dirty = false
   inflight = null
   loadPromise = null

@@ -45,6 +45,8 @@ import { releasesStore } from './state/releases'
 import { initDiscover } from './state/discover'
 import { initPlayTracker } from './player/playTracker'
 import { initPlayerSync } from './sync/playerSync'
+import { initCloud } from './sync/cloud'
+import { initSettingsSync } from './sync/settingsSync'
 import { useSession } from './state/session'
 import { NowPlayingHue } from './design/NowPlayingHue'
 
@@ -66,21 +68,21 @@ initNativeUpdates()
 initBackButton()
 // Android: ExoPlayer in a background service (phase C) instead of HTML audio.
 playerStore.attach(isNative ? createNativeEngine() : createHtmlAudioEngine())
-// Home (step 8): play history — counted from the player, synced through Drive history.json.
+// Home (step 8): play history — counted from the player, synced through Firestore (step 39).
 historyStore.init()
 initPlayTracker()
 // Android: offline downloads (phase D) — keeps the phone's stored files in line with the pins.
 downloadsStore.init()
 // New releases (step 11): daily MusicBrainz sweep, feed + marks synced through Drive releases.json.
 releasesStore.init()
-// Playlists (step 9): one Drive file per playlist, edited offline-first and merged entry by entry.
+// Playlists (step 9): one Firestore doc per playlist (step 39), edited offline-first and merged entry by entry.
 playlistsStore.init()
 // Genres (step 20b): tags, else set in the app, else MusicBrainz — synced through Drive genres.json.
 genresStore.init()
-// DJ (step 22): sessions in the player queue; what it has learned synced through Drive dj.json.
+// DJ (step 22): sessions in the player queue; what it has learned synced through Firestore (step 39).
 djStore.init()
 initDjLive()
-// Home v2 (step 26): Jump back in synced through Drive recent.json; radio keeps its queue filled.
+// Home v2 (step 26): Jump back in synced through Firestore (step 39); radio keeps its queue filled.
 recentStore.init()
 initRadio()
 // Android: the home screen widget — its info (playing from, mixes…) and the taps the app performs.
@@ -93,6 +95,9 @@ initDiscover()
 concertsStore.init()
 // Player sync (step 37): queue + playback shared between PC and phone through Firestore; remote control.
 initPlayerSync()
+// Cloud data (step 39): history, Jump back in, DJ, playlists and shared settings live in Firestore.
+initSettingsSync()
+initCloud()
 
 function Page({ route }: { route: Extract<Route, { kind: 'app' }> }) {
   switch (route.key) {

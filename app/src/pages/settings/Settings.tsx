@@ -36,6 +36,10 @@ import { buildShows, cityLabel, lastUpdated, nearbyShows, radiusHint, updatedLab
 import { CitySearch } from '../concerts/parts'
 import { fmtBytes, fmtN } from '../../state/views'
 import { syncStore, useSync } from '../../sync/playerSync'
+import { cloudAvailable, isMigratedHere, useCloud, whenCloud, type CloudStoreName, type MigrationDoc } from '../../sync/cloud'
+import { listLegacyFiles, trashLegacyFiles, type LegacyFile } from '../../sync/legacyDrive'
+import { useHistory } from '../../state/history'
+import { usePlaylists } from '../../state/playlists'
 import './settings.css'
 
 /* ── Page ───────────────────────────────────────────── */
@@ -65,6 +69,7 @@ export function Settings() {
     { id: 'library', label: 'Library', render: () => <LibrarySection /> },
     { id: 'playback', label: 'Playback', render: () => <PlaybackSection /> },
     { id: 'devices', label: 'Devices', render: () => <DevicesSection /> },
+    { id: 'cloud', label: 'Cloud data', render: () => <CloudSection /> },
     ...(isNative ? [{ id: 'downloads', label: 'Downloads', render: () => <DownloadsSection /> }] : []),
     { id: 'new', label: 'New releases', render: () => <ReleasesSection /> },
     { id: 'concerts', label: 'Concerts', render: () => <ConcertsSection /> },
@@ -505,6 +510,119 @@ function DevicesSection() {
             onChange={setName}
             inputProps={{ maxLength: 40, onBlur: () => syncStore.rename(name), onKeyDown: (e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur() }}
           />
+        }
+      />
+    </SectionGroup>
+  )
+}
+
+/* ── Cloud data (step 39) ───────────────────────────── */
+
+const MIGRATED: CloudStoreName[] = ['history', 'recent', 'dj', 'playlists']
+
+function CloudSection() {
+  const cloud = useCloud()
+  const history = useHistory()
+  const playlists = usePlaylists()
+  const toast = useToast()
+  const c = useConfirm('legacy')
+  const [legacy, setLegacy] = useState<LegacyFile[] | null>(null)
+  const [moved, setMoved] = useState<MigrationDoc['devices'] | null>(null)
+  const [busy, setBusy] = useState(false)
+  const available = cloudAvailable()
+  const here = MIGRATED.every((st) => isMigratedHere(st))
+
+  useEffect(() => {
+    if (cloud.status !== 'on') return
+    let live = true
+    void listLegacyFiles()
+      .then((f) => live && setLegacy(f))
+      .catch(() => live && setLegacy(null))
+    void whenCloud()
+      .then((b) => b?.read<MigrationDoc>('meta/migration'))
+      .then((m) => live && setMoved(m?.devices ?? null))
+      .catch(() => undefined)
+    return () => {
+      live = false
+    }
+  }, [cloud.status, busy])
+
+  const waiting = history.pending + playlists.pending
+  const status = !available
+    ? 'Not set up yet: the Firebase web app keys are missing (config.ts)'
+    : cloud.status === 'on'
+      ? waiting
+        ? `On · ${waiting} ${waiting === 1 ? 'change' : 'changes'} waiting to go up`
+        : 'On · up to date'
+      : cloud.status === 'connecting'
+        ? 'Connecting…'
+        : cloud.status === 'error'
+          ? `Problem: ${cloud.error ?? 'unknown'}`
+          : 'Off · sign in to sync'
+
+  const devices = moved ? Object.values(moved).sort((a, b) => a.at - b.at) : []
+  const copiedBy = devices.length ? `Copied to the cloud by ${devices.map((d) => `${d.name} (${stamp(d.at)})`).join(', ')}` : null
+  const names = legacy?.length
+    ? (() => {
+        const pl = legacy.filter((f) => f.name.startsWith('playlists/')).length
+        const root = legacy.filter((f) => !f.name.startsWith('playlists/')).map((f) => f.name)
+        return [...root, ...(pl ? [`${pl} playlist ${pl === 1 ? 'file' : 'files'}`] : [])].join(', ')
+      })()
+    : null
+
+  const trash = async () => {
+    if (!legacy?.length) return
+    setBusy(true)
+    try {
+      const n = await trashLegacyFiles(legacy)
+      const b = await whenCloud()
+      await b?.update<MigrationDoc>('meta/migration', (cur) => ({ ...cur, trashedAt: Date.now() })).catch(() => undefined)
+      toast.show({ icon: 'delete', text: `Moved ${n} old ${n === 1 ? 'file' : 'files'} to the Drive trash.`, meta: 'Restorable from Drive for 30 days' })
+    } catch (e) {
+      toast.show({ icon: 'alert', tone: 'danger', text: 'Couldn’t move the old files.', meta: (e as Error).message })
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <SectionGroup label="Cloud data" note="Firestore">
+      <Row
+        tile={<Icon name="cloud" size={22} />}
+        label="Playlists, history, DJ and Jump back in"
+        hint={status}
+        dot={available && cloud.status === 'on'}
+        muted={!available}
+        below={<span className="st-hint">Kept in the cloud and shared by your devices, as are these settings: motion, particles, texture, lyrics fetching and the New releases hour. Music and the library stay on Drive.</span>}
+      />
+      <Row
+        tile={<Icon name="delete" size={22} />}
+        label="Old Drive copies"
+        hint={
+          legacy == null
+            ? cloud.status === 'on'
+              ? 'Checking Drive…'
+              : 'Available once connected'
+            : legacy.length
+              ? `${names}${copiedBy ? ` · ${copiedBy}` : ''}`
+              : 'None left in Drive'
+        }
+        control={
+          legacy?.length ? (
+            <Act danger disabled={busy || !here} onClick={c.ask}>
+              Move to trash
+            </Act>
+          ) : undefined
+        }
+        below={
+          <>
+            {legacy?.length && !here ? <span className="st-hint">This device is still copying them to the cloud.</span> : null}
+            {c.box(
+              `Move ${legacy?.length ?? 0} old files to the Drive trash? Their contents are in the cloud now. Update the app on every device first; playlist covers stay in Drive.`,
+              'Move to trash',
+              () => void trash(),
+            )}
+          </>
         }
       />
     </SectionGroup>

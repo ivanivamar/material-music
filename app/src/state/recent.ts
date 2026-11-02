@@ -1,30 +1,31 @@
 /**
  * Jump back in (step 26): the last things played *from* — albums, playlists, smart playlists, mixes,
- * radios, artists — on every device, kept in Drive `Pelagic/recent.json`:
- *
- *   { format: 'pelagic-recent', v: 1, updatedAt, items: [{ kind, id, at, dev, label? }] }
+ * radios, artists — on every device. Since step 39 kept in Firestore `users/<uid>/state/recent`
+ * (`{ items: [{ kind, id, at, dev, label? }] }`, live on every device); before that Drive
+ * `Pelagic/recent.json`, read once per device to migrate.
  *
  * `kind` album · playlist · smart · mix · radio · artist; radio ids carry the seed
  * (`radio:song:<trackId>`…); `label` is a fallback name if the item is gone. Merge = union on
  * `kind|id|at|dev`, then the newest per `kind|id`, the last 50 kept — nothing conflicts (like
- * history.json). Local copy: IndexedDB `kv.recent`. Same sync triggers as the history (sign-in,
- * shortly after a change, leaving / coming back, Home open ≥ 60 s apart).
+ * history). Local copy: IndexedDB `kv.recent`. Writes go through a transaction (read, merge,
+ * write); pushes happen shortly after a change, when leaving, and when Home opens.
  *
  * An item is recorded when its context starts playing. A quick mis-tap shouldn't push out real
  * items, so an item replaced by another context within 30 s is dropped again (it hasn't been
  * synced yet: the sync waits 35 s after a change).
  */
 import { useSyncExternalStore } from 'react'
-import { DRIVE_ROOT } from '../config'
-import { AuthError, download, driveFetch, findChild } from '../lib/drive'
+import { AuthError } from '../lib/drive'
 import { idbGet, idbSet } from '../lib/idb'
+import { cloudFailed, migrateOnce, onCloud, stable, whenCloud, withTimeout } from '../sync/cloud'
+import type { SyncBackend } from '../sync/firebase'
+import { readRootJson } from '../sync/legacyDrive'
 import { DEVICE } from './history'
 import { playerStore, type PlayContext } from './player'
 import { playlistsStore } from './playlists'
 import { onAccountReset, sessionStore } from './session'
 
 export const RECENT_NAME = 'recent.json'
-const UPLOAD = 'https://www.googleapis.com/upload/drive/v3/files'
 const CACHE_KEY = 'recent'
 const MAX = 50
 const MIS_TAP_MS = 30_000
@@ -39,6 +40,7 @@ export interface RecentItem {
   label?: string
 }
 
+/** recent.json on Drive (before step 39) */
 interface RecentFile {
   format: 'pelagic-recent'
   v: 1
@@ -50,9 +52,12 @@ interface CacheRecord {
   email: string | null
   items: RecentItem[]
   dirty: boolean
-  fileId: string | null
-  version: string | null
   syncedAt: number | null
+}
+
+/** users/<uid>/state/recent */
+interface RecentDoc {
+  items: RecentItem[]
 }
 
 export interface RecentState {
@@ -90,8 +95,6 @@ function set(patch: Partial<RecentState>) {
 }
 
 let dirty = false
-let fileId: string | null = null
-let version: string | null = null
 let generation = 0
 let loading: Promise<void> | null = null
 let inflight: Promise<void> | null = null
@@ -101,7 +104,7 @@ let provisional: { item: RecentItem; prev: RecentItem | null; until: number } | 
 
 function persist() {
   if (!state.loaded) return
-  void idbSet('kv', CACHE_KEY, { email: sessionStore.get().account?.email ?? null, items: state.items, dirty, fileId, version, syncedAt: state.syncedAt } satisfies CacheRecord)
+  void idbSet('kv', CACHE_KEY, { email: sessionStore.get().account?.email ?? null, items: state.items, dirty, syncedAt: state.syncedAt } satisfies CacheRecord)
 }
 
 function scheduleSync(ms: number) {
@@ -109,23 +112,39 @@ function scheduleSync(ms: number) {
   syncTimer = window.setTimeout(() => void recentStore.sync(), ms)
 }
 
-async function writeFile(items: RecentItem[], parent: string, existingId: string | null): Promise<{ id: string; version: string | null }> {
-  const body = JSON.stringify({ format: 'pelagic-recent', v: 1, updatedAt: new Date().toISOString(), items } satisfies RecentFile)
-  let res: Response
-  if (existingId) {
-    res = await driveFetch(`${UPLOAD}/${existingId}?uploadType=media&fields=id,version`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body })
-  } else {
-    const boundary = `pelagic${Math.random().toString(36).slice(2)}`
-    res = await driveFetch(`${UPLOAD}?uploadType=multipart&fields=id,version`, {
-      method: 'POST',
-      headers: { 'Content-Type': `multipart/related; boundary=${boundary}` },
-      body:
-        `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify({ name: RECENT_NAME, parents: [parent], mimeType: 'application/json' })}\r\n` +
-        `--${boundary}\r\nContent-Type: application/json\r\n\r\n${body}\r\n--${boundary}--`,
-    })
+const sameItems = (a: RecentItem[], b: RecentItem[]) => stable(a) === stable(b)
+
+/** Before step 39: Drive recent.json, merged in once per device. */
+async function pullDrive() {
+  const raw = await readRootJson<Partial<RecentFile>>(RECENT_NAME)
+  const remote = Array.isArray(raw?.items) ? raw.items.filter(valid) : []
+  if (remote.length) {
+    set({ items: mergeRecent(state.items, remote) })
+    dirty = true
+    persist()
   }
-  const j = (await res.json()) as { id: string; version?: string }
-  return { id: j.id, version: j.version ?? null }
+}
+
+/** The other devices' items, live. */
+function listen(b: SyncBackend) {
+  const gen = generation
+  return b.watchAt<RecentDoc>(
+    'state/recent',
+    (doc) => {
+      if (gen !== generation) return
+      const remote = Array.isArray(doc?.items) ? doc.items.filter(valid) : []
+      const merged = mergeRecent(state.items, remote)
+      // something of ours isn't up there yet → send it (after the mis-tap window)
+      if (!sameItems(merged, mergeRecent(remote)) && !dirty) {
+        dirty = true
+        scheduleSync(provisional && Date.now() < provisional.until ? MIS_TAP_MS + 5_000 : 2_000)
+      }
+      if (!sameItems(merged, state.items)) set({ items: merged })
+      set({ syncedAt: Date.now() })
+      persist()
+    },
+    (e) => cloudFailed(e),
+  )
 }
 
 /** What a player context counts as in Jump back in (null: not tracked — DJ, search, queue…). */
@@ -159,8 +178,6 @@ export const recentStore = {
       const email = sessionStore.get().account?.email ?? null
       if (rec && (!email || !rec.email || rec.email === email)) {
         dirty = rec.dirty || dirty
-        fileId = rec.fileId
-        version = rec.version
         set({ items: mergeRecent(rec.items ?? [], state.items), loaded: true, syncedAt: rec.syncedAt })
       } else set({ loaded: true })
     })()
@@ -185,6 +202,7 @@ export const recentStore = {
     scheduleSync(MIS_TAP_MS + 5_000)
   },
 
+  /** Send this device's items (merged with the cloud's in a transaction). */
   sync(opts: { minAge?: number } = {}): Promise<void> {
     if (inflight) return inflight
     if (sessionStore.get().status !== 'signed-in') return Promise.resolve()
@@ -194,39 +212,27 @@ export const recentStore = {
     inflight = (async () => {
       await recentStore.load()
       try {
-        const parent = (await findChild(DRIVE_ROOT, 'root', true))?.id ?? null
-        if (gen !== generation || !parent) return
-        for (let attempt = 1; ; attempt++) {
-          const meta = await findChild(RECENT_NAME, parent, false)
-          if (gen !== generation) return
-          if (!meta) {
-            fileId = null
-            version = null
-            if (state.items.length) dirty = true
-          } else if (meta.id !== fileId || meta.version !== version) {
-            const raw = JSON.parse(new TextDecoder().decode(await download(meta.id))) as Partial<RecentFile>
-            if (gen !== generation) return
-            const remote = Array.isArray(raw.items) ? raw.items.filter(valid) : []
-            const merged = mergeRecent(state.items, remote)
-            // something of ours isn't on Drive yet → write
-            const onDrive = new Set(remote.map((r) => `${keyOf(r)}|${r.at}|${r.dev}`))
-            if (merged.some((r) => !onDrive.has(`${keyOf(r)}|${r.at}|${r.dev}`))) dirty = true
-            fileId = meta.id
-            version = meta.version ?? null
-            set({ items: merged })
-          }
-          if (!dirty) break
-          if (meta && attempt < 4) {
-            const again = await findChild(RECENT_NAME, parent, false)
-            if (again && again.version !== meta.version) continue
-          }
-          const w = await writeFile(state.items, parent, meta?.id ?? null)
-          if (gen !== generation) return
-          fileId = w.id
-          version = w.version
-          dirty = false
-          break
+        const b = await whenCloud()
+        if (gen !== generation) return
+        if (!b) {
+          if (dirty) scheduleSync(120_000)
+          return
         }
+        await migrateOnce(b, 'recent', DEVICE, pullDrive)
+        if (gen !== generation || !dirty) return
+        const mine = state.items
+        const saved = await withTimeout(
+          b.update<RecentDoc>('state/recent', (cur) => {
+            const remote = Array.isArray(cur?.items) ? cur.items.filter(valid) : []
+            const merged = mergeRecent(remote, mine)
+            return cur && sameItems(merged, mergeRecent(remote)) ? null : { items: merged }
+          }),
+        )
+        if (gen !== generation) return
+        // changed while writing → go again shortly
+        if (state.items === mine) dirty = false
+        else scheduleSync(5_000)
+        if (saved) set({ items: mergeRecent(state.items, saved.items) })
         set({ syncedAt: Date.now() })
         persist()
       } catch (e) {
@@ -244,8 +250,6 @@ export const recentStore = {
     generation++
     window.clearTimeout(syncTimer)
     dirty = false
-    fileId = null
-    version = null
     inflight = null
     provisional = null
     loading = Promise.resolve()
@@ -254,6 +258,11 @@ export const recentStore = {
 
   init() {
     void recentStore.load()
+    onCloud((b) => {
+      const off = listen(b)
+      if (dirty || !state.syncedAt) scheduleSync(2_000)
+      return off
+    })
     const trySync = () => void recentStore.sync({ minAge: 60_000 })
     sessionStore.subscribe(() => {
       if (sessionStore.get().status === 'signed-in' && !inflight && (dirty || !state.syncedAt)) scheduleSync(2_000)

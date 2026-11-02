@@ -1,6 +1,6 @@
 /**
  * Jump back in (Material redesign, HomeMaterial.dc.html): the DJ tile first, then the last things
- * played *from* (synced PC ↔ phone through Drive recent.json, state/recent.ts), newest first.
+ * played *from* (synced PC ↔ phone through Firestore, state/recent.ts), newest first.
  * Desktop 4 columns (3 under 1300px) × 2 rows (DJ + 7), phone 2 × 3 (DJ + 5).
  *
  * Tiles are flat warm neutrals (rest / hover / playing); the tile's own album hue only colours the kind
