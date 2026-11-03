@@ -376,7 +376,7 @@ html[data-phone][data-qp] .toasts.toasts-shell { right: 0; }
    a long press lifts the row, so no text selection / callout */
 .shell.is-phone .qp-row { touch-action: pan-y; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
 .shell.is-phone .qp-prow { height: 56px; }
-.shell.is-phone .qp-prow .qp-row-in { padding: 0 10px 0 8px; }
+.shell.is-phone .qp-prow .qp-row-in { padding: 0 10px 0 8px; will-change: transform; }
 .shell.is-phone .qp-pcover { width: 40px; height: 40px; border-radius: 9px; }
 .shell.is-phone .qp-nrow { height: 60px; cursor: pointer; }
 .shell.is-phone .qp-nrow .qp-row-in { gap: 10px; padding: 0 8px 0 4px; will-change: transform; }

@@ -138,6 +138,12 @@
 }
 .qp-drop-top { top: -2px; }
 .qp-drop-bot { bottom: -2px; }
+/* over the Now playing card (play next): the line runs along the card's bottom edge, the card glows */
+.qp-drop-now { left: 0; right: 0; bottom: 0; height: 3px; border-radius: 0; }
+.qp.is-dragging .qp-now:has(.qp-drop-now) { outline: 2px solid var(--album-hi, var(--qp-lilac)); outline-offset: -2px; }
+/* played rows can be dragged too */
+.qp-prow[draggable="true"] { cursor: grab; }
+.qp-prow[draggable="true"]:active { cursor: grabbing; }
 
 /* ── now playing card ── */
 .qp-now {

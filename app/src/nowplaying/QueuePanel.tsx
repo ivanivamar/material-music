@@ -17,7 +17,10 @@
  * only the ones near the viewport mount. It opens with the Now playing card ~12px from the top and
  * keeps following the current track until the list is scrolled or touched.
  *
- * Desktop: HTML drag-and-drop on Next up rows (lilac drop line above / below the target).
+ * Every row, Played and Next up, can be dragged anywhere in the queue: the queue is one list, so a
+ * played song dropped below the Now playing card plays again later, and an upcoming one dropped among
+ * Played rows is skipped (the current track keeps playing either way). Dropping on the card = play next.
+ * Desktop: HTML drag-and-drop (lilac drop line above / below the target).
  * Phone: no inline ↑ / × buttons. Hold a row (or press its grip) and drag to reorder; swipe a row
  * left to remove it (Undo in a toast); hold and let go without moving = the track menu. The whole
  * header drags the sheet (down = close / shrink, up = full height); a press on a header button
@@ -100,20 +103,34 @@ const sub = (c: Catalogue, id: string) => {
 }
 
 interface DragState {
-  /** absolute queue index of the dragged (upcoming) row */
+  /** absolute queue index of the dragged row (played or upcoming, never the current track) */
   from: number
-  /** upcoming row (absolute index) the pointer is over */
+  /** row (absolute index) the pointer is over; the current track's index = the Now playing card */
   over: number | null
-  /** drop below `over` instead of above */
+  /** drop below `over` instead of above (always true on the card: drop = play next) */
   after: boolean
 }
 
 /** Where a drag ends up: index `to` for playerStore.move, or null for "no change". */
-function dropTarget(d: DragState | null, base: number): number | null {
+function dropTarget(d: DragState | null): number | null {
   if (!d || d.over === null) return null
   const pos = d.over + (d.after ? 1 : 0)
-  const to = Math.max(base, pos > d.from ? pos - 1 : pos)
+  const to = pos > d.from ? pos - 1 : pos
   return to === d.from ? null : to
+}
+
+/** Which drop line a row shows while something is dragged over it. */
+const dropLine = (drag: DragState | null, abs: number) =>
+  drag && drag.over === abs && drag.from !== abs && dropTarget(drag) !== null ? (drag.after ? 'bot' : 'top') : null
+
+/** Drag handlers shared by Played and Next up rows. */
+interface RowDrag {
+  phone: boolean
+  drag: DragState | null
+  onDragStart: (abs: number) => (e: DragEvent) => void
+  onDragOver: (abs: number) => (e: DragEvent) => void
+  onDragEnd: () => void
+  onTouchDown: (abs: number, mode: 'grip' | 'row') => (e: PointerEvent<HTMLElement>) => void
 }
 
 /* ── Played row: check/play · cover · title / artist · album · Played badge · length (click = play again) ── */
@@ -125,6 +142,12 @@ function PlayedRow({
   isFirst,
   isLast,
   onKey,
+  phone,
+  drag,
+  onDragStart,
+  onDragOver,
+  onDragEnd,
+  onTouchDown,
 }: {
   c: Catalogue
   id: string
@@ -132,23 +155,40 @@ function PlayedRow({
   top: number
   isFirst: boolean
   isLast: boolean
-  phone: boolean
   onKey: (abs: number) => (e: KeyboardEvent) => void
-}) {
+} & RowDrag) {
   const t = c.tracks[id]
+  const isDrag = drag?.from === abs
+  const line = dropLine(drag, abs)
   return (
     <div
       data-abs={abs}
-      className={`qp-row qp-prow ${isFirst ? 'is-first' : ''} ${isLast ? 'is-last' : ''}`}
+      data-drop=""
+      className={`qp-row qp-prow ${isFirst ? 'is-first' : ''} ${isLast ? 'is-last' : ''} ${isDrag ? 'is-drag' : ''}`}
       style={{ top }}
+      draggable={!phone}
       tabIndex={0}
       role="button"
-      aria-label={t ? `Played: ${t.title} by ${t.artist}. Enter to play again.` : 'Missing track'}
+      aria-label={t ? `Played: ${t.title} by ${t.artist}. Enter to play again, Alt+arrows to move, Delete to remove.` : 'Missing track'}
+      onDragStart={onDragStart(abs)}
+      onDragOver={onDragOver(abs)}
+      onDragEnd={onDragEnd}
+      onPointerDown={phone ? onTouchDown(abs, 'row') : undefined}
       onClick={() => playerStore.jump(abs)}
-      onContextMenu={(e) => t && actions.menu({ kind: 'track', trackId: t.id }, e)}
+      onContextMenu={(e) => {
+        // phone: a long press is the reorder lift (and opens the menu itself when let go in place)
+        if (phone) return e.preventDefault()
+        if (t) actions.menu({ kind: 'track', trackId: t.id }, e)
+      }}
       onKeyDown={onKey(abs)}
     >
+      {phone && (
+        <span className="qp-swipe-bg" aria-hidden>
+          <Icon name="x" />
+        </span>
+      )}
       <div className="qp-row-in">
+        {line && <span className={`qp-drop qp-drop-${line}`} />}
         <span className="qp-pnum" title="Played · click to play again" aria-hidden>
           <span className="qp-pn-done">
             <Icon name="check" />
@@ -169,7 +209,7 @@ function PlayedRow({
   )
 }
 
-interface NextRowProps {
+interface NextRowProps extends RowDrag {
   c: Catalogue
   id: string
   abs: number
@@ -177,13 +217,7 @@ interface NextRowProps {
   base: number
   isFirst: boolean
   isLast: boolean
-  phone: boolean
   liked: boolean
-  drag: DragState | null
-  onDragStart: (abs: number) => (e: DragEvent) => void
-  onDragOver: (abs: number) => (e: DragEvent) => void
-  onDragEnd: () => void
-  onTouchDown: (abs: number, mode: 'grip' | 'row') => (e: PointerEvent<HTMLElement>) => void
   onKey: (abs: number) => (e: KeyboardEvent) => void
   remove: (abs: number) => void
 }
@@ -192,11 +226,11 @@ interface NextRowProps {
 function NextRow({ c, id, abs, top, base, isFirst, isLast, phone, drag, onDragStart, onDragOver, onDragEnd, onTouchDown, onKey, remove }: NextRowProps) {
   const t = c.tracks[id]
   const isDrag = drag?.from === abs
-  const line = drag && drag.over === abs && drag.from !== abs && dropTarget(drag, base) !== null ? (drag.after ? 'bot' : 'top') : null
+  const line = dropLine(drag, abs)
   return (
     <div
       data-abs={abs}
-      data-up=""
+      data-drop=""
       className={`qp-row qp-nrow ${isFirst ? 'is-first' : ''} ${isLast ? 'is-last' : ''} ${isDrag ? 'is-drag' : ''}`}
       style={{ top }}
       draggable={!phone}
@@ -457,16 +491,17 @@ export function QueuePanel() {
     const after = e.clientY > r.top + r.height / 2
     if (drag.over !== abs || drag.after !== after) setDrag({ ...drag, over: abs, after })
   }
-  // over the Now playing card = above the first upcoming row
+  // over the Now playing card = right after the current track (play next)
   const onNowDragOver = (e: DragEvent) => {
-    if (!drag || !upcoming.length) return
+    if (!drag) return
     e.preventDefault()
-    if (drag.over !== base || drag.after) setDrag({ ...drag, over: base, after: false })
+    e.dataTransfer.dropEffect = 'move'
+    if (drag.over !== p.index || !drag.after) setDrag({ ...drag, over: p.index, after: true })
   }
   const onDrop = (e: DragEvent) => {
     if (!drag) return
     e.preventDefault()
-    const to = dropTarget(drag, base)
+    const to = dropTarget(drag)
     if (to !== null) playerStore.move(drag.from, to)
     setDrag(null)
   }
@@ -509,11 +544,12 @@ export function QueuePanel() {
 
     const hit = () => {
       const d = dragRef.current
-      const el = document.elementFromPoint(pt.x, pt.y)?.closest<HTMLElement>('.qp [data-up]')
+      const el = document.elementFromPoint(pt.x, pt.y)?.closest<HTMLElement>('.qp [data-drop]')
       if (!d || !el) return
       const over = Number(el.dataset.abs)
       const r = el.getBoundingClientRect()
-      const after = pt.y > r.top + r.height / 2
+      // the Now playing card: always "right after it" (play next)
+      const after = 'now' in el.dataset || pt.y > r.top + r.height / 2
       if (d.over !== over || d.after !== after) setDragNow({ ...d, over, after })
     }
     // auto-scroll within 56px of the list's visible top / bottom edge (or past it), faster the closer
@@ -556,7 +592,7 @@ export function QueuePanel() {
         if (id && data?.tracks[id]) actions.menu({ kind: 'track', trackId: id }, { x: pt.x, y: pt.y })
         return
       }
-      const to = dropTarget(d, base)
+      const to = dropTarget(d)
       if (to !== null) playerStore.move(d!.from, to)
     }
     const onUp = (ev: globalThis.PointerEvent) => ev.pointerId === pid && finish(true)
@@ -665,7 +701,7 @@ export function QueuePanel() {
     gesture.current = abort
   }
 
-  /* keyboard: Enter plays, Alt+↑/↓ moves (within Next up), Delete removes, ↑/↓ moves focus */
+  /* keyboard: Enter plays, Alt+↑/↓ moves (also past the current track), Delete removes, ↑/↓ moves focus */
   const focusRow = (abs: number) =>
     requestAnimationFrame(() => {
       const el = listRef.current?.querySelector<HTMLElement>(`[data-abs="${abs}"]`)
@@ -677,19 +713,20 @@ export function QueuePanel() {
   const onRowKey = (abs: number) => (e: KeyboardEvent) => {
     if (e.target !== e.currentTarget) return
     const last = p.queue.length - 1
-    const isUp = abs > p.index
+    const isRow = abs !== p.index
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault()
       playerStore.jump(abs)
-    } else if (isUp && e.altKey && e.key === 'ArrowUp' && abs > base) {
+    } else if (isRow && e.altKey && e.key === 'ArrowUp' && abs > 0) {
+      // stepping over the current track swaps sides (Next up ↔ Played); the row lands at abs - 1 either way
       e.preventDefault()
       playerStore.move(abs, abs - 1)
       focusRow(abs - 1)
-    } else if (isUp && e.altKey && e.key === 'ArrowDown' && abs < last) {
+    } else if (isRow && e.altKey && e.key === 'ArrowDown' && abs < last) {
       e.preventDefault()
       playerStore.move(abs, abs + 1)
       focusRow(abs + 1)
-    } else if (isUp && (e.key === 'Delete' || e.key === 'Backspace')) {
+    } else if (isRow && (e.key === 'Delete' || e.key === 'Backspace')) {
       e.preventDefault()
       removeRow(abs)
       focusRow(Math.min(abs, last - 1))
@@ -716,6 +753,9 @@ export function QueuePanel() {
     current && data ? (
       <div
         className="qp-now"
+        data-abs={p.index}
+        data-drop=""
+        data-now=""
         style={{ top: nowTop + NOW_M_TOP }}
         role="button"
         tabIndex={0}
@@ -749,6 +789,7 @@ export function QueuePanel() {
           {!phone && dur > 0 && <span className="qp-now-dur"> / {formatTime(dur)}</span>}
         </span>
         <span className="qp-now-bar" style={{ width: `${pct}%` }} />
+        {dropLine(drag, p.index) && <span className="qp-drop qp-drop-now" />}
       </div>
     ) : null
 
@@ -867,6 +908,11 @@ export function QueuePanel() {
                     isFirst={abs === 0}
                     isLast={abs === played.length - 1}
                     phone={phone}
+                    drag={drag}
+                    onDragStart={onDragStart}
+                    onDragOver={onDragOver}
+                    onDragEnd={() => setDrag(null)}
+                    onTouchDown={onTouchDown}
                     onKey={onRowKey}
                   />
                 )
