@@ -133,7 +133,7 @@ interface RowDrag {
   onTouchDown: (abs: number, mode: 'grip' | 'row') => (e: PointerEvent<HTMLElement>) => void
 }
 
-/* ── Played row: check/play · cover · title / artist · album · Played badge · length (click = play again) ── */
+/* ── Played row: grip · cover · title / artist · album · Played badge · length (click = play again) ── */
 function PlayedRow({
   c,
   id,
@@ -189,13 +189,8 @@ function PlayedRow({
       )}
       <div className="qp-row-in">
         {line && <span className={`qp-drop qp-drop-${line}`} />}
-        <span className="qp-pnum" title="Played · click to play again" aria-hidden>
-          <span className="qp-pn-done">
-            <Icon name="check" />
-          </span>
-          <span className="qp-pn-play">
-            <Icon name="playF" />
-          </span>
+        <span className="qp-grip" aria-hidden onPointerDown={phone ? onTouchDown(abs, 'grip') : undefined} onClick={(e) => phone && e.stopPropagation()}>
+          <Icon name="drag" />
         </span>
         {t ? <Cover c={c} albumId={t.albumId} className="qp-cover qp-pcover" /> : <span className="qp-cover qp-pcover qp-cover-empty" />}
         <div className="qp-text">

@@ -544,6 +544,13 @@ export function SongGroups({ c, groups, timeline, phone, onPlay }: { c: Catalogu
 
 const LETTERS = ['#', ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ']
 
+/** Height covered by the sticky bars (top bar on the phone + the chips/sort bar) once stuck, plus a little air. */
+function stuckOffset(main: HTMLElement) {
+  const bar = main.querySelector<HTMLElement>('.lb-bar')
+  if (!bar) return 72
+  return (parseFloat(getComputedStyle(bar).top) || 0) + bar.offsetHeight + 8
+}
+
 /** Vertical A–Z strip on the right: tap / drag to jump; the letter at the top of the view is lit. */
 export function Scrubber({ present }: { present: Set<string> }) {
   const [active, setActive] = useState<string | null>(null)
@@ -557,7 +564,7 @@ export function Scrubber({ present }: { present: Set<string> }) {
     let raf = 0
     const update = () => {
       raf = 0
-      const top = main.getBoundingClientRect().top + 120
+      const top = main.getBoundingClientRect().top + stuckOffset(main) + 48
       let cur: string | null = null
       const all = main.querySelectorAll<HTMLElement>('[data-letter]')
       if (all.length) cur = all[0].dataset.letter ?? null
@@ -587,7 +594,7 @@ export function Scrubber({ present }: { present: Set<string> }) {
     if (!want) return
     const el = main.querySelector<HTMLElement>(`[data-letter="${CSS.escape(want)}"]`)
     if (!el) return
-    main.scrollTo({ top: main.scrollTop + el.getBoundingClientRect().top - main.getBoundingClientRect().top - 72 })
+    main.scrollTo({ top: main.scrollTop + el.getBoundingClientRect().top - main.getBoundingClientRect().top - stuckOffset(main) })
     setActive(want)
   }
   const at = (clientY: number) => {

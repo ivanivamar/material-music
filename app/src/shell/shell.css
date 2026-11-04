@@ -50,10 +50,17 @@
 .ph-meta { font-size: 14px; font-weight: 400; letter-spacing: 0; color: var(--ink-secondary); text-transform: none; font-variant-numeric: tabular-nums; }
 .ph-tools { display: flex; align-items: center; gap: 14px; flex: none; }
 
-/* top bar (desktop): search pill (+ Shuffle all on Home) */
-.topbar { display: flex; align-items: center; gap: 16px; padding: 20px 36px 0; position: relative; }
+/* top bar (desktop): search pill (+ Shuffle all on Home); sticks to the top of the scrolling panel,
+   transparent at the top, a solid panel surface with a hairline once content scrolls under it */
+.topbar {
+  display: flex; align-items: center; gap: 16px; padding: 20px 36px 16px;
+  position: sticky; top: 0; z-index: 5;
+  background: transparent; box-shadow: 0 1px 0 transparent;
+  transition: background-color 200ms var(--ease-std), box-shadow 200ms var(--ease-std);
+}
+.shell.is-scrolled .topbar { background: var(--panel); box-shadow: 0 1px 0 var(--outline), 0 8px 20px -14px rgba(0, 0, 0, .8); }
 @media (max-width: 1299px) { .topbar { padding-left: 28px; padding-right: 28px; } }
-.topbar + .shell-page { padding-top: 32px; }
+.topbar + .shell-page { padding-top: 16px; }
 .topbar-gap { flex: 1; }
 .search-pill {
   flex: 1; max-width: 620px; height: 56px; border-radius: 999px; font: inherit; text-align: left;

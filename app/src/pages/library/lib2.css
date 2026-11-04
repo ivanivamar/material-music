@@ -231,4 +231,5 @@ html[data-lib-search] .shell.is-phone .ptb { display: none; }
 .shell.is-phone .sr-top-play { position: static; }
 .shell.is-phone .sr-none { padding: 32px 8px 24px; }
 .shell.is-phone .sr-none-t { font-size: 20px; }
-html[data-lib-search] .shell.is-phone .lb-bar { top: calc(64px + env(safe-area-inset-top)); }
+/* sits under the sticky top bar (or, while searching, under the sticky search field: same height) */
+.shell.is-phone.has-ptb .lb-bar, html[data-lib-search] .shell.is-phone .lb-bar { top: calc(64px + env(safe-area-inset-top)); }

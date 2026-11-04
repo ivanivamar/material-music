@@ -78,6 +78,8 @@
 }
 .toast-action:hover { color: oklch(0.40 0.13 38); background: oklch(0.48 0.13 38 / 0.1); }
 .toast-progress { height: 3px; background: oklch(0.48 0.13 38); box-shadow: none; }
+.toast-close { width: 36px; height: 36px; margin-left: -2px; color: oklch(0.40 0.02 40); font-size: 20px; }
+.toast-close:hover { color: oklch(0.22 0.01 40); background: oklch(0.22 0.01 40 / 0.08); }
 
 .mm-seek.is-below { flex-direction: column; align-items: stretch; gap: 6px; }
 .mm-seek-row { display: flex; justify-content: space-between; }

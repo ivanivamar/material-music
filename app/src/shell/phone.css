@@ -25,7 +25,13 @@
 /* the top bar carries the page title on the top-level pages */
 .shell.is-phone.has-ptb-title .shell-page .ph-title { display: none; }
 
-.ptb { height: 64px; padding: env(safe-area-inset-top) 8px 0 16px; box-sizing: content-box; display: flex; align-items: center; gap: 10px; }
+.ptb {
+  height: 64px; padding: env(safe-area-inset-top) 8px 0 16px; box-sizing: content-box; display: flex; align-items: center; gap: 10px;
+  /* sticky over the page; solid once content scrolls under it */
+  position: sticky; top: 0; z-index: 5; background: transparent;
+  transition: background-color 200ms var(--ease-std);
+}
+.shell.is-phone.is-scrolled .ptb { background: var(--panel); }
 .ptb-brand { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; color: var(--ink-primary); text-decoration: none; }
 .ptb-word { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ptb-title { flex: 1; min-width: 0; margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

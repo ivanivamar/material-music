@@ -4,7 +4,7 @@
  * rings) and the floating player bar. Phone: top bar on the top-level pages, mini player, tab bar.
  * Keeps the library in sync and surfaces session / sync events as toasts.
  */
-import { useEffect, useLayoutEffect, useMemo, useRef, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Icon } from '../design/icons'
 import { SHAPE_PLAYING } from '../design/shapes'
 import { playList } from '../pages/library/playback'
@@ -406,15 +406,22 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
   // New page starts at the top; going back to a page restores where it was scrolled to.
   // Positions are recorded while scrolling: by the time the route changes the new page has
   // already replaced the old one (and clamped scrollTop).
+  // `scrolled` lifts the sticky top bar (desktop search bar / phone top bar) onto a solid surface
+  // once content passes under it; at the very top it stays transparent over the brand decoration.
   const scrolls = useRef(new Map<string, number>())
   const pathRef = useRef(route.path)
+  const [scrolled, setScrolled] = useState(false)
   useEffect(() => {
     const main = mainRef.current
     if (!main) return
-    const onScroll = () => scrolls.current.set(pathRef.current, main.scrollTop)
+    const onScroll = () => {
+      scrolls.current.set(pathRef.current, main.scrollTop)
+      setScrolled(main.scrollTop > 2)
+    }
+    onScroll()
     main.addEventListener('scroll', onScroll, { passive: true })
     return () => main.removeEventListener('scroll', onScroll)
-  }, [])
+  }, [phone])
   useLayoutEffect(() => {
     const main = mainRef.current
     if (!main || pathRef.current === route.path) return
@@ -440,7 +447,7 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
   const page = <div className="shell-page">{children}</div>
 
   return (
-    <div className={`shell ${phone ? 'is-phone' : ''} ${phone && hasTrack ? 'has-mini' : ''} ${phone && phoneTop ? 'has-ptb' : ''} ${phone && phoneTitle ? 'has-ptb-title' : ''}`}>
+    <div className={`shell ${phone ? 'is-phone' : ''} ${phone && hasTrack ? 'has-mini' : ''} ${phone && phoneTop ? 'has-ptb' : ''} ${phone && phoneTitle ? 'has-ptb-title' : ''} ${scrolled ? 'is-scrolled' : ''}`}>
       {/* the full-screen player is modal: everything behind it is inert */}
       <div className="shell-layer" inert={np.open}>
         {phone ? (

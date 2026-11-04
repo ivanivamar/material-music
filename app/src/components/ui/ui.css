@@ -211,6 +211,20 @@ html[data-motion='reduced'] .swell-head, html[data-motion='reduced'] .swell-tip 
   background: none; border: 0; padding: 0; cursor: pointer; color: var(--ink-primary); white-space: nowrap;
 }
 .toast-action:hover { color: #fff; }
+.toast { touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+/* swiped away: the inline transform/opacity transition owns the exit */
+.toast.is-swiped, .toast.is-swiped.is-leaving { animation: none; }
+.toast-close {
+  display: none; flex: none; align-items: center; justify-content: center;
+  width: 32px; height: 32px; margin-left: 2px; padding: 0; border: 0; border-radius: 999px;
+  background: none; color: var(--ink-secondary); cursor: pointer; font-size: 18px;
+}
+.toast-close:hover { color: var(--ink-primary); background: rgba(255, 255, 255, .08); }
+.toast-close:focus-visible { display: inline-flex; outline: 2px solid currentColor; outline-offset: 1px; }
+/* desktop / mouse: show the close button. Touch devices swipe instead. */
+@media (hover: hover) and (pointer: fine) {
+  .toast-close { display: inline-flex; }
+}
 .toast-progress { position: absolute; left: 0; bottom: 0; height: 1px; background: #fff; box-shadow: var(--glow-line); transition: width .4s var(--ease); }
 @keyframes pg-toast-in  { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
 @keyframes pg-toast-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(8px); } }
