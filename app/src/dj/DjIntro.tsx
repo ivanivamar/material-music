@@ -10,6 +10,7 @@ import type { DjView } from '../state/dj'
 import { DjMark, LevelBars } from './DjMark'
 import { TYPE_LABEL } from './engine'
 import { useIntroLive, type IntroLive, useIntroSpeaking, introLevel } from './live'
+import { Badge } from '../components/ui'
 
 const words = (line: string) => line.split(/\s+/).filter(Boolean)
 
@@ -78,7 +79,7 @@ export function DjIntroInfo({ item, view, playing, phone }: { item: string; view
     <div className="dji">
       <div className="dji-head">
         <div className="dji-meta">
-          <span className="dj-chip">DJ</span>
+          <Badge tone="dj-container">DJ</Badge>
           <span className="dj-intro-pill">
             <b>INTRO</b>
             Session {s.n}

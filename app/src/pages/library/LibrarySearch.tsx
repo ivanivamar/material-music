@@ -7,7 +7,7 @@
  * Keys: Enter opens the top result · Esc clears (then blurs) · ↓ moves into the results.
  */
 import { forwardRef, type KeyboardEvent, type ReactNode } from 'react'
-import { IconButton } from '../../components/ui'
+import { IconButton, Button } from '../../components/ui'
 import { Icon } from '../../design/icons'
 import { SHAPE_PLAYING } from '../../design/shapes'
 import { searchStore } from '../../state/search'
@@ -83,26 +83,22 @@ export function RecentSearches({ recent, onPick, phone }: { recent: string[]; on
       <div className="lb-recent-head">
         <span className="lb-recent-k">Recent searches</span>
         {recent.length > 0 && (
-          <button type="button" className="lb-recent-clear" onClick={() => searchStore.clearRecent()}>
+          <Button variant="ghost" size="sm" className="lb-recent-clear" onClick={() => searchStore.clearRecent()}>
             Clear all
-          </button>
+          </Button>
         )}
       </div>
       {recent.map((q) => (
         <div key={q} className="lb-recent-it" role="button" tabIndex={0} onClick={() => onPick(q)} onKeyDown={(e) => e.key === 'Enter' && onPick(q)}>
           <Icon name="history" className="lb-recent-ic" />
           <span className="lb-recent-t">{q}</span>
-          <button
-            type="button"
+          <IconButton icon="x" label={`Remove ${q}`} size="sm"
             className="lb-recent-x"
-            aria-label={`Remove ${q}`}
+           
             onClick={(e) => {
               e.stopPropagation()
               searchStore.forget(q)
-            }}
-          >
-            <Icon name="x" />
-          </button>
+            }} />
         </div>
       ))}
       {!recent.length && <div className="lb-recent-none">Your searches will show up here.</div>}

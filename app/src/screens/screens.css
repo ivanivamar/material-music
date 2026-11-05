@@ -59,11 +59,7 @@
 .scr-body { margin: 0; font-size: 14px; line-height: 1.5; color: var(--ink-secondary); max-width: 400px; text-wrap: pretty; }
 .scr-meta { font-size: 12px; color: var(--ink-tertiary); }
 .scr-error { color: oklch(0.78 0.11 22); max-width: 520px; }
-.scr-link {
-  background: none; border: 0; padding: 4px 10px; cursor: pointer;
-  font: inherit; font-size: 14px; font-weight: 600; color: var(--brand);
-}
-.scr-link:hover:not(:disabled) { text-decoration: underline; text-underline-offset: 3px; }
+.scr-link:hover:not(:disabled) { text-underline-offset: 3px; }
 
 /* ── Sign-in & Expired ─────────────────────────────── */
 .signin { gap: 36px; }
@@ -78,16 +74,10 @@
 .signin-error.is-shown { opacity: 1; }
 
 .gbtn {
-  height: 56px; padding: 0 28px 0 22px; border-radius: 999px; border: 0; cursor: pointer;
   display: inline-flex; align-items: center; justify-content: center; gap: 14px;
-  background: var(--brand); color: var(--on-brand); font: inherit; font-size: 14px; font-weight: 600;
-  box-shadow: 0 20px 36px -14px oklch(0.80 0.115 38 / 0.45);
-  transition: filter 200ms var(--ease-std), transform 200ms var(--ease-std);
 }
 .scr.is-phone .gbtn { width: 100%; }
-.gbtn:hover:not(:disabled) { filter: brightness(1.06); }
 .gbtn:active:not(:disabled) { transform: scale(0.97); }
-.gbtn:disabled { opacity: 0.7; cursor: progress; }
 .gbtn:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
 .gbtn-g {
   width: 26px; height: 26px; border-radius: 50%;
@@ -118,7 +108,6 @@
 
 .counters { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; width: 100%; }
 .counter {
-  padding: 20px 22px; border-radius: 28px; background: oklch(0.205 0.008 40);
   display: flex; flex-direction: column; align-items: center; gap: 4px;
 }
 .counter-v { font-size: 34px; font-weight: 700; letter-spacing: -0.025em; font-variant-numeric: tabular-nums; line-height: 1.1; }

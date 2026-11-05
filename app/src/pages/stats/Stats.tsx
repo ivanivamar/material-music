@@ -13,7 +13,7 @@
  * cards with rank badges; and top songs on the detail-page segmented list.
  */
 import { useEffect, useState, type CSSProperties, type ReactNode } from 'react'
-import { Chip, AlbumEq, EmptyState, formatTime } from '../../components/ui'
+import { Chip, AlbumEq, EmptyState, formatTime, Button, Segmented } from '../../components/ui'
 import { Icon, type IconName } from '../../design/icons'
 import { SHAPE_BURST, SHAPE_CLOVER, cookie } from '../../design/shapes'
 import { useArtTint } from '../../design/tint'
@@ -111,30 +111,23 @@ export function Stats({ period: raw }: { period: string | null }) {
           })}
         </div>
         <div className="stats-months" role="group" aria-label="Month">
-          <button type="button" className="stats-month stats-month-all" aria-pressed={isYear} onClick={() => go({ year: period.year, month: null })}>
-            {isYear && <Icon name="done" className="stats-chip-ck" />}
+          <Chip selected={isYear} onClick={() => go({ year: period.year, month: null })}>
             Whole year
-          </button>
-          <div className="stats-mgroup">
-            {MONTHS_SHORT.map((m, i) => (
-              <button
-                key={m}
-                type="button"
-                className="stats-month"
-                aria-pressed={period.month === i}
-                aria-label={MONTHS[i]}
-                disabled={!months.has(i) && period.month !== i}
-                onClick={() => go({ year: period.year, month: i })}
-              >
-                {m}
-              </button>
-            ))}
-          </div>
+          </Chip>
+          <Segmented
+            label="Month"
+            className="stats-mgroup"
+            size={36}
+            checks={false}
+            value={isYear ? '' : String(period.month)}
+            onChange={(v) => go({ year: period.year, month: Number(v) })}
+            options={MONTHS_SHORT.map((m, i) => ({ value: String(i), label: m, title: MONTHS[i], disabled: !months.has(i) && period.month !== i }))}
+          />
         </div>
       </div>
 
       {stats.plays === 0 ? (
-        <div className="stats-empty">
+        <div className="card card-lg card-flush stats-empty">
           <EmptyState
             icon="clock"
             title={history.plays.length ? `No plays in ${label}` : 'Nothing counted yet'}
@@ -172,7 +165,7 @@ function StatsBody({ c, stats, label, now, onPick }: { c: Catalogue; stats: Peri
       </section>
 
       <div className="stats-split">
-        <section className="stats-card stats-chart-card">
+        <section className="card card-lg stats-card stats-chart-card">
           <div className="stats-card-head">
             <div className="stats-card-head-left">
               <h2 className="stats-h2">{isYear ? 'Listening by month' : 'Listening by day'}</h2>
@@ -213,7 +206,7 @@ function HeroCard({ stats }: { stats: PeriodStats }) {
   const tint = useArtTint(url)
   const top = stats.topAlbums[0]
   return (
-    <div ref={ref} className="stats-hero hue-scope" style={hueStyle(tint)}>
+    <div ref={ref} className="card card-lg stats-hero hue-scope" style={hueStyle(tint)}>
       <span className="stats-hero-wash" aria-hidden />
       <span className="stats-hero-burst" style={{ clipPath: SHAPE_BURST }} aria-hidden />
       <div className="stats-hero-text">
@@ -260,7 +253,7 @@ function FanCover({ id, i }: { id: string | null | undefined; i: number }) {
 
 function Tile({ n, one, many, icon, shape }: { n: number; one: string; many: string; icon: IconName; shape: string }) {
   return (
-    <div className="stats-tile">
+    <div className="card card-md card-interactive stats-tile">
       <span className="stats-tile-mark" aria-hidden>
         <span className="stats-tile-shape" style={{ clipPath: shape }} />
         <Icon name={icon} filled />
@@ -328,7 +321,7 @@ function FirstPlay({ c, stats, label }: { c: Catalogue; stats: PeriodStats; labe
   const play = () =>
     current ? playerStore.toggle() : playList([fp.track.id], { kind: 'library', id: `stats-first-${periodKey(stats.period)}`, label: `Library · First play of ${which}` })
   return (
-    <section className={`stats-card stats-first hue-scope ${current ? 'is-current' : ''}`} style={hueStyle(tint)}>
+    <section className={`card card-lg stats-card stats-first hue-scope ${current ? 'is-current' : ''}`} style={hueStyle(tint)}>
       <div className="stats-card-head">
         <h2 className="stats-h2">First play of {which}</h2>
       </div>
@@ -381,10 +374,10 @@ function SecHead({ title, sub, right }: { title: string; sub?: ReactNode; right?
 function MoreToggle({ all, total, onToggle }: { all: boolean; total: number; onToggle: () => void }) {
   if (total <= 10) return null
   return (
-    <button type="button" className="stats-more" onClick={onToggle}>
+    <Button variant="ghost" size="sm" className="stats-more" onClick={onToggle}>
       {all ? 'Show top 10' : `Show all ${Math.min(50, total)}`}
       <Icon name={all ? 'chevU' : 'chevD'} />
-    </button>
+    </Button>
   )
 }
 
@@ -401,7 +394,7 @@ function TopArtists({ stats }: { stats: PeriodStats }) {
     <section className="stats-section">
       <SecHead title="Top artists" sub={plural(stats.artists, 'artist', 'artists')} right={<MoreToggle all={all} total={list.length} onToggle={() => setAll((v) => !v)} />} />
       <div className="stats-artists">
-        <a className="stats-artist-top hue-scope" href={artistHref(top.item.id)} style={hue == null ? ({ '--hc': 0 } as CSSProperties) : ({ '--h': hue } as CSSProperties)}>
+        <a className="card card-lg card-interactive stats-artist-top hue-scope" href={artistHref(top.item.id)} style={hue == null ? ({ '--hc': 0 } as CSSProperties) : ({ '--h': hue } as CSSProperties)}>
           <span className="stats-artist-wash" aria-hidden />
           <span className="stats-artist-art">
             <span className="stats-artist-back" style={{ clipPath: SHAPE_COOKIE12 }} aria-hidden />
@@ -421,7 +414,7 @@ function TopArtists({ stats }: { stats: PeriodStats }) {
           </span>
         </a>
         {rest.length > 0 && (
-          <ol className="stats-artist-list" start={2}>
+          <ol className="card card-lg stats-artist-list" start={2}>
             {rest.map((r, i) => (
               <li key={r.item.id}>
                 <a className="stats-arow" href={artistHref(r.item.id)}>

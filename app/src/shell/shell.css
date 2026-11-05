@@ -85,29 +85,8 @@
 }
 .mm-avatar img { width: 100%; height: 100%; object-fit: cover; }
 
-/* menus (account menu; the action menus share the look): raised surface, 16px radius, 44px rows */
-.menu {
-  position: absolute; z-index: 30; width: 288px;
-  padding: 8px 0; border-radius: 16px; background: oklch(0.26 0.009 40);
-  box-shadow: 0 12px 32px -8px rgba(0, 0, 0, .75);
-  animation: mm-menu-in 260ms var(--ease-shape) both;
-}
+/* menus: components/ui Menu (overlay.css). The desktop action menu (actions.css) still uses this keyframe. */
 @keyframes mm-menu-in { from { opacity: 0; transform: translateY(6px) scale(.97); } to { opacity: 1; transform: none; } }
-.menu-head { padding: 4px 16px 12px; display: flex; flex-direction: column; gap: 2px; border-bottom: 1px solid var(--outline); margin-bottom: 8px; }
-.menu-name { font-size: 14px; font-weight: 600; }
-.menu-email { font-size: 12px; color: var(--ink-secondary); overflow: hidden; text-overflow: ellipsis; }
-.menu-meta { font-size: 12px; color: var(--ink-tertiary); margin-top: 2px; }
-.menu-item {
-  width: 100%; min-height: 44px; padding: 6px 16px; border: 0; background: none; cursor: pointer;
-  display: flex; align-items: center; gap: 14px; font: inherit; font-size: 14px; font-weight: 500; color: var(--ink-primary); text-align: left;
-}
-.menu-item .mi-ic { font-size: 22px; color: var(--ink-secondary); }
-.menu-item:hover:not(:disabled), .menu-item:focus-visible { background: oklch(0.30 0.01 40); outline: none; }
-.menu-item:disabled { color: var(--ink-ghost); cursor: default; }
-.menu-item.is-danger { color: oklch(0.78 0.12 25); }
-.menu-item.is-danger .mi-ic { color: oklch(0.78 0.12 25); }
-.menu-sep { height: 1px; margin: 8px 0; background: var(--outline); }
-.menu-foot { padding: 10px 16px 4px; margin-top: 8px; border-top: 1px solid var(--outline); font-size: 11px; color: var(--ink-tertiary); }
 
 /* ── Shelves (Home) ────────────────────────────────── */
 .shelves { display: flex; flex-direction: column; gap: 44px; }

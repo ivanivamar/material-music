@@ -6,15 +6,15 @@
  *   Out now:  Hero banner (newest from most played) + card grid (desktop) / swipe rows (phone).
  *   Discover: Related artist recommendations to follow for sweeps.
  */
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent } from 'react'
-import { EmptyState, LinearProgress } from '../../components/ui'
+import { useEffect, useMemo, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent } from 'react'
+import { Chip, EmptyState, LinearProgress, Menu, MenuItem, Segmented, Tabs as KitTabs, Button, IconButton, Alert } from '../../components/ui'
 import { Icon } from '../../design/icons'
 import { useOnline } from '../../state/downloads'
 import { useHistory } from '../../state/history'
 import { useLibrary, type Catalogue } from '../../state/library'
 import { nowPlayingStore } from '../../state/nowPlaying'
 import { releasesStore, sweepTargets, useReleases, type ReleasesState, type StatusFilter } from '../../state/releases'
-import { TOP_ARTISTS, buildFeed, buildSuggestions, fmtRelDate, fmtStamp, isOwned, type ArtistOpt, type Feed, type FeedItem, type UpWeek } from '../../state/releaseViews'
+import { TOP_ARTISTS, buildFeed, buildSuggestions, fmtRelDate, fmtStamp, isOwned, type Feed, type FeedItem, type UpWeek } from '../../state/releaseViews'
 import { refreshDiscover } from '../../state/discover'
 import { DiscoverTab } from './Discover'
 import { useIsPhone } from '../../state/viewport'
@@ -156,26 +156,27 @@ function Page({ c }: { c: Catalogue }) {
       <Header rs={rs} artistsN={artistsN} phone={phone} online={online} onArtists={() => setPanel({ kind: 'artists' })} />
 
       {!online && (
-        <div className="nr-offline">
-          <Icon name="offline" />
-          <span>No signal. Showing the last sonar.</span>
-          {rs.doc.sweep.at && <span className="nr-mono" style={{ marginLeft: 'auto' }}>LAST CHECKED {fmtStamp(rs.doc.sweep.at)}</span>}
-        </div>
+        <Alert tone="info" icon="offline" actions={rs.doc.sweep.at && <span className="nr-mono">LAST CHECKED {fmtStamp(rs.doc.sweep.at)}</span>}>
+          No signal. Showing the last sonar.
+        </Alert>
       )}
       {rs.error && (
-        <div className="nr-error-banner">
-          <Icon name="alert" />
-          <span>
-            Couldn’t complete the sweep.{' '}
-            {rs.error.status === 503 || rs.error.status === 429
-              ? 'MusicBrainz rate limited. Retrying shortly.'
-              : 'MusicBrainz request failed.'}
-          </span>
-          <button type="button" className="nr-clear" onClick={() => void releasesStore.sweep({ manual: true })}>Retry</button>
-        </div>
+        <Alert
+          tone="danger"
+          icon="alert"
+          role="alert"
+          actions={
+            <Button variant="ghost" size="sm" onClick={() => void releasesStore.sweep({ manual: true })}>
+              Retry
+            </Button>
+          }
+        >
+          Couldn’t complete the sweep.{' '}
+          {rs.error.status === 503 || rs.error.status === 429 ? 'MusicBrainz rate limited. Retrying shortly.' : 'MusicBrainz request failed.'}
+        </Alert>
       )}
 
-      {showTabs && <Tabs tab={tab} counts={counts} phone={phone} onTab={setTab} />}
+      {showTabs && <ReleaseTabs tab={tab} counts={counts} phone={phone} onTab={setTab} />}
       {showTabs && tab !== 'disc' && (
         <Filters
           key={tab}
@@ -184,7 +185,6 @@ function Page({ c }: { c: Catalogue }) {
           feed={feed}
           c={c}
           phone={phone}
-          onArtistSheet={() => setPanel({ kind: 'artistFilter' })}
         />
       )}
 
@@ -267,16 +267,6 @@ function Page({ c }: { c: Catalogue }) {
       <ReleasePanel open={!!panel} phone={phone} onClose={close} contentKey={shown?.kind === 'rel' ? shown.id : (shown?.kind ?? '')}>
         {shown?.kind === 'artists' && <FollowedArtists c={c} phone={phone} onClose={close} />}
         {detailItem && <ReleaseDetail item={detailItem} c={c} phone={phone} online={online} act={act} onClose={close} />}
-        {shown?.kind === 'artistFilter' && (
-          <ArtistSheet
-            options={feed.artistOpts}
-            current={rs.prefs.artist}
-            onPick={(id) => {
-              releasesStore.setPrefs({ artist: id })
-              close()
-            }}
-          />
-        )}
       </ReleasePanel>
     </div>
   )
@@ -324,21 +314,24 @@ function Header({
           <h1 className="nr-title">New releases</h1>
         </div>
         <div className="nr-head-tools">
-          <button type="button" className="nr-follow" onClick={onArtists} aria-label="Followed artists" title="Followed artists">
-            <Icon name="gear" />
-            {!phone && <span>Followed artists</span>}
-            {!phone && <span className="nr-follow-n">{artistsN}</span>}
-          </button>
-          <button
-            type="button"
-            className={`nr-sweep ${sw ? 'is-sweeping' : ''}`}
+          {phone ? (
+            <IconButton icon="gear" label="Followed artists" size="lg" variant="soft" onClick={onArtists} />
+          ) : (
+            <Button variant="outlined-ink" size="lg" icon="gear" onClick={onArtists} title="Followed artists">
+              Followed artists
+              <span className="nr-follow-n">{artistsN}</span>
+            </Button>
+          )}
+          <IconButton
+            icon="refresh"
+            size="lg"
+            variant="tonal"
+            className={sw ? 'nr-sweeping' : undefined}
+            label={sw ? 'Sweeping MusicBrainz' : 'Check MusicBrainz now'}
             title={sw ? 'Sweeping MusicBrainz…' : 'Check MusicBrainz now'}
-            aria-label={sw ? 'Sweeping MusicBrainz' : 'Check MusicBrainz now'}
             disabled={!online && !sw}
             onClick={() => !sw && void releasesStore.sweep({ manual: true })}
-          >
-            <Icon name="refresh" />
-          </button>
+          />
         </div>
       </div>
       {sw && (
@@ -350,7 +343,7 @@ function Header({
 
 /* ── Tabs ────────────────────────────────────────────── */
 
-function Tabs({
+function ReleaseTabs({
   tab,
   counts,
   phone,
@@ -361,55 +354,12 @@ function Tabs({
   phone: boolean
   onTab: (t: Tab) => void
 }) {
-  if (phone) {
-    return (
-      <div className="nr-seg" role="tablist">
-        {TABS.map(([id, label]) => {
-          const on = tab === id
-          return (
-            <button
-              key={id}
-              type="button"
-              role="tab"
-              aria-selected={on}
-              className={`nr-seg-b ${on ? 'is-on' : ''}`}
-              onPointerDown={(e) => {
-                if (e.button === 0 && e.pointerType === 'mouse') onTab(id)
-              }}
-              onClick={() => onTab(id)}
-            >
-              <span>{label}</span>
-              <span className="nr-mono">{counts[id]}</span>
-            </button>
-          )
-        })}
-      </div>
-    )
-  }
-
+  // the kit Tabs; full width (and a little shorter) on the phone
+  const items = TABS.map(([id, label, icon]) => ({ value: id, label, icon: phone ? undefined : icon, count: counts[id] }))
   return (
-    <div className="nr-tabs" role="tablist">
-      {TABS.map(([id, label, icon]) => {
-        const on = tab === id
-        return (
-          <button
-            key={id}
-            type="button"
-            role="tab"
-            aria-selected={on}
-            className={`nr-tab ${on ? 'is-on' : ''}`}
-            onClick={() => onTab(id)}
-          >
-            <div className="nr-tab-pill">
-              <Icon name={icon} filled={on} />
-              <span>{label}</span>
-              <span className="nr-tab-count">{counts[id]}</span>
-            </div>
-            <div className="nr-tab-ind" />
-          </button>
-        )
-      })}
-      {tab === 'disc' && <span className="nr-tab-right">From your {TOP_ARTISTS} most-played artists</span>}
+    <div className="nr-tabs">
+      <KitTabs label="New releases" value={tab} onChange={onTab} items={items} full={phone} size={phone ? 'sm' : 'md'} />
+      {!phone && tab === 'disc' && <span className="nr-tab-right">From your {TOP_ARTISTS} most-played artists</span>}
     </div>
   )
 }
@@ -422,35 +372,16 @@ function Filters({
   feed,
   c,
   phone,
-  onArtistSheet,
 }: {
   tab: Tab
   rs: ReleasesState
   feed: Feed
   c: Catalogue
   phone: boolean
-  onArtistSheet: () => void
 }) {
   const { status, artist, reversed } = rs.prefs
   const hideRe = rs.doc.hideReissues[0]
-  const [pop, setPop] = useState(false)
-  const wrap = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (!pop) return
-    const down = (e: PointerEvent) => {
-      if (!wrap.current?.contains(e.target as Node)) setPop(false)
-    }
-    const key = (e: globalThis.KeyboardEvent) => {
-      if (e.key === 'Escape') setPop(false)
-    }
-    window.addEventListener('pointerdown', down)
-    window.addEventListener('keydown', key)
-    return () => {
-      window.removeEventListener('pointerdown', down)
-      window.removeEventListener('keydown', key)
-    }
-  }, [pop])
+  const [artistAt, setArtistAt] = useState<HTMLElement | null>(null)
 
   const artistName = artist ? (c.artists[artist]?.name ?? 'Artist') : 'All artists'
   const anyFilter = (tab === 'out' && status !== 'all') || artist !== null
@@ -463,20 +394,9 @@ function Filters({
   ]
 
   const artistChip = (
-    <button
-      type="button"
-      className={`chip nr-chip ${artist !== null ? 'is-on' : ''}`}
-      aria-pressed={artist !== null}
-      aria-haspopup="listbox"
-      aria-expanded={pop}
-      onClick={() => (phone ? onArtistSheet() : setPop((p) => !p))}
-    >
-      {artist !== null && <Icon name="check" />}
-      <span>{artistName}</span>
-      <span className="nr-chip-ic">
-        <Icon name="arrowDrop" />
-      </span>
-    </button>
+    <Chip selected={artist !== null} trailingIcon="arrowDrop" popup="listbox" expanded={!!artistAt} onClick={(e) => setArtistAt(artistAt ? null : e.currentTarget)}>
+      {artistName}
+    </Chip>
   )
 
   return (
@@ -484,80 +404,43 @@ function Filters({
       {tab === 'out' &&
         (phone ? (
           statusOpts.map(([id, label]) => (
-            <button key={id} type="button" className={`chip nr-chip ${status === id ? 'is-on' : ''}`} onClick={() => set(id)}>
-              {status === id && <Icon name="check" />}
+            <Chip key={id} selected={status === id} role="radio" onClick={() => set(id)}>
               {label}
-            </button>
+            </Chip>
           ))
         ) : (
-          <div className="nr-segc" role="radiogroup" aria-label="Status">
-            {statusOpts.map(([id, label]) => (
-              <button
-                key={id}
-                type="button"
-                role="radio"
-                aria-checked={status === id}
-                className={`nr-segc-b ${status === id ? 'is-on' : ''}`}
-                onPointerDown={(e) => {
-                  if (e.button === 0 && e.pointerType === 'mouse') set(id)
-                }}
-                onClick={() => set(id)}
-              >
-                {status === id && <Icon name="check" />}
-                <span>{label}</span>
-              </button>
-            ))}
-          </div>
+          <Segmented label="Status" size={36} value={status} onChange={set} options={statusOpts.map(([id, label]) => ({ value: id, label }))} />
         ))}
 
-      <div className="nr-artpop-wrap" ref={wrap}>
-        {artistChip}
-        {pop && !phone && (
-          <div className="nr-artpop" role="listbox">
-            <div className="nr-artpop-scroll">
-              <ArtistRows
-                options={feed.artistOpts}
-                current={artist}
-                onPick={(id) => {
-                  releasesStore.setPrefs({ artist: id })
-                  setPop(false)
-                }}
-              />
-            </div>
-          </div>
-        )}
-      </div>
+      {artistChip}
+      <Menu open={!!artistAt} anchor={artistAt} onClose={() => setArtistAt(null)} label="Filter by artist" role="listbox" width={300}>
+        <MenuItem selected={artist === null} onSelect={() => releasesStore.setPrefs({ artist: null })}>
+          All artists
+        </MenuItem>
+        {feed.artistOpts.map((o) => (
+          <MenuItem key={o.id} selected={artist === o.id} trailing={o.plays > 0 ? `${o.plays.toLocaleString('en-US')} plays` : undefined} onSelect={() => releasesStore.setPrefs({ artist: o.id })}>
+            {o.name}
+          </MenuItem>
+        ))}
+      </Menu>
 
-      <button
-        type="button"
-        className={`chip nr-chip ${hideRe ? 'is-on' : ''}`}
-        aria-pressed={hideRe}
-        onClick={() => releasesStore.setHideReissues(!hideRe)}
-      >
-        {hideRe && <Icon name="check" />}
-        <span>{phone ? 'No reissues' : 'Hide reissues & deluxe'}</span>
-      </button>
+      <Chip selected={hideRe} onClick={() => releasesStore.setHideReissues(!hideRe)}>
+        {phone ? 'No reissues' : 'Hide reissues & deluxe'}
+      </Chip>
 
       {tab === 'up' && (
-        <button
-          type="button"
-          className={`chip nr-chip ${reversed ? 'is-on' : ''}`}
-          aria-pressed={reversed}
-          onClick={() => releasesStore.setPrefs({ reversed: !reversed })}
-        >
-          {reversed && <Icon name="check" />}
-          <span>Furthest first</span>
-        </button>
+        <Chip selected={reversed} onClick={() => releasesStore.setPrefs({ reversed: !reversed })}>
+          Furthest first
+        </Chip>
       )}
 
       {anyFilter && (
-        <button
-          type="button"
+        <Button variant="ghost" size="sm"
           className="nr-clear"
           onClick={() => releasesStore.setPrefs({ status: 'all', artist: null })}
         >
           Clear filters
-        </button>
+        </Button>
       )}
 
       {!phone && (
@@ -567,53 +450,6 @@ function Filters({
             : `${feed.status.new} NEW · ${feed.status.seen} SEEN`}
         </span>
       )}
-    </div>
-  )
-}
-
-function ArtistRows({
-  options,
-  current,
-  onPick,
-}: {
-  options: ArtistOpt[]
-  current: string | null
-  onPick: (id: string | null) => void
-}) {
-  return (
-    <>
-      <button type="button" role="option" aria-selected={current === null} className="nr-artrow" onClick={() => onPick(null)}>
-        <span className="nr-artrow-n">All artists</span>
-        <span className="nr-artrow-ic">{current === null && <Icon name="check" />}</span>
-      </button>
-      {options.map((o) => (
-        <button key={o.id} type="button" role="option" aria-selected={current === o.id} className="nr-artrow" onClick={() => onPick(o.id)}>
-          <span className="nr-artrow-n">{o.name}</span>
-          {o.plays > 0 && <span className="nr-artrow-c">{o.plays.toLocaleString('en-US')} plays</span>}
-          <span className="nr-artrow-ic">{current === o.id && <Icon name="check" />}</span>
-        </button>
-      ))}
-    </>
-  )
-}
-
-function ArtistSheet({
-  options,
-  current,
-  onPick,
-}: {
-  options: ArtistOpt[]
-  current: string | null
-  onPick: (id: string | null) => void
-}) {
-  return (
-    <div className="nrp nr-artsheet">
-      <div className="nrp-titles">
-        <h2 className="nrp-title">Filter by artist</h2>
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '12px' }}>
-        <ArtistRows options={options} current={current} onPick={onPick} />
-      </div>
     </div>
   )
 }
@@ -714,21 +550,15 @@ function RemindButton({
 }) {
   const on = item.reminded
   const label = on ? 'Reminder set' : 'Remind me'
+  const remind = (e: MouseEvent) => {
+    e.stopPropagation()
+    act.remind(item)
+  }
+  if (icon) return <IconButton icon={on ? 'bellF' : 'bell'} label={label} size="lg" variant={on ? 'tonal' : 'soft'} pressed={on} onClick={remind} />
   return (
-    <button
-      type="button"
-      className={`nr-rem ${on ? 'is-on' : ''} ${icon ? 'nr-rem-sq' : ''}`}
-      aria-pressed={on}
-      aria-label={label}
-      title={label}
-      onClick={(e: MouseEvent) => {
-        e.stopPropagation()
-        act.remind(item)
-      }}
-    >
-      <Icon name={on ? 'bellF' : 'bell'} />
-      {!icon && <span>{label}</span>}
-    </button>
+    <Button variant={on ? 'tonal' : 'outlined-ink'} icon={on ? 'bellF' : 'bell'} aria-pressed={on} title={label} onClick={remind}>
+      {label}
+    </Button>
   )
 }
 
@@ -857,7 +687,7 @@ function Hero({
 
   if (phone) {
     return (
-      <div className="nr-hero-phone" onClick={() => onOpen(item)}>
+      <div className="card card-lg card-interactive nr-hero-phone" onClick={() => onOpen(item)}>
         <div className="nr-hero-phone-top">
           <div className="nr-hero-cover">
             <ReleaseCover item={item} size="sm" />
@@ -876,10 +706,10 @@ function Hero({
               Play
             </button>
           ) : item.status === 'acq' ? (
-            <button type="button" className="nr-hero-acq-btn" title="Stop matching" onClick={stop(() => act.got(item))}>
+            <Button variant="secondary" className="nr-hero-acq-btn" title="Stop matching" onClick={stop(() => act.got(item))}>
               <span className="btn-ic"><Spinner /></span>
               Matching your files…
-            </button>
+            </Button>
           ) : (
             <>
               <button
@@ -918,7 +748,7 @@ function Hero({
   const titleSize = item.rel.t.length > 26 ? 44 : item.rel.t.length > 16 ? 52 : 60
 
   return (
-    <div className="nr-hero" onClick={() => onOpen(item)}>
+    <div className="card card-lg card-interactive nr-hero" onClick={() => onOpen(item)}>
       <div className="nr-hero-cover">
         <ReleaseCover item={item} size="lg" />
         {item.upcoming && <Countdown item={item} />}
@@ -969,15 +799,9 @@ function Hero({
                 <span className="btn-ic"><Icon name="eye" /></span>
                 {item.status === 'seen' ? 'Mark new' : 'Mark seen'}
               </button>
-              <button
-                type="button"
-                className="chip nr-chip"
-                disabled={!online}
-                onClick={stop(() => act.external(item))}
-              >
+              <Chip selected={false} trailingIcon="ext" disabled={!online} onClick={stop(() => act.external(item))}>
                 MusicBrainz
-                <Icon name="ext" />
-              </button>
+              </Chip>
               <button
                 type="button"
                 className="btn btn-ghost"
@@ -1013,7 +837,7 @@ function Card({
   }
 
   return (
-    <div className="nr-card" onClick={() => onOpen(item)}>
+    <div className="card card-md card-interactive nr-card" onClick={() => onOpen(item)}>
       <div className="nr-card-art">
         <ReleaseCover item={item} size="sm" />
         {item.status === 'new' && <span className="nr-badge-tag is-new">NEW</span>}

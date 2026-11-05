@@ -106,7 +106,7 @@ export function SmartDialog({ playlistId }: { playlistId?: string }) {
 
   const count = result?.ids.length ?? 0
   return (
-    <Shell label={editing ? `Rules · ${editing.name}` : 'New smart playlist'} onClose={() => actions.closeDialog()} wide>
+    <Shell label={editing ? `Rules · ${editing.name}` : 'New smart playlist'} onClose={() => actions.closeDialog()} wide width={680}>
       <form
         className="dlg-new sm"
         onSubmit={(e) => {

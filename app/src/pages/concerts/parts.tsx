@@ -5,9 +5,8 @@
  * (useArtistHue), else the name; it only tints small things (date block, ring, festival label).
  */
 import { useEffect, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from 'react'
-import { createPortal } from 'react-dom'
 import { Icon } from '../../design/icons'
-import { Button, Segmented } from '../../components/ui'
+import { Button, Segmented, Sheet, badgeClass, type BadgeTone } from '../../components/ui'
 import { SHAPE_CLOVER } from '../../design/shapes'
 import { useCover } from '../../lib/covers'
 import { nameHue } from '../../lib/mixing'
@@ -59,6 +58,17 @@ export function DateBlock({ show, kind, className }: { show: Pick<Show, 'date' |
 
 /* ── Status chip ────────────────────────────────────── */
 
+const STATUS_TONE: Partial<Record<Show['status'], BadgeTone>> = {
+  onsale: 'success',
+  presale: 'tonal',
+  resched: 'warn',
+  postponed: 'warn',
+  notyet: 'outlined',
+  soldout: 'neutral',
+  cancelled: 'danger',
+  mine: 'outlined',
+}
+
 export function StatusChip({ show, size = 'md', solid, onClick, label }: { show: Show; size?: 'sm' | 'md' | 'lg'; solid?: boolean; onClick?: (e: MouseEvent) => void; label?: string }) {
   const look = statusLook(show)
   const body = (
@@ -67,10 +77,12 @@ export function StatusChip({ show, size = 'md', solid, onClick, label }: { show:
       {label ?? look.label}
     </>
   )
-  const cls = `cx-chip is-${show.status} is-${size} ${solid ? 'is-solid' : ''}`
+  // the kit Badge; the status picks its tone
+  const tone = STATUS_TONE[show.status] ?? 'neutral'
+  const cls = badgeClass(solid && tone === 'outlined' ? 'neutral' : tone, size, `cx-chip ${onClick ? 'is-btn' : ''}`)
   if (onClick)
     return (
-      <button type="button" className={`${cls} is-btn`} onClick={onClick} title="Edit this show">
+      <button type="button" className={cls} onClick={onClick} title="Edit this show">
         {body}
       </button>
     )
@@ -255,8 +267,27 @@ function LocationBody({ home, radius, phone, onDone }: { home: City | null; radi
 }
 
 export function LocationPicker({ home, radius, phone, onClose }: { home: City | null; radius: Radius; phone: boolean; onClose: () => void }) {
+  if (phone) return <LocationSheet home={home} radius={radius} onClose={onClose} />
+  return <LocationPop home={home} radius={radius} onClose={onClose} />
+}
+
+/** Phone: the kit Sheet. It slides out before the owner unmounts it. */
+function LocationSheet({ home, radius, onClose }: { home: City | null; radius: Radius; onClose: () => void }) {
+  const [open, setOpen] = useState(true)
+  const close = () => {
+    setOpen(false)
+    window.setTimeout(onClose, 320)
+  }
+  return (
+    <Sheet open={open} onClose={close} label="Location" title="Location" closeButton={false} bodyClassName="cx-loc-sheet">
+      <LocationBody home={home} radius={radius} phone onDone={close} />
+    </Sheet>
+  )
+}
+
+function LocationPop({ home, radius, onClose }: { home: City | null; radius: Radius; onClose: () => void }) {
   const ref = useRef<HTMLDivElement>(null)
-  // desktop: click outside / Esc closes
+  // click outside / Esc closes
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -265,7 +296,6 @@ export function LocationPicker({ home, radius, phone, onClose }: { home: City | 
       }
     }
     const onDown = (e: PointerEvent) => {
-      if (phone) return
       const el = e.target as Node
       if (ref.current?.contains(el) || (el as HTMLElement).closest?.('.cx-locpill')) return
       onClose()
@@ -276,19 +306,7 @@ export function LocationPicker({ home, radius, phone, onClose }: { home: City | 
       window.removeEventListener('keydown', onKey)
       window.removeEventListener('pointerdown', onDown)
     }
-  }, [onClose, phone])
-  if (phone)
-    return createPortal(
-      <>
-        <div className="cx-scrim is-sheet" onClick={onClose} />
-        <div className="cx-sheet" role="dialog" aria-label="Location" ref={ref}>
-          <div className="cx-sheet-grip" />
-          <div className="cx-sheet-title">Location</div>
-          <LocationBody home={home} radius={radius} phone onDone={onClose} />
-        </div>
-      </>,
-      document.body,
-    )
+  }, [onClose])
   return (
     <div className="cx-pop" role="dialog" aria-label="Location" ref={ref}>
       <LocationBody home={home} radius={radius} phone={false} onDone={onClose} />

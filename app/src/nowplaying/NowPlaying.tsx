@@ -9,7 +9,7 @@
  * Opened from the player bar / mini player. Esc or Back closes (AppShell + history).
  */
 import { useEffect, useRef, useState, type CSSProperties, type MouseEvent, type PointerEvent } from 'react'
-import { IconButton, ThinSlider, WaveSeek } from '../components/ui'
+import { Badge, IconButton, ThinSlider, WaveSeek } from '../components/ui'
 import { Icon } from '../design/icons'
 import { useCover } from '../lib/covers'
 import { useLibrary } from '../state/library'
@@ -241,16 +241,12 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
         <span className="np-bg-tone" />
       </div>
       <header className="np-head">
-        <button
+        <IconButton icon={backToNp ? 'back' : 'chevD'} label={backToNp ? 'Back to Now playing' : 'Close'} title={backToNp ? 'Back to Now playing' : 'Close · Esc'} size="lg" variant="soft"
           ref={closeRef}
-          type="button"
           className="np-close"
-          title={backToNp ? 'Back to Now playing' : 'Close · Esc'}
-          aria-label={backToNp ? 'Back to Now playing' : 'Close'}
-          onClick={() => (backToNp ? djUi.closeStart() : nowPlayingStore.close())}
-        >
-          <Icon name={backToNp ? 'back' : 'chevD'} />
-        </button>
+         
+         
+          onClick={() => (backToNp ? djUi.closeStart() : nowPlayingStore.close())} />
         <div className="np-from">
           <div className={`np-from-k ${dj.on && !startView ? 'has-dj' : ''}`}>
             {dj.on && !startView && <DjIcon on />}
@@ -294,12 +290,12 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
                             {fmtQ.detail}
                           </span>
                         )}
-                        {chip && <span className="np-chip">{chip}</span>}
+                        {chip && <Badge tone="dj" className="np-chip">{chip}</Badge>}
                       </div>
                     )}
                     <div className="np-title-row">
                       <div className="np-title-col">
-                        {phone && chip && <span className="np-chip">{chip}</span>}
+                        {phone && chip && <Badge tone="dj" className="np-chip">{chip}</Badge>}
                         {phone ? <Marquee className="np-title" text={songTrack.title} /> : <h2 className="np-title" title={songTrack.title}>{songTrack.title}</h2>}
                         <div className="np-by">
                           <NpLink href={artistHref(songTrack.artistId)} className="np-artist" title={songTrack.artist}>

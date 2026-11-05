@@ -21,6 +21,7 @@ import { cookie, SHAPE_CLOVER, SHAPE_PLAYING } from '../../design/shapes'
 import { Icon } from '../../design/icons'
 import { PlaylistCover } from '../playlists/PlaylistCover'
 import type { Playlist } from '../../state/playlists'
+import { Badge } from '../../components/ui'
 
 /** Card radius: 20px at 168, scaled, never under 8. */
 export const radiusFor = (size: number) => Math.max(8, Math.round((20 * size) / 168))
@@ -172,10 +173,9 @@ export function RadioArt({ seed, size, radius, playing }: { seed: RadioArtSeed; 
         </span>
       )}
       {big && (
-        <span className="hx-radio-chip" style={{ background: `oklch(0.86 0.08 ${H})`, color: `oklch(0.24 0.06 ${H})` }}>
-          <Icon name={isArtist ? 'artist' : seed.type === 'album' ? 'album' : 'song'} size={16} />
+        <Badge tone="album" size="lg" icon={isArtist ? 'artist' : seed.type === 'album' ? 'album' : 'song'} className="hx-radio-chip" style={{ '--h': H, '--hc': 1 } as CSSProperties}>
           {isArtist ? 'Artist radio' : seed.type === 'album' ? 'Album radio' : 'Song radio'}
-        </span>
+        </Badge>
       )}
       {big && (
         <span className="hx-radio-mark" style={{ background: `oklch(0.20 0.04 ${H} / 0.55)`, color: `oklch(0.92 0.05 ${H})` }}>

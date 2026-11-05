@@ -7,8 +7,7 @@
  * ticked; on phone, opens as a bottom sheet when a release is tapped).
  */
 import { useEffect, useRef, useState, type DragEvent, type FormEvent } from 'react'
-import { createPortal } from 'react-dom'
-import { Button, useToast } from '../../components/ui'
+import { Button, Sheet, useToast, Alert } from '../../components/ui'
 import { Icon } from '../../design/icons'
 import { registerBack } from '../../native/backButton'
 import { useLibrary } from '../../state/library'
@@ -60,37 +59,25 @@ export function Upload() {
                     <Icon name="uploadFile" />
                   </span>
                   <span className="ub-strip-text">Drop more folders or files. They join this batch.</span>
-                  <button type="button" className="ub-strip-btn" onClick={pick.folders}>
+                  <Button variant="brand" className="ub-strip-btn" onClick={pick.folders}>
                     Choose folders
-                  </button>
+                  </Button>
                 </div>
               )
             }
           />
           {s.opus === false && (
-            <div className="ub-alert" role="status">
-              <Icon name="warning" filled />
-              <span>This browser can’t encode Opus, so tracks go up as FLAC only and the phone streams the FLAC. Chrome or Edge make the Opus copies.</span>
-            </div>
+            <Alert>This browser can’t encode Opus, so tracks go up as FLAC only and the phone streams the FLAC. Chrome or Edge make the Opus copies.</Alert>
           )}
           <div className="ub-body">
             <ReleaseList s={s} cat={cat} view={view} phone={phone} onInspect={() => phone && setSheetOpen(true)} />
             {!phone && <Inspector s={s} cat={cat} onPickMissing={pick.missing} />}
           </div>
-          {phone &&
-            sheetOpen &&
-            createPortal(
-              <div className="ub-sheet-layer">
-                <div className="ub-sheet-scrim" onClick={() => setSheetOpen(false)} />
-                <div className="ub-sheet" role="dialog" aria-label="Release details">
-                  <button type="button" className="ub-sheet-handle" aria-label="Close" onClick={() => setSheetOpen(false)}>
-                    <span />
-                  </button>
-                  <Inspector s={s} cat={cat} onPickMissing={pick.missing} onClose={() => setSheetOpen(false)} />
-                </div>
-              </div>,
-              document.body,
-            )}
+          {phone && (
+            <Sheet open={sheetOpen} onClose={() => setSheetOpen(false)} label="Release details" bodyClassName="ub-sheet">
+              <Inspector s={s} cat={cat} onPickMissing={pick.missing} onClose={() => setSheetOpen(false)} />
+            </Sheet>
+          )}
         </>
       )}
       {drag.info && <DropOverlay info={drag.info} />}
@@ -105,7 +92,7 @@ function EmptyState({ reading, onFolders, onFiles }: { reading: number; onFolder
   return (
     <>
       <PageHeader meta="FLAC · tags and cover art read from the files" title="Upload" />
-      <div className="ub-zone">
+      <div className="card card-empty card-lg ub-zone">
         <div className="ub-tile" aria-hidden>
           <Icon name="uploadFile" />
         </div>

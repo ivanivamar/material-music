@@ -1,16 +1,14 @@
 /**
  * Account menu: refresh library, listening stats, settings, local FLAC folder, switch account, sign out.
- * Desktop (Material redesign): the account chip at the bottom of the sidebar opens it as a menu above.
- * Phone: the avatar in the top bar opens the same items as a bottom sheet.
+ * Desktop (Material redesign): the account chip at the bottom of the sidebar opens it as the kit Menu
+ * above it. Phone: the avatar in the top bar opens the same items in the kit bottom Sheet.
  */
-import { useEffect, useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
-import { useSheetDrag } from '../components/useSheetDrag'
+import { Fragment, useState } from 'react'
+import { Menu, MenuItem, MenuSeparator, Sheet } from '../components/ui'
 import { Icon, type IconName } from '../design/icons'
 import { localFolder, useLocalFolder } from '../lib/localFolder'
 import { APP_VERSION, appUpdate, usePwa } from '../lib/pwa'
 import { isNative } from '../native/bridge'
-import { registerBack } from '../native/backButton'
 import { nativeUpdates, useNativeUpdates } from '../native/updates'
 import { useLibrary } from '../state/library'
 import { checkDrive } from '../state/checkDrive'
@@ -97,52 +95,28 @@ export function Avatar({ size = 36 }: { size?: number }) {
   )
 }
 
-function MenuRows({ rows, onPick }: { rows: Row[]; onPick: (r: Row) => void }) {
+function MenuRows({ rows, onPick }: { rows: Row[]; onPick?: (r: Row) => void }) {
   return (
     <>
       {rows.map((r, i) => (
-        <div key={i} style={{ display: 'contents' }}>
-          {r.danger && <div className="menu-sep" />}
-          <button type="button" role="menuitem" className={`menu-item ${r.danger ? 'is-danger' : ''}`} disabled={r.disabled} onClick={() => onPick(r)}>
-            <Icon name={r.icon} className="mi-ic" />
+        <Fragment key={i}>
+          {r.danger && <MenuSeparator />}
+          <MenuItem icon={r.icon} danger={r.danger} disabled={r.disabled} onSelect={() => (onPick ? onPick(r) : r.run())}>
             {r.label}
-          </button>
-        </div>
+          </MenuItem>
+        </Fragment>
       ))}
     </>
   )
 }
 
-/** Desktop: the account chip at the bottom of the sidebar; the menu opens above it. */
+/** Desktop: the account chip at the bottom of the sidebar; the kit Menu opens above it. */
 export function AccountChip() {
   const { account, metas, rows, foot, synced } = useAccountMenu()
-  const [open, setOpen] = useState(false)
-  const wrap = useRef<HTMLDivElement>(null)
-  const menuRef = useRef<HTMLDivElement>(null)
-  /* The sidebar clips its overflow, so the menu is portalled to <body> and pinned above the chip. */
-  const [pos, setPos] = useState<{ left: number; bottom: number } | null>(null)
-  useEffect(() => {
-    if (!open) return
-    const place = () => {
-      const r = wrap.current?.getBoundingClientRect()
-      if (r) setPos({ left: r.left, bottom: window.innerHeight - r.top + 8 })
-    }
-    place()
-    const inside = (t: EventTarget | null) => wrap.current?.contains(t as Node) || menuRef.current?.contains(t as Node)
-    const onDown = (e: PointerEvent) => !inside(e.target) && setOpen(false)
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false)
-    document.addEventListener('pointerdown', onDown)
-    document.addEventListener('keydown', onKey)
-    window.addEventListener('resize', place)
-    return () => {
-      document.removeEventListener('pointerdown', onDown)
-      document.removeEventListener('keydown', onKey)
-      window.removeEventListener('resize', place)
-    }
-  }, [open])
+  const [anchor, setAnchor] = useState<HTMLElement | null>(null)
   return (
-    <div className="sb-acct" ref={wrap}>
-      <button type="button" className="sb-acct-btn" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+    <div className="sb-acct">
+      <button type="button" className="sb-acct-btn" aria-haspopup="menu" aria-expanded={!!anchor} onClick={(e) => setAnchor(anchor ? null : e.currentTarget)}>
         <Avatar size={36} />
         <span className="sb-acct-text">
           <span className="sb-acct-name">{account?.name?.split(' ')[0] || 'Signed in'}</span>
@@ -150,124 +124,62 @@ export function AccountChip() {
         </span>
         <Icon name="unfold" />
       </button>
-      {open && pos && createPortal(
-        <div className="menu sb-acct-menu" role="menu" ref={menuRef} style={{ left: pos.left, bottom: pos.bottom }}>
-          <div className="menu-head">
-            <span className="menu-name">{account?.name || 'Signed in'}</span>
-            <span className="menu-email">{account?.email}</span>
-            {metas.map((m, i) => (
-              <span key={i} className="menu-meta" title={m.title}>
-                {m.text}
-              </span>
-            ))}
-          </div>
-          <MenuRows
-            rows={rows}
-            onPick={(r) => {
-              setOpen(false)
-              r.run()
-            }}
-          />
-          <div className="menu-foot">{foot}</div>
-        </div>,
-        document.body,
-      )}
+      <Menu open={!!anchor} anchor={anchor} onClose={() => setAnchor(null)} label="Account" placement="top-start" width={288} phone="popover">
+        <div className="mn-head">
+          <span className="mn-head-t">{account?.name || 'Signed in'}</span>
+          <span className="mn-head-s">{account?.email}</span>
+          {metas.map((m, i) => (
+            <span key={i} className="mn-head-m" title={m.title}>
+              {m.text}
+            </span>
+          ))}
+        </div>
+        <MenuRows rows={rows} />
+        <div className="mn-foot">{foot}</div>
+      </Menu>
     </div>
   )
 }
 
-/** Phone: the avatar in the top bar; opens the account sheet. */
+/** Phone: the avatar in the top bar; opens the account sheet (the kit Sheet). */
 export function AccountButton() {
   const [open, setOpen] = useState(false)
+  const { account, initial, metas, rows, foot } = useAccountMenu()
+  // let the sheet slide out, then run the row (navigation, sign out…)
+  const pick = (r: Row) => {
+    setOpen(false)
+    window.setTimeout(r.run, 260)
+  }
   return (
     <>
       <button type="button" className="ptb-av" aria-haspopup="dialog" aria-expanded={open} aria-label="Account" onClick={() => setOpen(true)}>
         <Avatar size={32} />
       </button>
-      {open && createPortal(<AccountSheet onClosed={() => setOpen(false)} />, document.body)}
-    </>
-  )
-}
-
-function AccountSheet({ onClosed }: { onClosed: () => void }) {
-  const { account, initial, metas, rows, foot } = useAccountMenu()
-  const [shown, setShown] = useState(false)
-  const [closing, setClosing] = useState(false)
-  const closingRef = useRef(false)
-
-  const close = (then?: () => void) => {
-    if (closingRef.current) return
-    closingRef.current = true
-    setClosing(true)
-    window.setTimeout(() => {
-      onClosed()
-      then?.()
-    }, 260)
-  }
-
-  useEffect(() => {
-    const r = requestAnimationFrame(() => setShown(true))
-    return () => cancelAnimationFrame(r)
-  }, [])
-  // Android Back / Esc close the sheet
-  const closeRef = useRef(close)
-  closeRef.current = close
-  useEffect(
-    () =>
-      registerBack(() => {
-        closeRef.current()
-        return true
-      }, 'top'),
-    [],
-  )
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && closeRef.current()
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [])
-
-  // drag the handle / header (or the list at its top) down to close
-  const sheetRef = useRef<HTMLDivElement>(null)
-  const scrimRef = useRef<HTMLDivElement>(null)
-  useSheetDrag(sheetRef, scrimRef, () => close())
-
-  const open = shown && !closing
-  return (
-    <>
-      <div ref={scrimRef} className={`as-scrim pg-anim ${open ? 'is-on' : ''}`} onClick={() => close()} />
-      <div ref={sheetRef} className={`as as-account pg-anim ${open ? 'is-on' : ''}`} role="dialog" aria-label="Account">
-        <button type="button" className="as-handle" aria-label="Close" onClick={() => close()}>
-          <span />
-        </button>
-        <div className="as-head">
-          <span className="as-me-av">
-            <AvatarFace photo={account?.photo} initial={initial} />
-          </span>
-          <div className="as-head-text">
-            <div className="as-head-title">{account?.name || 'Signed in'}</div>
-            <div className="as-head-sub">{account?.email}</div>
+      <Sheet
+        open={open}
+        onClose={() => setOpen(false)}
+        label="Account"
+        bodyClassName="mn-sheet"
+        header={
+          <div className="as-head">
+            <span className="as-me-av">
+              <AvatarFace photo={account?.photo} initial={initial} />
+            </span>
+            <div className="as-head-text">
+              <div className="as-head-title">{account?.name || 'Signed in'}</div>
+              <div className="as-head-sub">{account?.email}</div>
+            </div>
           </div>
-        </div>
+        }
+        footer={<div className="as-me-foot">{foot}</div>}
+      >
         <div className="as-me-meta">
           {metas.map((m, i) => (
             <span key={i}>{m.text}</span>
           ))}
         </div>
-        <div className="as-items">
-          {rows.map((r, i) => (
-            <div key={i} style={{ display: 'contents' }}>
-              {r.danger && <div className="as-div" />}
-              <button type="button" className={`as-item ${r.danger ? 'is-danger' : ''}`} disabled={r.disabled} onClick={() => close(r.run)}>
-                <span className="as-ic">
-                  <Icon name={r.icon} />
-                </span>
-                <span className="as-label">{r.label}</span>
-              </button>
-            </div>
-          ))}
-        </div>
-        <div className="as-me-foot">{foot}</div>
-      </div>
+        <MenuRows rows={rows} onPick={pick} />
+      </Sheet>
     </>
   )
 }

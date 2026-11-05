@@ -22,6 +22,7 @@ const underBlue = sampleCover('#1d4a7a', '#06121f', '#6fb3ff')
 const rotoscope = sampleCover('#5a2a3a', '#120609', '#ff8aa8')
 const tsunami = sampleCover('#1f6f6a', '#04100f', '#8af0e0')
 import './components.css'
+import { OverlayPanels } from './Overlays'
 
 const ROWS: { n: number; t: string; d: string; label: string; dl: DownloadState }[] = [
   { n: 1, t: 'Fata Morgana', d: '4:21', label: 'FLAC 16/44.1', dl: { kind: 'done' } },
@@ -267,6 +268,8 @@ export function Components() {
               </div>
             </SettingRow>
           </Panel>
+
+          <OverlayPanels />
         </div>
       </div>
     </div>

@@ -1,12 +1,12 @@
 /**
  * New Releases side panel (Material 3 Expressive redesign, handoff NewReleasesMaterial.dc.html).
  * Desktop: 460px right popover over a dark scrim.
- * Phone: bottom sheet with swipe-down handle.
+ * Phone: the kit bottom Sheet (components/ui/Sheet.tsx).
  * Contents: release detail, or Followed artists settings.
  */
-import { useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent, type PointerEvent, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
-import { IconButton, Skeleton, Toggle } from '../../components/ui'
+import { Chip, IconButton, Sheet, Skeleton, Toggle, Button } from '../../components/ui'
 import { Icon } from '../../design/icons'
 import { bandcampSearchUrl, mbReleaseGroupUrl } from '../../lib/musicbrainz'
 import { tracksByAlbum, type Catalogue } from '../../state/library'
@@ -36,224 +36,25 @@ export function ReleasePanel({
   onClose: () => void
   children: ReactNode
 }) {
-  const [grabDy, setGrabDy] = useState<number | null>(null)
-  const grab = useRef({ active: false, pid: -1, y0: 0, y: 0, t: 0, v: 0, moved: false, onHandle: false, fromBtn: false })
-  const swallowClick = useRef(false)
-  const panelRef = useRef<HTMLElement>(null)
   const scroller = useRef<HTMLDivElement>(null)
-
   useEffect(() => {
     if (open) scroller.current?.scrollTo({ top: 0 })
-    else {
-      grab.current.active = false
-      setGrabDy(null)
-    }
   }, [open, contentKey])
-
-  /* Phone bottom sheet drag (same gesture model as QueuePanel):
-   * Dragging the handle or header area pulls the sheet down; a press on an interactive control
-   * stays a tap unless the finger moves past BTN_SLOP. Also supports pulling down when an inner
-   * scrollable list is at scrollTop === 0. */
-  const BTN_SLOP = 8
-  const isGrabZone = (target: HTMLElement) => {
-    const scrollList = target.closest<HTMLElement>('.nrp-art-list')
-    if (scrollList) return false
-    if (contentKey !== 'artists') {
-      // In detail / filter sheets, the top handle, header, and cover/title block are non-scrolling grab zones
-      return !!target.closest('.nr-handle, .nrp-head, .nrp-top, .nrp-titles')
-    }
-    return true
-  }
-
-  const onGrabDown = (e: PointerEvent<HTMLElement>) => {
-    if (!phone || !e.isPrimary) return
-    const target = e.target as HTMLElement
-    if (!isGrabZone(target)) return
-    const fromBtn = !!target.closest('button, a, input, label, .nrp-reissues-card')
-    if (!fromBtn) {
-      try {
-        e.currentTarget.setPointerCapture(e.pointerId)
-      } catch {
-        /* ignore */
-      }
-    }
-    swallowClick.current = false
-    grab.current = {
-      active: true,
-      pid: e.pointerId,
-      y0: e.clientY,
-      y: e.clientY,
-      t: performance.now(),
-      v: 0,
-      moved: false,
-      onHandle: !!target.closest('.nr-handle'),
-      fromBtn,
-    }
-    setGrabDy(0)
-  }
-
-  const onGrabMove = (e: PointerEvent<HTMLElement>) => {
-    const g = grab.current
-    if (!g.active || g.pid !== e.pointerId) return
-    const now = performance.now()
-    if (now > g.t) g.v = 0.7 * ((e.clientY - g.y) / (now - g.t)) + 0.3 * g.v
-    g.y = e.clientY
-    g.t = now
-    const dy = e.clientY - g.y0
-    if (!g.moved) {
-      if (Math.abs(dy) <= (g.fromBtn ? BTN_SLOP : 4)) return
-      if (dy < 0) {
-        g.active = false
-        setGrabDy(null)
-        return
-      }
-      g.moved = true
-      if (g.fromBtn) {
-        swallowClick.current = true
-        try {
-          e.currentTarget.setPointerCapture(e.pointerId)
-        } catch {
-          /* ignore */
-        }
-      }
-    }
-    setGrabDy(Math.max(0, dy))
-  }
-
-  const onGrabUp = (e: PointerEvent<HTMLElement>) => {
-    const g = grab.current
-    if (!g.active || g.pid !== e.pointerId) return
-    g.active = false
-    const dy = Math.max(0, e.clientY - g.y0)
-    const { v, moved, onHandle } = g
-    setGrabDy(null)
-    if (swallowClick.current) window.setTimeout(() => (swallowClick.current = false), 350)
-    if (!moved) {
-      if (onHandle) onClose()
-      return
-    }
-    if (dy > 100 || v > 0.45) onClose()
-  }
-
-  const onGrabCancel = () => {
-    grab.current.active = false
-    setGrabDy(null)
-  }
-
-  const onGrabClickCapture = (e: ReactMouseEvent) => {
-    if (!swallowClick.current) return
-    swallowClick.current = false
-    e.preventDefault()
-    e.stopPropagation()
-  }
-
-  // Also allow pulling down to close when starting a touch inside the scrollable list at scrollTop === 0
-  useEffect(() => {
-    const el = panelRef.current
-    if (!el || !phone || !open) return
-    let tracking = false
-    let dragging = false
-    let y0 = 0
-    let x0 = 0
-    let lastY = 0
-    let lastT = 0
-    let v = 0
-    let scrollEl: HTMLElement | null = null
-
-    const onTouchStart = (ev: TouchEvent) => {
-      if (ev.touches.length !== 1) return
-      const target = ev.target as HTMLElement
-      if (isGrabZone(target)) return // handled by pointer events
-      scrollEl = target.closest<HTMLElement>('.nrp-art-list') ?? scroller.current
-      if (!scrollEl || scrollEl.scrollTop > 0) return
-      const t = ev.touches[0]
-      tracking = true
-      dragging = false
-      y0 = lastY = t.clientY
-      x0 = t.clientX
-      lastT = performance.now()
-      v = 0
-    }
-
-    const onTouchMove = (ev: TouchEvent) => {
-      if (!tracking || ev.touches.length !== 1) return
-      const t = ev.touches[0]
-      const dy = t.clientY - y0
-      const dx = t.clientX - x0
-      const now = performance.now()
-      if (!dragging) {
-        if (scrollEl && scrollEl.scrollTop > 0) {
-          tracking = false
-          return
-        }
-        if (dy < -4 || Math.abs(dx) > Math.abs(dy) + 4) {
-          tracking = false
-          return
-        }
-        if (dy <= 8) return
-        dragging = true
-        y0 = t.clientY
-      }
-      if (ev.cancelable) ev.preventDefault()
-      if (now > lastT) v = 0.7 * ((t.clientY - lastY) / (now - lastT)) + 0.3 * v
-      lastY = t.clientY
-      lastT = now
-      setGrabDy(Math.max(0, t.clientY - y0))
-    }
-
-    const onTouchEnd = () => {
-      if (!tracking) return
-      tracking = false
-      if (!dragging) return
-      dragging = false
-      const dy = Math.max(0, lastY - y0)
-      setGrabDy(null)
-      if (dy > 100 || v > 0.45) onClose()
-    }
-
-    el.addEventListener('touchstart', onTouchStart, { passive: true })
-    el.addEventListener('touchmove', onTouchMove, { passive: false })
-    el.addEventListener('touchend', onTouchEnd)
-    el.addEventListener('touchcancel', onTouchEnd)
-    return () => {
-      el.removeEventListener('touchstart', onTouchStart)
-      el.removeEventListener('touchmove', onTouchMove)
-      el.removeEventListener('touchend', onTouchEnd)
-      el.removeEventListener('touchcancel', onTouchEnd)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phone, open, contentKey])
-
   const isArtists = contentKey === 'artists'
-  const pulling = grabDy !== null
+  const label = isArtists ? 'Followed artists' : contentKey === 'artistFilter' ? 'Artists' : 'Release'
+
+  // phone: the kit bottom Sheet (drag the handle down, or pull the content down from its top)
+  if (phone)
+    return (
+      <Sheet open={open} onClose={onClose} label={label} bodyClassName={`nr-sheet ${isArtists ? 'is-artists' : ''}`}>
+        {children}
+      </Sheet>
+    )
 
   return createPortal(
     <>
-      <div
-        className={`nr-scrim ${open ? 'is-open' : ''} ${pulling ? 'is-grabbing' : ''}`}
-        style={grabDy && grabDy > 0 ? { opacity: Math.max(0, 1 - grabDy / 420) } : undefined}
-        onClick={onClose}
-        aria-hidden
-      />
-      <aside
-        ref={panelRef}
-        className={`nr-panel ${open ? 'is-open' : ''} ${phone ? 'is-phone' : ''} ${isArtists ? 'is-artists' : ''} ${pulling ? 'is-grabbing' : ''}`}
-        style={grabDy !== null ? { transform: `translate3d(0, ${grabDy}px, 0)` } : undefined}
-        aria-hidden={!open}
-        inert={!open}
-        role="dialog"
-        aria-modal="true"
-        onPointerDown={onGrabDown}
-        onPointerMove={onGrabMove}
-        onPointerUp={onGrabUp}
-        onPointerCancel={onGrabCancel}
-        onClickCapture={onGrabClickCapture}
-      >
-        {phone && (
-          <div className="nr-handle" aria-label="Close" role="button">
-            <span />
-          </div>
-        )}
+      <div className={`nr-scrim ${open ? 'is-open' : ''}`} onClick={onClose} aria-hidden />
+      <aside className={`nr-panel ${open ? 'is-open' : ''} ${isArtists ? 'is-artists' : ''}`} aria-hidden={!open} inert={!open} role="dialog" aria-modal="true" aria-label={label}>
         <div className={`nr-panel-scroll ${isArtists ? 'is-artists' : ''}`} ref={scroller}>
           {children}
         </div>
@@ -403,7 +204,7 @@ export function ReleaseDetail({
       )}
 
       {matchText && (
-        <div className="nrp-match">
+        <div className="card card-raised card-sm nrp-match">
           <Icon name="check" style={{ color: 'var(--brand)' }} />
           <span>{matchText}</span>
         </div>
@@ -440,10 +241,10 @@ export function ReleaseDetail({
               </button>
             </div>
           ) : item.status === 'acq' ? (
-            <button type="button" className="nrp-acq-pill" title="Stop matching" onClick={() => act.got(item)}>
+            <Button variant="dj" size="lg" className="nrp-acq-pill" title="Stop matching" onClick={() => act.got(item)}>
               <span className="btn-ic"><Spinner /></span>
               Matching your files…
-            </button>
+            </Button>
           ) : (
             <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
               <button
@@ -536,7 +337,7 @@ export function ReleaseDetail({
 
       {item.status === 'acq' && <LinkPicker item={item} c={c} act={act} />}
 
-      <div className="nrp-card">
+      <div className="card card-raised card-sm nrp-card">
         {facts.map(([k, v]) => (
           <div key={k} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '32px', fontSize: '13px' }}>
             <span className="nr-mono" style={{ fontSize: '11px', color: 'oklch(0.62 0.014 40)' }}>{k}</span>
@@ -547,21 +348,13 @@ export function ReleaseDetail({
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
         {linkList.map((l) => (
-          <button
-            key={l.label}
-            type="button"
-            className="chip nr-chip"
-            disabled={!online}
-            onClick={() => openExternal(l.url)}
-            style={{ fontSize: '13px', height: '36px' }}
-          >
+          <Chip key={l.label} selected={false} trailingIcon="ext" disabled={!online} onClick={() => openExternal(l.url)}>
             {l.label}
-            <Icon name="ext" />
-          </button>
+          </Chip>
         ))}
       </div>
 
-      <div className="nrp-card">
+      <div className="card card-raised card-sm nrp-card">
         <div className="nrp-card-head">
           <span>TRACKLIST</span>
           <span style={{ fontSize: '11px', color: 'oklch(0.62 0.014 40)' }}>
@@ -646,7 +439,7 @@ function LinkPicker({ item, c, act }: { item: FeedItem; c: Catalogue; act: Relea
         .slice(0, 30)
     : cands.slice(0, 30)
   return (
-    <div className="nrp-card nrp-link">
+    <div className="card card-raised card-sm nrp-card nrp-link">
       <div className="nrp-card-head">
         <span>ALREADY IN YOUR LIBRARY?</span>
       </div>
@@ -702,7 +495,7 @@ export function FollowedArtists({ c, phone, onClose }: { c: Catalogue; phone: bo
         </p>
       )}
 
-      <div className="nrp-reissues-card" onClick={() => releasesStore.setHideReissues(!hideRe)} style={{ cursor: 'pointer' }}>
+      <div className="card card-raised card-sm card-interactive nrp-reissues-card" onClick={() => releasesStore.setHideReissues(!hideRe)} style={{ cursor: 'pointer' }}>
         <div className="nrp-reissues-text">
           <span className="nrp-reissues-title">Hide reissues and deluxe editions</span>
           <span className="nrp-reissues-sub">Remasters, anniversary and expanded versions</span>
@@ -726,7 +519,7 @@ export function FollowedArtists({ c, phone, onClose }: { c: Catalogue; phone: bo
         )}
       </div>
 
-      <div className="nrp-art-list">
+      <div className="nrp-art-list" data-sheet-scroll>
         {shown.map((r) => (
           <div key={r.artist.id} className="nrp-art-row">
             <ArtistAvatar artist={r.artist} size={40} className="nrp-art-av" />

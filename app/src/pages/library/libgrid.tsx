@@ -502,7 +502,7 @@ export function SongCard({ c, tracks, phone, onPlay, rowTitle, rowSub, onOpen, l
     range: [from, to],
   } = useWindow(listRef, tracks.length, rowH, 8)
   return (
-    <div className="lb-scard" data-letter={letter}>
+    <div className="card card-filled card-sm lb-scard" data-letter={letter}>
       <div ref={listRef} className="lb-slist" style={{ height: tracks.length * rowH }}>
         {tracks.slice(from, to).map((t, k) => {
           const i = from + k

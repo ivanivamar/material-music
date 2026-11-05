@@ -124,7 +124,7 @@ function PlaylistView({ c, p }: { c: Catalogue; p: Playlist }) {
       </header>
 
       {smart && (
-        <div className="dt-rules">
+        <div className="card card-md dt-rules">
           <div className="dt-rules-k">
             <Icon name="sync" />
             Rules
@@ -173,7 +173,7 @@ function PlaylistView({ c, p }: { c: Catalogue; p: Playlist }) {
       </div>
 
       {info.rows.length === 0 && smart ? (
-        <div className="dt-empty">
+        <div className="card card-lg card-flush dt-empty">
           <EmptyState
             icon="smart"
             title="Nothing matches yet"
@@ -186,7 +186,7 @@ function PlaylistView({ c, p }: { c: Catalogue; p: Playlist }) {
           />
         </div>
       ) : info.rows.length === 0 ? (
-        <div className="dt-empty">
+        <div className="card card-lg card-flush dt-empty">
           <EmptyState
             icon="playlist"
             title={`${p.name} is empty`}

@@ -7,7 +7,7 @@
  * Playing context: a coral pill with the equaliser on the art, the title in coral.
  */
 import { useSyncExternalStore, type MouseEvent, type ReactNode } from 'react'
-import { Button, AlbumEq, Skeleton } from '../../components/ui'
+import { Button, AlbumEq, Skeleton, IconButton } from '../../components/ui'
 import { Icon } from '../../design/icons'
 import { SHAPE_CLOVER } from '../../design/shapes'
 import { actions, trackDrag } from '../../actions/actions'
@@ -115,9 +115,7 @@ export function CardFrame({
         )}
         <span className="hcard-btns">
           {onShuffle && (
-            <button type="button" className="hcard-shuf" aria-label={`Shuffle ${title}`} title="Shuffle" onClick={stop(onShuffle)}>
-              <Icon name="shuffle" />
-            </button>
+            <IconButton icon="shuffle" label={`Shuffle ${title}`} title="Shuffle" size="sm" variant="tonal" className="hcard-shuf" onClick={stop(onShuffle)} />
           )}
           <CookiePlay size={48} tone="brand" playing={playing} label={playing ? `Pause ${title}` : `Play ${title}`} onClick={stop(() => (active ? playerStore.toggle() : onPlay()))} />
         </span>
@@ -305,7 +303,7 @@ export function SmartInvite({ phone }: { phone: boolean }) {
   const body = 'Pick a few rules, like never played, added this month or longer than 6 minutes. The playlist keeps itself up to date.'
   if (phone)
     return (
-      <div className="hinvite is-phone">
+      <div className="card card-filled card-lg hinvite is-phone">
         <span className="hinvite-head">
           {mark(48)}
           <span className="hinvite-t">Playlists that fill themselves</span>
@@ -315,7 +313,7 @@ export function SmartInvite({ phone }: { phone: boolean }) {
       </div>
     )
   return (
-    <div className="hinvite">
+    <div className="card card-filled card-lg hinvite">
       {mark(56)}
       <span className="hinvite-text">
         <span className="hinvite-t">Playlists that fill themselves</span>

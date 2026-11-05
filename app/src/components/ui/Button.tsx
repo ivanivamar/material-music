@@ -1,4 +1,4 @@
-import { useState, type ButtonHTMLAttributes, type ReactNode } from 'react'
+import { useState, type ButtonHTMLAttributes, type ReactNode, type Ref } from 'react'
 import { Icon, type IconName } from '../../design/icons'
 
 /** See material.css (Buttons). `primary` = `filled` (kept for older call sites). */
@@ -15,6 +15,12 @@ export type ButtonVariant =
   | 'danger'
   | 'danger-outlined'
   | 'error'
+  /** DJ violet (DJ start / panel) */
+  | 'dj'
+  | 'dj-outlined'
+  /** yellow "needs you" actions inside warning banners */
+  | 'warn'
+  | 'warn-outlined'
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant
@@ -22,6 +28,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   size?: 'sm' | 'md' | 'lg' | 'xl'
   icon?: IconName
   children?: ReactNode
+  ref?: Ref<HTMLButtonElement>
 }
 
 export function Button({ variant = 'primary', size = 'md', icon, children, className, type = 'button', ...rest }: ButtonProps) {
@@ -55,6 +62,7 @@ interface IconButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 
   filled?: boolean
   /** tooltip; defaults to `label`, pass null for none */
   title?: string | null
+  ref?: Ref<HTMLButtonElement>
 }
 
 /** Round icon-only button. The one definition for close ✕, back ←, more ⋮ and toolbar icons. */

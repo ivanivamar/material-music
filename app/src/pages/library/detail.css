@@ -68,7 +68,7 @@
 .dt-offl-s { font-size: 12px; color: var(--ink-secondary); font-variant-numeric: tabular-nums; white-space: nowrap; }
 
 /* smart playlist rules card */
-.dt-rules { display: flex; align-items: center; gap: 16px; padding: 12px 12px 12px 20px; border-radius: 24px; background: oklch(0.20 0.007 40); box-shadow: inset 0 0 0 1px oklch(0.27 0.01 40); }
+.dt-rules { display: flex; align-items: center; gap: 16px; padding: 12px 12px 12px 20px; }
 .dt-rules-k { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; flex: none; }
 .dt-rules-k .ms { font-size: 22px; color: oklch(0.86 0.08 95); }
 .dt-rules-list { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; gap: 8px; }
@@ -132,7 +132,7 @@
 .dt-gone { font-size: 12px; color: var(--ink-tertiary); }
 
 /* empty / sections */
-.dt-empty { display: flex; align-items: center; justify-content: center; min-height: 360px; border-radius: 28px; background: oklch(0.205 0.008 40); box-shadow: inset 0 0 0 1px oklch(0.27 0.01 40); }
+.dt-empty { display: flex; align-items: center; justify-content: center; min-height: 360px; }
 .dt-section { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 .dt-more-btn { align-self: flex-start; }
 

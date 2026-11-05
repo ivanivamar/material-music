@@ -10,7 +10,7 @@ import type { ReactNode } from 'react'
 import { Icon, type IconName } from '../design/icons'
 import { AppMark } from '../components/Logo'
 import { Marquee } from '../components/Marquee'
-import { LoadingShape } from '../components/ui'
+import { Badge, LoadingShape } from '../components/ui'
 import { useCover } from '../lib/covers'
 import { useLibrary } from '../state/library'
 import { nowPlayingStore } from '../state/nowPlaying'
@@ -87,11 +87,11 @@ export function MiniPlayer() {
   const frac = intro ? introProgress.frac : track?.duration ? Math.min(1, p.position / track.duration) : 0
   const title = intro ? (dj.session?.title ?? 'DJ') : track!.title
   const chip = p.remote ? (
-    <span className="mini-chip is-remote">On {p.remote.name}</span>
+    <Badge size="sm" tone="album-container">On {p.remote.name}</Badge>
   ) : dj.on ? (
-    <span className="mini-chip is-dj">{intro ? 'DJ · intro' : 'DJ'}</span>
+    <Badge size="sm" tone="dj">{intro ? 'DJ · intro' : 'DJ'}</Badge>
   ) : p.context?.kind === 'radio' ? (
-    <span className="mini-chip">Radio</span>
+    <Badge size="sm">Radio</Badge>
   ) : null
   const open = () => nowPlayingStore.open('np')
 

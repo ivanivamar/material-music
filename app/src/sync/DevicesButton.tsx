@@ -6,10 +6,10 @@
  * Shown only while the sync runs and another device is (or was recently) around.
  * Desktop: a popover under / above the button. Phone: a bottom sheet.
  */
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { Icon, type IconName } from '../design/icons'
-import { Button } from '../components/ui'
+import { Button, Sheet, IconButton } from '../components/ui'
 import { useLibrary } from '../state/library'
 import { usePlayer, type RemoteDevice } from '../state/player'
 import { useIsPhone } from '../state/viewport'
@@ -28,18 +28,14 @@ export function DevicesButton({ className, variant = 'bar' }: { className?: stri
   const label = p.remote ? `Playing on ${p.remote.name} · devices` : 'Devices'
   return (
     <>
-      <button
+      <IconButton icon={p.remote ? 'speaker' : 'devices'} label={label} title={label} size={variant === 'np' ? 'lg' : 'md'}
         ref={setBtn}
-        type="button"
         className={`dv-btn dv-btn-${variant} ${p.remote ? 'is-remote' : ''} ${open ? 'is-open' : ''} ${className ?? ''}`}
-        aria-label={label}
-        title={label}
+       
+       
         aria-haspopup="dialog"
         aria-expanded={open}
-        onClick={() => setOpen((o) => !o)}
-      >
-        <Icon name={p.remote ? 'speaker' : 'devices'} />
-      </button>
+        onClick={() => setOpen((o) => !o)} />
       {open && <DevicesPanel anchor={btn} onClose={() => setOpen(false)} />}
     </>
   )
@@ -64,6 +60,7 @@ function DevicesPanel({ anchor, onClose }: { anchor: HTMLElement | null; onClose
   }, [anchor, phone])
 
   useEffect(() => {
+    if (phone) return // the Sheet handles Esc / Back / scrim taps
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
     const onDown = (e: PointerEvent) => {
       const t = e.target as Node
@@ -76,7 +73,7 @@ function DevicesPanel({ anchor, onClose }: { anchor: HTMLElement | null; onClose
       window.removeEventListener('keydown', onKey)
       window.removeEventListener('pointerdown', onDown, true)
     }
-  }, [anchor, onClose])
+  }, [anchor, onClose, phone])
 
   const titleOf = (id: string | null) => (id ? data?.tracks[id]?.title : undefined)
   const hereId = p.index >= 0 ? p.queue[p.index] : null
@@ -91,20 +88,9 @@ function DevicesPanel({ anchor, onClose }: { anchor: HTMLElement | null; onClose
     return 'Online'
   }
 
-  const panel = (
+  const meta = sync.status === 'error' ? 'SYNC PROBLEM' : sync.status === 'connecting' ? 'CONNECTING…' : 'SYNCED'
+  const rows = (
     <>
-      {phone && <div className="dv-scrim" onClick={onClose} aria-hidden />}
-      <div
-        ref={ref}
-        className={`dv-panel ${phone ? 'is-sheet' : ''}`}
-        role="dialog"
-        aria-label="Devices"
-        style={phone ? undefined : pos ? { left: pos.left, top: pos.top, bottom: pos.bottom } : { visibility: 'hidden' }}
-      >
-        <div className="dv-head">
-          <span className="dv-title">Devices</span>
-          <span className="dv-meta">{sync.status === 'error' ? 'SYNC PROBLEM' : sync.status === 'connecting' ? 'CONNECTING…' : 'SYNCED'}</span>
-        </div>
 
         <div className={`dv-row ${!p.remote ? 'is-current' : ''}`}>
           <span className="dv-ic">
@@ -160,8 +146,32 @@ function DevicesPanel({ anchor, onClose }: { anchor: HTMLElement | null; onClose
 
         {sync.status === 'error' && sync.error && <div className="dv-err">{sync.error}</div>}
         <div className="dv-foot">One device plays at a time. Starting music on one pauses the others.</div>
-      </div>
     </>
   )
-  return createPortal(panel, document.body)
+  // phone: the kit bottom Sheet
+  if (phone) return <DevicesSheet meta={meta} onClose={onClose}>{rows}</DevicesSheet>
+  return createPortal(
+    <div ref={ref} className="dv-panel" role="dialog" aria-label="Devices" style={pos ? { left: pos.left, top: pos.top, bottom: pos.bottom } : { visibility: 'hidden' }}>
+      <div className="dv-head">
+        <span className="dv-title">Devices</span>
+        <span className="dv-meta">{meta}</span>
+      </div>
+      {rows}
+    </div>,
+    document.body,
+  )
+}
+
+/** Slides out before the owner unmounts it. */
+function DevicesSheet({ meta, onClose, children }: { meta: string; onClose: () => void; children: ReactNode }) {
+  const [open, setOpen] = useState(true)
+  const close = () => {
+    setOpen(false)
+    window.setTimeout(onClose, 320)
+  }
+  return (
+    <Sheet open={open} onClose={close} label="Devices" title="Devices" meta={meta} closeButton={false} bodyClassName="dv-sheet">
+      {children}
+    </Sheet>
+  )
 }

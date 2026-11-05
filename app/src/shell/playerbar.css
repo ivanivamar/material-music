@@ -27,8 +27,6 @@
 .pb-link { color: inherit; text-decoration: none; }
 .pb-link:hover { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
 .pb-sub.pb-link { color: oklch(0.79 0.014 40); }
-.pb-chip { flex: none; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 999px; background: var(--surface-raised); color: var(--ink-primary); }
-.pb-chip.is-dj { background: var(--dj); color: var(--on-dj); }
 
 /* centre: transport + wave */
 .pb-center { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
@@ -50,14 +48,7 @@
 }
 .pb-quality b { font-weight: 700; letter-spacing: .04em; color: var(--album); }
 .pb-quality span { font-weight: 500; }
-.pb-ib {
-  width: 40px; height: 40px; flex: none; padding: 0; border: 0; border-radius: 999px; background: none; cursor: pointer; color: inherit;
-  display: inline-flex; align-items: center; justify-content: center;
-  transition: background-color 200ms var(--ease-std), color 200ms var(--ease-std);
-}
-.pb-ib .ms { font-size: 22px; }
-.pb-ib:hover:not(:disabled) { background: rgba(255, 255, 255, .08); color: oklch(0.95 0.006 40); }
-.pb-ib:disabled { opacity: .4; cursor: default; }
+/* toolbar icons are kit IconButtons; these are their states here */
 .pb-ib.is-on { background: var(--album-container); color: var(--album); }
 .pb-ib.is-dj-off { color: oklch(0.55 0.02 290); cursor: default; }
 .pb-volume { display: inline-flex; align-items: center; gap: 4px; margin-left: 4px; }

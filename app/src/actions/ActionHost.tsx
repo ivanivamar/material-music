@@ -5,13 +5,12 @@
  * Desktop (handoff 15 "Desktop Actions"): 268px menu at the pointer — header (cover · title ·
  * mono line), items 36px, separators; "Add to playlist ›" opens a 256px submenu on hover with
  * "Find a playlist", the playlists (✓ IN when the song is already there) and "New playlist…".
- * Phone ("Android Actions"): bottom sheet; "Add to playlist" turns the sheet into the picker
- * (back · title, new playlist name + Create, the list).
+ * Phone ("Android Actions"): the kit bottom Sheet (drag the header down to close); "Add to playlist"
+ * turns the sheet into the picker (back · title, new playlist name + Create, the list).
  */
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent } from 'react'
-import { QualityBadge, qualityKind, qualityLabel, useToast } from '../components/ui'
+import { Button, IconButton, QualityBadge, Sheet as KitSheet, qualityKind, qualityLabel, useToast } from '../components/ui'
 import { Icon, type IconName } from '../design/icons'
-import { useSheetDrag } from '../components/useSheetDrag'
 import { useCover } from '../lib/covers'
 import { registerBack } from '../native/backButton'
 import { albumTrackIds, artistTrackIds } from '../pages/library/playback'
@@ -254,7 +253,7 @@ export function ActionHost() {
 
   return (
     <>
-      {menu && (phone ? <Sheet key={menu.key} target={menu.target} picker={menu.picker} /> : <Menu key={menu.key} target={menu.target} at={menu.at} picker={menu.picker} />)}
+      {menu && (phone ? <ActionSheet key={menu.key} target={menu.target} picker={menu.picker} /> : <Menu key={menu.key} target={menu.target} at={menu.at} picker={menu.picker} />)}
       {dialog?.kind === 'new' && <NewPlaylistDialog trackIds={dialog.trackIds} hint={dialog.hint} open={!!dialog.open} name={dialog.name} />}
       {dialog?.kind === 'edit' && <EditPlaylistDialog playlistId={dialog.playlistId} />}
       {dialog?.kind === 'remove' && <RemoveDialog target={dialog.target} />}
@@ -519,94 +518,70 @@ function Picker({ d, target, subRef, autoFocus }: { d: Described; target: Action
 
 /* ── Phone sheet ────────────────────────────────────── */
 
-function Sheet({ target, picker }: { target: ActionTarget; picker: boolean }) {
+function ActionSheet({ target, picker }: { target: ActionTarget; picker: boolean }) {
   const d = useDescribed(target)
   const [page, setPage] = useState<'main' | 'pl'>(picker ? 'pl' : 'main')
-  const [shown, setShown] = useState(false)
-  const [closing, setClosing] = useState(false)
-  useEffect(() => {
-    const r = requestAnimationFrame(() => setShown(true))
-    return () => cancelAnimationFrame(r)
-  }, [])
+  const [open, setOpen] = useState(true)
+  // slide the sheet out first, then drop the menu state and run the action
   const close = (then?: () => void) => {
-    setClosing(true)
+    setOpen(false)
     window.setTimeout(() => {
       actions.closeMenu()
       then?.()
     }, 260)
   }
-  // drag the handle / header (or a list scrolled to the top) down to close
-  const sheetRef = useRef<HTMLDivElement>(null)
-  const scrimRef = useRef<HTMLDivElement>(null)
-  useSheetDrag(sheetRef, scrimRef, () => close(), !!d)
   if (!d) return null
-  const open = shown && !closing
-  return (
-    <>
-      <div ref={scrimRef} className={`as-scrim pg-anim ${open ? 'is-on' : ''}`} onClick={() => close()} />
-      <div ref={sheetRef} className={`as pg-anim ${open ? 'is-on' : ''}`} role="dialog" aria-label={d.title}>
-        <button type="button" className="as-handle" aria-label="Close" onClick={() => close()}>
-          <span />
-        </button>
-        {page === 'main' ? (
-          <>
-            <div className="as-head">
-              <HeadCover d={d} size={52} />
-              <div className="as-head-text">
-                <div className="as-head-title">{d.title}</div>
-                <div className="as-head-sub">{d.sub}</div>
-              </div>
-              {d.badge && <QualityBadge kind={d.badge.kind}>{d.badge.label}</QualityBadge>}
-            </div>
-            <div className="as-items">
-              {d.rows.map((r, i) =>
-                r === 'div' ? (
-                  <div key={i} className="as-div" />
-                ) : (
-                  <button
-                    key={i}
-                    type="button"
-                    className={`as-item ${r.danger ? 'is-danger' : ''}`}
-                    onClick={() => {
-                      if (r.picker) return setPage('pl')
-                      close(r.run)
-                    }}
-                  >
-                    <span className="as-ic">
-                      <Icon name={r.icon} />
-                    </span>
-                    {r.djHint ? (
-                      <span className="as-label-col">
-                        <span className="as-label">{r.label}</span>
-                        <span className="as-dj">{r.djHint}</span>
-                      </span>
-                    ) : r.icon === 'radio' && r.hint ? (
-                      <span className="as-label-col">
-                        <span className="as-label">{r.label}</span>
-                        <span className="as-sub">NEW · {r.hint}</span>
-                      </span>
-                    ) : (
-                      <span className="as-label">{r.label}</span>
-                    )}
-                    {r.picker && (
-                      <span className="as-chev">
-                        <Icon name="chevR" />
-                      </span>
-                    )}
-                  </button>
-                ),
-              )}
-            </div>
-          </>
-        ) : (
-          <SheetPicker d={d} target={target} onBack={picker ? undefined : () => setPage('main')} onDone={close} />
-        )}
+  const head =
+    page === 'main' ? (
+      <div className="as-head">
+        <HeadCover d={d} size={48} />
+        <div className="as-head-text">
+          <div className="as-head-title">{d.title}</div>
+          <div className="as-head-sub">{d.sub}</div>
+        </div>
+        {d.badge && <QualityBadge kind={d.badge.kind}>{d.badge.label}</QualityBadge>}
       </div>
-    </>
+    ) : (
+      <div className="as-pl-head">
+        {!picker && <IconButton icon="chevL" label="Back" onClick={() => setPage('main')} />}
+        <div className="as-pl-title">Add to playlist</div>
+      </div>
+    )
+  return (
+    <KitSheet open={open} onClose={() => close()} label={d.title} header={head} bodyClassName={page === 'main' ? 'mn-sheet' : 'as-pl-body'}>
+      {page === 'main' ? (
+        d.rows.map((r, i) =>
+          r === 'div' ? (
+            <MenuSeparatorRow key={i} />
+          ) : (
+            <button
+              key={i}
+              type="button"
+              className={`mn-item ${r.danger ? 'is-danger' : ''}`}
+              onClick={() => {
+                if (r.picker) return setPage('pl')
+                close(r.run)
+              }}
+            >
+              <Icon name={r.icon} />
+              <span className="mn-item-l">
+                {r.label}
+                {r.djHint ? <span className="mn-item-d as-dj">{r.djHint}</span> : r.icon === 'radio' && r.hint ? <span className="mn-item-d">New · {r.hint.toLowerCase()}</span> : null}
+              </span>
+              {r.picker && <Icon name="chevR" />}
+            </button>
+          ),
+        )
+      ) : (
+        <SheetPicker d={d} target={target} onDone={close} />
+      )}
+    </KitSheet>
   )
 }
 
-function SheetPicker({ d, target, onBack, onDone }: { d: Described; target: ActionTarget; onBack?: () => void; onDone: (then?: () => void) => void }) {
+const MenuSeparatorRow = () => <div className="mn-sep" role="separator" />
+
+function SheetPicker({ d, target, onDone }: { d: Described; target: ActionTarget; onDone: (then?: () => void) => void }) {
   const { list } = usePlaylists()
   const { data } = useLibrary()
   const toast = useToast()
@@ -620,16 +595,6 @@ function SheetPicker({ d, target, onBack, onDone }: { d: Described; target: Acti
   }
   return (
     <>
-      <div className="as-pl-head">
-        {onBack ? (
-          <button type="button" className="as-back" aria-label="Back" onClick={onBack}>
-            <Icon name="chevL" />
-          </button>
-        ) : (
-          <span className="as-back-sp" />
-        )}
-        <div className="as-pl-title">Add to playlist</div>
-      </div>
       <form
         className="as-new"
         onSubmit={(e) => {
@@ -638,9 +603,9 @@ function SheetPicker({ d, target, onBack, onDone }: { d: Described; target: Acti
         }}
       >
         <input value={name} onChange={(e) => setName(e.target.value)} placeholder="New playlist name" enterKeyHint="done" />
-        <button type="submit" className="as-create" disabled={!name.trim()}>
+        <Button type="submit" variant="filled" disabled={!name.trim()}>
           Create
-        </button>
+        </Button>
       </form>
       <div className="as-pl-list">
         {list

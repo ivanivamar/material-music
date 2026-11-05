@@ -33,3 +33,11 @@
 .cg-sonar { height: 300px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 28px; }
 
 .cg-setting { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 14px 0; border-bottom: 1px solid var(--hairline); }
+
+/* phone: one column, so the gallery can be tried on a phone too */
+@media (max-width: 760px) {
+  .cg-inner { padding: 32px 16px 96px; overflow-x: clip; }
+  .cg-panel { min-width: 0; overflow-x: auto; }
+  .cg-grid { grid-template-columns: minmax(0, 1fr); gap: 40px; }
+  .cg-wide { grid-column: auto; }
+}

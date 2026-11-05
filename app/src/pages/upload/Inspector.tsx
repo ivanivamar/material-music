@@ -9,8 +9,7 @@
  * shared tags and Skip selected.
  */
 import { useState, type FormEvent } from 'react'
-import { Button, TextField, QualityBadge } from '../../components/ui'
-import { Icon } from '../../design/icons'
+import { Button, TextField, QualityBadge, Alert } from '../../components/ui'
 import type { Catalogue } from '../../state/library'
 import {
   addWithoutFailed,
@@ -43,7 +42,7 @@ export function Inspector({ s, cat, onPickMissing }: Props) {
   const multi = s.checked.length >= 2
   const a = s.albums.find((x) => x.key === s.focus) ?? s.albums[0]
   return (
-    <aside className="ub-insp" aria-label={multi ? 'Selected releases' : 'Release'}>
+    <aside className="card card-filled card-lg ub-insp" aria-label={multi ? 'Selected releases' : 'Release'}>
       {multi ? <Multi s={s} cat={cat} /> : a ? <Single key={a.key} a={a} s={s} cat={cat} onPickMissing={onPickMissing} /> : null}
     </aside>
   )
@@ -146,24 +145,18 @@ function IssueCard({ issue, a, onPickMissing }: { issue: Issue; a: UploadAlbum; 
     if (issue.anyUp) acts.push(['Add without them', () => addWithoutFailed(a.key)])
   }
   return (
-    <div className="ub-issue" role="alert">
-      <div className="ub-issue-msg">
-        <span className="ub-issue-ic" aria-hidden>
-          <Icon name="warning" filled />
-        </span>
-        <div className="ub-issue-text">
-          <div className="ub-issue-title">{copy.title}</div>
-          <div className="ub-issue-sub">{copy.text}</div>
-        </div>
-      </div>
-      <div className="ub-issue-acts">
-        {acts.map(([label, fn], i) => (
-          <button key={label} type="button" className={`ub-issue-btn ${i === 0 ? 'is-pri' : 'is-sec'}`} onClick={fn}>
-            {label}
-          </button>
-        ))}
-      </div>
-    </div>
+    <Alert
+      layout="stack"
+      role="alert"
+      title={copy.title}
+      actions={acts.map(([label, fn], i) => (
+        <Button variant={i === 0 ? 'warn' : 'warn-outlined'} size="sm" key={label} onClick={fn}>
+          {label}
+        </Button>
+      ))}
+    >
+      {copy.text}
+    </Alert>
   )
 }
 
@@ -267,9 +260,9 @@ function Multi({ s, cat }: { s: UploadState; cat: Catalogue | null }) {
     <>
       <div className="ub-insp-top">
         <span className="ub-kicker">{sel.length} releases selected</span>
-        <button type="button" className="ub-clear" onClick={() => setChecked([])}>
+        <Button variant="outlined-ink" size="sm" className="ub-clear" onClick={() => setChecked([])}>
           Clear
-        </button>
+        </Button>
       </div>
       <div className="ub-insp-head">
         <div className="ub-stack" aria-hidden>
@@ -288,13 +281,9 @@ function Multi({ s, cat }: { s: UploadState; cat: Catalogue | null }) {
       </div>
 
       {needs.length > 0 && (
-        <button type="button" className="ub-needstrip" onClick={() => setFocus(needs[0].key)}>
-          <span className="ub-issue-ic" aria-hidden>
-            <Icon name="warning" filled />
-          </span>
-          <span className="ub-grow">{needs.length === 1 ? '1 of these needs you' : `${needs.length} of these need you`}</span>
-          <span className="ub-needstrip-k">Review</span>
-        </button>
+        <Alert as="button" onClick={() => setFocus(needs[0].key)} actions={<span className="ub-needstrip-k">Review</span>}>
+          {needs.length === 1 ? '1 of these needs you' : `${needs.length} of these need you`}
+        </Alert>
       )}
 
       {editing ? (

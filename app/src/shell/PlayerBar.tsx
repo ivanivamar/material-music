@@ -6,7 +6,7 @@
  *   [ shuffle · prev · play · next · repeat  /  time · wave · time ]
  *   [ FLAC 16/44.1 · lyrics · DJ · queue · volume ]
  */
-import { CookieButton, ModeToggle, ThinSlider, WaveSeek, useToast } from '../components/ui'
+import { Badge, CookieButton, ModeToggle, ThinSlider, WaveSeek, useToast, IconButton } from '../components/ui'
 import { useCover } from '../lib/covers'
 import { useLibrary, type Track } from '../state/library'
 import { nowPlayingStore, useNowPlayingUi } from '../state/nowPlaying'
@@ -41,13 +41,13 @@ export function PlayerBar() {
   const empty = !track && !intro
   const radio = p.context?.kind === 'radio'
   const djChip = p.remote ? (
-    <span className="pb-chip is-remote" title={`Playing on ${p.remote.name}. The controls here drive it.`}>
+    <Badge size="sm" tone="album-container" title={`Playing on ${p.remote.name}. The controls here drive it.`}>
       On {p.remote.name}
-    </span>
+    </Badge>
   ) : dj.on ? (
-    <span className="pb-chip is-dj">{intro ? 'DJ · intro' : 'DJ'}</span>
+    <Badge size="sm" tone="dj">{intro ? 'DJ · intro' : 'DJ'}</Badge>
   ) : radio ? (
-    <span className="pb-chip">Radio</span>
+    <Badge size="sm">Radio</Badge>
   ) : null
   // shuffle / repeat: not used by the DJ or a radio
   const fixed = dj.on || radio
@@ -165,28 +165,20 @@ export function PlayerBar() {
           </span>
         )}
         <DevicesButton className="pb-ib" />
-        <button type="button" className={`pb-ib ${ui.open && ui.view === 'lyrics' ? 'is-on' : ''}`} aria-label="Lyrics" title="Lyrics" disabled={empty} onClick={() => nowPlayingStore.toggleLyrics()}>
-          <Icon name="lyrics" />
-        </button>
+        <IconButton icon="lyrics" label="Lyrics" title="Lyrics" pressed={ui.open && ui.view === "lyrics"} className={`pb-ib ${ui.open && ui.view === 'lyrics' ? 'is-on' : ''}`} disabled={empty} onClick={() => nowPlayingStore.toggleLyrics()} />
         <DjButton variant="bar" />
         {dj.on ? (
           <span className="dj-off-wrap">
-            <button type="button" className="pb-ib is-dj-off" aria-label="Queue: not available while the DJ plays">
-              <Icon name="queue" />
-            </button>
+            <IconButton icon="queue" label="Queue: not available while the DJ plays" className="pb-ib is-dj-off" />
             <span className="dj-off-tip" role="tooltip">
               Not available while the DJ plays
             </span>
           </span>
         ) : (
-          <button type="button" className={`pb-ib ${ui.queue ? 'is-on' : ''}`} aria-label="Queue" title="Queue" aria-pressed={ui.queue} disabled={empty} onClick={() => nowPlayingStore.toggleQueue()}>
-            <Icon name="queue" />
-          </button>
+          <IconButton icon="queue" label="Queue" title="Queue" className={`pb-ib ${ui.queue ? 'is-on' : ''}`} aria-pressed={ui.queue} disabled={empty} onClick={() => nowPlayingStore.toggleQueue()} />
         )}
         <span className="pb-volume">
-          <button type="button" className="pb-ib pb-mute" aria-label={p.muted ? 'Unmute' : 'Mute'} onClick={() => playerStore.toggleMute()}>
-            <Icon name={p.muted || p.volume === 0 ? 'mute' : 'volume'} />
-          </button>
+          <IconButton icon={p.muted || p.volume === 0 ? 'mute' : 'volume'} label={p.muted ? 'Unmute' : 'Mute'} className="pb-ib pb-mute" onClick={() => playerStore.toggleMute()} />
           <ThinSlider label="Volume" value={p.muted ? 0 : p.volume} onChange={(v) => playerStore.setVolume(v)} />
         </span>
       </div>

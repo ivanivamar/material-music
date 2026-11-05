@@ -16,6 +16,7 @@
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type InputHTMLAttributes } from 'react'
 import { createPortal } from 'react-dom'
 import { Icon } from '../design/icons'
+import { IconButton } from '../components/ui'
 
 const fold = (s: string) =>
   s
@@ -163,12 +164,10 @@ export function GenreCombo({ value, onChange, onPick, genres, counts, exclude = 
           inputProps?.onKeyDown?.(e)
         }}
       />
-      <button type="button" className="gc-chev" tabIndex={-1} aria-label={open ? 'Close the genre list' : 'Show all genres'} onPointerDown={(e) => e.preventDefault()} onClick={() => {
+      <IconButton icon="chevD" label={open ? 'Close the genre list' : 'Show all genres'} size="sm" bare className="gc-chev" tabIndex={-1} onPointerDown={(e) => e.preventDefault()} onClick={() => {
         setOpen((o) => !o)
         input.current?.focus()
-      }}>
-        <Icon name="chevD" />
-      </button>
+      }} />
       {open &&
         pos &&
         createPortal(

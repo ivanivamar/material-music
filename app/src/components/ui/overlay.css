@@ -1,0 +1,169 @@
+/*
+ * Overlays — Sheet, Dialog, Menu (components/ui/Sheet.tsx, Dialog.tsx, Menu.tsx).
+ * One scrim, one surface per kind, one stacking order (--z-sheet < --z-dialog < --z-menu).
+ * Tokens: styles/tokens.css (--scrim*, --overlay-*, --menu-*, --sheet-*, --z-*).
+ */
+
+/* ── Scrim (shared) ─────────────────────────────────── */
+.sh-scrim, .dg-scrim {
+  position: fixed; inset: 0; background: var(--scrim);
+  opacity: 0; transition: opacity 280ms var(--ease-std); will-change: opacity;
+  -webkit-tap-highlight-color: transparent;
+}
+.sh-scrim.is-light { background: var(--scrim-light); }
+.sh-scrim.is-on, .dg-scrim.is-on { opacity: 1; }
+
+/* ── Bottom sheet (the Queue sheet, generalised) ────────
+   The sheet box is laid out from 8px under the status bar to 8px above the bottom edge and only
+   ever moves with translateY. The card inside sits at the bottom: content-sized for plain sheets
+   (max = the whole box), or a fixed --sh-rest below the top for expandable ones.
+   --sh-rest-now = how far down the card rests right now (Sheet.tsx reads it while dragging). */
+.sh-layer { position: fixed; inset: 0; z-index: var(--z-sheet); pointer-events: none; }
+.sh-layer > * { pointer-events: auto; }
+.sh {
+  --sh-rest-now: 0px;
+  position: fixed; left: 8px; right: 8px;
+  top: calc(env(safe-area-inset-top, 0px) + 8px); bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);
+  max-width: 560px; margin: 0 auto; outline: none;
+  pointer-events: none; /* the empty box above a short card lets taps through to the scrim */
+  transform: translate3d(0, calc(100% + 24px), 0); visibility: hidden;
+  transition: transform 420ms var(--ease), visibility 0s linear 420ms;
+  will-change: transform;
+}
+.sh.is-on { transform: translate3d(0, var(--sh-rest-now), 0); visibility: visible; transition: transform 500ms var(--ease), visibility 0s; }
+.sh.is-expandable { --sh-rest-now: var(--sh-rest, 192px); }
+.sh.is-expandable.is-expanded { --sh-rest-now: 0px; }
+.sh.is-grabbing { transition: none; }
+
+.sh-card {
+  position: absolute; left: 0; right: 0; bottom: 0; max-height: 100%;
+  display: flex; flex-direction: column; overflow: hidden; pointer-events: auto;
+  border-radius: 28px; background: var(--sh-bg, var(--overlay-surface));
+  box-shadow: var(--sheet-shadow), var(--overlay-edge);
+  color: var(--ink-primary);
+}
+/* expandable: a fixed-height card that ends --sh-rest-now above the box's bottom, like the Queue */
+.sh.is-expandable .sh-card { top: 0; bottom: var(--sh-rest-now); max-height: none; }
+.sh-layer.is-glass .sh-card {
+  --sh-bg: var(--glass-panel);
+  backdrop-filter: blur(28px) saturate(1.2); -webkit-backdrop-filter: blur(28px) saturate(1.2);
+}
+.sh-layer.is-dj .sh-card { --sh-bg: oklch(0.22 0.012 60); }
+
+/* header = grab area (handle, title, header buttons) */
+.sh-head {
+  flex: none; display: flex; flex-direction: column; gap: 10px; padding: 10px 18px 12px;
+  touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none;
+}
+.sh.is-grabbing .sh-head { cursor: grabbing; }
+.sh-grab { align-self: center; display: flex; align-items: center; justify-content: center; width: 72px; height: 16px; margin: -6px 0 -4px; cursor: grab; }
+.sh-grab > span {
+  width: 36px; height: 4px; border-radius: 4px; background: var(--sheet-handle);
+  transition: background-color 200ms var(--ease-std), width 300ms var(--ease);
+}
+/* held: the handle stretches and brightens while the sheet follows the finger */
+.sh.is-grabbing .sh-grab > span { width: 44px; background: var(--sheet-handle-active); }
+.sh-title-row { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.sh-titles { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.sh-title { margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sh-meta { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.06em; color: var(--ink-tertiary); text-transform: uppercase; }
+.sh-actions { display: flex; align-items: center; gap: 6px; flex: none; }
+
+.sh-body {
+  flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+  padding: 0 18px 18px; scrollbar-width: none;
+}
+.sh-body::-webkit-scrollbar { display: none; }
+.sh-foot {
+  flex: none; display: flex; gap: 8px; justify-content: flex-end; padding: 12px 18px 16px;
+  box-shadow: inset 0 1px 0 oklch(1 0 0 / 0.06);
+}
+.sh-foot > .btn { flex: 1; }
+
+/* ── Dialog ─────────────────────────────────────────── */
+.dg-layer { position: fixed; inset: 0; z-index: var(--z-dialog); display: grid; place-items: center; padding: 16px; }
+.dg-scrim { position: absolute; }
+.dg {
+  position: relative; width: min(100%, var(--dg-w, 460px)); max-height: calc(100dvh - 32px);
+  display: flex; flex-direction: column; outline: none;
+  border-radius: 28px; background: var(--overlay-surface); box-shadow: var(--overlay-shadow), var(--overlay-edge);
+  color: var(--ink-primary);
+  opacity: 0; transform: translateY(12px) scale(0.97);
+  transition: opacity 200ms var(--ease-std), transform 320ms var(--ease);
+}
+.dg.is-lg { --dg-w: 560px; }
+.dg.is-on { opacity: 1; transform: none; }
+.dg-head { flex: none; display: flex; align-items: flex-start; gap: 14px; padding: 24px 20px 12px 24px; }
+.dg-tile {
+  flex: none; width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center;
+  background: var(--tonal); color: var(--on-tonal); font-size: 22px;
+}
+.dg-titles { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; padding-top: 2px; }
+.dg-title { margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.25; }
+.dg-sub { font-size: 14px; line-height: 1.45; color: var(--ink-secondary); }
+.dg-head > .ibtn { margin: -4px -4px 0 0; }
+.dg-intro { margin-bottom: 16px; }
+.dg-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 4px 24px 8px; }
+.dg-body:last-child { padding-bottom: 24px; }
+.dg-layer.is-full .dg-body:last-child { padding-bottom: 20px; }
+.dg-foot { flex: none; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; padding: 16px 24px 24px; }
+.dg-foot-start { margin-right: auto; display: flex; gap: 8px; }
+
+/* phone full-screen variant (long forms) */
+.dg-layer.is-full { padding: 0; place-items: stretch; }
+.dg-layer.is-full .dg {
+  --dg-w: 100%; max-height: none; height: 100%; border-radius: 0; box-shadow: none;
+  background: var(--panel); transform: translateY(24px);
+  padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.dg-layer.is-full .dg.is-on { transform: none; }
+.dg-layer.is-full .dg-head { align-items: center; padding: 8px 12px 8px 8px; gap: 8px; }
+.dg-layer.is-full .dg-head > .ibtn { order: -1; margin: 0; }
+.dg-layer.is-full .dg-title { font-size: 20px; }
+.dg-layer.is-full .dg-body { padding: 8px 20px 16px; }
+.dg-layer.is-full .dg-foot { padding: 12px 20px 16px; box-shadow: inset 0 1px 0 oklch(1 0 0 / 0.06); }
+.dg-layer.is-full .dg-foot > .btn { flex: 1; }
+
+/* ── Menu (popover) ─────────────────────────────────── */
+.mn {
+  position: fixed; z-index: var(--z-menu); width: max-content; min-width: 200px; max-width: min(360px, calc(100vw - 16px));
+  display: flex; flex-direction: column; overflow-y: auto; overscroll-behavior: contain; outline: none;
+  padding: 8px 0; border-radius: 16px; background: var(--menu-surface);
+  box-shadow: var(--menu-shadow), var(--menu-edge);
+  opacity: 0; transform: scale(0.96); transform-origin: var(--mn-origin, top left);
+  transition: opacity 150ms var(--ease-std), transform 220ms var(--ease);
+  scrollbar-width: thin; scrollbar-color: oklch(0.40 0.01 40) transparent;
+}
+.mn.is-on { opacity: 1; transform: none; }
+
+.mn-item {
+  width: 100%; min-height: 48px; padding: 0 16px 0 12px; border: 0; background: none; text-align: left;
+  display: flex; align-items: center; gap: 12px; flex: none;
+  font: inherit; font-size: 14px; font-weight: 500; color: var(--ink-primary); cursor: pointer; outline: none;
+}
+.mn-item:where(:hover, :focus-visible):not(:disabled) { background: var(--menu-hover); }
+.mn-item:disabled { color: var(--ink-ghost); cursor: default; }
+.mn-item .ms { font-size: 20px; color: var(--ink-secondary); flex: none; }
+.mn-item-l { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mn-item-d { display: block; font-size: 12px; font-weight: 400; color: var(--ink-tertiary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mn-item-t { flex: none; font-size: 12px; color: var(--ink-tertiary); font-variant-numeric: tabular-nums; }
+.mn-item-ck { flex: none; font-size: 20px; color: var(--on-tonal); opacity: 0; }
+.mn-item.is-on { background: var(--tonal); color: var(--on-tonal); }
+.mn-item.is-on .ms, .mn-item.is-on .mn-item-t { color: inherit; }
+.mn-item.is-on .mn-item-ck { opacity: 1; }
+.mn-item.is-on:where(:hover, :focus-visible) { background: oklch(0.40 0.045 38); }
+.mn-item.is-danger, .mn-item.is-danger .ms { color: var(--danger); }
+.mn-head { padding: 4px 16px 12px; margin-bottom: 8px; display: flex; flex-direction: column; gap: 2px; box-shadow: inset 0 -1px 0 var(--outline); flex: none; min-width: 0; }
+.mn-head-t { font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mn-head-s { font-size: 12px; color: var(--ink-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mn-head-m { font-size: 12px; color: var(--ink-tertiary); margin-top: 2px; }
+.mn-foot { padding: 10px 16px 4px; margin-top: 8px; box-shadow: inset 0 1px 0 var(--outline); font-size: 11px; color: var(--ink-tertiary); flex: none; }
+.mn-sep { height: 1px; margin: 8px 0; background: oklch(1 0 0 / 0.08); flex: none; }
+.mn-label { padding: 8px 16px 4px; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.06em; color: var(--ink-tertiary); text-transform: uppercase; flex: none; }
+
+/* the same items inside a phone sheet: bigger tap targets, full-bleed rows */
+.sh-body.mn-sheet { padding: 0 8px 12px; }
+.sh-body.mn-sheet .mn-item { min-height: 52px; border-radius: 16px; padding: 0 16px 0 14px; font-size: 15px; }
+.sh-body.mn-sheet .mn-sep { margin: 6px 8px; }
+
+/* reduced motion: every overlay part carries .pg-anim (styles/base.css turns its transitions off) */

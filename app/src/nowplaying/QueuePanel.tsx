@@ -27,7 +27,7 @@
  * only becomes a drag after 8px, so taps still work.
  */
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type DragEvent, type KeyboardEvent, type PointerEvent } from 'react'
-import { Eq, formatTime, useToast } from '../components/ui'
+import { Eq, formatTime, useToast, Button, IconButton, Badge } from '../components/ui'
 import { Icon } from '../design/icons'
 import { useCover } from '../lib/covers'
 import { useLibrary, type Catalogue } from '../state/library'
@@ -197,7 +197,7 @@ function PlayedRow({
           <div className="qp-t">{t?.title ?? 'Missing track'}</div>
           <div className="qp-a">{sub(c, id)}</div>
         </div>
-        <span className="qp-played-tag">Played</span>
+        <Badge size="sm" tone="subtle" className="qp-played-tag">Played</Badge>
         <span className="qp-d t-mono">{t?.duration ? formatTime(t.duration) : '--:--'}</span>
       </div>
     </div>
@@ -262,31 +262,23 @@ function NextRow({ c, id, abs, top, base, isFirst, isLast, phone, drag, onDragSt
         <span className="qp-d qp-nd t-mono">{t?.duration ? formatTime(t.duration) : '--:--'}</span>
         {!phone && (
           <span className="qp-acts">
-            <button
-              type="button"
+            <IconButton icon="chevU" label="Play next" title="Play next" size="sm"
               className="qp-act"
-              title="Play next"
-              aria-label="Play next"
+             
+             
               disabled={abs === base}
               onClick={(e) => {
                 e.stopPropagation()
                 playerStore.move(abs, base)
-              }}
-            >
-              <Icon name="chevU" />
-            </button>
-            <button
-              type="button"
+              }} />
+            <IconButton icon="x" label="Remove from queue" title="Remove" size="sm"
               className="qp-act qp-act-x"
-              title="Remove"
-              aria-label="Remove from queue"
+             
+             
               onClick={(e) => {
                 e.stopPropagation()
                 remove(abs)
-              }}
-            >
-              <Icon name="x" />
-            </button>
+              }} />
           </span>
         )}
       </div>
@@ -804,9 +796,9 @@ export function QueuePanel() {
             : `Nothing is queued. Playback stops when “${current?.title ?? 'this track'}” ends.`}
       </div>
       {cleared?.length ? (
-        <button type="button" className="qp-restore" onClick={() => playerStore.restoreUpcoming()}>
+        <Button variant="outlined-ink" size="sm" onClick={() => playerStore.restoreUpcoming()}>
           Restore queue
-        </button>
+        </Button>
       ) : null}
     </div>
   )
@@ -837,33 +829,22 @@ export function QueuePanel() {
               <span className="qp-count t-mono">{pad2(upcoming.length)}</span>
             </div>
             <div className="qp-tools">
-              <button
-                type="button"
-                className={`qp-tool qp-tool-sq ${p.shuffle ? 'is-on' : ''}`}
-                title={p.shuffle ? 'Shuffle on: turn off to restore the order' : 'Shuffle: current track first, the rest shuffled'}
-                aria-label={p.shuffle ? 'Shuffle on' : 'Shuffle'}
+              <IconButton icon="shuffle" label={p.shuffle ? 'Shuffle on' : 'Shuffle'} title={p.shuffle ? 'Shuffle on: turn off to restore the order' : 'Shuffle: current track first, the rest shuffled'} pressed={p.shuffle}
+                className={p.shuffle ? 'is-on' : undefined}
+               
+               
                 aria-pressed={p.shuffle}
-                onClick={() => playerStore.toggleShuffle()}
-              >
-                <Icon name="shuffle" />
-              </button>
-              <button
-                type="button"
-                className="qp-tool qp-tool-sq"
-                title="Save the queue as a playlist"
-                aria-label="Save the queue as a playlist"
+                onClick={() => playerStore.toggleShuffle()} />
+              <IconButton icon="playlist" label="Save the queue as a playlist" title="Save the queue as a playlist"
+               
+               
                 disabled={!p.queue.length}
-                onClick={(e) => actions.addTo({ kind: 'tracks', trackIds: p.queue.filter((id) => data?.tracks[id]), label: 'Queue' }, e)}
-              >
-                <Icon name="playlist" />
-              </button>
-              <button type="button" className="qp-tool qp-tool-text" disabled={!upcoming.length} onClick={onClear}>
+                onClick={(e) => actions.addTo({ kind: 'tracks', trackIds: p.queue.filter((id) => data?.tracks[id]), label: 'Queue' }, e)} />
+              <Button variant="outlined-ink" size="sm" disabled={!upcoming.length} onClick={onClear}>
                 Clear
-              </button>
+              </Button>
               {!phone && (
-                <button type="button" className="qp-tool qp-tool-x" title="Close" aria-label="Close queue" onClick={close}>
-                  <Icon name="x" />
-                </button>
+                <IconButton icon="x" label="Close queue" title="Close" onClick={close} />
               )}
             </div>
           </div>

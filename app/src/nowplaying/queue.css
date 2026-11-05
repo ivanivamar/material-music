@@ -41,26 +41,10 @@
 .qp-head-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .qp-title-wrap { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
 .qp-title { margin: 0; font-size: 24px; font-weight: 400; letter-spacing: -0.015em; line-height: 1.15; }
-.qp-count { font-size: 11px; color: var(--ink-tertiary); }
 .qp-tools { display: flex; align-items: center; gap: 8px; flex: none; }
-.qp-tool {
-  height: 40px; border-radius: 12px; cursor: pointer; flex: none;
-  display: inline-flex; align-items: center; justify-content: center;
-  background: none; border: 1.5px solid var(--border-strong); color: var(--ink-primary);
-  transition: background .2s, color .2s;
-}
-.qp-tool:hover:not(:disabled) { background: var(--surface-2); }
-.qp-tool:disabled { color: var(--ink-ghost); border-color: rgba(255, 255, 255, .08); cursor: default; }
-.qp-tool-sq { width: 40px; font-size: 20px; }
-.qp-tool-text { padding: 0 14px; font-size: 13px; color: var(--ink-secondary); }
-.qp-tool-text:hover:not(:disabled) { color: var(--ink-primary); }
-.qp-tool-x { width: 40px; font-size: 20px; border-color: transparent; }
+/* kit IconButtons; the shuffle toggle takes the album colour when on */
+.qp-tools .ibtn.is-on, .qp-tools .ibtn.is-on:hover:not(:disabled) { background: var(--album-hi); color: var(--on-album); }
 /* shuffle on: lit like the player's mode buttons */
-.qp-tool.is-on, .qp-tool.is-on:hover:not(:disabled) {
-  color: #fff; background: rgba(255, 255, 255, .14); border-color: rgba(255, 255, 255, .3);
-  box-shadow: 0 0 14px -2px rgba(255, 255, 255, .28);
-}
-.qp-tool.is-on svg { filter: drop-shadow(0 0 4px rgba(255, 255, 255, .5)); }
 
 .qp-src { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .qp-src-cover, .qp-src .plc { width: 22px; height: 22px; border-radius: 5px; flex: none; object-fit: cover; display: block; }
@@ -78,9 +62,7 @@
 
 /* section header (not sticky): LABEL ──── 03 · 11:50 */
 .qp-rule { position: absolute; left: 0; right: 0; display: flex; align-items: center; gap: 12px; padding: 0 10px; }
-.qp-rule-l { font-size: 10px; letter-spacing: .18em; color: var(--ink-primary); }
 .qp-rule-line { flex: 1; height: 1px; background: rgba(255, 255, 255, .07); }
-.qp-rule-r { font-size: 10px; letter-spacing: .08em; color: var(--ink-tertiary); }
 
 /* rows: the outer box is placed (windowed list), the inner one is styled (and slides on swipe) */
 .qp-row { position: absolute; left: 0; right: 0; border-radius: 12px; outline: none; }
@@ -99,19 +81,14 @@
 
 /* played: dimmed, click = play again */
 .qp-prow { height: 54px; cursor: pointer; }
-.qp-prow .qp-row-in { padding: 0 10px; opacity: .5; }
 .qp-prow:hover .qp-row-in, .qp-prow:focus-visible .qp-row-in { opacity: 1; background: rgba(255, 255, 255, .04); }
 .qp-pn { width: 18px; flex: none; font-size: 10px; color: var(--ink-tertiary); text-align: center; }
-.qp-pcover { width: 38px; height: 38px; border-radius: 7px; filter: grayscale(.4); }
 .qp-replay { width: 30px; height: 30px; flex: none; display: flex; align-items: center; justify-content: center; font-size: 14px; color: var(--ink-primary); }
 
 /* next up: grip · cover · text · ♥ · length · ↑ × */
 .qp-nrow { height: 56px; cursor: grab; }
 .qp-nrow:active { cursor: grabbing; }
-.qp-nrow .qp-row-in { padding: 0 6px 0 4px; }
-.qp-nrow:hover .qp-row-in { background: rgba(255, 255, 255, .05); }
 .qp-grip { width: 22px; flex: none; display: flex; align-items: center; justify-content: center; font-size: 16px; color: var(--ink-ghost); }
-.qp-ncover { width: 40px; height: 40px; border-radius: 8px; }
 .qp-like {
   width: 28px; height: 28px; flex: none; padding: 0; border: 0; background: none; cursor: pointer;
   display: flex; align-items: center; justify-content: center; font-size: 16px; color: var(--ink-secondary);
@@ -121,13 +98,8 @@
 .qp-like.is-pop { transform: scale(1.25); }
 .qp-nd { width: 40px; text-align: right; }
 .qp-acts { display: flex; align-items: center; flex: none; }
-.qp-act {
-  width: 30px; height: 30px; flex: none; padding: 0; border: 0; border-radius: 8px; background: none; cursor: pointer;
-  display: inline-flex; align-items: center; justify-content: center; font-size: 16px; color: var(--ink-tertiary);
-  transition: background .2s, color .2s;
+.qp-act { flex: none;
 }
-.qp-act-x { font-size: 15px; }
-.qp-act:hover:not(:disabled) { background: rgba(255, 255, 255, .08); color: #fff; }
 .qp-act:disabled { opacity: 0; pointer-events: none; }
 
 /* dragging: the lifted row, and a glowing lilac drop line above / below the target */
@@ -160,7 +132,6 @@
 .qp-now-eye .eq > span { height: 9px; background: var(--qp-lilac); box-shadow: 0 0 4px rgba(var(--qp-lilac-rgb), .8); }
 .qp-now-t { font-size: 15px; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .qp-now-time { flex: none; align-self: flex-end; padding-bottom: 2px; font-size: 11px; color: #bdbdbd; }
-.qp-now-dur { color: var(--ink-tertiary); }
 .qp-now-bar {
   position: absolute; left: 0; bottom: 0; height: 2px; pointer-events: none;
   background: var(--qp-lilac); box-shadow: 0 0 10px rgba(var(--qp-lilac-rgb), .7);
@@ -175,13 +146,6 @@
 .qp-empty-mark > span:nth-child(1) { inset: 0; border-radius: 50%; border: 1.5px solid rgba(255, 255, 255, .5); clip-path: inset(0 0 50% 0); }
 .qp-empty-mark > span:nth-child(2) { inset: 0; border-radius: 50%; border: 1.5px solid rgba(255, 255, 255, .12); clip-path: inset(50% 0 0 0); }
 .qp-empty-mark > span:nth-child(3) { left: -12px; right: -12px; top: 28px; height: 1px; background: rgba(255, 255, 255, .6); }
-.qp-empty-t { font-size: 16px; }
-.qp-empty-b { font-size: 13px; color: var(--ink-secondary); max-width: 260px; line-height: 1.5; }
-.qp-restore {
-  height: 38px; padding: 0 16px; margin-top: 6px; border-radius: 12px; cursor: pointer;
-  background: none; border: 1px solid var(--border-strong); color: var(--ink-primary); font-size: 14px;
-}
-.qp-restore:hover { background: rgba(255, 255, 255, .06); }
 
 .qp-foot {
   flex: none; text-align: center; font-size: 9px; letter-spacing: .14em; color: var(--ink-tertiary);
@@ -203,13 +167,6 @@ html[data-qp] .toasts.toasts-shell { right: 452px; }
 .qp-head { border-bottom: 0; box-shadow: inset 0 -1px 0 rgba(255, 255, 255, .07); }
 .qp-title { font-weight: 600; }
 .qp-count { font-family: var(--font-sans); font-size: 12px; letter-spacing: 0; color: oklch(0.62 0.012 40); font-variant-numeric: tabular-nums; }
-.qp-tool { border: 0; box-shadow: inset 0 0 0 1.5px oklch(0.40 0.01 40 / 0.4); color: oklch(0.95 0.006 40); }
-.qp-tool .ms { font-size: 22px; }
-.qp-tool:hover:not(:disabled) { background: rgba(255, 255, 255, .07); }
-.qp-tool-text { font-size: 12px; font-weight: 600; color: oklch(0.80 0.014 40); }
-.qp-tool-x { box-shadow: none; }
-.qp-tool.is-on, .qp-tool.is-on:hover:not(:disabled) { background: var(--album-hi); color: var(--on-album); box-shadow: none; }
-.qp-tool.is-on .ms { filter: none; }
 .qp-src-k { font-family: var(--font-sans); font-size: 11px; font-weight: 700; letter-spacing: .14em; color: oklch(0.80 0.014 40); }
 .qp-src-name { font-size: 12px; font-weight: 500; }
 .qp-rule-l { font-family: var(--font-sans); font-size: 11px !important; font-weight: 700; letter-spacing: .14em !important; color: oklch(0.95 0.006 40) !important; }
@@ -222,9 +179,6 @@ html[data-qp] .toasts.toasts-shell { right: 452px; }
 .qp-cover, .qp-cover .plc { border-radius: 10px; }
 .qp-grip { color: oklch(0.62 0.012 40); }
 .qp-grip .ms { font-size: 18px; }
-.qp-act { color: oklch(0.62 0.012 40); border-radius: 999px; }
-.qp-act:hover:not(:disabled) { background: oklch(0.34 0.01 40); color: #fff; }
-.qp-act .ms { font-size: 20px; }
 
 /* ── Material 3 segmented list rows (matches .dt-list / .dt-row in detail.css) ── */
 .qp-row { border-radius: 8px; }
@@ -252,7 +206,7 @@ html[data-qp] .toasts.toasts-shell { right: 452px; }
 /* Played: clearly receded M3 surface, grip + Played pill + desaturated cover */
 .qp-prow { height: 56px; }
 .qp-prow .qp-row-in {
-  padding: 0 10px 0 8px; /* same as Next up so the grips line up */
+  padding: 0 10px 0 8px;
   opacity: 1;
   background: oklch(0.195 0.006 40);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .035);
@@ -267,13 +221,7 @@ html[data-qp] .toasts.toasts-shell { right: 452px; }
 .qp-prow .qp-d { color: oklch(0.55 0.01 40); }
 .qp-prow:hover .qp-t { color: oklch(0.95 0.006 40); }
 .qp-prow:hover .qp-a, .qp-prow:hover .qp-d { color: oklch(0.80 0.014 40); }
-.qp-played-tag {
-  flex: none; height: 20px; padding: 0 7px; border-radius: 999px;
-  display: inline-flex; align-items: center;
-  background: rgba(255, 255, 255, .05);
-  font-size: 10px; font-weight: 600; letter-spacing: .04em; color: oklch(0.62 0.012 40);
-}
-.qp-prow:hover .qp-played-tag { background: rgba(255, 255, 255, .1); color: oklch(0.85 0.01 40); }
+.qp-prow:hover .qp-played-tag { --bdg-bg: oklch(1 0 0 / 0.1); --bdg-fg: oklch(0.85 0.01 40); }
 
 /* ── Now playing: distinct M3 Expressive active card ── */
 .qp-now {
@@ -307,8 +255,7 @@ html[data-qp] .toasts.toasts-shell { right: 452px; }
 .qp-now-bar { height: 3px; background: var(--album-hi); box-shadow: 0 0 10px var(--album-hi); }
 .qp-drop { background: var(--album-hi) !important; box-shadow: 0 0 8px var(--album-hi) !important; }
 .qp-empty-t { font-size: 16px; font-weight: 500; }
-.qp-empty-b { font-size: 12px; color: oklch(0.80 0.014 40); }
-.qp-restore { border: 0; border-radius: 12px; box-shadow: inset 0 0 0 1px oklch(0.40 0.01 40 / 0.4); background: none; font-weight: 600; font-size: 12px; }
+.qp-empty-b { max-width: 260px; line-height: 1.5; font-size: 12px; color: oklch(0.80 0.014 40); }
 .qp-foot { font-family: var(--font-sans); font-size: 11px; font-weight: 600; letter-spacing: .12em; color: oklch(0.62 0.012 40); border-top: 0; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .07); }
 .qp-swipe-bg { background: oklch(0.55 0.17 25); color: oklch(0.97 0.02 25); border-radius: 8px; }
 

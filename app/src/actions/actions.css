@@ -5,16 +5,14 @@
   position: fixed; z-index: 70; width: 268px;
   animation: am-in .28s var(--ease) both;
 }
-.am.am-only-picker { width: 256px; }
 @keyframes am-in {
   from { opacity: 0; transform: scale(.96); }
   to { opacity: 1; transform: none; }
 }
 .am-panel {
-  display: flex; flex-direction: column; padding: 6px;
-  border-radius: 14px; background: #161618; border: 1.5px solid rgba(255, 255, 255, .1);
-  box-shadow: 0 28px 60px -18px rgba(0, 0, 0, .85);
-  overflow: hidden;
+  /* the kit Menu surface (tokens: --menu-*) */
+  display: flex; flex-direction: column; padding: 8px 0; overflow: hidden;
+  border-radius: 16px; background: var(--menu-surface); box-shadow: var(--menu-shadow), var(--menu-edge);
 }
 .am-head { display: flex; align-items: center; gap: 10px; padding: 8px 10px 10px; min-width: 0; }
 .am-head-cover { width: 32px; height: 32px; border-radius: 6px; object-fit: cover; flex: none; background: var(--surface-1); }
@@ -28,12 +26,9 @@
   border: 0; border-radius: 9px; background: none; cursor: pointer; text-align: left;
   font: inherit; font-size: 14px; color: var(--ink-primary);
 }
-.am-item:hover, .am-item:focus-visible, .am-item.is-open { background: rgba(255, 255, 255, .08); outline: none; }
 .am-ic { font-size: 18px; color: var(--ink-secondary); display: flex; }
 .am-label { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.am-hint { font-family: var(--font-mono); font-size: 10px; letter-spacing: .1em; color: var(--ink-tertiary); }
 .am-chev { font-size: 15px; color: var(--ink-secondary); display: flex; }
-.am-item.is-danger, .am-item.is-danger .am-ic { color: var(--danger); }
 .am-div { height: 1px; margin: 5px 8px; background: rgba(255, 255, 255, .07); flex: none; }
 
 /* submenu: slides 8px from the menu */
@@ -73,52 +68,23 @@
 }
 .am-pl-none { padding: 8px 10px 10px; font-size: 13px; color: var(--ink-tertiary); }
 
-/* ── Phone bottom sheet ─────────────────────────────── */
-.as-scrim { position: fixed; inset: 0; z-index: 70; background: rgba(5, 5, 5, .6); opacity: 0; transition: opacity .4s ease; }
-.as-scrim.is-on { opacity: 1; }
-.as {
-  position: fixed; left: 0; right: 0; bottom: 0; z-index: 71; max-height: calc(88dvh - env(safe-area-inset-top));
-  display: flex; flex-direction: column;
-  padding-bottom: calc(24px + env(safe-area-inset-bottom));
-  border-radius: 24px 24px 0 0; background: #141416; border-top: 1.5px solid rgba(255, 255, 255, .1);
-  transform: translateY(105%); transition: transform .45s var(--ease);
-}
-.as.is-on { transform: none; }
-.as-handle { height: 26px; flex: none; display: flex; align-items: center; justify-content: center; border: 0; background: none; padding: 0; width: 100%; }
-.as-handle span { width: 40px; height: 4px; border-radius: 999px; background: rgba(255, 255, 255, .22); }
+/* ── Phone action sheet: the kit Sheet (components/ui/Sheet.tsx); these are only its contents ── */
 .as-head { display: flex; align-items: center; gap: 14px; padding: 4px 20px 14px; border-bottom: 1px solid rgba(255, 255, 255, .07); flex: none; }
-.as-head .am-head-cover { width: 52px; height: 52px; border-radius: 8px; }
 .as-head-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
 .as-head-title { font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .as-head-sub { font-family: var(--font-mono); font-size: 10px; letter-spacing: .12em; color: var(--ink-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.as-items { display: flex; flex-direction: column; padding: 6px 8px 0; overflow-y: auto; overscroll-behavior: contain; }
-.as-item {
-  display: flex; align-items: center; gap: 16px; height: 52px; padding: 0 12px; flex: none; width: 100%;
-  border: 0; border-radius: 12px; background: none; text-align: left; font: inherit; font-size: 15px; color: var(--ink-primary);
-}
-.as-item:active { background: rgba(255, 255, 255, .08); }
-.as-ic { font-size: 21px; color: var(--ink-secondary); display: flex; }
-.as-label { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.as-chev { font-size: 17px; color: var(--ink-secondary); display: flex; }
-.as-item.is-danger, .as-item.is-danger .as-ic { color: var(--danger); }
-.as-div { height: 1px; margin: 6px 12px; background: rgba(255, 255, 255, .07); flex: none; }
 
-.as-pl-head { display: flex; align-items: center; gap: 8px; padding: 0 12px 10px; flex: none; }
-.as-back { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; font-size: 22px; border: 0; background: none; color: var(--ink-primary); padding: 0; }
-.as-back-sp { width: 8px; }
+.as-pl-head { display: flex; align-items: center; gap: 8px; min-height: 40px; flex: none; }
 .as-pl-title { font-size: 18px; }
-.as-new { display: flex; gap: 8px; padding: 6px 20px 12px; flex: none; }
+.as-new { display: flex; gap: 8px; padding: 4px 0 12px; flex: none; }
+.as-new .btn { height: 48px; }
 .as-new input {
   flex: 1; min-width: 0; height: 48px; padding: 0 14px; border-radius: 12px; border: 1.5px solid rgba(255, 255, 255, .18);
   background: #0E0E10; color: var(--ink-primary); outline: none; font: inherit; font-size: 15px;
 }
 .as-new input:focus { border-color: rgba(255, 255, 255, .35); }
-.as-create {
-  height: 48px; padding: 0 16px; border-radius: 12px; border: 0; background: var(--ink-primary); color: var(--bg-1);
-  font: inherit; font-size: 14px; font-weight: 500;
-}
-.as-create:disabled { opacity: .35; }
-.as-pl-list { display: flex; flex-direction: column; padding: 0 8px; overflow-y: auto; overscroll-behavior: contain; }
+.as-pl-list { display: flex; flex-direction: column; margin: 0 -8px; }
+.sh-body.as-pl-body { padding: 0 18px 12px; }
 .as-pl {
   display: flex; align-items: center; gap: 14px; height: 58px; padding: 0 12px; flex: none; width: 100%;
   border: 0; border-radius: 12px; background: none; text-align: left; font: inherit; color: var(--ink-primary);
@@ -132,20 +98,6 @@
 .as-pl-none { padding: 12px; font-size: 14px; color: var(--ink-tertiary); }
 
 /* ── Dialogs ────────────────────────────────────────── */
-.dlg-scrim { position: fixed; inset: 0; z-index: 72; background: rgba(5, 5, 5, .6); opacity: 0; transition: opacity .35s ease; }
-.dlg-scrim.is-on { opacity: 1; }
-.dlg {
-  position: fixed; left: 50%; top: 50%; z-index: 73; width: 460px; max-width: calc(100vw - 32px); max-height: calc(100dvh - 32px); overflow-y: auto;
-  box-sizing: border-box; padding: 28px; display: flex; flex-direction: column; gap: 22px;
-  border-radius: 20px; background: #141416; border: 1.5px solid rgba(255, 255, 255, .1);
-  box-shadow: 0 40px 90px -30px rgba(0, 0, 0, .9);
-  opacity: 0; transform: translate(-50%, -50%) translateY(14px);
-  transition: opacity .35s ease, transform .5s var(--ease);
-}
-.dlg.is-wide { width: 560px; }
-.dlg.is-on { opacity: 1; transform: translate(-50%, -50%); }
-.dlg-top { display: flex; align-items: center; justify-content: space-between; margin: -4px -6px -4px 0; }
-.dlg-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: .16em; color: var(--ink-tertiary); }
 .dlg-new, .dlg-edit { display: flex; flex-direction: column; gap: 22px; }
 .dlg-new-row { display: flex; gap: 18px; align-items: center; }
 .dlg-new-cover { width: 96px; height: 96px; border-radius: 12px; flex: none; }
@@ -155,7 +107,6 @@
   background: #0E0E10; color: var(--ink-primary); outline: none; font: inherit; font-size: 15px; box-sizing: border-box; width: 100%;
 }
 .dlg-input:focus { border-color: rgba(255, 255, 255, .4); }
-.dlg-input-lg { font-size: 18px; }
 .dlg-textarea { height: auto; padding: 12px 14px; resize: none; line-height: 1.45; }
 .dlg-hint { font-family: var(--font-mono); font-size: 10px; letter-spacing: .12em; color: var(--ink-tertiary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .dlg-buttons { display: flex; justify-content: flex-end; gap: 10px; }
@@ -196,7 +147,6 @@
 .gd-auto { margin-right: auto; }
 
 /* ── Smart playlist dialog (step 20) ──────────────── */
-.dlg.is-wide:has(.sm) { width: 640px; }
 .sm { gap: 20px; }
 .sm-name { font-size: 20px; font-weight: 500; color: var(--ink-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sm-count { color: var(--ink-secondary); }
@@ -226,8 +176,6 @@
 .sm .dlg-new-cover.is-empty { display: flex; align-items: center; justify-content: center; font-size: 30px; color: var(--ink-tertiary); }
 
 @media (max-width: 760px) {
-  .dlg { padding: 22px; gap: 18px; top: calc(env(safe-area-inset-top) + 72px); transform: translate(-50%, 14px); }
-  .dlg.is-on { transform: translate(-50%, 0); }
   .dlg-new-cover { width: 72px; height: 72px; }
   .dlg-edit { grid-template-columns: minmax(0, 1fr); }
   .dlg-edit-cover { flex-direction: row; justify-content: flex-start; gap: 16px; }
@@ -242,32 +190,29 @@
 }
 
 /* Start radio (step 26): mono hint under the label in the phone sheet; the menu hint brightens on hover */
-.as-sub { display: block; font-family: var(--font-mono); font-size: 9px; letter-spacing: .12em; color: #bdbdbd; margin-top: 2px; }
-.menu-item:hover .am-hint, .am-item:hover .am-hint { color: #bdbdbd; }
+.am-item:hover .am-hint { color: #bdbdbd; }
 
 /* Genre dropdown (GenreCombo): Edit genre + the smart playlist genre rule */
 .gc { position: relative; display: flex; align-items: center; min-width: 0; }
 .gc-input { width: 100%; }
 .gc-chev {
-  position: absolute; right: 4px; top: 50%; transform: translateY(-50%); width: 28px; height: 28px; border: 0; border-radius: 8px;
-  background: none; color: var(--ink-secondary); display: flex; align-items: center; justify-content: center; font-size: 15px; cursor: pointer; padding: 0;
-  transition: transform .2s var(--ease), color .2s;
+  position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
 }
-.gc-chev:hover { color: var(--ink-primary); }
 .gc.is-open .gc-chev { transform: translateY(-50%) rotate(180deg); }
 .gc .gc-input { padding-right: 34px !important; }
 .gd-combo { flex: 1; min-width: 140px; }
 .sm-combo { flex: 1; min-width: 140px; }
 .sm-combo .sm-text { flex: 1; width: 100%; }
 .gc-list {
-  position: fixed; z-index: 90; overflow-y: auto; overscroll-behavior: contain; padding: 6px; box-sizing: border-box;
-  border-radius: 12px; background: var(--menu); border: 1px solid rgba(255, 255, 255, .09); box-shadow: var(--elevation);
+  /* the kit Menu surface and rows (tokens: --menu-*), as a combobox list */
+  position: fixed; z-index: var(--z-menu); overflow-y: auto; overscroll-behavior: contain; padding: 8px 0; box-sizing: border-box;
+  border-radius: 16px; background: var(--menu-surface); box-shadow: var(--menu-shadow), var(--menu-edge);
   animation: pg-menu-in var(--dur-menu-move) var(--ease) both; scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, .14) transparent;
 }
-.gc-opt { display: flex; align-items: center; gap: 10px; height: 38px; padding: 0 12px; border-radius: 9px; cursor: pointer; font-size: 14px; color: var(--ink-primary); }
-.gc-opt.is-active { background: var(--surface-2); }
+.gc-opt { display: flex; align-items: center; gap: 10px; height: 48px; padding: 0 16px; cursor: pointer; font-size: 14px; font-weight: 500; color: var(--ink-primary); }
+.gc-opt.is-active { background: var(--menu-hover); }
 .gc-name { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.gc-n { flex: none; font-family: var(--font-mono); font-size: 9px; letter-spacing: .12em; color: var(--ink-tertiary); }
+.gc-n { flex: none; font-size: 12px; text-transform: lowercase; color: var(--ink-tertiary); }
 .gc-opt.is-active .gc-n { color: var(--ink-secondary); }
 .gc-plus { display: inline-flex; font-size: 16px; color: var(--ink-secondary); }
 .gc-empty { padding: 10px 12px; font-size: 13px; color: var(--ink-tertiary); }
@@ -276,13 +221,12 @@ html[data-phone] .gc-opt { height: 44px; font-size: 15px; }
 /* ── Material redesign: menus, sheets and dialog base (HomeMaterial.dc.html menu / long-press sheet) ── */
 .am { width: 288px; animation: mm-menu-in 260ms var(--ease-shape) both; }
 .am.am-only-picker { width: 288px; }
-.am-panel { padding: 8px 0; border: 0; border-radius: 16px; background: oklch(0.26 0.009 40); box-shadow: 0 12px 32px -8px rgba(0, 0, 0, .75); }
 .am-head { gap: 12px; padding: 4px 16px 12px; margin-bottom: 8px; border-bottom: 1px solid var(--outline); }
 .am-head-cover, .am-head-cover.plc { width: 40px; height: 40px; border-radius: 8px; }
 .am-head-title { font-size: 14px; line-height: 20px; font-weight: 600; }
 .am-head-sub { font-family: var(--font-sans); font-size: 12px; line-height: 16px; letter-spacing: 0; color: var(--ink-secondary); }
 .am-item { min-height: 44px; height: auto; padding: 6px 16px; gap: 14px; border-radius: 0; font-weight: 500; }
-.am-item:hover, .am-item:focus-visible, .am-item.is-open { background: oklch(0.30 0.01 40); }
+.am-item:hover, .am-item:focus-visible, .am-item.is-open { background: var(--menu-hover); outline: none; }
 .am-ic { font-size: 22px; color: var(--ink-secondary); }
 .am-ic .ms { font-size: 22px; }
 .am-hint { font-family: var(--font-sans); font-size: 12px; letter-spacing: 0; color: oklch(0.72 0.014 40); }
@@ -292,31 +236,14 @@ html[data-phone] .gc-opt { height: 44px; font-size: 15px; }
 .am-find { border-radius: 999px; }
 .am-pl-cover { filter: none; border-radius: 8px !important; }
 .am-pl-in { font-family: var(--font-sans); letter-spacing: 0; font-size: 12px; }
-
-.as-scrim { background: rgba(0, 0, 0, .5); }
-.as { border-radius: 28px 28px 0 0; border-top: 0; background: oklch(0.225 0.008 40); transition: transform 500ms var(--ease-shape); }
-.as-handle span { width: 32px; height: 4px; background: var(--ink-tertiary); }
-.as-head { padding: 4px 24px 12px; margin: 0 0 8px; border-bottom: 1px solid oklch(0.38 0.012 40); }
+.as-head { padding: 2px 4px 12px; margin: 0; border-bottom: 1px solid oklch(0.38 0.012 40); }
 .as-head .am-head-cover { width: 48px; height: 48px; border-radius: 10px; }
 .as-head-title { font-size: 16px; font-weight: 600; }
 .as-head-sub { font-family: var(--font-sans); font-size: 12px; letter-spacing: 0; }
-.as-items { padding: 0; }
-.as-item { min-height: 56px; height: auto; padding: 8px 24px; gap: 18px; border-radius: 0; font-size: 16px; }
-.as-item:active { background: oklch(0.30 0.01 40); }
-.as-ic { font-size: 24px; }
-.as-ic .ms { font-size: 24px; }
-.as-div { margin: 8px 24px; background: var(--outline); }
 .as-pl-cover { filter: none; }
 .as-pl-meta { font-family: var(--font-sans); font-size: 12px; letter-spacing: 0; }
 
-.dlg-scrim { background: rgba(0, 0, 0, .55); }
-.dlg { border: 0; border-radius: 28px; background: oklch(0.225 0.008 40); box-shadow: 0 24px 60px -20px rgba(0, 0, 0, .85); transition: opacity 250ms var(--ease-std), transform 500ms var(--ease-shape); }
-.dlg-label { font-family: var(--font-sans); font-size: 12px; font-weight: 600; letter-spacing: 0; color: var(--ink-secondary); }
-
 /* ── Dialogs, Material redesign (PlaylistDialog.dc.html): headline, outlined fields, coral actions ── */
-.dlg { padding: 24px; gap: 20px; background: oklch(0.21 0.008 40); }
-.dlg-top { margin: 0 -8px 0 0; }
-.dlg-label { font-family: var(--font-sans); font-size: 24px; font-weight: 400; letter-spacing: 0; color: var(--ink-primary); }
 .dlg-input {
   height: 56px; padding: 0 16px; border-radius: 8px; border: 0; background: none; color: var(--ink-primary); font: inherit; font-size: 16px;
   box-shadow: inset 0 0 0 1px oklch(0.50 0.012 40); outline: none; transition: box-shadow 150ms var(--ease-std);
@@ -334,7 +261,6 @@ html[data-phone] .gc-opt { height: 44px; font-size: 15px; }
 .dlg-rm-cover { border-radius: 16px; }
 
 /* smart playlist dialog */
-.dlg.is-wide:has(.sm) { width: 680px; }
 .sm-name { font-size: 20px; font-weight: 600; }
 .sm-block { border-top: 0; padding-top: 0; gap: 12px; }
 .sm-rules { gap: 8px; }

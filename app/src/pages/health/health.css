@@ -35,10 +35,6 @@
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 16px 20px;
-  border-radius: 24px;
-  background: oklch(0.205 0.008 40);
-  box-shadow: inset 0 0 0 1px oklch(0.28 0.01 40);
   margin-bottom: 4px;
 }
 
@@ -487,10 +483,6 @@
   display: flex;
   align-items: center;
   gap: 18px;
-  padding: 16px 22px;
-  border-radius: 24px;
-  background: oklch(0.21 0.008 40);
-  box-shadow: inset 0 0 0 1px oklch(0.28 0.01 40);
   overflow: hidden;
   margin-bottom: 6px;
 }
@@ -545,9 +537,6 @@
 }
 
 .hl-dup-group {
-  border-radius: 24px;
-  background: oklch(0.185 0.007 40);
-  box-shadow: inset 0 0 0 1px oklch(0.27 0.01 40);
   padding: 8px;
   display: flex;
   flex-direction: column;
@@ -644,22 +633,8 @@
 }
 
 .hl-bg-banner {
-  display: flex;
-  align-items: center;
-  gap: 12px;
   margin-top: 24px;
-  padding: 14px 20px;
-  border-radius: 18px;
-  background: oklch(0.22 0.009 40);
-  box-shadow: inset 0 0 0 1px oklch(0.28 0.01 40);
-  font-size: 13px;
-  color: var(--ink-secondary);
   font-variant-numeric: tabular-nums;
-}
-
-.hl-bg-icon {
-  color: var(--brand);
-  display: flex;
 }
 
 /* ── Phone Responsiveness ───────────────────────────── */
@@ -671,8 +646,6 @@
   flex-direction: column;
   align-items: flex-start;
   gap: 12px;
-  padding: 16px;
-  border-radius: 20px;
 }
 
 .shell.is-phone .hl-kicker-badge {
@@ -719,7 +692,6 @@
   flex-direction: column;
   align-items: stretch;
   gap: 14px;
-  padding: 16px;
 }
 
 .shell.is-phone .hl-bar-actions {

@@ -1,14 +1,13 @@
 /**
- * Add a show yourself (design_handoff_concerts §3): for shows Ticketmaster doesn't list. Desktop: a
- * 560px dialog; phone: a full-screen form with Close · title · Save in the top bar.
+ * Add a show yourself (design_handoff_concerts §3): for shows Ticketmaster doesn't list. The kit
+ * Dialog: 560px on desktop, full screen on the phone (back · title, Delete / Save in the bottom bar).
  *
  * Artist (library only, required) · Date (required, today or later) · Start time · Venue (required) ·
  * City (defaults to the home city) · Ticket link. Edit mode adds Delete. Saved shows live in Drive
  * concerts.json (state/concerts.ts); the daily Ticketmaster refresh never changes them.
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
-import { IconButton, Button, useToast } from '../../components/ui'
+import { IconButton, Button, Dialog, useToast } from '../../components/ui'
 import { Icon, type IconName } from '../../design/icons'
 import { useCover } from '../../lib/covers'
 import { concertsStore, isoDay, type ManualShow } from '../../state/concerts'
@@ -74,7 +73,6 @@ export function ShowDialog({ state, phone, homeCity, onClose }: { state: DialogS
     edit ? { artistId: edit.artistId, q: '', date: edit.date, time: edit.time ?? '', venue: edit.venue, city: edit.city, link: edit.link ?? '' } : { artistId: '', q: '', date: '', time: '', venue: '', city: homeCity, link: '' },
   )
   const [sel, setSel] = useState(0)
-  const [on, setOn] = useState(false)
   const qRef = useRef<HTMLInputElement>(null)
   const patch = (p: Partial<Fields>) => setF((x) => ({ ...x, ...p }))
   const artist = f.artistId ? data?.artists[f.artistId] : undefined
@@ -84,19 +82,8 @@ export function ShowDialog({ state, phone, homeCity, onClose }: { state: DialogS
   const canSave = !!artist && !!f.date && !past && f.venue.trim().length > 0
 
   useEffect(() => {
-    const r = requestAnimationFrame(() => setOn(true))
     if (!edit) window.setTimeout(() => qRef.current?.focus({ preventScroll: true }), 60)
-    return () => cancelAnimationFrame(r)
   }, [edit])
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape' || e.defaultPrevented) return
-      e.preventDefault()
-      onClose()
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [onClose])
 
   const save = () => {
     if (!canSave || !artist) return
@@ -180,60 +167,36 @@ export function ShowDialog({ state, phone, homeCity, onClose }: { state: DialogS
   const title = edit ? 'Edit show' : 'Add a show'
   const saveLabel = edit ? 'Save' : 'Add show'
 
-  if (phone)
-    return createPortal(
-      <div className={`cx-full ${on ? 'is-on' : ''}`} role="dialog" aria-modal="true" aria-label={title}>
-        <div className="cx-full-bar">
-          <IconButton icon="x" label="Close" size="lg" variant="strong" onClick={onClose} />
-          <div className="cx-full-title">{title}</div>
-          <button type="button" className={`cx-save ${canSave ? 'is-ok' : ''}`} onClick={save} aria-disabled={!canSave}>
-            {saveLabel}
-          </button>
-        </div>
-        <div className="cx-full-body">
-          <div className="cx-full-intro">For shows Ticketmaster doesn't list. Only you see it, and daily updates won't change it.</div>
-          {fields}
-          {edit && (
-            <button type="button" className="cx-del-block" onClick={remove}>
-              <Icon name="delete" />
-              Delete show
-            </button>
-          )}
-        </div>
-      </div>,
-      document.body,
-    )
-
-  return createPortal(
-    <div className={`cx-dlg-scrim ${on ? 'is-on' : ''}`} onClick={onClose}>
-      <div className="cx-dlg" role="dialog" aria-modal="true" aria-label={title} onClick={(e) => e.stopPropagation()}>
-        <div className="cx-dlg-head">
-          <span className="cx-dlg-tile">
-            <Icon name="editCalendar" />
-          </span>
-          <div className="cx-dlg-titles">
-            <div className="cx-dlg-title">{title}</div>
-            <div className="cx-dlg-sub">Only you see it. Ticketmaster updates won't change it.</div>
-          </div>
-        </div>
-        {fields}
-        <div className="cx-dlg-foot">
-          {edit && (
-            <Button variant="ghost" className="cx-text-danger" onClick={remove}>
-              <Icon name="delete" />
-              Delete
+  return (
+    <Dialog
+      open
+      onClose={onClose}
+      title={title}
+      subtitle={phone ? "For shows Ticketmaster doesn't list. Only you see it, and daily updates won't change it." : "Only you see it. Ticketmaster updates won't change it."}
+      icon="editCalendar"
+      size="lg"
+      phone="full"
+      actionsStart={
+        edit && (
+          <Button variant="ghost" icon="delete" className="cx-text-danger" onClick={remove}>
+            Delete
+          </Button>
+        )
+      }
+      actions={
+        <>
+          {!phone && (
+            <Button variant="ghost" onClick={onClose}>
+              Cancel
             </Button>
           )}
-          <span className="cx-flex" />
-          <Button variant="ghost" onClick={onClose}>
-            Cancel
-          </Button>
-          <button type="button" className={`cx-save ${canSave ? 'is-ok' : ''}`} onClick={save} aria-disabled={!canSave}>
+          <Button variant="filled" onClick={save} disabled={!canSave}>
             {saveLabel}
-          </button>
-        </div>
-      </div>
-    </div>,
-    document.body,
+          </Button>
+        </>
+      }
+    >
+      {fields}
+    </Dialog>
   )
 }

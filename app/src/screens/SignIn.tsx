@@ -7,6 +7,7 @@ import { Icon } from '../design/icons'
 import { preloadGoogle, sessionStore, useSession } from '../state/session'
 import { useIsPhone } from '../state/viewport'
 import './screens.css'
+import { Button } from '../components/ui'
 
 export function SignIn({ expired = false }: { expired?: boolean }) {
   const s = useSession()
@@ -62,17 +63,17 @@ export function SignIn({ expired = false }: { expired?: boolean }) {
           )}
 
           <div className="signin-actions">
-            <button type="button" className="gbtn" onClick={() => sessionStore.signIn()} disabled={s.pending}>
+            <Button variant="brand" size="xl" className="gbtn" onClick={() => sessionStore.signIn()} disabled={s.pending}>
               <span className="gbtn-g" aria-hidden>
                 G
               </span>
               {s.pending ? 'Signing in…' : expired ? 'Sign in again' : 'Continue with Google'}
-            </button>
+            </Button>
             {expired ? (
               <>
-                <button type="button" className="scr-link" onClick={() => sessionStore.signIn({ switchAccount: true })} disabled={s.pending}>
+                <Button variant="ghost" size="sm" className="scr-link" onClick={() => sessionStore.signIn({ switchAccount: true })} disabled={s.pending}>
                   Use another account
-                </button>
+                </Button>
                 {s.account?.email && <div className="signin-sub">{s.account.email}</div>}
               </>
             ) : (

@@ -19,7 +19,7 @@
  * from the phone; without a connection the offline banner shows and unplayable albums dim.
  */
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { Chip, IconButton, Button, EmptyState, OfflineBanner, Toggle, useToast } from '../../components/ui'
+import { Chip, IconButton, Button, EmptyState, Menu, MenuItem, MenuLabel, MenuSeparator, OfflineBanner, Toggle, useToast, Segmented } from '../../components/ui'
 import { offlineIndex, useDownloads, useOnline, type OfflineIndex } from '../../state/downloads'
 import { Icon, type IconName } from '../../design/icons'
 import { actions } from '../../actions/actions'
@@ -292,82 +292,55 @@ function BrowseControls({ tab, phone, offline, filter, count }: { tab: LibraryTa
         </label>
       )}
       {phone && <span className="lb-count">{`${fmtN(count)} ${count === 1 ? unit[0] : unit[1]}`}</span>}
-      <div className="lb-views" role="group" aria-label="View">
-        {views.map((x) => (
-          <button
-            key={x.v}
-            type="button"
-            className={`lb-view ${view === x.v ? 'is-on' : ''}`}
-            aria-pressed={view === x.v}
-            title={x.label}
-            onPointerDown={(e) => {
-              if (e.button === 0 && e.pointerType === 'mouse') setView(x.v)
-            }}
-            onClick={() => setView(x.v)}
-          >
-            <Icon name={x.icon} filled={view === x.v} />
-            {!phone && x.label}
-          </button>
-        ))}
-      </div>
+      <Segmented
+        label="View"
+        className="lb-views"
+        size={phone ? 32 : 36}
+        checks={false}
+        value={view}
+        onChange={setView}
+        options={views.map((x) => ({
+          value: x.v,
+          title: x.label,
+          label: (
+            <>
+              <Icon name={x.icon} filled={view === x.v} />
+              {!phone && x.label}
+            </>
+          ),
+        }))}
+      />
       <SortMenu value={s.value} options={s.opts} onChange={s.set} desc={tab === 'songs' ? prefs.songDesc : undefined} onDesc={tab === 'songs' ? (d) => libraryPrefs.set({ songDesc: d }) : undefined} />
     </div>
   )
 }
 
 function SortMenu({ value, options, onChange, desc, onDesc }: { value: string; options: SortOpt[]; onChange: (v: string) => void; desc?: boolean; onDesc?: (d: boolean) => void }) {
-  const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-  useEffect(() => {
-    if (!open) return
-    const close = (e: PointerEvent | KeyboardEvent) => {
-      if (e instanceof KeyboardEvent ? e.key === 'Escape' : !ref.current?.contains(e.target as Node)) setOpen(false)
-    }
-    document.addEventListener('pointerdown', close)
-    document.addEventListener('keydown', close)
-    return () => {
-      document.removeEventListener('pointerdown', close)
-      document.removeEventListener('keydown', close)
-    }
-  }, [open])
+  const [at, setAt] = useState<HTMLElement | null>(null)
   const label = options.find((o) => o.value === value)?.label ?? options[0].label
   return (
-    <div className="lb-sort" ref={ref}>
-      <button type="button" className={`lb-sort-btn ${open ? 'is-open' : ''}`} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+    <div className="lb-sort">
+      <button type="button" className={`lb-sort-btn ${at ? 'is-open' : ''}`} aria-haspopup="menu" aria-expanded={!!at} onClick={(e) => setAt(at ? null : e.currentTarget)}>
         <Icon name="sort" className="lb-sort-ic" />
         {label}
         <Icon name="chevD" className="lb-sort-ic" />
       </button>
-      {open && (
-        <div className="lb-sort-menu" role="menu">
-          <div className="lb-sort-k">Sort by</div>
-          {options.map((o) => (
-            <button
-              key={o.value}
-              type="button"
-              role="menuitemradio"
-              aria-checked={o.value === value}
-              className={`lb-sort-it ${o.value === value ? 'is-on' : ''}`}
-              onClick={() => {
-                onChange(o.value)
-                setOpen(false)
-              }}
-            >
-              <Icon name="done" className="lb-sort-ck" />
-              {o.label}
-            </button>
-          ))}
-          {onDesc && (
-            <>
-              <div className="lb-sort-sep" />
-              <button type="button" role="menuitemcheckbox" aria-checked={!!desc} className={`lb-sort-it ${desc ? 'is-on' : ''}`} onClick={() => onDesc(!desc)}>
-                <Icon name="done" className="lb-sort-ck" />
-                Reverse order
-              </button>
-            </>
-          )}
-        </div>
-      )}
+      <Menu open={!!at} anchor={at} onClose={() => setAt(null)} label="Sort by" placement="bottom-end" width={220}>
+        <MenuLabel>Sort by</MenuLabel>
+        {options.map((o) => (
+          <MenuItem key={o.value} selected={o.value === value} onSelect={() => onChange(o.value)}>
+            {o.label}
+          </MenuItem>
+        ))}
+        {onDesc && (
+          <>
+            <MenuSeparator />
+            <MenuItem selected={!!desc} keepOpen onSelect={() => onDesc(!desc)}>
+              Reverse order
+            </MenuItem>
+          </>
+        )}
+      </Menu>
     </div>
   )
 }

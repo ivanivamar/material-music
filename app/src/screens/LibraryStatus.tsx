@@ -143,7 +143,7 @@ export function LoadingLibrary({ onDone }: { onDone: () => void }) {
                 <span className="counter-v">{fmtN(v)}</span>
               </div>
             ) : (
-              <div key={k} className="counter">
+              <div key={k} className="card card-filled card-lg counter">
                 <div className="counter-v">{fmtN(v)}</div>
                 <div className="counter-k">{k}</div>
               </div>

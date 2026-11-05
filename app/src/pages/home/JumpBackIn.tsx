@@ -209,7 +209,7 @@ function TileView({ t, size, phone }: { t: Tile; size: number; phone: boolean })
   const click = () => (active ? playerStore.toggle() : t.play())
   return (
     <div
-      className={`jt hue-scope ${active ? 'is-active' : ''}`}
+      className={`card card-filled card-sm card-interactive jt hue-scope ${active ? 'is-active' : ''}`}
       style={hueStyle(hue)}
       role="button"
       tabIndex={0}
@@ -274,7 +274,7 @@ export function DjTile({ size, phone }: { size: number; phone: boolean }) {
   return (
     <div
       ref={ref}
-      className={`jt jt-dj ${on ? 'is-air' : ''} ${pressed ? 'is-pressed' : ''}`}
+      className={`card card-filled card-sm card-interactive jt jt-dj ${on ? 'is-air' : ''} ${pressed ? 'is-pressed' : ''}`}
       role="button"
       tabIndex={0}
       aria-label={on ? `DJ on air: ${view.session?.title ?? ''}. Open the player.` : 'DJ: endless sessions from your library'}

@@ -8,7 +8,7 @@
  * Matched text is marked (coral tint). ↑ / ↓ move between results; ↑ from the first goes back to the field.
  */
 import { useMemo, useRef, type CSSProperties, type KeyboardEvent, type ReactNode } from 'react'
-import { Button, CookieButton } from '../../components/ui'
+import { Badge, Button, CookieButton } from '../../components/ui'
 import { useCover } from '../../lib/covers'
 import { useArtTint } from '../../design/tint'
 import { nameHue } from '../../lib/mixing'
@@ -275,7 +275,7 @@ function TopCard({ c, top, r, remember, phone }: { c: Catalogue; top: TopHit; r:
       <div className="sr-top-text">
         <div className="sr-top-name">{H(name, r.tokens)}</div>
         <div className="sr-top-by">
-          <span className="sr-top-chip">{typeL}</span>
+          <Badge tone="album" size="lg">{typeL}</Badge>
           <span className="sr-top-sub">{by}</span>
         </div>
       </div>

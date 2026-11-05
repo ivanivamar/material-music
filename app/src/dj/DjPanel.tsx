@@ -1,7 +1,7 @@
 /**
  * DJ panel (Material 3 Expressive redesign, DJMaterial.dc.html):
  * right-click / long-press on the DJ button or click the tune button while the DJ plays.
- * Desktop: 420px M3 popover 12px above the button. Phone: bottom sheet.
+ * Desktop: 420px M3 popover 12px above the button. Phone: the kit bottom Sheet in DJ tone.
  */
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
@@ -13,36 +13,45 @@ import { isNative } from '../native/bridge'
 import { usePlayer } from '../state/player'
 import { DJ_TYPES, TYPE_LABEL, type DjType } from './engine'
 import { LiveMark } from './DjIntro'
-import { Chip, IconButton, Toggle, ValueSlider } from '../components/ui'
+import { Chip, IconButton, Sheet, Toggle, ValueSlider, Button } from '../components/ui'
+
+/** DJ mark · status · close. In the phone sheet it is the sheet's header (the drag area). */
+function PanelHead() {
+  const { run } = useDj()
+  const view = useDjView()
+  const p = usePlayer()
+  if (!run || !view.session) return null
+  return (
+    <div className="djp-head">
+      <LiveMark item={p.queue[p.index] ?? ''} size={44} active={view.intro} />
+      <div className="djp-head-t">
+        <div className="djp-name">DJ</div>
+        <div className="djp-status">
+          On · Session {view.session.n}
+          {view.intro ? ' · Intro' : ''}
+        </div>
+      </div>
+      <IconButton icon="x" label="Close" variant="soft" onClick={() => djUi.closePanel()} />
+    </div>
+  )
+}
 
 function PanelBody({ sheet }: { sheet: boolean }) {
   const { run, doc } = useDj()
   const view = useDjView()
-  const p = usePlayer()
   const [confirmReset, setConfirmReset] = useState(false)
   if (!run || !view.session) return null
   const s = view.session
   const types = run.mode.types
   const learned = djLearned()
   const has = learned.more.length + learned.less.length > 0
-  const item = p.queue[p.index] ?? ''
   const toggleType = (t: DjType) => {
     const next = types.includes(t) ? types.filter((x) => x !== t) : [...types, t]
     if (next.length) djStore.setTypes(next)
   }
   return (
     <>
-      <div className="djp-head">
-        <LiveMark item={item} size={44} active={view.intro} />
-        <div className="djp-head-t">
-          <div className="djp-name">DJ</div>
-          <div className="djp-status">
-            On · Session {s.n}
-            {view.intro ? ' · Intro' : ''}
-          </div>
-        </div>
-        <IconButton icon="x" label="Close" variant="soft" onClick={() => djUi.closePanel()} />
-      </div>
+      {!sheet && <PanelHead />}
       <div className="djp-sec">
         <div className="djp-k">Now</div>
         <div className="djp-now">{s.title}</div>
@@ -96,9 +105,9 @@ function PanelBody({ sheet }: { sheet: boolean }) {
       <div className="djp-sec">
         <div className="djp-row-h">
           <span className="djp-label">What the DJ has learned</span>
-          <button type="button" className="djp-small" disabled={!has && !confirmReset} onClick={() => (confirmReset ? (djStore.resetLearned(), setConfirmReset(false)) : setConfirmReset(true))}>
+          <Button variant="danger-outlined" size="sm" className="djp-small" disabled={!has && !confirmReset} onClick={() => (confirmReset ? (djStore.resetLearned(), setConfirmReset(false)) : setConfirmReset(true))}>
             {confirmReset ? 'Forget it' : 'Reset'}
-          </button>
+          </Button>
         </div>
         {confirmReset && <div className="djp-note">Forget what the DJ has learned? Sessions go back to an even mix.</div>}
         {has ? (
@@ -127,8 +136,7 @@ function PanelBody({ sheet }: { sheet: boolean }) {
           <div className="djp-note">{sheet ? 'Nothing yet. It learns from what you skip and play through.' : 'Nothing yet. It starts again from the sessions you skip and the songs you play through.'}</div>
         )}
       </div>
-      <button
-        type="button"
+      <Button variant="outlined-ink" size="lg"
         className="djp-stop"
         onClick={() => {
           djUi.closePanel()
@@ -137,7 +145,7 @@ function PanelBody({ sheet }: { sheet: boolean }) {
       >
         <Icon name="stopCircle" />
         Stop DJ
-      </button>
+      </Button>
     </>
   )
 }
@@ -179,10 +187,16 @@ export function DjPanelHost() {
     }
   }, [panel])
 
+  const sheetOpen = panel?.kind === 'sheet'
+  if (shown?.kind === 'sheet' || sheetOpen)
+    return (
+      <Sheet open={sheetOpen} onClose={() => djUi.closePanel()} label="DJ" tone="dj" header={<PanelHead />} bodyClassName="djp-sheet">
+        <PanelBody sheet />
+      </Sheet>
+    )
   if (!shown) return null
-  const sheet = shown.kind === 'sheet'
   return createPortal(
-    <div className={`djp-layer ${sheet ? 'is-sheet' : ''} ${on ? 'is-on' : ''}`}>
+    <div className={`djp-layer ${on ? 'is-on' : ''}`}>
       <div
         className="djp-scrim pg-anim"
         onClick={() => djUi.closePanel()}
@@ -192,18 +206,13 @@ export function DjPanelHost() {
         }}
       />
       <div
-        className={`djp pg-anim ${sheet ? 'is-sheet' : 'is-pop'}`}
+        className="djp pg-anim is-pop"
         role="dialog"
         aria-label="DJ"
-        style={shown.kind === 'popover' ? { left: shown.left, bottom: shown.bottom, maxHeight: `calc(100dvh - ${shown.bottom + 16}px)` } : undefined}
+        style={{ left: shown.left, bottom: shown.bottom, maxHeight: `calc(100dvh - ${shown.bottom + 16}px)` }}
         onContextMenu={(e) => e.preventDefault()}
       >
-        {sheet && (
-          <button type="button" className="djp-handle" aria-label="Close" onClick={() => djUi.closePanel()}>
-            <span />
-          </button>
-        )}
-        <PanelBody sheet={sheet} />
+        <PanelBody sheet={false} />
       </div>
     </div>,
     document.body,

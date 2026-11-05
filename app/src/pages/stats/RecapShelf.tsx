@@ -86,7 +86,7 @@ function RecapCard({ stats, year }: { stats: PeriodStats; year: number }) {
   return (
     <div
       ref={ref}
-      className="recap-card hue-scope"
+      className="card card-lg card-interactive recap-card hue-scope"
       style={hueStyle}
       role="link"
       tabIndex={0}

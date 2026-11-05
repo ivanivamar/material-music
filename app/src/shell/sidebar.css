@@ -49,12 +49,8 @@
 .sb-section-head { display: flex; align-items: center; justify-content: space-between; padding: 18px 4px 6px 10px; }
 .sb-heads { display: inline-flex; align-items: center; gap: 0; }
 .sb-plus {
-  position: relative; width: 32px; height: 32px; margin: -8px 0; padding: 0; border: 0; border-radius: 999px;
-  background: none; cursor: pointer; color: var(--ink-secondary);
-  display: inline-flex; align-items: center; justify-content: center;
+  position: relative; margin: -8px 0;
 }
-.sb-plus .ms { font-size: 20px; }
-.sb-plus:hover { background: rgba(255, 255, 255, .08); color: var(--ink-primary); }
 .sb-pl-list {
   display: flex; flex-direction: column; gap: 0;
   flex: 1 1 auto; min-height: 0;
@@ -106,4 +102,3 @@ html[data-dragging-tracks] .sb-pl:not(.is-drop):not(.is-active) { box-shadow: in
 .sb-acct-sub { font-size: 12px; color: var(--ink-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sb-acct-btn > .ms { font-size: 16px; color: var(--ink-tertiary); }
 /* portalled to <body> (the sidebar clips overflow); left/bottom set inline from the chip's position */
-.sb-acct-menu { position: fixed; right: auto; top: auto; z-index: 100; transform-origin: bottom left; }

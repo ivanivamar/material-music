@@ -34,7 +34,7 @@ export function PosterCard({ c, show, phone }: { c: Catalogue; show: Show; phone
   const sl = statusLook(show)
   const others = othersLabel(c, show)
   return (
-    <article className="cx-poster" style={hueVars(look.H)} onClick={openArtist(show.artistId)}>
+    <article className="card card-lg card-flush cx-poster" style={hueVars(look.H)} onClick={openArtist(show.artistId)}>
       <div className="cx-poster-art">
         {bg ? <img src={bg} alt="" draggable={false} /> : <span className="cx-poster-none">{a?.name.slice(0, 1)}</span>}
         <DateBlock show={show} kind={phone ? 'poster-sm' : 'poster'} className="cx-poster-date" />
@@ -90,7 +90,7 @@ export function ShowCard({ c, show, phone, onEdit }: { c: Catalogue; show: Show;
   const place = [show.venue, show.city, kmLabel(show.km)].filter(Boolean).join(' · ')
   const chipClick = show.manual ? (e: MouseEvent) => (e.stopPropagation(), onEdit(show)) : undefined
   return (
-    <article className={`cx-card ${cancelled ? 'is-cancelled' : ''}`} style={hueVars(look.H)} onClick={openArtist(show.artistId)}>
+    <article className={`card card-filled card-md card-interactive cx-card ${cancelled ? 'is-cancelled' : ''}`} style={hueVars(look.H)} onClick={openArtist(show.artistId)}>
       <ArtistPhoto artist={a} photo={look.photo} size={phone ? 48 : 56} grey={cancelled} className="has-ring" />
       <div className="cx-card-text">
         <div className="cx-dl cx-mono">{dateLine(show)}</div>
@@ -123,7 +123,7 @@ export function ShelfCard({ c, show, width }: { c: Catalogue; show: Show; width:
   const a = c.artists[show.artistId]
   const look = useArtistLook(a)
   return (
-    <article className="cx-shelf-card" style={{ ...hueVars(look.H), width }} onClick={openArtist(show.artistId)}>
+    <article className="card card-filled card-md card-interactive cx-shelf-card" style={{ ...hueVars(look.H), width }} onClick={openArtist(show.artistId)}>
       <div className="cx-shelf-top">
         <ArtistPhoto artist={a} photo={look.photo} size={56} className="has-ring" />
         <DateBlock show={show} kind="small" />

@@ -4,7 +4,7 @@
  * rows and the footer (overall progress + status line).
  */
 import type { MouseEvent } from 'react'
-import { Button } from '../../components/ui'
+import { Button, Chip } from '../../components/ui'
 import { Icon, type IconName } from '../../design/icons'
 import { useCover } from '../../lib/covers'
 import type { Catalogue } from '../../state/library'
@@ -33,10 +33,9 @@ export function ReleaseList({ s, cat, view, phone = false, onInspect }: { s: Upl
         {!phone && <Checkbox state={allOn ? true : some ? 'mixed' : false} label="Select all shown" onClick={() => setChecked(allOn ? [] : shown.map((a) => a.key))} />}
         <div className="ub-pills" role="group" aria-label="Filter">
           {FILTERS.map(([k, label]) => (
-            <button key={k} type="button" className={`ub-pill ${k === 'need' && view.counts.need > 0 ? 'is-warn' : ''}`} aria-pressed={s.filter === k} onClick={() => setFilter(k)}>
+            <Chip key={k} check={false} className={k === 'need' && view.counts.need > 0 ? 'is-warn' : undefined} selected={s.filter === k} count={view.counts[k]} onClick={() => setFilter(k)}>
               {label}
-              <span className="ub-pill-n">{view.counts[k]}</span>
-            </button>
+            </Chip>
           ))}
         </div>
         {!phone && (
@@ -48,7 +47,7 @@ export function ReleaseList({ s, cat, view, phone = false, onInspect }: { s: Upl
       </div>
 
       {phone && (
-        <div className="ub-phone-sum">
+        <div className="card card-filled card-lg ub-phone-sum">
           <div className="ub-phone-sum-l">
             <div className="ub-foot-bar" aria-hidden>
               <span style={{ width: `${view.pct}%` }} />
@@ -87,9 +86,9 @@ export function ReleaseList({ s, cat, view, phone = false, onInspect }: { s: Upl
               </span>
             )}
             {view.counts.added > 0 && (
-              <button type="button" className="ub-foot-clear" onClick={clearFinished}>
+              <Button variant="outlined" size="sm" className="ub-foot-clear" onClick={clearFinished}>
                 Clear finished
-              </button>
+              </Button>
             )}
           </div>
         </div>

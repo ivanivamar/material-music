@@ -15,21 +15,7 @@
  * Fixes save immediately and update library catalogue.
  */
 import { useEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode } from 'react'
-import {
-  AlbumEq,
-  Button,
-  EmptyState,
-  formatTime,
-  IconButton,
-  LinearProgress,
-  QualityBadge,
-  Segmented,
-  Skeleton,
-  qualityKind,
-  qualityLabel,
-  useToast,
-  type SegOption,
-} from '../../components/ui'
+import { AlbumEq, Button, EmptyState, formatTime, IconButton, LinearProgress, QualityBadge, Segmented, Skeleton, qualityKind, qualityLabel, useToast, type SegOption, Alert } from '../../components/ui'
 import { Icon, type IconName } from '../../design/icons'
 import { useCover } from '../../lib/covers'
 import { AuthError } from '../../lib/drive'
@@ -167,7 +153,7 @@ export function Health() {
         </div>
       </div>
 
-      <div className="hl-kicker-card">
+      <div className="card card-md hl-kicker-card">
         <div className="hl-kicker-icon" aria-hidden>
           <Icon name={currentTab.icon} size={22} />
         </div>
@@ -193,14 +179,9 @@ export function Health() {
       )}
 
       {job.running && current !== 'lyrics' && (
-        <div className="hl-bg-banner">
-          <span className="hl-bg-icon">
-            <Icon name="lyrics" size={18} />
-          </span>
-          <span>
-            Looking up lyrics in the background · {fmtN(job.done)} of {fmtN(job.total)}
-          </span>
-        </div>
+        <Alert tone="info" icon="lyrics" className="hl-bg-banner">
+          Looking up lyrics in the background · {fmtN(job.done)} of {fmtN(job.total)}
+        </Alert>
       )}
     </div>
   )
@@ -844,7 +825,7 @@ function LyricsBar({ songs }: { songs: Track[] }) {
   ].filter(Boolean)
 
   return (
-    <div className="hl-bar">
+    <div className="card card-md hl-bar">
       <div className="hl-bar-icon" aria-hidden>
         <Icon name="lyrics" size={24} />
       </div>
@@ -1016,7 +997,7 @@ function DupCard({ group, c }: { group: DupGroup; c: Catalogue }) {
     void removeFromLibraryOp(toast, { kind: 'track', trackIds: tracks.filter((t) => t.id !== id).map((t) => t.id) })
 
   return (
-    <div className="hl-dup-group">
+    <div className="card card-inset card-md hl-dup-group">
       <div className="hl-dup-head">
         <div className="hl-dup-head-left">
           <span className="hl-dup-tag">

@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState, type CSSProperties, type KeyboardEvent, type MouseEvent, type PointerEvent, type ReactNode } from 'react'
-import { Icon } from '../../design/icons'
+import { Icon, type IconName } from '../../design/icons'
 
 /* ── Toggle ─────────────────────────────────────────── */
 
@@ -31,6 +31,9 @@ export interface SegOption<T extends string> {
   label: ReactNode
   /** mono suffix, e.g. "74 MB" */
   meta?: ReactNode
+  disabled?: boolean
+  /** tooltip / accessible name, for icon-only options */
+  title?: string
 }
 
 interface SegmentedProps<T extends string> {
@@ -53,9 +56,10 @@ interface SegmentedProps<T extends string> {
 /** M3 connected button group (radio semantics: arrow keys move the pick). */
 export function Segmented<T extends string>({ value, options, onChange, label, size, full, checks = true, isolate, className }: SegmentedProps<T>) {
   const onKey = (e: KeyboardEvent) => {
-    const i = options.findIndex((o) => o.value === value)
-    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') onChange(options[Math.min(options.length - 1, i + 1)].value)
-    else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') onChange(options[Math.max(0, i - 1)].value)
+    const on = options.filter((o) => !o.disabled)
+    const i = on.findIndex((o) => o.value === value)
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') onChange(on[Math.min(on.length - 1, i + 1)].value)
+    else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') onChange(on[Math.max(0, i - 1)].value)
     else return
     e.preventDefault()
   }
@@ -77,6 +81,9 @@ export function Segmented<T extends string>({ value, options, onChange, label, s
             aria-checked={on}
             tabIndex={on ? 0 : -1}
             className="seg-opt"
+            disabled={o.disabled}
+            title={o.title}
+            aria-label={o.title}
             onPointerDown={(e) => {
               if (e.button === 0 && e.pointerType === 'mouse') onChange(o.value)
             }}
@@ -111,16 +118,31 @@ interface ChipProps {
   disabled?: boolean
   title?: string
   className?: string
+  /** trailing icon, e.g. arrowDrop for a chip that opens a menu */
+  trailingIcon?: IconName
+  /** the chip opens a popup (menu / listbox): sets aria-haspopup / aria-expanded */
+  popup?: 'menu' | 'listbox'
+  expanded?: boolean
 }
 
 /** M3 filter chip: outlined surface, coral tonal with a check when picked. */
-export function Chip({ selected, onClick, children, size = 'md', count, check = true, role = 'toggle', disabled, title, className }: ChipProps) {
+export function Chip({ selected, onClick, children, size = 'md', count, check = true, role = 'toggle', disabled, title, className, trailingIcon, popup, expanded }: ChipProps) {
   const a11y = role === 'tab' ? { role: 'tab', 'aria-selected': selected } : role === 'radio' ? { role: 'radio', 'aria-checked': selected } : { 'aria-pressed': selected }
   return (
-    <button type="button" className={['chip', size === 'sm' && 'chip-sm', selected && 'is-on', className].filter(Boolean).join(' ')} {...a11y} disabled={disabled} title={title} onClick={onClick}>
+    <button
+      type="button"
+      className={['chip', size === 'sm' && 'chip-sm', selected && 'is-on', className].filter(Boolean).join(' ')}
+      {...a11y}
+      aria-haspopup={popup}
+      aria-expanded={popup ? !!expanded : undefined}
+      disabled={disabled}
+      title={title}
+      onClick={onClick}
+    >
       {selected && check && <Icon name="done" className="chip-ck" />}
       {children}
       {count != null && <span className="chip-n">{count}</span>}
+      {trailingIcon && <Icon name={trailingIcon} className="chip-trail" />}
     </button>
   )
 }

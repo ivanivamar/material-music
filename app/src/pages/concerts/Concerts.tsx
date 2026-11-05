@@ -14,7 +14,7 @@
  * Opening the page clears the sidebar badge; shows first seen since the last visit wear "New".
  */
 import { useEffect, useMemo, useState } from 'react'
-import { Chip, IconButton, Button, Skeleton, useToast } from '../../components/ui'
+import { Chip, IconButton, Button, Skeleton, useToast, Alert } from '../../components/ui'
 import { Icon } from '../../design/icons'
 import { concertsStore, useConcerts, type City, type Radius } from '../../state/concerts'
 import { FILTERS, buildShows, filterFn, lastUpdated, monthGroups, nearbyShows, statusLook, updatedLabel, type Show, type ShowFilter } from '../../state/concertViews'
@@ -83,10 +83,10 @@ export function Concerts() {
       <div className="cx-titlerow">
         <h1 className="cx-title">Concerts near you</h1>
         {home && !phone && (
-          <button type="button" className="cx-add" onClick={() => setDialog({ mode: 'add' })}>
+          <Button variant="secondary" size="lg" className="cx-add" onClick={() => setDialog({ mode: 'add' })}>
             <Icon name="plus" />
             Add show
-          </button>
+          </Button>
         )}
       </div>
       {home ? (
@@ -201,19 +201,18 @@ export function Concerts() {
       )}
       {header}
       {failed && (
-        <div className="cx-banner" role="status">
-          <Icon name="offline" />
-          <div className="cx-banner-text">
-            <div className="cx-banner-title">Couldn't update concerts</div>
-            <div className="cx-banner-body">
-              {st.error === 'offline' ? "You're offline. " : 'Ticketmaster didn’t answer. '}
-              Showing dates from {updatedLabel(updated)}. Check the status before you buy.
-            </div>
-          </div>
-          <button type="button" className="cx-banner-btn" onClick={() => concertsStore.retry()}>
-            Retry
-          </button>
-        </div>
+        <Alert
+          icon="offline"
+          title="Couldn't update concerts"
+          actions={
+            <Button variant="warn-outlined" size="sm" onClick={() => concertsStore.retry()}>
+              Retry
+            </Button>
+          }
+        >
+          {st.error === 'offline' ? "You're offline. " : 'Ticketmaster didn’t answer. '}
+          Showing dates from {updatedLabel(updated)}. Check the status before you buy.
+        </Alert>
       )}
       {ready && (
         <div className="cx-chips" role="group" aria-label="Filter">
@@ -227,10 +226,10 @@ export function Concerts() {
       {body}
       {(ready || (home && !notSetUp && !firstRun)) && <Attribution short={phone} />}
       {phone && home && !firstRun && !dialog && (
-        <button type="button" className="cx-fab" onClick={() => setDialog({ mode: 'add' })}>
+        <Button variant="filled" size="xl" className="cx-fab" onClick={() => setDialog({ mode: 'add' })}>
           <Icon name="plus" />
           Add show
-        </button>
+        </Button>
       )}
       {dialog && <ShowDialog state={dialog} phone={phone} homeCity={home?.name ?? ''} onClose={() => setDialog(null)} />}
     </div>
@@ -244,7 +243,7 @@ function SetupCard({ phone, artists }: { phone: boolean; artists: number }) {
   const [city, setCity] = useState<City | null>(null)
   const [radius, setRadius] = useState<Radius>(50)
   return (
-    <div className="cx-setup">
+    <div className="card card-lg cx-setup">
       <Clover size={72} tone="tonal" icon="location" iconSize={34} filled />
       <div className="cx-setup-text">
         <div className="cx-setup-title">Where's home?</div>

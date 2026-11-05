@@ -153,7 +153,7 @@ export function OnTour({ artistId, H }: { artistId: string; H: number }) {
     )
   else if (!home)
     body = (
-      <div className="ot-prompt">
+      <div className="card card-filled card-md ot-prompt">
         <span className="ot-prompt-tile">
           <Icon name="location" />
         </span>

@@ -7,7 +7,7 @@
  *                                      Cancel  [Create]
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { IconButton, Button, TextField, useToast } from '../components/ui'
+import { Button, Dialog, TextField, useToast } from '../components/ui'
 import { useCover } from '../lib/covers'
 import { CoverMosaic, PlaylistCover } from '../pages/playlists/PlaylistCover'
 import { useLibrary } from '../state/library'
@@ -18,23 +18,12 @@ import { createPlaylist, removeFromLibraryOp } from './ops'
 import { planRemoval, type RemoveTarget } from '../state/removal'
 import { fmtBytes, plural } from '../state/views'
 
-export function Shell({ label, children, onClose, wide }: { label: string; children: React.ReactNode; onClose: () => void; wide?: boolean }) {
-  const [on, setOn] = useState(false)
-  useEffect(() => {
-    const r = requestAnimationFrame(() => setOn(true))
-    return () => cancelAnimationFrame(r)
-  }, [])
+/** The action dialogs' frame: the kit Dialog (wide ones go full screen on phones). */
+export function Shell({ label, children, onClose, wide, width }: { label: string; children: React.ReactNode; onClose: () => void; wide?: boolean; width?: number }) {
   return (
-    <>
-      <div className={`dlg-scrim pg-anim ${on ? 'is-on' : ''}`} onClick={onClose} />
-      <div className={`dlg pg-anim ${on ? 'is-on' : ''} ${wide ? 'is-wide' : ''}`} role="dialog" aria-modal="true" aria-label={label}>
-        <div className="dlg-top">
-          <div className="dlg-label">{label}</div>
-          <IconButton icon="x" label="Close" onClick={onClose} />
-        </div>
-        {children}
-      </div>
-    </>
+    <Dialog open onClose={onClose} title={label} size={wide ? 'lg' : 'md'} width={width} phone={wide ? 'full' : 'dialog'}>
+      {children}
+    </Dialog>
   )
 }
 

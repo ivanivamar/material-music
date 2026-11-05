@@ -11,6 +11,7 @@ import '@fontsource/noto-sans-jp/500.css'
 import './styles/fonts.css'
 import './styles/tokens.css'
 import './styles/base.css'
+import './components/ui/card.css'
 
 import App from './App.tsx'
 import { installRipple } from './design/ripple'

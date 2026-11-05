@@ -71,16 +71,36 @@ function Avatar({ s }: { s: Suggestion }) {
   )
 }
 
-function Releases({ s }: { s: Suggestion }) {
+/** "Song - Some Soundtrack (Live in X)" → ["Song", "Some Soundtrack (Live in X)"]. */
+const splitTitle = (t: string): [string, string | null] => {
+  const m = t.match(/^(.+?)\s+[-–—]\s+(.+)$/)
+  return m ? [m[1], m[2]] : [t, null]
+}
+
+/**
+ * Songs / releases as wrapping chips. When every title shares the same suffix
+ * (same album or live recording), it's pulled out into one "from …" line so the
+ * chips only carry what's different. Chips wrap, so nothing can overflow the card.
+ */
+function Releases({ s, label }: { s: Suggestion; label: string }) {
+  const parts = s.rel.map((r) => splitTitle(r.t))
+  const subs = parts.map(([, sub]) => sub)
+  const shared = subs.length > 1 && subs[0] && subs.every((x) => x === subs[0]) ? subs[0] : null
   return (
-    <>
-      {s.rel.map((r, i) => (
-        <div key={`${r.t}-${i}`} className="nr-sg-r">
-          <span className="nr-sg-rt">{r.t}</span>
-          {r.y && <span className="nr-sg-ry">{r.y}</span>}
-        </div>
-      ))}
-    </>
+    <div className="nr-sg-rel">
+      <div className="nr-sg-rel-head">
+        <span className="nr-mono nr-sg-rel-label">{label}</span>
+        {shared && <span className="nr-sg-src" title={shared}>from {shared}</span>}
+      </div>
+      <div className="nr-sg-chips">
+        {s.rel.map((r, i) => (
+          <span key={`${r.t}-${i}`} className="nr-sg-chip" title={r.t}>
+            <span className="nr-sg-chip-t">{shared ? parts[i][0] : r.t}</span>
+            {r.y && <span className="nr-sg-chip-y">{r.y}</span>}
+          </span>
+        ))}
+      </div>
+    </div>
   )
 }
 
@@ -98,12 +118,12 @@ export function DiscoverTab({ items, phone, online, topN }: { items: Suggestion[
       </p>
 
       {looking && (
-        <div className="nr-mono nr-disc-wait">
+        <div className="card card-filled card-md nr-mono nr-disc-wait">
           FINDING ARTISTS RELATED TO YOUR {topN} MOST PLAYED{ds.total ? ` · ${ds.done} / ${ds.total}` : ''}
         </div>
       )}
       {!items.length && !ds.running && (
-        <div className="nr-mono nr-disc-wait">
+        <div className="card card-filled card-md nr-mono nr-disc-wait">
           NO SUGGESTIONS YET. PLAY A FEW ARTISTS, THEN CHECK BACK AFTER THE NEXT SWEEP.
         </div>
       )}
@@ -127,18 +147,16 @@ export function DiscoverTab({ items, phone, online, topN }: { items: Suggestion[
         )
 
         return phone ? (
-          <div key={s.dz} className="nr-disc-card is-phone">
+          <div key={s.dz} className="card card-lg nr-disc-card is-phone">
             <div className="nr-disc-phone-top">
               <Avatar s={s} />
               <div className="nr-sg-main">
                 <div className="nr-sg-name">{s.name}</div>
                 <div className="nr-sg-because">{because}</div>
-                <div className="nr-mono" style={{ fontSize: '11px', marginTop: '2px' }}>{plays}</div>
+                <span className="nr-mono nr-sg-plays">{plays}</span>
               </div>
             </div>
-            <div className="nr-sg-rel">
-              <Releases s={s} />
-            </div>
+            {s.rel.length > 0 && <Releases s={s} label={label} />}
             <div className="nr-sg-acts is-phone">
               {addBtn}
               <button
@@ -163,7 +181,7 @@ export function DiscoverTab({ items, phone, online, topN }: { items: Suggestion[
             </div>
           </div>
         ) : (
-          <div key={s.dz} className="nr-disc-card">
+          <div key={s.dz} className="card card-lg card-interactive nr-disc-card">
             <Avatar s={s} />
             <div className="nr-sg-main">
               <div className="nr-sg-name">{s.name}</div>
@@ -180,10 +198,7 @@ export function DiscoverTab({ items, phone, online, topN }: { items: Suggestion[
                 </button>
               </div>
             </div>
-            <div className="nr-sg-rel">
-              <span className="nr-mono" style={{ fontSize: '11px', marginBottom: '4px' }}>{label}</span>
-              <Releases s={s} />
-            </div>
+            {s.rel.length > 0 ? <Releases s={s} label={label} /> : <div />}
             <div className="nr-sg-acts">
               {addBtn}
               <button

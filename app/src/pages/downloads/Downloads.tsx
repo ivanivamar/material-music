@@ -8,7 +8,7 @@
  * On this device: complete albums with track count, tonal quality pill and size, plus a menu to remove.
  */
 import { useEffect, useRef, useState } from 'react'
-import { IconButton, Button, LinearProgress, QualityBadge, StorageBar, Segmented, Toggle, qualityKind, useToast } from '../../components/ui'
+import { IconButton, Button, LinearProgress, Menu, MenuItem, QualityBadge, StorageBar, Segmented, Toggle, qualityKind, useToast, Alert } from '../../components/ui'
 import { Icon } from '../../design/icons'
 import { useCover } from '../../lib/covers'
 import { albumOffline, downloadsStore, libraryBytes, qualityOf, useDownloadProgress, useDownloads, type AlbumPlan, type DownloadQuality, type DownloadsState } from '../../state/downloads'
@@ -39,7 +39,7 @@ export function Downloads() {
     return (
       <div className="downloads">
         <PageHeader meta="Offline · Android app" title="Downloads" />
-        <div className="dl-empty-card">
+        <div className="card card-empty card-lg dl-empty-card">
           <div className="dl-empty-ic" aria-hidden>
             <Icon name="cloudDownload" />
           </div>
@@ -104,7 +104,7 @@ export function Downloads() {
       />
       <StorageSummary s={dl} phone={phone} />
       {phone && (
-        <div className="dl-card">
+        <div className="card card-filled card-lg dl-card">
           <label className="dl-set">
             <div>
               <div className="dl-set-t">Wi-Fi only</div>
@@ -117,24 +117,25 @@ export function Downloads() {
       )}
 
       {n && (n.error || n.failed.length > 0) && (
-        <div className="dl-alert" role="status">
-          <span>
-            {n.error === 'storage'
-              ? 'The phone is out of space. Free some up or remove downloads.'
-              : n.error === 'auth'
-                ? 'Downloads need your Google sign-in. Open Material Music signed in to continue.'
-                : `${plural(n.failed.length, 'file', 'files')} couldn’t be downloaded from Drive.`}
-          </span>
-          {n.failed.length > 0 && (
-            <button type="button" className="dl-alert-btn" onClick={() => downloadsStore.retryFailed()}>
-              Retry
-            </button>
-          )}
-        </div>
+        <Alert
+          actions={
+            n.failed.length > 0 && (
+              <Button variant="warn" size="sm" onClick={() => downloadsStore.retryFailed()}>
+                Retry
+              </Button>
+            )
+          }
+        >
+          {n.error === 'storage'
+            ? 'The phone is out of space. Free some up or remove downloads.'
+            : n.error === 'auth'
+              ? 'Downloads need your Google sign-in. Open Material Music signed in to continue.'
+              : `${plural(n.failed.length, 'file', 'files')} couldn’t be downloaded from Drive.`}
+        </Alert>
       )}
 
       {rows.length === 0 ? (
-        <div className="dl-empty-card">
+        <div className="card card-empty card-lg dl-empty-card">
           <div className="dl-empty-ic" aria-hidden>
             <Icon name="cloudDownload" />
           </div>
@@ -345,21 +346,11 @@ function DoneRow({ c, ap, count, bytes, quality, phone }: { c: Catalogue; ap: Al
   const name = rowName(c, ap)
   const cover = useCover(album?.cover)
   const remove = useRemove(c, ap, bytes)
-  const [menuOpen, setMenuOpen] = useState(false)
-  const menuRef = useRef<HTMLDivElement>(null)
+  const [menuAt, setMenuAt] = useState<HTMLElement | null>(null)
   const first = c.tracks[[...ap.trackFiles.keys()][0]]
   const flac = quality === 'flac' || !first?.mobile?.id
   const label = flac ? `FLAC ${first?.flac?.bitDepth ?? 16}/${((first?.flac?.sampleRate ?? 44100) / 1000).toString().replace(/\.0$/, '')}` : 'Opus 160'
   const qBadge = <QualityBadge kind={flac ? qualityKind('flac', first?.flac?.bitDepth, first?.flac?.sampleRate) : 'opus'}>{label}</QualityBadge>
-
-  useEffect(() => {
-    if (!menuOpen) return
-    const onDown = (e: MouseEvent) => {
-      if (!menuRef.current?.contains(e.target as Node)) setMenuOpen(false)
-    }
-    window.addEventListener('pointerdown', onDown)
-    return () => window.removeEventListener('pointerdown', onDown)
-  }, [menuOpen])
 
   return (
     <div className="dl-row dl-done">
@@ -388,24 +379,13 @@ function DoneRow({ c, ap, count, bytes, quality, phone }: { c: Catalogue; ap: Al
           <div className="dl-size">{fmtBytes(bytes)}</div>
         </>
       )}
-      <div ref={menuRef} className="dl-more-wrap">
-        <IconButton icon="more" label={`More actions for ${name.title}`} size="lg" aria-expanded={menuOpen} onClick={() => setMenuOpen((v) => !v)} />
-        {menuOpen && (
-          <div className="dl-menu" role="menu">
-            <button
-              type="button"
-              role="menuitem"
-              className="dl-menu-item"
-              onClick={() => {
-                setMenuOpen(false)
-                remove()
-              }}
-            >
-              <Icon name="delete" />
-              Remove download
-            </button>
-          </div>
-        )}
+      <div className="dl-more-wrap">
+        <IconButton icon="more" label={`More actions for ${name.title}`} size="lg" aria-expanded={!!menuAt} onClick={(e) => setMenuAt(menuAt ? null : e.currentTarget)} />
+        <Menu open={!!menuAt} anchor={menuAt} onClose={() => setMenuAt(null)} label={name.title} placement="bottom-end">
+          <MenuItem icon="delete" onSelect={remove}>
+            Remove download
+          </MenuItem>
+        </Menu>
       </div>
     </div>
   )

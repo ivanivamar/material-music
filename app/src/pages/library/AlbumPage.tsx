@@ -131,7 +131,7 @@ export function AlbumPage({ id }: { id: string }) {
       </div>
 
       {n === 0 ? (
-        <div className="dt-empty">
+        <div className="card card-lg card-flush dt-empty">
           <EmptyState icon="album" title="No tracks found" body={`Drive has no files for ${album.title} right now. Run the importer again, or upload the tracks.`} />
         </div>
       ) : (

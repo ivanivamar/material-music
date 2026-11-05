@@ -75,10 +75,13 @@ export function MixPage({ id }: { id: string }) {
   const phone = useIsPhone()
   if (!data) return null
   const backBtn = (
-    <button type="button" className={`mx-back ${phone ? 'is-phone' : ''}`} onClick={() => back(href('home'))} aria-label="Back to Home">
-      <Icon name="back" />
-      {!phone && 'Home · Made for you'}
-    </button>
+    phone ? (
+      <IconButton icon="back" label="Back to Home" size="lg" variant="strong" className="mx-back" onClick={() => back(href('home'))} />
+    ) : (
+      <Button variant="plain" icon="back" className="mx-back" onClick={() => back(href('home'))} aria-label="Back to Home">
+        Home · Made for you
+      </Button>
+    )
   )
   if (!set)
     return (
@@ -135,7 +138,7 @@ function MixView({ c, mix, backBtn }: { c: Catalogue; mix: MixPlan; backBtn: Rea
   return (
     <div className={`mx-page hue-scope ${phone ? 'is-phone' : ''}`} style={{ '--h': mix.hue, '--hc': 1 } as CSSProperties}>
       {backBtn}
-      <header className="mx-hero">
+      <header className="card card-raised card-lg mx-hero">
         <div className="mx-cover">
           <MixCover c={c} mix={mix} size={coverSize} />
         </div>
@@ -187,7 +190,7 @@ function MixView({ c, mix, backBtn }: { c: Catalogue; mix: MixPlan; backBtn: Rea
         </div>
       )}
 
-      <div className="mx-list" role="table">
+      <div className="card card-filled card-lg mx-list" role="table">
         {!phone && (
           <div className="mx-head" role="row">
             <span className="mx-c-n">#</span>
@@ -248,9 +251,7 @@ function Row({ c, t, i, phone, current, playing, fresh, lastLabel, unavailable, 
       {!phone && (
         <div className="mx-c-n">
           {current ? <AlbumEq color={playing ? 'var(--brand)' : 'var(--ink-secondary)'} on={playing} /> : <span className="mx-n">{i + 1}</span>}
-          <button type="button" className="mx-rplay" onClick={onPlay} aria-label={`Play ${t.title}`}>
-            <Icon name={current && playing ? 'pauseF' : 'playF'} />
-          </button>
+          <IconButton icon={current && playing ? 'pauseF' : 'playF'} label={`Play ${t.title}`} size="sm" className="mx-rplay" onClick={onPlay} />
         </div>
       )}
       <div className="mx-main">
@@ -290,9 +291,7 @@ function Row({ c, t, i, phone, current, playing, fresh, lastLabel, unavailable, 
         </>
       )}
       {phone && (
-        <button type="button" className="mx-dots" aria-label="More" onClick={(e) => (e.stopPropagation(), actions.menu(target, e))}>
-          {unavailable ? <Icon name="cloud" /> : <Icon name="more" />}
-        </button>
+        <IconButton icon={unavailable ? 'cloud' : 'more'} label="More" className="mx-dots" onClick={(e) => (e.stopPropagation(), actions.menu(target, e))} />
       )}
     </div>
   )

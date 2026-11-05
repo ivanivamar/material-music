@@ -42,12 +42,8 @@
   display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center;
 }
 .np-close {
-  justify-self: start; width: 48px; height: 48px; border: 0; border-radius: 28px; padding: 0; cursor: pointer;
-  background: rgba(255, 255, 255, .08); display: inline-flex; align-items: center; justify-content: center;
-  transition: background-color 200ms var(--ease-std);
+  justify-self: start;
 }
-.np-close .ms { font-size: 28px; }
-.np-close:hover { background: rgba(255, 255, 255, .16); }
 .np-close.is-hidden { visibility: hidden; }
 .np-from { text-align: center; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .np-from-k { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; letter-spacing: .12em; color: var(--np-on-var); }
@@ -74,7 +70,6 @@ a.np-from-l:hover { color: var(--np-on); text-decoration: underline; text-underl
   box-shadow: inset 0 0 0 1.5px var(--np-on-var); font-size: 11px; line-height: 1; font-weight: 500; color: var(--np-on-var); font-variant-numeric: tabular-nums; white-space: nowrap;
 }
 .np-q b { font-weight: 700; letter-spacing: .04em; color: var(--album-hi); }
-.np-chip { display: inline-flex; align-items: center; height: 24px; padding: 0 10px; border-radius: 12px; background: var(--dj); color: var(--on-dj); font-size: 11px; font-weight: 700; flex: none; }
 .np-title-row { display: flex; align-items: flex-end; gap: 12px; min-width: 0; }
 .np-title-col { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
 .np-title {
@@ -146,6 +141,7 @@ a.np-from-l:hover { color: var(--np-on); text-decoration: underline; text-underl
   --dj-light: color-mix(in oklch, var(--album-hi) 70%, white);
   --on-dj: var(--on-album);
 }
+/* the kit Badge, retinted to the album colour outside the DJ scene */
 .np:not(.is-dj-scene) .np-chip { background: transparent; color: var(--np-on-var); box-shadow: inset 0 0 0 1.5px var(--np-on-var); font-weight: 600; letter-spacing: .04em; }
 .np:not(.is-dj-scene) .djb.djb-np:not(.is-on), .np:not(.is-dj-scene) .djb.djb-phone:not(.is-on) { color: var(--np-on); box-shadow: inset 0 0 0 1px var(--np-edge); }
 .np:not(.is-dj-scene) .djb.is-on, .np:not(.is-dj-scene) .djb.is-on:hover { box-shadow: none; }

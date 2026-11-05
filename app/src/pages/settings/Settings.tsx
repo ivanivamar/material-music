@@ -12,7 +12,7 @@
  * when I play an album") remain hidden.
  */
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { Chip, IconButton, Button, LinearProgress, Segmented, StorageBar, TextField, Toggle, ValueSlider, useToast, type SegOption } from '../../components/ui'
+import { Chip, IconButton, Button, LinearProgress, Segmented, StorageBar, TextField, Toggle, ValueSlider, useToast, type SegOption, Alert } from '../../components/ui'
 import { Icon } from '../../design/icons'
 import type { MotionSetting, ParticleSetting } from '../../design/tokens'
 import { DJ_TYPES, TYPE_LABEL, type DjType } from '../../dj/engine'
@@ -190,7 +190,7 @@ function SectionGroup({ label, note, children }: { label: string; note?: string;
           {note && <span className="st-snote">{note}</span>}
         </div>
       )}
-      <div className="st-card">
+      <div className="card card-filled card-lg card-flush st-card">
         <div className="st-card-in">{children}</div>
       </div>
     </>
@@ -269,12 +269,12 @@ function useConfirm(id: string) {
     ask: () => setConf(id),
     box: (text: string, btn: string, run: () => void) =>
       conf === id ? (
-        <div className="st-conf" role="alertdialog" aria-label={text}>
-          <span className="st-conf-ic">
-            <Icon name="warning" filled />
-          </span>
-          <span className="st-conf-text">{text}</span>
-          <span className="st-conf-btns">
+        <Alert
+          tone="danger"
+          role="alertdialog"
+          label={text}
+          actions={
+            <>
             <Button variant="plain" onClick={() => setConf(null)}>
               Cancel
             </Button>
@@ -288,8 +288,11 @@ function useConfirm(id: string) {
             >
               {btn}
             </Button>
-          </span>
-        </div>
+            </>
+          }
+        >
+          {text}
+        </Alert>
       ) : null,
   }
 }
@@ -394,9 +397,9 @@ function LibrarySection() {
             control={
               <>
                 {!phone && (
-                  <button type="button" className="st-link" onClick={() => void localFolder.unlink()}>
+                  <Button variant="plain" size="sm" className="st-link" onClick={() => void localFolder.unlink()}>
                     Stop using
-                  </button>
+                  </Button>
                 )}
                 <Act onClick={() => void link()}>Change folder</Act>
               </>

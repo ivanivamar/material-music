@@ -4,7 +4,7 @@
  * one type: Genre (multi-select chips), Never played, Forgotten, New additions — each with the songs available.
  */
 import { useMemo, useState } from 'react'
-import { Chip, LinearProgress, useToast } from '../components/ui'
+import { Chip, LinearProgress, useToast, Button, Alert } from '../components/ui'
 import { Icon } from '../design/icons'
 import { djLibrary, djStore, downloadedOnly, typeCounts, useDj } from '../state/dj'
 import { useDownloads, useOnline } from '../state/downloads'
@@ -67,7 +67,7 @@ export function DjStart({ phone }: { phone: boolean; onBack?: () => void }) {
   const libLine = offline ? `${fmt(counts.total)} downloaded` : `${fmt(counts.total)} songs in your library`
 
   const genreCard = (
-    <div className="djs-card djs-genre">
+    <div className="card card-lg djs-card djs-genre">
       <div className="djs-card-h">
         <div className="djs-card-t">Genre</div>
         <div className="djs-sub">{reading ? `Reading genres · ${fmt(lib.withGenre)} of ${fmt(counts.total)}` : 'Pick one or more'}</div>
@@ -89,16 +89,16 @@ export function DjStart({ phone }: { phone: boolean; onBack?: () => void }) {
       </div>
       {reading && <div className="djs-note">Counts so far. Endless mode and the other types already work; genre sessions pick from tagged songs only.</div>}
       {phone ? (
-        <button type="button" className="djs-genre-go" disabled={!picked.length || starting} onClick={() => void start('genre', picked)}>
+        <Button variant="dj-outlined" className="djs-genre-go" disabled={!picked.length || starting} onClick={() => void start('genre', picked)}>
           <span>Start with genre</span>
           <span className="djs-genre-sum">{gSum}</span>
-        </button>
+        </Button>
       ) : (
         <div className="djs-card-f">
           <div className="djs-sub is-sum">{gSum}</div>
-          <button type="button" className="djs-genre-go" disabled={!picked.length || starting} onClick={() => void start('genre', picked)}>
+          <Button variant="dj-outlined" className="djs-genre-go" disabled={!picked.length || starting} onClick={() => void start('genre', picked)}>
             Start with genre
-          </button>
+          </Button>
         </div>
       )}
     </div>
@@ -119,7 +119,7 @@ export function DjStart({ phone }: { phone: boolean; onBack?: () => void }) {
         <Icon name="chevR" />
       </button>
     ) : (
-      <button key={c.type} type="button" className="djs-type" disabled={disabled} onClick={() => void start(c.type)}>
+      <button key={c.type} type="button" className="card card-lg card-interactive djs-type" disabled={disabled} onClick={() => void start(c.type)}>
         <span className="djs-type-h">
           <span className="djs-type-t">{c.label}</span>
           <Icon name="chevR" />
@@ -131,12 +131,9 @@ export function DjStart({ phone }: { phone: boolean; onBack?: () => void }) {
   }
 
   const banner = offline && (
-    <div className="djs-banner">
-      <Icon name="offline" />
-      <span>
-        <b>{online ? 'On mobile data' : 'You’re offline'}</b> · The DJ plays only downloaded songs.{online ? '' : ' Intros are text until you’re back online.'}
-      </span>
-    </div>
+    <Alert tone="dj" icon="offline">
+      <b>{online ? 'On mobile data' : 'You’re offline'}</b> · The DJ plays only downloaded songs.{online ? '' : ' Intros are text until you’re back online.'}
+    </Alert>
   )
 
   if (phone)
@@ -151,11 +148,11 @@ export function DjStart({ phone }: { phone: boolean; onBack?: () => void }) {
         </div>
         <p className="djs-body">Endless themed sessions from your library, each with a short spoken intro. The queue waits until you stop.</p>
         {banner}
-        <button type="button" className="djs-go" disabled={starting} onClick={() => void start()}>
+        <Button variant="dj" size="xl" className="djs-go" disabled={starting} onClick={() => void start()}>
           <Icon name="podcasts" filled />
           Start DJ
           <span className="djs-go-sub">{offline ? `${fmt(counts.total)} downloaded` : 'Endless'}</span>
-        </button>
+        </Button>
         <div className="djs-sec-label">Or start with one type</div>
         {genreCard}
         <div className="djs-rows">{cards.map(typeEl)}</div>
@@ -175,11 +172,11 @@ export function DjStart({ phone }: { phone: boolean; onBack?: () => void }) {
           <p className="djs-body">Plays an endless chain of sessions from your library and introduces each one. Pause, skip and lyrics work as usual; the queue waits until you stop the DJ.</p>
         </div>
         {banner}
-        <button type="button" className="djs-go" disabled={starting} onClick={() => void start()}>
+        <Button variant="dj" size="xl" className="djs-go" disabled={starting} onClick={() => void start()}>
           <Icon name="podcasts" filled />
           Start DJ
           <span className="djs-go-sub">{offline ? `${fmt(counts.total)} downloaded` : 'Endless · all types'}</span>
-        </button>
+        </Button>
         <div className="djs-sec-label">Or start with one type</div>
         {genreCard}
         <div className="djs-types">{cards.map(typeEl)}</div>

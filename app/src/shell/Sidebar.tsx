@@ -5,7 +5,7 @@
  * account chip at the bottom (avatar, name, last sync; opens the account menu).
  */
 import { useState, type DragEvent } from 'react'
-import { useToast } from '../components/ui'
+import { useToast, IconButton } from '../components/ui'
 import { Icon } from '../design/icons'
 import { AppMark } from '../components/Logo'
 import { AccountChip } from '../pages/AccountMenu'
@@ -69,12 +69,8 @@ function SidebarPlaylists({ active }: { active: string | null }) {
       <div className="sb-section-head">
         <span className="sb-section-label">Playlists</span>
         <span className="sb-heads">
-          <button type="button" className="sb-plus" aria-label="New smart playlist" title="New smart playlist" onClick={() => actions.smartPlaylist()}>
-            <Icon name="smart" />
-          </button>
-          <button type="button" className="sb-plus" aria-label="New playlist" title="New playlist" onClick={() => actions.newPlaylist([], '', true)}>
-            <Icon name="plus" />
-          </button>
+          <IconButton icon="smart" label="New smart playlist" title="New smart playlist" size="sm" className="sb-plus" onClick={() => actions.smartPlaylist()} />
+          <IconButton icon="plus" label="New playlist" title="New playlist" size="sm" className="sb-plus" onClick={() => actions.newPlaylist([], '', true)} />
         </span>
       </div>
       {/* only this list scrolls; the brand, nav and header above stay put */}
