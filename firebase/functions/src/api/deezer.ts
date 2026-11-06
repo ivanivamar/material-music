@@ -8,6 +8,9 @@
  *        → { found: true, id, pictureUrl } | { found: false }
  *        The Deezer artist must have the same (normalised) name; when several do, the one whose
  *        albums overlap our album titles wins (an ambiguous guess with no overlap is dropped).
+ *   GET /api/deezer/previews?artist=<name>[&artist=<alt name>]&title=<release>&n=<track count>&type=<album|ep|single>
+ *        → { found: true, id, link, tracks: [{ t, d, p }] } | { found: false }   (New Releases → Out now)
+ *        The release on Deezer and its tracks with their 30 s preview MP3 URLs (p; signed, they expire).
  *   GET /api/deezer/image?url=<picture url>
  *        → the image bytes (only https://….dzcdn.net/… URLs)
  *   GET /api/deezer/related?id=<deezer artist id>   (or ?name=<artist>&a=<album title>… to look it up)
@@ -95,6 +98,86 @@ async function lookup(name: string, titles: string[]) {
   return { id: best.id, pictureUrl: best.pic }
 }
 
+/* ── Previews (New Releases → Out now) ───────────────── */
+
+/** Like `norm`, but keeps letters of any script (Japanese titles would fold to nothing otherwise). */
+const normU = (s: string) =>
+  s
+    .normalize('NFKD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/\(.*?\)|\[.*?\]/g, '')
+    .replace(/\s+(feat\.?|ft\.?|featuring)\s.*$/, '')
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .trim()
+
+const sameArtist = (a: string, b: string) => {
+  const x = normU(a)
+  const y = normU(b)
+  return !!x && !!y && (x === y || x.startsWith(`${y} `) || y.startsWith(`${x} `))
+}
+
+interface DzAlbumHit {
+  id: number
+  title: string
+  nb_tracks?: number
+  link?: string
+  artist?: { id: number; name: string }
+}
+
+interface DzTrack {
+  id: number
+  title: string
+  duration?: number
+  preview?: string
+  link?: string
+  artist?: { name: string }
+  album?: { id: number; title: string }
+}
+
+type PreviewOut = { id: number; link: string | null; tracks: { t: string; d: number | null; p: string | null }[] }
+
+const toOut = (t: DzTrack) => ({ t: t.title, d: t.duration ?? null, p: t.preview || null })
+
+/**
+ * The release on Deezer (album search: same artist, same title, closest track count), and its
+ * tracks with their 30 s preview URLs. A single that isn't found as an album falls back to the song.
+ * Preview URLs are signed and expire, so nothing is cached for long.
+ */
+async function findPreviews(artists: string[], title: string, n: number, single: boolean): Promise<PreviewOut | null> {
+  const want = normU(title)
+  const q = (s: string) => s.replace(/"/g, '')
+  let best: { a: DzAlbumHit; score: number } | null = null
+  for (const artist of artists) {
+    const res = await getJson<{ data?: DzAlbumHit[] }>(
+      `https://api.deezer.com/search/album?q=${encodeURIComponent(`artist:"${q(artist)}" album:"${q(title)}"`)}&limit=15`,
+    )
+    for (const a of res.data ?? []) {
+      if (!a.artist || !sameArtist(a.artist.name, artist)) continue
+      const got = normU(a.title)
+      const titleScore = got === want ? 100 : want && (got.startsWith(want) || want.startsWith(got)) ? 40 : 0
+      if (!titleScore) continue
+      const score = titleScore - (n && a.nb_tracks ? Math.min(30, Math.abs(a.nb_tracks - n) * 3) : 0)
+      if (!best || score > best.score) best = { a, score }
+    }
+    if (best && best.score >= 70) break
+  }
+  if (best) {
+    const tr = await getJson<{ data?: DzTrack[] }>(`https://api.deezer.com/album/${best.a.id}/tracks?limit=200`)
+    const tracks = (tr.data ?? []).map(toOut)
+    if (tracks.length) return { id: best.a.id, link: best.a.link ?? null, tracks }
+  }
+  if (!single) return null
+  for (const artist of artists) {
+    const res = await getJson<{ data?: DzTrack[] }>(
+      `https://api.deezer.com/search/track?q=${encodeURIComponent(`artist:"${q(artist)}" track:"${q(title)}"`)}&limit=10`,
+    )
+    const t = (res.data ?? []).find((x) => x.artist && sameArtist(x.artist.name, artist) && normU(x.title) === want && x.preview)
+    if (t) return { id: t.album?.id ?? t.id, link: t.link ?? null, tracks: [toOut(t)] }
+  }
+  return null
+}
+
 export async function onRequest({ request, params }: Ctx): Promise<Response> {
   const action = Array.isArray(params.action) ? params.action[0] : params.action
   const origin = request.headers.get('origin')
@@ -152,6 +235,20 @@ export async function onRequest({ request, params }: Ctx): Promise<Response> {
       const pic = artist.picture_medium && !/\/artist\/\//.test(artist.picture_medium) ? artist.picture_medium : null
       const titles = [...new Set(list.map((a) => a.title))].slice(0, 100)
       return json({ found: true, id: artist.id, name: artist.name, picture: pic, releases, titles }, 200, 'private, max-age=21600')
+    } catch (e) {
+      return json({ error: 'deezer_failed', message: (e as Error).message }, 502)
+    }
+  }
+
+  if (action === 'previews') {
+    const artists = [...new Set(url.searchParams.getAll('artist').map((a) => a.trim().slice(0, 200)).filter(Boolean))].slice(0, 3)
+    const title = (url.searchParams.get('title') ?? '').trim().slice(0, 300)
+    if (!artists.length || !title) return json({ error: 'missing_query' }, 400)
+    const n = Number(url.searchParams.get('n')) || 0
+    const single = url.searchParams.get('type') === 'single'
+    try {
+      const hit = await findPreviews(artists, title, n, single)
+      return json(hit ? { found: true, ...hit } : { found: false }, 200, 'private, max-age=600')
     } catch (e) {
       return json({ error: 'deezer_failed', message: (e as Error).message }, 502)
     }

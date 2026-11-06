@@ -15,7 +15,22 @@ import { countdown, fmtLength, fmtRelDate, fmtRelShort, followedArtists, isOwned
 import { artistHref, go } from '../../shell/routes'
 import { ArtistAvatar } from '../library/common'
 import { useNowPlaying } from '../library/playback'
-import { Countdown, Dot, MatchingVeil, ReleaseCover, Spinner, openExternal, ownedLabel, playRelease, typeLabel, type ReleaseActions } from './parts'
+import { togglePreview, usePreview } from '../../state/preview'
+import {
+  Countdown,
+  Dot,
+  MatchingVeil,
+  ReleaseCover,
+  Spinner,
+  canPreview,
+  mapPreviews,
+  openExternal,
+  ownedLabel,
+  playRelease,
+  typeLabel,
+  useDzPreviews,
+  type ReleaseActions,
+} from './parts'
 
 const niceDay = (date: string) => fmtRelShort(date).replace(/^0/, '').replace(/ ([A-Z])([A-Z]+)/, (_, a: string, b: string) => ` ${a}${b.toLowerCase()}`)
 
@@ -110,6 +125,19 @@ export function ReleaseDetail({
   const matchedIdx = new Set(matches.map((m) => m.index))
   const owner = item.owners[0]
   const now = useNowPlaying()
+
+  // 30 s Deezer previews of songs you don't have yet (Out now only)
+  const previews = useDzPreviews(item, online && canPreview(item))
+  const mbTracks = item.detail?.tracks ?? []
+  const pvMap = previews.state === 'ok' ? (mbTracks.length ? mapPreviews(mbTracks, previews.dz) : previews.dz.tracks.map((_, j) => j)) : []
+  const previewAt = (i: number): Preview | null => {
+    const j = pvMap[i]
+    if (j == null || previews.state !== 'ok') return null
+    const url = previews.dz.tracks[j]?.p
+    return url ? { key: `${id}#${j}`, url } : null
+  }
+  const rows: [string, number | null][] = mbTracks.length ? mbTracks : previews.state === 'ok' ? previews.dz.tracks.map((t) => [t.t, t.d]) : []
+  const pvTag = previews.state === 'ok' ? ' · PREVIEWS' : ''
 
   const n = item.detail?.tracks.length ?? 0
   const facts: [string, ReactNode][] = [
@@ -358,7 +386,17 @@ export function ReleaseDetail({
         <div className="nrp-card-head">
           <span>TRACKLIST</span>
           <span style={{ fontSize: '11px', color: 'oklch(0.62 0.014 40)' }}>
-            {partial ? `${item.have} OF ${item.total} IN LIBRARY` : lib ? 'PLAYABLE' : item.detail ? (n ? `${n} TRACKS` : 'NOT YET LISTED') : loading ? 'CHECKING MUSICBRAINZ' : ''}
+            {partial
+              ? `${item.have} OF ${item.total} IN LIBRARY${pvTag}`
+              : lib
+              ? 'PLAYABLE'
+              : rows.length
+              ? `${rows.length} TRACKS${pvTag}`
+              : item.detail
+              ? 'NOT YET LISTED'
+              : loading
+              ? 'CHECKING MUSICBRAINZ'
+              : ''}
           </span>
         </div>
         {partial
@@ -366,11 +404,14 @@ export function ReleaseDetail({
               const m = matchById.get(i)
               if (!m)
                 return (
-                  <div key={i} className="nrp-trow" style={{ opacity: 0.6 }}>
-                    <span className="nrp-trow-n">{String(i + 1).padStart(2, '0')}</span>
-                    <span className="nrp-trow-t">{t}</span>
-                    <span className="nrp-trow-d">{item.upcoming ? countdown(item, true) : 'MISSING'}</span>
-                  </div>
+                  <PreviewTrackRow
+                    key={i}
+                    n={i + 1}
+                    title={t}
+                    right={item.upcoming ? countdown(item, true) : 'MISSING'}
+                    preview={previewAt(i)}
+                    dim
+                  />
                 )
               const own = c.tracks[m.trackId]
               return (
@@ -401,16 +442,19 @@ export function ReleaseDetail({
                 <Icon name="playF" style={{ fontSize: '16px' }} />
               </div>
             ))
-          : item.detail
-            ? item.detail.tracks.map(([t, d], i) => (
-                <div key={i} className="nrp-trow">
-                  <span className="nrp-trow-n">{String(i + 1).padStart(2, '0')}</span>
-                  <span className="nrp-trow-t">{t}</span>
-                  <span className="nrp-trow-d">{d ? fmtLength(d) : '—'}</span>
-                  {matchedIdx.has(i) && <Icon name="check" style={{ color: 'var(--brand)', fontSize: '16px' }} />}
-                </div>
+          : rows.length
+            ? rows.map(([t, d], i) => (
+                <PreviewTrackRow
+                  key={i}
+                  n={i + 1}
+                  title={t}
+                  right={d ? fmtLength(d) : '—'}
+                  preview={previewAt(i)}
+                  extra={matchedIdx.has(i) && <Icon name="check" style={{ color: 'var(--brand)', fontSize: '16px' }} />}
+                />
               ))
-            : loading &&
+            : !item.detail &&
+              loading &&
               Array.from({ length: 5 }, (_, i) => (
                 <div key={i} className="nrp-trow">
                   <span className="nrp-trow-n">{String(i + 1).padStart(2, '0')}</span>
@@ -418,6 +462,48 @@ export function ReleaseDetail({
                 </div>
               ))}
       </div>
+    </div>
+  )
+}
+
+/* ── Tracklist row with a 30 s preview ───────────────── */
+
+type Preview = { key: string; url: string }
+
+function PreviewTrackRow({ n, title, right, preview, extra, dim }: { n: number; title: string; right: ReactNode; preview: Preview | null; extra?: ReactNode; dim?: boolean }) {
+  const pv = usePreview()
+  const num = <span className="nrp-trow-n">{String(n).padStart(2, '0')}</span>
+  if (!preview)
+    return (
+      <div className="nrp-trow" style={dim ? { opacity: 0.6 } : undefined}>
+        {num}
+        <span className="nrp-trow-t">{title}</span>
+        <span className="nrp-trow-d">{right}</span>
+        {extra}
+      </div>
+    )
+  const on = pv.key === preview.key
+  return (
+    <div
+      className={`nrp-trow is-preview ${on ? 'is-on' : ''} ${dim ? 'is-dim' : ''}`}
+      role="button"
+      tabIndex={0}
+      aria-pressed={on}
+      aria-label={`${on ? 'Stop preview of' : 'Preview'} ${title}`}
+      onClick={() => togglePreview(preview.key, preview.url)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          togglePreview(preview.key, preview.url)
+        }
+      }}
+    >
+      {num}
+      <span className="nrp-trow-t">{title}</span>
+      <span className="nrp-trow-d">{right}</span>
+      {extra}
+      <span className="nrp-trow-pvic">{on && pv.loading ? <Spinner /> : <Icon name={on ? 'pauseF' : 'playF'} style={{ fontSize: '16px' }} />}</span>
+      {on && <span className="nrp-trow-pv" style={{ transform: `scaleX(${pv.progress})` }} aria-hidden />}
     </div>
   )
 }

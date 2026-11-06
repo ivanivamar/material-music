@@ -1,11 +1,13 @@
 /** New Releases pieces shared by the feed, the hero and the detail panel / sheet. */
-import { useLayoutEffect, useMemo, useRef, useState, type PointerEvent, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type MouseEvent, type PointerEvent, type ReactNode } from 'react'
 import { LoadingShape, useToast } from '../../components/ui'
 import { Icon, type IconName } from '../../design/icons'
 import { cookie } from '../../design/shapes'
+import { fetchDzPreviews, type DzPreviews } from '../../lib/deezer'
 import { coverUrl, mbReleaseGroupUrl } from '../../lib/musicbrainz'
 import { PelagicNative, isNative } from '../../native/bridge'
 import { libraryStore } from '../../state/library'
+import { stopPreview, togglePreview, usePreview } from '../../state/preview'
 import { releasesStore } from '../../state/releases'
 import { countdown, fmtLength, fmtRelDate, fmtRelShort, isOwned, type FeedItem } from '../../state/releaseViews'
 import { playList } from '../library/playback'
@@ -239,6 +241,107 @@ export function actionsFor(it: FeedItem, act: ReleaseActions, online: boolean): 
     out.push({ key: 'remind', icon: it.reminded ? 'bellF' : 'bell', label: it.reminded ? 'Reminder set' : 'Remind me', short: it.reminded ? 'Set' : 'Remind', on: it.reminded, run: () => act.remind(it) })
   out.push({ key: 'dismiss', icon: 'x', label: 'Dismiss', short: 'Dismiss', on: false, run: () => act.dismiss(it) })
   return out
+}
+
+/* ── Previews (Deezer, 30 s) ─────────────────────────── */
+
+/** Out now releases that aren't (fully) in the library get previews. */
+export const canPreview = (it: FeedItem) => !it.upcoming && it.status !== 'lib'
+
+function previewQuery(it: FeedItem) {
+  const artists = [it.rel.a, ...it.owners.map((o) => o.name)].filter((a, i, all) => a && all.indexOf(a) === i).slice(0, 3)
+  return { artists, title: it.rel.t, n: it.detail?.tracks.length ?? 0, type: it.rel.type }
+}
+
+export const loadPreviews = (it: FeedItem) => fetchDzPreviews(it.rel.id, previewQuery(it))
+
+export type PreviewLoad = { state: 'off' | 'loading' | 'none' } | { state: 'ok'; dz: DzPreviews }
+
+/** The release's Deezer previews, fetched while `enabled` (the open detail panel). */
+export function useDzPreviews(it: FeedItem, enabled: boolean): PreviewLoad {
+  const [res, setRes] = useState<{ key: string; dz: DzPreviews | null } | null>(null)
+  const q = enabled ? JSON.stringify(previewQuery(it)) : null
+  const key = `${it.rel.id}|${q}`
+  useEffect(() => {
+    if (!q) return
+    let live = true
+    fetchDzPreviews(it.rel.id, JSON.parse(q) as ReturnType<typeof previewQuery>).then(
+      (dz) => live && setRes({ key, dz }),
+      () => live && setRes({ key, dz: null }),
+    )
+    return () => {
+      live = false
+    }
+  }, [key, q, it.rel.id])
+  if (!q) return { state: 'off' }
+  if (!res || res.key !== key) return { state: 'loading' }
+  return res.dz && res.dz.tracks.some((t) => t.p) ? { state: 'ok', dz: res.dz } : { state: 'none' }
+}
+
+const normT = (s: string) =>
+  s
+    .normalize('NFKD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/\(.*?\)|\[.*?\]/g, '')
+    .replace(/\s+(feat\.?|ft\.?|featuring)\s.*$/, '')
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .trim()
+
+/** MusicBrainz tracklist index → Deezer track index (by title, else by position when both lists are the same length). */
+export function mapPreviews(mb: [string, number | null][], dz: DzPreviews): (number | null)[] {
+  const used = new Set<number>()
+  const out = mb.map(([t]) => {
+    const k = normT(t)
+    const j = dz.tracks.findIndex((d, j) => !used.has(j) && normT(d.t) === k)
+    if (j < 0) return null
+    used.add(j)
+    return j
+  })
+  if (dz.tracks.length !== mb.length) return out
+  return out.map((j, i) => j ?? (used.has(i) ? null : i))
+}
+
+/** Hero / card button: previews the release's first song that has one. */
+export function PreviewButton({ item, variant }: { item: FeedItem; variant: 'card' | 'hero' | 'heroPhone' }) {
+  const toast = useToast()
+  const pv = usePreview()
+  const [busy, setBusy] = useState(false)
+  const on = !!pv.key && pv.key.startsWith(`${item.rel.id}#`)
+  const label = on ? 'Stop preview' : 'Preview'
+  const click = (e: MouseEvent) => {
+    e.stopPropagation()
+    if (on) return stopPreview()
+    if (busy) return
+    setBusy(true)
+    loadPreviews(item)
+      .then((dz) => {
+        const j = dz ? dz.tracks.findIndex((t) => t.p) : -1
+        if (dz && j >= 0) togglePreview(`${item.rel.id}#${j}`, dz.tracks[j].p!)
+        else toast.show({ icon: 'searchOff', mutedIcon: true, text: `No preview found for ${item.rel.t}.` })
+      })
+      .catch(() => toast.show({ icon: 'offline', mutedIcon: true, text: 'Couldn’t reach Deezer for a preview.' }))
+      .finally(() => setBusy(false))
+  }
+  const icon = busy || (on && pv.loading) ? <Spinner /> : <Icon name={on ? 'stopCircle' : 'graphicEq'} />
+  if (variant === 'card')
+    return (
+      <button type="button" className={`nr-card-btn is-icon ${on ? 'is-on' : ''}`} aria-label={label} title={label} aria-pressed={on} onClick={click}>
+        {icon}
+      </button>
+    )
+  if (variant === 'heroPhone')
+    return (
+      <button type="button" className={`btn btn-ghost nr-hero-sqbtn ${on ? 'is-on' : ''}`} aria-label={label} title={label} aria-pressed={on} onClick={click}>
+        {icon}
+      </button>
+    )
+  return (
+    <button type="button" className={`btn ${on ? 'btn-primary' : 'btn-secondary'}`} aria-pressed={on} onClick={click}>
+      <span className="btn-ic">{icon}</span>
+      {label}
+    </button>
+  )
 }
 
 /** Countdown chip on upcoming covers. */

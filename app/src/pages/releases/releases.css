@@ -1608,6 +1608,66 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* 30 s Deezer previews (Out now) */
+.nrp-trow.is-preview {
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.nrp-trow.is-preview.is-dim:not(.is-on) {
+  opacity: 0.6;
+}
+
+.nrp-trow.is-preview:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: -2px;
+}
+
+.nrp-trow-pvic {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  color: oklch(0.62 0.014 40);
+  transition: color 150ms;
+}
+
+.nrp-trow.is-preview:hover .nrp-trow-pvic,
+.nrp-trow.is-on .nrp-trow-pvic,
+.nrp-trow.is-on .nrp-trow-t {
+  color: var(--brand);
+}
+
+.nrp-trow-pv {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 4px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--brand);
+  transform-origin: left center;
+  transition: transform 250ms linear;
+}
+
+.nr-card:has(.nr-card-btn.is-on) .nr-card-acts {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.nr-card-btn.is-on,
+.nr-hero-sqbtn.is-on {
+  color: var(--brand);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nrp-trow-pv {
+    transition: none;
+  }
+}
+
 /* ── Followed Artists ────────────────────────────────── */
 
 .nrp-artists {

@@ -16,6 +16,7 @@ import { nowPlayingStore } from '../../state/nowPlaying'
 import { releasesStore, sweepTargets, useReleases, type ReleasesState, type StatusFilter } from '../../state/releases'
 import { TOP_ARTISTS, buildFeed, buildSuggestions, fmtRelDate, fmtStamp, isOwned, type Feed, type FeedItem, type UpWeek } from '../../state/releaseViews'
 import { refreshDiscover } from '../../state/discover'
+import { stopPreview } from '../../state/preview'
 import { DiscoverTab } from './Discover'
 import { useIsPhone } from '../../state/viewport'
 import { artistHref, go, href, replace } from '../../shell/routes'
@@ -26,10 +27,12 @@ import {
   Dot,
   MatchingVeil,
   OwnedTag,
+  PreviewButton,
   ReleaseCover,
   Spinner,
   SwipeRow,
   TypeBadge,
+  canPreview,
   cardMeta,
   longMeta,
   ownedCount,
@@ -109,6 +112,9 @@ function Page({ c }: { c: Catalogue }) {
     })
   const close = () => setPanelState(null)
   const act = useReleaseActions({ onDismissed: (id) => setPanel((p) => (p?.kind === 'rel' && p.id === id ? null : p)) })
+
+  // a song preview doesn't follow you out of New Releases
+  useEffect(() => () => stopPreview(), [])
 
   useEffect(() => {
     if (releasesStore.due()) void releasesStore.sweep()
@@ -250,7 +256,7 @@ function Page({ c }: { c: Catalogue }) {
               ) : (
                 <div className="nr-grid">
                   {g.items.map((it) => (
-                    <Card key={it.rel.id} item={it} act={act} onOpen={open} />
+                    <Card key={it.rel.id} item={it} act={act} online={online} onOpen={open} />
                   ))}
                 </div>
               )}
@@ -720,6 +726,7 @@ function Hero({
                 <span className="btn-ic"><Icon name="check" /></span>
                 I’ve got it
               </button>
+              {online && canPreview(item) && <PreviewButton item={item} variant="heroPhone" />}
               <button
                 type="button"
                 className="btn btn-ghost nr-hero-sqbtn"
@@ -795,6 +802,7 @@ function Hero({
                 <span className="btn-ic">{item.status === 'acq' ? <Spinner /> : <Icon name="check" />}</span>
                 {item.status === 'acq' ? 'Matching…' : "I’ve got it"}
               </button>
+              {online && canPreview(item) && <PreviewButton item={item} variant="hero" />}
               <button type="button" className="btn btn-secondary" onClick={stop(() => act.toggleSeen(item))}>
                 <span className="btn-ic"><Icon name="eye" /></span>
                 {item.status === 'seen' ? 'Mark new' : 'Mark seen'}
@@ -824,10 +832,12 @@ function Hero({
 function Card({
   item,
   act,
+  online,
   onOpen,
 }: {
   item: FeedItem
   act: ReleaseActions
+  online: boolean
   onOpen: (it: FeedItem) => void
 }) {
   const lib = isOwned(item.status)
@@ -865,6 +875,7 @@ function Card({
                 <Icon name="check" />
                 <span className="nr-card-btn-label">{item.status === 'acq' ? 'Matching' : 'Got it'}</span>
               </button>
+              {online && canPreview(item) && <PreviewButton item={item} variant="card" />}
               <button
                 type="button"
                 className="nr-card-btn is-icon"

@@ -179,6 +179,44 @@ export async function fetchDzReleases(id: number, days = 183): Promise<DzRelease
   return { id: j.id, name: j.name ?? '', picture: j.picture ?? null, releases: Array.isArray(j.releases) ? j.releases : [], titles: Array.isArray(j.titles) ? j.titles : [] }
 }
 
+/** New Releases → Out now: a release's tracks on Deezer with their 30 s preview URLs (p). */
+export interface DzPreviewTrack {
+  t: string
+  d: number | null
+  p: string | null
+}
+export interface DzPreviews {
+  id: number
+  link: string | null
+  tracks: DzPreviewTrack[]
+}
+
+/** Preview URLs are signed and expire, so they are only kept in memory for a few minutes. */
+const PREVIEW_TTL = 10 * 60_000
+const previewMemo = new Map<string, { at: number; p: Promise<DzPreviews | null> }>()
+
+export function fetchDzPreviews(key: string, q: { artists: string[]; title: string; n: number; type: string }): Promise<DzPreviews | null> {
+  const hit = previewMemo.get(key)
+  if (hit && Date.now() - hit.at < PREVIEW_TTL) return hit.p
+  const params = new URLSearchParams()
+  for (const a of q.artists) params.append('artist', a)
+  params.set('title', q.title)
+  if (q.n) params.set('n', String(q.n))
+  params.set('type', q.type)
+  const p = fetch(`${API_BASE}api/deezer/previews?${params}`, { headers: { 'X-Pelagic': '1' } }).then(async (res) => {
+    if (!res.ok || !(res.headers.get('content-type') ?? '').includes('application/json')) throw new Error(`proxy ${res.status}`)
+    const j = (await res.json()) as { found?: boolean } & Partial<DzPreviews>
+    if (!j.found || !j.id || !Array.isArray(j.tracks)) return null
+    return { id: j.id, link: j.link ?? null, tracks: j.tracks }
+  })
+  previewMemo.set(key, { at: Date.now(), p })
+  // a failure (offline, proxy down) is not remembered: the next ask tries again
+  p.catch(() => {
+    if (previewMemo.get(key)?.p === p) previewMemo.delete(key)
+  })
+  return p
+}
+
 /** Re-render when related artists arrive. */
 export function useRelatedVersion(): number {
   return useSyncExternalStore(
