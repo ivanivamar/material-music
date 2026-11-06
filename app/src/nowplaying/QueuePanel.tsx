@@ -31,7 +31,7 @@ import { Eq, formatTime, useToast, Button, IconButton, Badge } from '../componen
 import { Icon } from '../design/icons'
 import { useCover } from '../lib/covers'
 import { useLibrary, type Catalogue } from '../state/library'
-import { useLikes } from '../state/likes'
+import { LikeButton } from '../components/LikeButton'
 import { nowPlayingStore, useNowPlayingUi } from '../state/nowPlaying'
 import { playerStore, usePlayer } from '../state/player'
 import { usePlaylists } from '../state/playlists'
@@ -164,7 +164,7 @@ function PlayedRow({
     <div
       data-abs={abs}
       data-drop=""
-      className={`qp-row qp-prow ${isFirst ? 'is-first' : ''} ${isLast ? 'is-last' : ''} ${isDrag ? 'is-drag' : ''}`}
+      className={`qp-row qp-prow like-host ${isFirst ? 'is-first' : ''} ${isLast ? 'is-last' : ''} ${isDrag ? 'is-drag' : ''}`}
       style={{ top }}
       draggable={!phone}
       tabIndex={0}
@@ -197,6 +197,7 @@ function PlayedRow({
           <div className="qp-t">{t?.title ?? 'Missing track'}</div>
           <div className="qp-a">{sub(c, id)}</div>
         </div>
+        {t && <LikeButton trackId={t.id} size="xs" hover className="qp-like" />}
         <Badge size="sm" tone="subtle" className="qp-played-tag">Played</Badge>
         <span className="qp-d t-mono">{t?.duration ? formatTime(t.duration) : '--:--'}</span>
       </div>
@@ -212,7 +213,6 @@ interface NextRowProps extends RowDrag {
   base: number
   isFirst: boolean
   isLast: boolean
-  liked: boolean
   onKey: (abs: number) => (e: KeyboardEvent) => void
   remove: (abs: number) => void
 }
@@ -226,7 +226,7 @@ function NextRow({ c, id, abs, top, base, isFirst, isLast, phone, drag, onDragSt
     <div
       data-abs={abs}
       data-drop=""
-      className={`qp-row qp-nrow ${isFirst ? 'is-first' : ''} ${isLast ? 'is-last' : ''} ${isDrag ? 'is-drag' : ''}`}
+      className={`qp-row qp-nrow like-host ${isFirst ? 'is-first' : ''} ${isLast ? 'is-last' : ''} ${isDrag ? 'is-drag' : ''}`}
       style={{ top }}
       draggable={!phone}
       tabIndex={0}
@@ -259,6 +259,7 @@ function NextRow({ c, id, abs, top, base, isFirst, isLast, phone, drag, onDragSt
           <div className="qp-t">{t?.title ?? 'Missing track'}</div>
           <div className="qp-a">{sub(c, id)}</div>
         </div>
+        {t && <LikeButton trackId={t.id} size="xs" hover className="qp-like" />}
         <span className="qp-d qp-nd t-mono">{t?.duration ? formatTime(t.duration) : '--:--'}</span>
         {!phone && (
           <span className="qp-acts">
@@ -301,7 +302,6 @@ export function QueuePanel() {
   const ui = useNowPlayingUi()
   const p = usePlayer()
   const { data } = useLibrary()
-  const likes = useLikes()
   const toast = useToast()
   const phone = useIsPhone()
   const listRef = useRef<HTMLDivElement>(null)
@@ -771,6 +771,7 @@ export function QueuePanel() {
           <div className="qp-now-t">{current.title}</div>
           <div className="qp-a">{sub(data, current.id)}</div>
         </div>
+        <LikeButton trackId={current.id} size="xs" className="qp-like qp-now-like" />
         <span className="qp-now-time t-mono">
           {formatTime(p.position)}
           {!phone && dur > 0 && <span className="qp-now-dur"> / {formatTime(dur)}</span>}
@@ -910,7 +911,6 @@ export function QueuePanel() {
                       isFirst={idx === 0}
                       isLast={idx === upcoming.length - 1}
                       phone={phone}
-                      liked={!!likes[id]}
                       drag={drag}
                       onDragStart={onDragStart}
                       onDragOver={onDragOver}

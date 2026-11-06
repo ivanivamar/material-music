@@ -2,7 +2,12 @@
  * Playlists (step 9): one Firestore doc per playlist, `users/<uid>/playlists/<playlistId>` (step 39;
  * before that one JSON file per playlist in Drive `Pelagic/playlists/<playlistId>.json`, read once
  * per device to migrate). A custom cover is still a Drive file, `Pelagic/playlists/<playlistId>.jpg`.
- * No "Liked songs" playlist (see the plan).
+ *
+ * Liked songs (Nov 2026): one permanent playlist with the fixed id `liked` (LIKED_ID). It is an
+ * ordinary playlist doc, so it syncs and merges like the others, but it always exists (a blank one
+ * is made locally until the cloud's arrives), can't be renamed, deleted, given a cover or rules,
+ * sits first in every list, and new likes go to the top (newest first). The heart buttons edit it
+ * through `setLiked` (state/likes.ts has the helpers the UI uses).
  *
  * Offline-first: every edit lands in the local copy (IndexedDB `kv.playlists`) at once and is
  * pushed to the cloud a moment later (read, merge, write in a transaction), or whenever the device
@@ -133,6 +138,28 @@ export interface PlaylistsState {
 const CACHE_KEY = 'playlists'
 const GAP = 1024
 
+/** The permanent Liked songs playlist. */
+export const LIKED_ID = 'liked'
+export const LIKED_NAME = 'Liked songs'
+export const isLikedList = (p: Playlist | { id: string } | undefined | null): boolean => p?.id === LIKED_ID
+
+/** The local stand-in until the cloud's copy (or the cached one) arrives; stamps 0 so any real edit wins. */
+function blankLiked(): Playlist {
+  return {
+    id: LIKED_ID,
+    name: LIKED_NAME,
+    description: '',
+    cover: null,
+    createdAt: new Date(Date.UTC(2026, 10, 6)).toISOString(),
+    updatedAt: new Date(Date.UTC(2026, 10, 6)).toISOString(),
+    deleted: false,
+    stamps: { name: 0, description: 0, cover: 0, deleted: 0, smart: 0, order: 0 },
+    entries: [],
+    smart: null,
+    order: null,
+  }
+}
+
 /* ── Helpers ────────────────────────────────────────── */
 
 const rid = (n = 10) => {
@@ -149,6 +176,12 @@ export const byPos = (a: Entry, b: Entry) => a.pos - b.pos || (a.entryId < b.ent
 export const liveEntries = (p: Playlist): Entry[] => p.entries.filter((e) => !e.removed).sort(byPos)
 
 function normalise(raw: Partial<PlaylistFile>, id: string): Playlist {
+  const p = normaliseRaw(raw, id)
+  // Liked songs is fixed: name, no cover / rules / description, never deleted
+  return p.id === LIKED_ID ? { ...p, name: LIKED_NAME, description: '', cover: null, deleted: false, smart: null, order: null } : p
+}
+
+function normaliseRaw(raw: Partial<PlaylistFile>, id: string): Playlist {
   const t = now()
   const stamps: Stamps = { name: 0, description: 0, cover: 0, deleted: 0, smart: 0, ...(raw.stamps ?? {}) }
   return {
@@ -209,9 +242,11 @@ export function mergePlaylists(a: Playlist, b: Playlist): Playlist {
  * newest first (the default). `list` itself stays A–Z for every other picker and page.
  */
 export function sidebarOrder(list: Playlist[]): Playlist[] {
-  const placed = list.filter((p) => p.order != null).sort((a, b) => a.order! - b.order!)
-  const rest = list.filter((p) => p.order == null).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt) || collator.compare(a.name, b.name))
-  return [...placed, ...rest]
+  const liked = list.filter((p) => p.id === LIKED_ID)
+  const others = list.filter((p) => p.id !== LIKED_ID)
+  const placed = others.filter((p) => p.order != null).sort((a, b) => a.order! - b.order!)
+  const rest = others.filter((p) => p.order == null).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt) || collator.compare(a.name, b.name))
+  return [...liked, ...placed, ...rest]
 }
 
 /** Order positions for `count` new entries at the end. */
@@ -234,9 +269,16 @@ function set(patch: Partial<PlaylistsState>) {
   listeners.forEach((l) => l())
 }
 
+/** Liked songs always exists: a blank local one until the cached / cloud copy is merged in. */
+function ensureLiked() {
+  if (!recs.has(LIKED_ID)) recs.set(LIKED_ID, { doc: blankLiked(), synced: false, dirty: false })
+}
+
 function publish(extra: Partial<PlaylistsState> = {}) {
+  ensureLiked()
   const live = [...recs.values()].map((r) => r.doc).filter((p) => !p.deleted)
-  live.sort((a, b) => collator.compare(a.name, b.name) || a.createdAt.localeCompare(b.createdAt))
+  // A–Z, Liked songs first
+  live.sort((a, b) => (b.id === LIKED_ID ? 1 : 0) - (a.id === LIKED_ID ? 1 : 0) || collator.compare(a.name, b.name) || a.createdAt.localeCompare(b.createdAt))
   set({ list: live, byId: new Map(live.map((p) => [p.id, p])), pending: [...recs.values()].filter((r) => r.dirty).length, ...extra })
 }
 
@@ -460,18 +502,21 @@ export const playlistsStore = {
   },
 
   rename(id: string, name: string) {
+    if (id === LIKED_ID) return
     const v = name.normalize('NFC').trim()
     if (!v) return
     edit(id, (p, t) => (p.name === v ? null : { ...p, name: v, stamps: { ...p.stamps, name: t } }))
   },
 
   setDescription(id: string, description: string) {
+    if (id === LIKED_ID) return
     const v = description.normalize('NFC').trim()
     edit(id, (p, t) => (p.description === v ? null : { ...p, description: v, stamps: { ...p.stamps, description: t } }))
   },
 
   /** Custom cover (a JPEG, already resized) → playlists/<id>.jpg; null goes back to the mosaic. Needs Drive. */
   async setCover(id: string, jpeg: Blob | null): Promise<void> {
+    if (id === LIKED_ID) return
     if (!jpeg) {
       edit(id, (p, t) => (p.cover === null ? null : { ...p, cover: null, stamps: { ...p.stamps, cover: t } }))
       return
@@ -482,6 +527,7 @@ export const playlistsStore = {
 
   /** Change a smart playlist's rules (Undo: call again with the old ones). */
   setSmart(id: string, smart: SmartRules) {
+    if (id === LIKED_ID) return
     edit(id, (p, t) => (!p.smart || JSON.stringify(p.smart) === JSON.stringify(smart) ? null : { ...p, smart, stamps: { ...p.stamps, smart: t } }))
   },
 
@@ -491,7 +537,10 @@ export const playlistsStore = {
    * playlists created since) or the gap ran out.
    */
   moveInSidebar(id: string, to: number) {
-    const cur = sidebarOrder(state.list)
+    if (id === LIKED_ID) return
+    // Liked songs is pinned on top: indexes count from below it
+    const cur = sidebarOrder(state.list).filter((p) => p.id !== LIKED_ID)
+    if (state.byId.has(LIKED_ID)) to--
     const from = cur.findIndex((p) => p.id === id)
     if (from < 0) return
     const rest = cur.filter((p) => p.id !== id)
@@ -518,20 +567,24 @@ export const playlistsStore = {
 
   /** Delete (Undo: `restore`). */
   remove(id: string) {
+    if (id === LIKED_ID) return
     edit(id, (p, t) => (p.deleted ? null : { ...p, deleted: true, stamps: { ...p.stamps, deleted: t } }))
   },
   restore(id: string) {
     edit(id, (p, t) => (!p.deleted ? null : { ...p, deleted: false, stamps: { ...p.stamps, deleted: t } }))
   },
 
-  /** Append tracks (in the given order). Returns the new entry ids. */
+  /** Append tracks (in the given order; Liked songs: on top, songs already liked skipped). Returns the new entry ids. */
   addTracks(id: string, trackIds: string[]): string[] {
     const c = libraryStore.get().data
     const added: string[] = []
+    if (id === LIKED_ID) ensureLiked()
     edit(id, (p, t) => {
-      const tracks = trackIds.map((tid) => c?.tracks[tid]).filter((x): x is Track => !!x)
+      const liked = id === LIKED_ID ? new Set(p.entries.filter((e) => !e.removed).map((e) => e.trackId)) : null
+      const tracks = (liked ? [...new Set(trackIds)].filter((tid) => !liked.has(tid)) : trackIds).map((tid) => c?.tracks[tid]).filter((x): x is Track => !!x)
       if (!tracks.length || p.smart) return null
-      const pos = tailPositions(p, tracks.length)
+      const min = p.entries.reduce((m, e) => Math.min(m, e.pos), Infinity)
+      const pos = liked ? tracks.map((_, i) => (Number.isFinite(min) ? min : GAP * (tracks.length + 1)) - GAP * (tracks.length - i)) : tailPositions(p, tracks.length)
       const entries = tracks.map((tr, i): Entry => {
         const entryId = rid(10)
         added.push(entryId)
@@ -540,6 +593,37 @@ export const playlistsStore = {
       return { ...p, entries: [...p.entries, ...entries] }
     })
     return added
+  },
+
+  /**
+   * Like / unlike one song (the heart buttons). A like goes to the top of Liked songs (newest
+   * first). Unliking tombstones every entry of that song (also one found by ISRC / title after a
+   * tag edit: pass its entry ids in `entryIds`). Returns the entry ids it changed (for Undo).
+   */
+  setLiked(trackId: string, on: boolean, entryIds: string[] = []): string[] {
+    ensureLiked()
+    const changed: string[] = []
+    if (on) {
+      const tr = libraryStore.get().data?.tracks[trackId]
+      if (!tr) return changed
+      edit(LIKED_ID, (p, t) => {
+        if (p.entries.some((e) => !e.removed && e.trackId === trackId)) return null
+        const min = p.entries.reduce((m, e) => Math.min(m, e.pos), Infinity)
+        const entryId = rid(10)
+        changed.push(entryId)
+        return { ...p, entries: [...p.entries, { entryId, ...trackFields(tr), addedAt: iso(t), pos: Number.isFinite(min) ? min - GAP : GAP, movedAt: t }] }
+      })
+    } else {
+      const ids = new Set(entryIds)
+      edit(LIKED_ID, (p, t) => {
+        const hit = p.entries.filter((e) => !e.removed && (e.trackId === trackId || ids.has(e.entryId)))
+        if (!hit.length) return null
+        for (const e of hit) changed.push(e.entryId)
+        const gone = new Set(changed)
+        return { ...p, entries: p.entries.map((e) => (gone.has(e.entryId) ? { ...e, removed: true, removedAt: t } : e)) }
+      })
+    }
+    return changed
   },
 
   /** Remove entries (tombstones). */
@@ -594,7 +678,8 @@ export const playlistsStore = {
     revs.clear()
     inflight = null
     loading = Promise.resolve()
-    set({ list: [], byId: new Map(), loaded: true, syncing: false, syncedAt: null, pending: 0, error: null })
+    set({ syncing: false, syncedAt: null, error: null })
+    publish({ loaded: true })
   },
 
   /** Boot: read the local copy; sync on sign-in, reconnect, coming back and leaving. */

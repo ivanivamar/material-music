@@ -166,6 +166,10 @@
   /* brand coral: links, brand accents, Settings / Downloads / Upload / First run glow */
   --brand: oklch(0.80 0.115 38);
   --brand-hi: oklch(0.88 0.08 38);
+  /* Liked songs (hearts, the Liked songs cover): a rose next to the coral brand */
+  --like: oklch(0.74 0.16 12);
+  --like-hi: oklch(0.84 0.11 12);
+  --like-deep: oklch(0.42 0.13 10);
   --on-brand: oklch(0.30 0.08 38);
   /* album accents: --h = playing album hue (set from the cover, albumHue.ts); small elements only */
   --h: 38;

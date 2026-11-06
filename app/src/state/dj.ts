@@ -48,6 +48,7 @@ import { downloadsStore, offlineIndex } from './downloads'
 import { genreResolver, genresStore } from './genres'
 import { DEVICE, historyStore } from './history'
 import { libraryStore } from './library'
+import { likedIndex } from './likes'
 import { isIntroId, playerStore, type PlayerSnapshot, type PlayerState } from './player'
 import { onAccountReset, sessionStore } from './session'
 
@@ -290,7 +291,8 @@ export function djLibrary(): DjLibrary | null {
   const dl = downloadsStore.get()
   const restrict = downloadedOnly()
   const day = Math.floor(Date.now() / 3_600_000) // re-evaluate "new" / "forgotten" hourly
-  const key = [c, plays, gdoc, restrict ? dl.stored : null, state.doc.songPenalties, day]
+  const liked = likedIndex()
+  const key = [c, plays, gdoc, restrict ? dl.stored : null, state.doc.songPenalties, day, liked]
   if (libMemo && libMemo.key.every((k, i) => k === key[i])) return libMemo.lib
   const lib = buildLibrary({
     tracks: Object.values(c.tracks),
@@ -299,6 +301,7 @@ export function djLibrary(): DjLibrary | null {
     plays,
     allowed: restrict ? offlineIndex(dl, c).tracks : null,
     penalties: state.doc.songPenalties,
+    liked: liked.at,
     now: Date.now(),
   })
   libMemo = { key, lib }

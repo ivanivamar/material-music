@@ -6,6 +6,7 @@
  *   colour circle) · next, with a 3px album-colour progress line along the bottom.
  * - PhoneTopBar: 64px top bar for the top-level pages (logo or title, actions, account avatar).
  */
+import { LikeButton } from '../components/LikeButton'
 import type { ReactNode } from 'react'
 import { Icon, type IconName } from '../design/icons'
 import { AppMark } from '../components/Logo'
@@ -109,6 +110,7 @@ export function MiniPlayer() {
           {intro && id && dj.session ? <IntroSub item={id} /> : <Marquee className="mini-sub" text={track!.artist} />}
         </span>
       </button>
+      {!intro && track && <LikeButton trackId={track.id} size="md" ink className="mini-like" />}
       <button type="button" className="mini-play" aria-label={p.playing ? 'Pause' : 'Play'} aria-busy={p.buffering || undefined} onClick={() => playerStore.toggle()}>
         {p.buffering ? <LoadingShape size={26} /> : <Icon name={p.playing ? 'pauseF' : 'playF'} />}
       </button>

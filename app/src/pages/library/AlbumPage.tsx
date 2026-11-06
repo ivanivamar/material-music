@@ -154,6 +154,7 @@ export function AlbumPage({ id }: { id: string }) {
                     duration={t.duration ? formatTime(t.duration) : '—'}
                     onPlay={() => playAt(i)}
                     onMore={(e) => actions.menu({ kind: 'track', trackId: t.id }, e)}
+                    like={t.id}
                     rowProps={trackDrag(() => [t.id], `${t.title} · ${t.artist}`)}
                   />
                 )

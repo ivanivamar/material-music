@@ -50,7 +50,8 @@ import { initSettingsSync } from './sync/settingsSync'
 import { useSession } from './state/session'
 import { NowPlayingHue } from './design/NowPlayingHue'
 
-// Liked songs were dropped (Oct 2026): clear the old local store once.
+// The first, local-only likes (Oct 2026, dropped): clear that old store. Liked songs now live in
+// the synced Liked songs playlist (state/playlists.ts LIKED_ID).
 try {
   localStorage.removeItem('pelagic.likes.v1')
 } catch {

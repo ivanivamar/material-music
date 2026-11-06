@@ -23,6 +23,32 @@ const rotoscope = sampleCover('#5a2a3a', '#120609', '#ff8aa8')
 const tsunami = sampleCover('#1f6f6a', '#04100f', '#8af0e0')
 import './components.css'
 import { OverlayPanels } from './Overlays'
+import { HeartButton } from '../components/LikeButton'
+import { LikedCover } from '../pages/playlists/PlaylistCover'
+
+/** Hearts in every size (click one: pop + fountain) and the Liked songs cover from sidebar to hero. */
+function LikedDemo() {
+  const [on, setOn] = useState<Record<string, boolean>>({ md: true })
+  const heart = (k: string, size: 'xs' | 'sm' | 'md' | 'lg', ink = false) => (
+    <HeartButton key={k} size={size} ink={ink} liked={!!on[k]} onToggle={(v) => setOn((s) => ({ ...s, [k]: v }))} />
+  )
+  return (
+    <>
+      <div className="cg-btns" style={{ alignItems: 'center' }}>
+        {heart('xs', 'xs')}
+        {heart('sm', 'sm')}
+        {heart('md', 'md', true)}
+        {heart('lg', 'lg', true)}
+      </div>
+      <div className="cg-btns" style={{ alignItems: 'flex-end' }}>
+        <LikedCover size={28} />
+        <LikedCover size={52} />
+        <LikedCover size={120} />
+        <LikedCover size={200} />
+      </div>
+    </>
+  )
+}
 
 const ROWS: { n: number; t: string; d: string; label: string; dl: DownloadState }[] = [
   { n: 1, t: 'Fata Morgana', d: '4:21', label: 'FLAC 16/44.1', dl: { kind: 'done' } },
@@ -70,6 +96,11 @@ export function Components() {
         </header>
 
         <div className="cg-grid">
+          {/* Liked songs */}
+          <Panel title="Liked songs">
+            <LikedDemo />
+          </Panel>
+
           {/* Buttons */}
           <Panel title="Buttons">
             <div className="cg-btns">

@@ -13,6 +13,7 @@
  * "32 OF 50 OFFLINE". An id that isn't in today's set (mixes refresh at 06:00) → "This mix has been
  * refreshed" + today's mixes.
  */
+import { LikeButton } from '../../components/LikeButton'
 import { useMemo, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from 'react'
 import type React from 'react'
 import { IconButton, Button, AlbumEq, CookieButton, formatTime, qualityLabel, useToast } from '../../components/ui'
@@ -198,6 +199,7 @@ function MixView({ c, mix, backBtn }: { c: Catalogue; mix: MixPlan; backBtn: Rea
             <span>Album</span>
             <span>Quality</span>
             <span>Last played</span>
+            <span aria-hidden />
             <span className="mx-c-d">
               <Icon name="clock" />
             </span>
@@ -239,7 +241,7 @@ function Row({ c, t, i, phone, current, playing, fresh, lastLabel, unavailable, 
   const q24 = (t.flac?.bitDepth ?? 16) > 16 || (t.flac?.sampleRate ?? 44100) > 48000
   return (
     <div
-      className={['mx-row', current && 'is-current', unavailable && 'is-unavailable'].filter(Boolean).join(' ')}
+      className={['mx-row', 'like-host', current && 'is-current', unavailable && 'is-unavailable'].filter(Boolean).join(' ')}
       role="row"
       onDoubleClick={onPlay}
       onClick={(e) => {
@@ -287,9 +289,11 @@ function Row({ c, t, i, phone, current, playing, fresh, lastLabel, unavailable, 
             <span className={`mx-qpill ${q24 ? 'is-24' : ''}`}>{qualityLabel('flac', { bitDepth: t.flac?.bitDepth, sampleRate: t.flac?.sampleRate })}</span>
           </div>
           <div className="mx-last">{fresh ? <span className="mx-new">New to you</span> : lastLabel}</div>
+          <LikeButton trackId={t.id} size="sm" hover />
           <div className="mx-c-d">{unavailable ? <Icon name="cloud" /> : t.duration ? formatTime(t.duration) : '—'}</div>
         </>
       )}
+      {phone && <LikeButton trackId={t.id} size="sm" />}
       {phone && (
         <IconButton icon={unavailable ? 'cloud' : 'more'} label="More" className="mx-dots" onClick={(e) => (e.stopPropagation(), actions.menu(target, e))} />
       )}

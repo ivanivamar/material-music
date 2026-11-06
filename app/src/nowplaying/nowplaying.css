@@ -71,6 +71,8 @@ a.np-from-l:hover { color: var(--np-on); text-decoration: underline; text-underl
 }
 .np-q b { font-weight: 700; letter-spacing: .04em; color: var(--album-hi); }
 .np-title-row { display: flex; align-items: flex-end; gap: 12px; min-width: 0; }
+.np-like { margin: 0 -8px -6px 0; }
+.np-like:not(.is-on) { color: oklch(0.85 0.012 40); }
 .np-title-col { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
 .np-title {
   margin: 0; font-size: 52px; font-weight: 700; letter-spacing: -0.025em; line-height: 1.08;

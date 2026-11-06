@@ -36,6 +36,7 @@
 .dt-kicker { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--brand); }
 .dt-kicker .ms { font-size: 16px; }
 .dt-kicker.is-smart { color: oklch(0.86 0.08 95); }
+.dt-kicker.is-liked { color: var(--like-hi); }
 .dt-title { margin: 0; font-size: min(var(--ts, 57px), 5.4vw); font-weight: 700; letter-spacing: -0.025em; line-height: 1.05; overflow-wrap: break-word; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; padding-bottom: .04em; }
 .dt-line { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 14px; color: var(--ink-secondary); }
 .dt-artist { display: inline-flex; align-items: center; gap: 10px; height: 40px; padding: 0 14px 0 4px; margin: -4px 0; border-radius: 999px; color: var(--ink-primary); font-size: 16px; font-weight: 600; text-decoration: none; }
@@ -116,6 +117,7 @@
 .dt-dl .ms { font-size: 24px; }
 .dt-dl.is-done { color: var(--brand); }
 .dt-dl.is-cloud { color: var(--ink-tertiary); }
+.dt-like { width: 36px; flex: none; display: flex; align-items: center; justify-content: center; }
 .dt-dur { width: 52px; flex: none; text-align: right; font-size: 12px; color: var(--ink-secondary); font-variant-numeric: tabular-nums; }
 .dt-end { width: 40px; flex: none; display: flex; align-items: center; justify-content: flex-end; gap: 2px; }
 .dt-dots { opacity: 0; transition: opacity 150ms; }
@@ -181,6 +183,7 @@
 .shell.is-phone .dt-dots { opacity: 1; }
 .shell.is-phone .dt-stat { display: none; }
 .shell.is-phone .dt-dur { width: 40px; }
+.shell.is-phone .dt-like { width: 32px; margin-right: -6px; }
 .shell.is-phone .dt-end { width: auto; }
 .shell.is-phone .dt-grip { display: inline-flex; width: 36px; height: 36px; align-items: center; justify-content: center; color: var(--ink-tertiary); touch-action: none; }
 .shell.is-phone .dt-rules { flex-direction: column; align-items: stretch; gap: 12px; padding: 16px; position: relative; }

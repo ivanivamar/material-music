@@ -25,7 +25,7 @@ import { downloadsStore, playlistOffline, useDownloadProgress, useDownloads } fr
 import { useLibrary, type Catalogue } from '../../state/library'
 import { playerStore } from '../../state/player'
 import { fmtAgo, playlistInfo, type PlaylistRow } from '../../state/playlistViews'
-import { playlistsStore, usePlaylists, type Playlist } from '../../state/playlists'
+import { LIKED_ID, playlistsStore, usePlaylists, type Playlist } from '../../state/playlists'
 import { focusLibrarySearch } from '../../state/search'
 import { describeRule, describeSort, type Rule } from '../../state/smart'
 import { useIsPhone } from '../../state/viewport'
@@ -85,13 +85,15 @@ function PlaylistView({ c, p }: { c: Catalogue; p: Playlist }) {
   }
 
   const smart = p.smart ?? null
+  const liked = p.id === LIKED_ID
   const n = info.ids.length
   const stats = [`${n} ${n === 1 ? 'track' : 'tracks'}`, info.seconds ? fmtTotal(info.seconds) : null, off && off.done ? `${off.done} offline` : null, info.missing ? `${info.missing} not in your library` : null]
     .filter(Boolean)
     .join(' · ')
   const firstCover = info.rows.find((r) => r.track)?.track
-  const coverUrl = useCover(p.cover ? null : firstCover ? c.albums[firstCover.albumId]?.cover : null)
-  const tint = useArtTint(coverUrl)
+  const coverUrl = useCover(p.cover || p.id === LIKED_ID ? null : firstCover ? c.albums[firstCover.albumId]?.cover : null)
+  // Liked songs: the rose of its cover, not the first album's colour
+  const tint = useArtTint(coverUrl) ?? (p.id === LIKED_ID ? { hue: 12, chroma: 0.9 } : null)
 
   return (
     <div className="dt-page hue-scope" style={{ '--h': tint?.hue ?? 40, '--hc': tint?.chroma ?? 0 } as CSSProperties}>
@@ -100,9 +102,13 @@ function PlaylistView({ c, p }: { c: Catalogue; p: Playlist }) {
 
       <header className="dt-hero">
         <div className="dt-art">
-          <button type="button" className="dt-art-btn" onClick={() => actions.editPlaylist(p.id)} aria-label="Edit cover and details" title="Edit details">
+          {liked ? (
             <PlaylistCover playlist={p} className="dt-hero-cover" />
-          </button>
+          ) : (
+            <button type="button" className="dt-art-btn" onClick={() => actions.editPlaylist(p.id)} aria-label="Edit cover and details" title="Edit details">
+              <PlaylistCover playlist={p} className="dt-hero-cover" />
+            </button>
+          )}
         </div>
         <div className="dt-hero-text">
           {smart ? (
@@ -110,10 +116,15 @@ function PlaylistView({ c, p }: { c: Catalogue; p: Playlist }) {
               <Icon name="smart" />
               Smart playlist · Updates itself
             </div>
+          ) : liked ? (
+            <div className="dt-kicker is-liked">
+              <Icon name="heartF" />
+              Your hearts · Newest first{n ? ` · Last liked ${softDate(fmtAgo(info.rows[0]?.entry.addedAt ?? p.updatedAt))}` : ''}
+            </div>
           ) : (
             <div className="dt-kicker">Playlist · By you · Updated {softDate(fmtAgo(p.updatedAt))}</div>
           )}
-          <h1 className="dt-title" style={{ '--ts': `${titleSize(p.name)}px` } as CSSProperties} title={p.name} onDoubleClick={() => actions.editPlaylist(p.id)}>
+          <h1 className="dt-title" style={{ '--ts': `${titleSize(p.name)}px` } as CSSProperties} title={p.name} onDoubleClick={liked ? undefined : () => actions.editPlaylist(p.id)}>
             {p.name}
           </h1>
           {p.description && <div className="dt-desc">{p.description}</div>}
@@ -181,6 +192,19 @@ function PlaylistView({ c, p }: { c: Catalogue; p: Playlist }) {
             actions={
               <Button icon="tune" onClick={() => actions.smartPlaylist(p.id)}>
                 Edit rules
+              </Button>
+            }
+          />
+        </div>
+      ) : info.rows.length === 0 && liked ? (
+        <div className="card card-lg card-flush dt-empty">
+          <EmptyState
+            icon="heart"
+            title="No liked songs yet"
+            body={phone ? 'Tap the heart on any song, or in the player, and it lands here.' : 'Click the heart on any song, or in the player bar, and it lands here. Newest on top.'}
+            actions={
+              <Button icon="search" onClick={focusLibrarySearch}>
+                Find songs
               </Button>
             }
           />
@@ -366,8 +390,8 @@ function Table({
           onPlay={() => onPlay(r, i)}
           onRemove={() => onRemove(r)}
           dragProps={
-            p.smart
-              ? // smart rows can't be reordered; they still drag onto a sidebar playlist
+            p.smart || p.id === LIKED_ID
+              ? // smart rows / Liked songs (newest first) can't be reordered; they still drag onto a sidebar playlist
                 phone
                 ? null
                 : { draggable: true, onDragStart: onDragStart(r, i), onDragOver: () => {}, onDragEnd }
@@ -460,13 +484,14 @@ function Row({
       duration={t?.duration ? formatTime(t.duration) : phone && missing ? '' : '—'}
       onPlay={t ? onPlay : undefined}
       onMore={target ? (e) => actions.menu(target, e) : undefined}
+      like={t ? t.id : null}
       end={
         missing ? (
           <IconButton icon="x" label="Remove from playlist" onClick={(e) => (e.stopPropagation(), onRemove())} />
         ) : undefined
       }
       grip={
-        phone && !p.smart ? (
+        phone && !p.smart && p.id !== LIKED_ID ? (
           <span className="dt-grip" aria-label="Drag to reorder" role="button" tabIndex={-1} onPointerDown={onGripDown}>
             <Icon name="drag" />
           </span>

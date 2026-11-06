@@ -26,6 +26,7 @@ import { byName, initialOf, type ArtistInfo } from '../../state/views'
 import { CardFrame, usePlayingContext } from '../home/cards'
 import { initials, SmartArt } from '../home/art'
 import { PlaylistCover } from '../playlists/PlaylistCover'
+import { LikeButton } from '../../components/LikeButton'
 import { albumTrackIds, artistTrackIds, playList, useNowPlaying } from './playback'
 import { useWindow } from './useWindow'
 import '../home/home.css'
@@ -430,7 +431,7 @@ export function SongRowM({
   const target = { kind: 'track', trackId: t.id } as const
   return (
     <div
-      className={`lb-srow ${current ? 'is-current' : ''} ${compact ? 'is-compact' : ''}`}
+      className={`lb-srow like-host ${current ? 'is-current' : ''} ${compact ? 'is-compact' : ''}`}
       style={top != null ? { transform: `translateY(${top}px)` } : undefined}
       role="row"
       tabIndex={0}
@@ -471,6 +472,7 @@ export function SongRowM({
           )}
         </div>
       </div>
+      {(phone || compact) && <LikeButton trackId={t.id} size="sm" hover />}
       {!phone && compact && <div className="lb-sd">{t.duration ? formatTime(t.duration) : '—'}</div>}
       {!phone && !compact && (
         <>
@@ -484,6 +486,7 @@ export function SongRowM({
           <div className="lb-sq">
             <span className={`mx-qpill ${q24 ? 'is-24' : ''}`}>{qualityLabel('flac', { bitDepth: t.flac?.bitDepth, sampleRate: t.flac?.sampleRate })}</span>
           </div>
+          <LikeButton trackId={t.id} size="sm" hover />
           <div className="lb-sd">{t.duration ? formatTime(t.duration) : '—'}</div>
         </>
       )}

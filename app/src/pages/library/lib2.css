@@ -88,10 +88,10 @@
 .lb-slist { position: relative; }
 .lb-srow {
   position: absolute; left: 0; right: 0; top: 0; height: 60px; padding: 0 12px; border-radius: 16px;
-  display: grid; grid-template-columns: 44px minmax(0, 1fr) minmax(0, 260px) 120px 56px; align-items: center; gap: 16px; cursor: default;
+  display: grid; grid-template-columns: 44px minmax(0, 1fr) minmax(0, 260px) 120px 32px 48px; align-items: center; gap: 16px; cursor: default;
 }
-.lb-srow.is-compact { grid-template-columns: 44px minmax(0, 1fr) 52px; gap: 14px; }
-@media (max-width: 1299px) { .lb-srow { grid-template-columns: 44px minmax(0, 1fr) minmax(0, 180px) 110px 48px; } }
+.lb-srow.is-compact { grid-template-columns: 44px minmax(0, 1fr) 32px 48px; gap: 14px; }
+@media (max-width: 1299px) { .lb-srow { grid-template-columns: 44px minmax(0, 1fr) minmax(0, 180px) 110px 32px 44px; } }
 .lb-srow:hover, .lb-srow:focus-visible { background: oklch(0.26 0.009 40); outline: none; }
 .lb-srow.is-current { background: oklch(0.36 0.035 38 / 0.5); }
 .lb-scover { position: relative; width: 44px; height: 44px; border: 0; padding: 0; border-radius: 12px; overflow: hidden; background: var(--surface-2); cursor: pointer; }
@@ -145,7 +145,7 @@
 .sr-top-name { font-size: 32px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sr-top-by { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .sr-top-sub { font-size: 14px; color: oklch(0.85 calc(0.04 * var(--hc)) var(--h)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.sr-top-play { position: absolute; right: 24px; bottom: 24px; }
+.sr-top-play { position: absolute; right: 24px; bottom: 24px; display: flex; align-items: center; gap: 10px; }
 .sr-none { display: flex; flex-direction: column; align-items: center; gap: 16px; text-align: center; padding: 56px 0 40px; }
 .lb-nores-mark { position: relative; width: 120px; height: 120px; display: flex; align-items: center; justify-content: center; }
 .lb-nores-clover { position: absolute; inset: 0; background: oklch(0.225 0.008 40); }
@@ -182,7 +182,7 @@ html[data-lib-search] .shell.is-phone .ptb { display: none; }
 .shell.is-phone .lb-scrub { right: 2px; top: 52%; }
 .shell.is-phone .lb-scrub-l { height: min(15px, calc((100vh - 360px) / 27)); }
 .shell.is-phone .lb-scard { padding: 4px; }
-.shell.is-phone .lb-srow { height: 64px; grid-template-columns: 48px minmax(0, 1fr) 44px; gap: 12px; padding: 0 0 0 8px; border-radius: 12px; }
+.shell.is-phone .lb-srow { height: 64px; grid-template-columns: 48px minmax(0, 1fr) 32px 44px; gap: 8px; padding: 0 0 0 8px; border-radius: 12px; }
 .shell.is-phone .lb-srow:hover { background: none; }
 .shell.is-phone .lb-srow.is-current { background: oklch(0.36 0.035 38 / 0.35); }
 .shell.is-phone .lb-scover { width: 48px; height: 48px; }

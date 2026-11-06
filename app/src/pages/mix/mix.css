@@ -32,11 +32,11 @@
 
 /* track list */
 .mx-list {
-  --cols: 40px minmax(0, 1fr) minmax(0, 220px) 120px 120px 56px; padding: 8px;
+  --cols: 40px minmax(0, 1fr) minmax(0, 220px) 120px 120px 32px 48px; padding: 8px;
 }
-@media (max-width: 1299px) { .mx-list { --cols: 40px minmax(0, 1fr) minmax(0, 160px) 110px 104px 48px; } }
+@media (max-width: 1299px) { .mx-list { --cols: 40px minmax(0, 1fr) minmax(0, 160px) 110px 104px 32px 44px; } }
 @media (max-width: 1100px) {
-  .mx-list { --cols: 40px minmax(0, 1fr) minmax(0, 160px) 104px 48px; }
+  .mx-list { --cols: 40px minmax(0, 1fr) minmax(0, 160px) 104px 32px 44px; }
   .mx-head > :nth-child(4), .mx-q { display: none; }
 }
 .mx-head, .mx-row { display: grid; grid-template-columns: var(--cols); align-items: center; gap: 16px; padding: 0 12px; }
@@ -100,7 +100,7 @@
 .shell.is-phone .mx-offline > .ms { font-size: 20px; color: var(--ink-secondary); flex: none; }
 .shell.is-phone .mx-offline-t { flex: 1; min-width: 0; }
 .shell.is-phone .mx-offline-m { font-size: 12px; color: var(--ink-secondary); white-space: nowrap; }
-.shell.is-phone .mx-list { --cols: minmax(0, 1fr) 44px; background: none; padding: 0; margin: 0 -12px 0 -16px; border-radius: 0; }
+.shell.is-phone .mx-list { --cols: minmax(0, 1fr) 32px 44px; background: none; padding: 0; margin: 0 -12px 0 -16px; border-radius: 0; }
 .shell.is-phone .mx-row { height: 64px; padding: 0 0 0 16px; gap: 6px; border-radius: 0; }
 .shell.is-phone .mx-row:hover { background: none; }
 .shell.is-phone .mx-row.is-current { background: none; }

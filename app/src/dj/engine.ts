@@ -16,10 +16,23 @@
  * Endless mode (all four on) also mixes in Favourites, Decade, Artist sets and Wildcards.
  * Forgotten = played before, not in the last six months. History only starts on Oct 15 2026, so
  * until spring 2027 Forgotten quietly fills its sessions with never-played songs.
+ *
+ * Liked songs (Nov 2026). The hearts matter to some sessions, not all (LIKED_SHARE: about how much
+ * of the session goes to liked songs first, ±25 %, when the theme has them; the rest is picked
+ * as usual and may hold more by chance):
+ *   - Favourites counts a liked song as a favourite even with few plays: about half hearts;
+ *   - Forgotten digs up liked songs first ("you even gave some of these a heart"): about half;
+ *   - Genre, Decade and Artist sets lean towards liked songs a little: about a quarter to a third;
+ *   - Never played, New additions and Wildcards ignore them (those are about discovery).
+ * The share grows or shrinks with what the DJ learns (feature `liked:yes`: sessions that were
+ * mostly hearts, played through or skipped).
+ * Endless also has its own Liked songs session (kind `liked`): only hearted songs, the ones not
+ * heard lately first, sometimes narrowed to a genre or an era. Liking a song during a session
+ * counts as keeping it (learning +0.3, like saving it to a playlist).
  */
 
 export type DjType = 'genre' | 'never' | 'forgotten' | 'new'
-export type ThemeKind = DjType | 'favourites' | 'decade' | 'artist' | 'wild'
+export type ThemeKind = DjType | 'favourites' | 'decade' | 'artist' | 'wild' | 'liked'
 export const DJ_TYPES: DjType[] = ['genre', 'never', 'forgotten', 'new']
 
 export const TYPE_LABEL: Record<ThemeKind, string> = {
@@ -31,6 +44,7 @@ export const TYPE_LABEL: Record<ThemeKind, string> = {
   decade: 'Decade',
   artist: 'Artist set',
   wild: 'Wildcard',
+  liked: 'Liked songs',
 }
 /** mono label (session type line, panel) */
 export const TYPE_UPPER: Record<ThemeKind, string> = {
@@ -42,12 +56,20 @@ export const TYPE_UPPER: Record<ThemeKind, string> = {
   decade: 'DECADE',
   artist: 'ARTIST SET',
   wild: 'WILDCARD',
+  liked: 'LIKED SONGS',
 }
 
 const DAY = 86_400_000
 export const FORGOTTEN_MS = 182 * DAY
 export const NEW_DAYS = 30
 const RECENT_MS = 3 * DAY
+/** a liked song not heard for this long is a "forgotten heart" (Liked songs sessions dig these up first) */
+const LIKED_STALE_MS = 30 * DAY
+/**
+ * Share of a session kept for liked songs, per session kind. The kinds left out don't look at the
+ * hearts at all (a Liked songs session is all hearts by its pool).
+ */
+export const LIKED_SHARE: Partial<Record<ThemeKind, number>> = { favourites: 0.5, forgotten: 0.5, genre: 0.3, decade: 0.3, artist: 0.25 }
 export const MIN_SIZE = 6
 export const MAX_SIZE = 9
 
@@ -107,6 +129,8 @@ export interface DjTrack {
   last: number
   /** skipped early recently: picked less for a while */
   penalty: boolean
+  /** in Liked songs: when it was liked (ms), 0 = not liked */
+  liked: number
 }
 
 export interface GenreInfo {
@@ -127,6 +151,8 @@ export interface DjLibrary {
   now: number
   /** songs with at least one genre */
   withGenre: number
+  /** liked songs (in the allowed set) */
+  likedCount: number
 }
 
 export interface LibraryInput {
@@ -140,6 +166,8 @@ export interface LibraryInput {
   allowed?: Set<string> | null
   /** trackId → ms until which an early skip still counts against it */
   penalties?: Record<string, number>
+  /** trackId → when it was liked (ms): the Liked songs playlist */
+  liked?: ReadonlyMap<string, number>
   now: number
 }
 
@@ -204,6 +232,7 @@ export function buildLibrary(input: LibraryInput): DjLibrary {
       plays: count.get(t.id) ?? 0,
       last: last.get(t.id) ?? 0,
       penalty: (input.penalties?.[t.id] ?? 0) > input.now,
+      liked: input.liked?.get(t.id) ?? 0,
     })
     if (g.keys.length) withGenre++
     g.keys.forEach((k, i) => {
@@ -225,7 +254,8 @@ export function buildLibrary(input: LibraryInput): DjLibrary {
   const genres = [...gcount].map(([key, v]) => ({ key, name: v.name, count: v.n })).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
   const neighbours = new Map<string, string[]>()
   for (const [k, m] of pairs) neighbours.set(k, [...m].sort((a, b) => b[1] - a[1]).map(([x]) => x))
-  return { tracks, byId: new Map(tracks.map((t) => [t.id, t])), genres, genreByKey: new Map(genres.map((g) => [g.key, g])), neighbours, now: input.now, withGenre }
+  const likedCount = tracks.reduce((n, t) => n + (t.liked ? 1 : 0), 0)
+  return { tracks, byId: new Map(tracks.map((t) => [t.id, t])), genres, genreByKey: new Map(genres.map((g) => [g.key, g])), neighbours, now: input.now, withGenre, likedCount }
 }
 
 /* ── Pools ──────────────────────────────────────────── */
@@ -233,6 +263,7 @@ export function buildLibrary(input: LibraryInput): DjLibrary {
 export const isNever = (t: DjTrack) => t.plays === 0
 export const isForgotten = (t: DjTrack, now: number) => t.plays > 0 && t.last < now - FORGOTTEN_MS
 export const isNew = (t: DjTrack, now: number, days = NEW_DAYS) => t.addedAt > now - days * DAY
+export const isLiked = (t: DjTrack) => t.liked > 0
 
 export interface TypeCounts {
   total: number
@@ -312,7 +343,7 @@ export interface BuildContext {
 const score = (scores: Map<string, number> | undefined, f: string) => Math.max(-2.5, Math.min(2.5, scores?.get(f) ?? 0))
 const boost = (scores: Map<string, number> | undefined, f: string) => Math.exp(0.6 * score(scores, f))
 
-const BASE_WEIGHT: Record<ThemeKind, number> = { genre: 3, never: 2, forgotten: 1.4, new: 1.6, favourites: 1.1, decade: 1, artist: 1, wild: 0.7 }
+const BASE_WEIGHT: Record<ThemeKind, number> = { genre: 3, never: 2, forgotten: 1.4, new: 1.6, favourites: 1.1, decade: 1, artist: 1, wild: 0.7, liked: 1.2 }
 const EXPLORE = 0.15
 
 const decadeOf = (y: number | null) => (y ? Math.floor(y / 10) * 10 : null)
@@ -362,7 +393,7 @@ function pickGenres(lib: DjLibrary, mode: Mode, avail: DjTrack[], ctx: BuildCont
   return out
 }
 
-/** Optional sub-theme for never / forgotten / new: a decade or a genre with enough songs. */
+/** Optional sub-theme for never / forgotten / new / liked: a decade or a genre with enough songs. */
 function subTheme(pool: DjTrack[], size: number, rng: Rng): { decade?: number; genres?: string[] } {
   if (pool.length < size * 3 || rng() < 0.4) return {}
   if (rng() < 0.5) {
@@ -408,11 +439,16 @@ function poolFor(lib: DjLibrary, kind: ThemeKind, avail: DjTrack[]): DjTrack[] {
       }
       return []
     }
-    case 'favourites':
-      return avail
-        .filter((t) => t.plays >= 2)
+    case 'favourites': {
+      // the most played, plus every liked song (a heart makes it a favourite even before the plays do)
+      const top = avail
+        .filter((t) => t.plays >= 2 && !isLiked(t))
         .sort((a, b) => b.plays - a.plays)
         .slice(0, 150)
+      return [...avail.filter(isLiked), ...top]
+    }
+    case 'liked':
+      return avail.filter(isLiked)
     default:
       return avail
   }
@@ -422,7 +458,7 @@ function poolFor(lib: DjLibrary, kind: ThemeKind, avail: DjTrack[]): DjTrack[] {
 function pickTheme(lib: DjLibrary, mode: Mode, avail: DjTrack[], size: number, ctx: BuildContext, rng: Rng): Picked {
   const allTypes = DJ_TYPES.every((k) => mode.types.includes(k))
   const kinds: ThemeKind[] = [...mode.types]
-  if (mode.endless && allTypes) kinds.push('favourites', 'decade', 'artist', 'wild')
+  if (mode.endless && allTypes) kinds.push('favourites', 'decade', 'artist', 'wild', 'liked')
   const pools = new Map<ThemeKind, DjTrack[]>()
   const poolOf = (k: ThemeKind) => {
     let p = pools.get(k)
@@ -435,7 +471,7 @@ function pickTheme(lib: DjLibrary, mode: Mode, avail: DjTrack[], size: number, c
     if (k === 'forgotten') return poolOf('forgotten').length > 0 || poolOf('never').length > 0
     if (k === 'decade') return avail.some((t) => t.year)
     if (k === 'artist') return avail.length >= size
-    return poolOf(k).length >= (k === 'favourites' ? size : 1)
+    return poolOf(k).length >= (k === 'favourites' || k === 'liked' ? size : 1)
   })
   let cands = usable.length ? usable : (['wild'] as ThemeKind[])
   if (cands.length > 1 && ctx.last) cands = cands.filter((k) => k !== ctx.last!.kind) // never twice in a row
@@ -482,7 +518,7 @@ function pickTheme(lib: DjLibrary, mode: Mode, avail: DjTrack[], size: number, c
     return { theme: { kind: 'wild' }, pool: avail }
   }
   const pool = poolOf(kind)
-  if (kind === 'never' || kind === 'forgotten' || kind === 'new') {
+  if (kind === 'never' || kind === 'forgotten' || kind === 'new' || kind === 'liked') {
     const sub = subTheme(pool, size, rng)
     const theme: Theme = { kind, ...sub }
     return { theme, pool: pool.filter((t) => inTheme(t, theme)) }
@@ -490,8 +526,17 @@ function pickTheme(lib: DjLibrary, mode: Mode, avail: DjTrack[], size: number, c
   return { theme: { kind }, pool }
 }
 
-/** Pick `size` songs from `pool`: weighted by fit + freshness + chance, max per album / artist. */
+/** Pick `size` songs from `pool`: weighted by fit + freshness + chance, max per album / artist (+ the liked share). */
 function pickSongs(pool: DjTrack[], size: number, theme: Theme, lib: DjLibrary, ctx: BuildContext, rng: Rng, taken: DjTrack[] = []): DjTrack[] {
+  const share = LIKED_SHARE[theme.kind]
+  if (!share || taken.length) return fillSongs(pool, size, theme, lib, ctx, rng, taken)
+  // hearts first, up to this session's share (learned: heart-heavy sessions that landed ask for more)
+  const want = Math.round(size * Math.min(0.75, share * boost(ctx.scores, 'liked:yes')) * (0.75 + rng() * 0.5))
+  const hearts = want > 0 ? fillSongs(pool.filter(isLiked), Math.min(want, size), theme, lib, ctx, rng) : []
+  return fillSongs(pool, size, theme, lib, ctx, rng, hearts)
+}
+
+function fillSongs(pool: DjTrack[], size: number, theme: Theme, lib: DjLibrary, ctx: BuildContext, rng: Rng, taken: DjTrack[] = []): DjTrack[] {
   const out = [...taken]
   const now = lib.now
   const fit = (t: DjTrack) => {
@@ -499,6 +544,8 @@ function pickSongs(pool: DjTrack[], size: number, theme: Theme, lib: DjLibrary, 
     if (theme.kind === 'favourites') w *= Math.log2(2 + t.plays)
     if (theme.kind === 'new') w *= 1 + Math.max(0, 1 - (now - t.addedAt) / (90 * DAY))
     if (theme.kind === 'artist' && t.artistId === theme.artistId) w *= 2.2
+    // a Liked songs session digs up the hearts not heard lately first
+    if (theme.kind === 'liked' && t.last < now - LIKED_STALE_MS) w *= 2.2
     if (t.last > now - RECENT_MS) w *= 0.25 // played in the last 3 days
     if (t.penalty) w *= 0.3
     if (ctx.skipped?.has(t.id)) w *= 0.2
@@ -685,6 +732,22 @@ function describe(theme: Theme, songs: DjTrack[], lib: DjLibrary, mode: Mode, ct
       title = 'Wildcard'
       line = `No theme this time, just songs from anywhere in the library. ${start}`
       break
+    case 'liked': {
+      const stale = songs.filter((t) => t.liked && t.last < lib.now - LIKED_STALE_MS).length
+      title = flavour ? `Liked songs · ${flavour}` : 'Liked songs'
+      line =
+        stale >= Math.ceil(songs.length / 2)
+          ? pick([`Songs you gave a heart, and haven't heard in a while. ${start}`, `Some of your liked songs you've been neglecting${flavour ? `, mostly ${flavour}` : ''}. ${start}`], rng)
+          : pick([`Straight from your liked songs${flavour ? `, mostly ${flavour}` : ''}. ${start}`, `Only songs you've hearted this time. ${start}`, `A run through your liked songs. ${start}`], rng)
+      break
+    }
+  }
+
+  // sessions that lean on the hearts sometimes say so (never with a number)
+  const hearts = songs.filter(isLiked).length
+  if (LIKED_SHARE[theme.kind] && hearts >= Math.max(2, Math.ceil(songs.length / 3)) && rng() < 0.5) {
+    const tail = theme.kind === 'forgotten' ? ` You even gave some of these a heart.` : theme.kind === 'favourites' ? ` Your liked songs are in here too.` : ` Some of your liked songs are in the mix.`
+    if (line.endsWith(start)) line = `${line.slice(0, -start.length).trimEnd()}${tail} ${start}`
   }
 
   if (shortage) {
@@ -694,6 +757,7 @@ function describe(theme: Theme, songs: DjTrack[], lib: DjLibrary, mode: Mode, ct
       forgotten: [`Few forgotten songs so far, mixing in never-played ones.`, `Not much is forgotten yet, so I've mixed in some you've never played.`],
       new: [`Few new arrivals, mixing in older songs.`, `Not many new arrivals, so there are some older songs in here too.`],
       genre: [`Running low on ${(theme.genres ?? []).map(gname).join(' and ')}, mixing in neighbouring genres.`, `Running low on those, so I've mixed in some neighbours.`],
+      liked: [`Running low on liked songs, mixing in favourites.`, `Not many liked songs left for now, so I've mixed in some favourites.`],
     }
     const w = what[shortage.kind]
     if (w && shortage.have > 0) {
@@ -717,6 +781,8 @@ function featuresOf(theme: Theme, songs: DjTrack[], now: number): string[] {
     0.5,
   )
   if (fresh) f.push(`fresh:${fresh}`)
+  // mostly hearts: learning whether heart-heavy sessions land (Liked songs sessions are their own type)
+  if (theme.kind !== 'liked' && songs.filter(isLiked).length * 2 >= songs.length) f.push('liked:yes')
   return f
 }
 
@@ -729,6 +795,8 @@ function fallbackPool(lib: DjLibrary, theme: Theme, avail: DjTrack[]): DjTrack[]
       return [...avail.filter(isNever), ...avail]
     case 'new':
       return [...avail.filter(isNever), ...avail]
+    case 'liked':
+      return [...avail.filter((t) => t.plays >= 2).sort((a, b) => b.plays - a.plays), ...avail]
     case 'genre': {
       const near = new Set((theme.genres ?? []).flatMap((k) => (lib.neighbours.get(k) ?? []).slice(0, 5)))
       return [...avail.filter((t) => t.gkeys.some((k) => near.has(k))), ...avail]
@@ -802,6 +870,7 @@ export function featureLabel(f: string, genreName: (key: string) => string | und
   if (k === 'genre') return genreName(v) ?? v.replace(/(^|\s)\S/g, (s) => s.toUpperCase())
   if (k === 'decade') return `${v}s`
   if (k === 'fresh') return FRESH_LABEL[v] ?? null
+  if (k === 'liked') return 'Sets full of hearts'
   return null
 }
 

@@ -13,7 +13,7 @@ import { playlistOffline, useDownloads } from '../../state/downloads'
 import { type Catalogue } from '../../state/library'
 import { usePlayer } from '../../state/player'
 import { playlistInfo } from '../../state/playlistViews'
-import { usePlaylists, type Playlist } from '../../state/playlists'
+import { LIKED_ID, usePlaylists, type Playlist } from '../../state/playlists'
 import { useIsPhone } from '../../state/viewport'
 import { plural } from '../../state/views'
 import { PlaylistCover } from './PlaylistCover'
@@ -25,6 +25,9 @@ export function PlaylistsView({ c }: { c: Catalogue }) {
   const p = usePlayer()
   const playingId = p.playing && p.context?.kind === 'playlist' ? p.context.id : null
   const create = () => actions.newPlaylist([], '', true)
+  // Liked songs leads (it always exists), then the new-playlist tiles, then the rest A–Z
+  const liked = list.find((x) => x.id === LIKED_ID)
+  const others = list.filter((x) => x.id !== LIKED_ID)
 
   if (!loaded) return null
   if (!list.length)
@@ -51,6 +54,7 @@ export function PlaylistsView({ c }: { c: Catalogue }) {
   if (phone)
     return (
       <div className="pls-list">
+        {liked && <PhoneRow c={c} pl={liked} playing={playingId === liked.id} />}
         <button type="button" className="pls-row pls-new" onClick={create}>
           <span className="pls-new-box">
             <Icon name="plus" />
@@ -66,7 +70,7 @@ export function PlaylistsView({ c }: { c: Catalogue }) {
             <span className="pls-meta">FILLS ITSELF FROM RULES</span>
           </span>
         </button>
-        {list.map((pl) => (
+        {others.map((pl) => (
           <PhoneRow key={pl.id} c={c} pl={pl} playing={playingId === pl.id} />
         ))}
       </div>
@@ -80,6 +84,7 @@ export function PlaylistsView({ c }: { c: Catalogue }) {
         <span className="lib-bar-meta">{plural(list.length, 'PLAYLIST')}</span>
       </div>
       <div className="lib-grid pls-grid">
+        {liked && <PlaylistCard c={c} pl={liked} playing={playingId === liked.id} />}
         <button type="button" className="acard pls-new-card" onClick={create}>
           <span className="acard-cover pls-new-tile">
             <Icon name="plus" />
@@ -102,7 +107,7 @@ export function PlaylistsView({ c }: { c: Catalogue }) {
             </span>
           </span>
         </button>
-        {list.map((pl) => (
+        {others.map((pl) => (
           <PlaylistCard key={pl.id} c={c} pl={pl} playing={playingId === pl.id} />
         ))}
       </div>
@@ -154,7 +159,7 @@ export function PlaylistCard({ c, pl, playing, title, onOpen }: { c: Catalogue; 
       <div className="acard-meta">
         <div className="acard-text">
           <div className="acard-title">{title ?? pl.name}</div>
-          <div className="acard-sub">{pl.smart ? `Smart · ${plural(info.ids.length, 'track', 'tracks')}` : plural(info.ids.length, 'track', 'tracks')}</div>
+          <div className="acard-sub">{pl.smart ? `Smart · ${plural(info.ids.length, 'track', 'tracks')}` : pl.id === LIKED_ID ? `Your hearts · ${plural(info.ids.length, 'song', 'songs')}` : plural(info.ids.length, 'track', 'tracks')}</div>
         </div>
       </div>
     </div>

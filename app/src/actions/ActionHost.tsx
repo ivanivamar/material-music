@@ -19,7 +19,8 @@ import { albumHref, artistHref } from '../shell/routes'
 import { downloadsStore, playlistOffline, trackOffline, useDownloads } from '../state/downloads'
 import { useLibrary, type Catalogue } from '../state/library'
 import { downloadM3u, playlistInfo, playlistsWith } from '../state/playlistViews'
-import { usePlaylists, type Playlist } from '../state/playlists'
+import { LIKED_ID, LIKED_NAME, usePlaylists, type Playlist } from '../state/playlists'
+import { useLikedIndex } from '../state/likes'
 import { useIsPhone } from '../state/viewport'
 import { artistInfos, fmtBytes, fmtTotal, plural } from '../state/views'
 import { actions, useActions, type ActionTarget } from './actions'
@@ -27,7 +28,7 @@ import { EditPlaylistDialog, NewPlaylistDialog, RemoveDialog } from './Dialogs'
 import { GenreDialog } from './GenreDialog'
 import { SmartDialog } from './SmartDialog'
 import { useDjView } from '../state/djUi'
-import { addToPlaylist, createPlaylist, deletePlaylist, downloadTrack, goTo, playPlaylist, queueTracks, removeFromPlaylist, removeTrackDownload } from './ops'
+import { addToPlaylist, createPlaylist, deletePlaylist, downloadTrack, goTo, playPlaylist, queueTracks, removeFromPlaylist, removeTrackDownload, setLike } from './ops'
 import { playList } from '../pages/library/playback'
 import { radioStore } from '../state/radio'
 import type { RadioSeed } from '../lib/mixing'
@@ -66,7 +67,7 @@ function startRadio(toast: Toast, seed: RadioSeed) {
   if (!radioStore.start(seed)) toast.show({ icon: 'radio', mutedIcon: true, text: 'Nothing to play for this radio right now.' })
 }
 
-function describe(t: ActionTarget, c: Catalogue, toast: Toast, lists: Map<string, Playlist>, dl: ReturnType<typeof useDownloads>): Described | null {
+function describe(t: ActionTarget, c: Catalogue, toast: Toast, lists: Map<string, Playlist>, dl: ReturnType<typeof useDownloads>, liked: ReadonlySet<string>): Described | null {
   const div = 'div' as const
   if (t.kind === 'track') {
     const tr = c.tracks[t.trackId]
@@ -79,6 +80,9 @@ function describe(t: ActionTarget, c: Catalogue, toast: Toast, lists: Map<string
       { icon: 'queue', label: 'Add to queue', run: () => queueTracks(toast, ids(), false) },
       { icon: 'radio', label: 'Start radio', hint: 'FROM THIS SONG', run: () => startRadio(toast, { type: 'song', id: tr.id }) },
       div,
+      liked.has(tr.id)
+        ? { icon: 'heartF', label: `Remove from ${LIKED_NAME}`, run: () => setLike(toast, tr.id, false) }
+        : { icon: 'heart', label: `Add to ${LIKED_NAME}`, run: () => setLike(toast, tr.id, true) },
       { icon: 'playlist', label: 'Add to playlist', picker: true },
     ]
     // Android app: keep this one song offline, like an album's Download. Nothing to offer when its
@@ -94,7 +98,7 @@ function describe(t: ActionTarget, c: Catalogue, toast: Toast, lists: Map<string
       { icon: 'library', label: 'Go to artist', run: () => goTo(artistHref(album?.artistId ?? tr.artistId)) },
       div,
     )
-    if (pl && t.entryId) rows.push({ icon: 'x', label: `Remove from ${pl.name}`, danger: true, run: () => removeFromPlaylist(toast, pl.id, [t.entryId!]) })
+    if (pl && t.entryId && pl.id !== LIKED_ID) rows.push({ icon: 'x', label: `Remove from ${pl.name}`, danger: true, run: () => removeFromPlaylist(toast, pl.id, [t.entryId!]) })
     rows.push({ icon: 'x', label: 'Remove from library…', danger: true, run: () => actions.confirmRemove({ kind: 'track', trackIds: [tr.id] }) })
     return {
       title: tr.title,
@@ -184,7 +188,8 @@ function describe(t: ActionTarget, c: Catalogue, toast: Toast, lists: Map<string
     { icon: 'playlist', label: 'Add to another playlist', picker: true },
     div,
     ...(p.smart ? [{ icon: 'smart', label: 'Edit rules', run: () => actions.smartPlaylist(p.id) } satisfies Item] : []),
-    { icon: 'gear', label: 'Edit details', run: () => actions.editPlaylist(p.id) },
+    // Liked songs is fixed: no name / cover to edit, can't be deleted
+    ...(p.id === LIKED_ID ? [] : [{ icon: 'gear', label: 'Edit details', run: () => actions.editPlaylist(p.id) } satisfies Item]),
   ]
   if (dl.available) {
     const off = playlistOffline(dl, c, p)
@@ -194,10 +199,10 @@ function describe(t: ActionTarget, c: Catalogue, toast: Toast, lists: Map<string
         : { icon: 'download', label: 'Download', run: () => downloadsStore.pin('playlist', p.id) },
     )
   } else rows.push({ icon: 'ext', label: 'Export as M3U', run: () => downloadM3u(c, p) })
-  rows.push(div, { icon: 'x', label: 'Delete playlist', danger: true, run: () => deletePlaylist(toast, p.id) })
+  if (p.id !== LIKED_ID) rows.push(div, { icon: 'x', label: 'Delete playlist', danger: true, run: () => deletePlaylist(toast, p.id) })
   return {
     title: p.name,
-    sub: `${p.smart ? 'SMART PLAYLIST' : 'PLAYLIST'} · ${plural(info.ids.length, 'TRACK')}`,
+    sub: `${p.smart ? 'SMART PLAYLIST' : p.id === LIKED_ID ? 'YOUR HEARTS' : 'PLAYLIST'} · ${plural(info.ids.length, 'TRACK')}`,
     cover: null,
     playlist: p,
     trackIds: ids,
@@ -269,13 +274,14 @@ function useDescribed(target: ActionTarget): Described | null {
   const { byId } = usePlaylists()
   const dl = useDownloads()
   const djOn = useDjView().on
+  const liked = useLikedIndex()
   return useMemo(() => {
-    const d = data ? describe(target, data, toast, byId, dl) : null
+    const d = data ? describe(target, data, toast, byId, dl, liked.ids) : null
     if (!d || !djOn) return d
     // DJ playing: Play next / Add to queue join the session
     const hint = (r: Row): Row => (r === 'div' ? r : r.label === 'Play next' ? { ...r, djHint: 'INSIDE THIS DJ SESSION' } : r.label === 'Add to queue' ? { ...r, djHint: 'END OF THIS DJ SESSION' } : r)
     return { ...d, rows: d.rows.map(hint) }
-  }, [data, target, toast, byId, dl, djOn])
+  }, [data, target, toast, byId, dl, djOn, liked])
 }
 
 function HeadCover({ d, size }: { d: Described; size: number }) {
@@ -461,7 +467,7 @@ function Picker({ d, target, subRef, autoFocus }: { d: Described; target: Action
   const toast = useToast()
   const [q, setQ] = useState('')
   const own = target.kind === 'playlist' ? target.playlistId : null
-  const shown = list.filter((p) => p.id !== own && !p.smart && (!q.trim() || p.name.toLowerCase().includes(q.trim().toLowerCase())))
+  const shown = list.filter((p) => p.id !== own && p.id !== LIKED_ID && !p.smart && (!q.trim() || p.name.toLowerCase().includes(q.trim().toLowerCase())))
   const has = useMemo(() => (data && target.kind === 'track' ? playlistsWith(data, list, target.trackId) : new Set<string>()), [data, list, target])
 
   return (
@@ -609,7 +615,7 @@ function SheetPicker({ d, target, onDone }: { d: Described; target: ActionTarget
       </form>
       <div className="as-pl-list">
         {list
-          .filter((p) => p.id !== own && !p.smart)
+          .filter((p) => p.id !== own && p.id !== LIKED_ID && !p.smart)
           .map((p) => {
             const info = data ? playlistInfo(data, p) : null
             return (
@@ -627,7 +633,7 @@ function SheetPicker({ d, target, onDone }: { d: Described; target: ActionTarget
               </button>
             )
           })}
-        {!list.some((p) => !p.smart) && <div className="as-pl-none">No playlists yet. Name one above.</div>}
+        {!list.some((p) => !p.smart && p.id !== LIKED_ID) && <div className="as-pl-none">No playlists yet. Name one above.</div>}
       </div>
     </>
   )

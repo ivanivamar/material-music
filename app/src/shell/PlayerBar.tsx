@@ -2,7 +2,7 @@
  * Desktop player bar (Material redesign, HomeMaterial.dc.html): a 96px floating glass bar inside the
  * main panel, 28px from its edges. Neutral glass (no album tint); the album colour only on the cookie
  * play button, the wavy progress and the active shuffle / repeat toggles.
- *   [ tilted 64px cover · title (+ DJ / Radio chip) · artist ]
+ *   [ tilted 64px cover · title (+ DJ / Radio chip) · artist · ♥ ]
  *   [ shuffle · prev · play · next · repeat  /  time · wave · time ]
  *   [ FLAC 16/44.1 · lyrics · DJ · queue · volume ]
  */
@@ -23,6 +23,7 @@ import { DjButton } from '../dj/DjButton'
 import { IntroSub, LiveMark } from '../dj/DjIntro'
 import { useSettings } from '../state/settings'
 import { DevicesButton } from '../sync/DevicesButton'
+import { LikeButton } from '../components/LikeButton'
 import './playerbar.css'
 
 export function PlayerBar() {
@@ -122,6 +123,7 @@ export function PlayerBar() {
                   <Marquee text={album ? `${track.artist} · ${album.title}` : track.artist} />
                 </a>
               </div>
+              <LikeButton trackId={track.id} size="md" className="pb-like" />
             </>
           )
         )}

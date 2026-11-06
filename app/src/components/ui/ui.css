@@ -202,6 +202,7 @@ html[data-motion='reduced'] .swell-head, html[data-motion='reduced'] .swell-tip 
 .toast-danger { border-color: rgba(230, 150, 140, .35); }
 .toast-danger .toast-ic { color: var(--danger); }
 .toast-dj .toast-ic { color: var(--dj, rgb(198, 180, 242)); }
+.toast-like .toast-ic { color: var(--like); }
 .toast-ic { font-size: 21px; display: inline-flex; flex: none; }
 .toast-ic.is-muted { color: var(--ink-secondary); }
 .toast-text { min-width: 0; }

@@ -7,6 +7,7 @@
 import type { CSSProperties, HTMLAttributes, MouseEvent, ReactNode } from 'react'
 import { IconButton, Button, AlbumEq, ProgressRing, Toggle, type DownloadState } from '../../components/ui'
 import { Icon, type IconName } from '../../design/icons'
+import { LikeButton } from '../../components/LikeButton'
 import { useLazyCover } from '../../lib/covers'
 import { back as goBack } from '../../shell/routes'
 import { isTouch } from '../../state/viewport'
@@ -155,9 +156,11 @@ export interface DtRowProps {
   dim?: boolean
   /** phone: drag grip */
   grip?: ReactNode
+  /** the song's id: shows the heart (Liked songs) before the duration; null keeps the column empty */
+  like?: string | null
 }
 
-export function DtRow({ n, title, sub, cover, showCover, current, playing, dl, hasDl, stat, duration, onPlay, onMore, end, rowProps, className, dim, grip }: DtRowProps) {
+export function DtRow({ n, title, sub, cover, showCover, current, playing, dl, hasDl, stat, duration, onPlay, onMore, end, rowProps, className, dim, grip, like }: DtRowProps) {
   const play = (e: MouseEvent) => {
     e.stopPropagation()
     if (!onPlay) return
@@ -167,7 +170,7 @@ export function DtRow({ n, title, sub, cover, showCover, current, playing, dl, h
   return (
     <div
       {...rowProps}
-      className={['dt-row', current && 'is-current', dim && 'is-dim', className, rowProps?.className].filter(Boolean).join(' ')}
+      className={['dt-row', 'like-host', current && 'is-current', dim && 'is-dim', className, rowProps?.className].filter(Boolean).join(' ')}
       role="row"
       onClick={(e) => {
         if ((e.target as HTMLElement).closest('a, button')) return
@@ -197,6 +200,11 @@ export function DtRow({ n, title, sub, cover, showCover, current, playing, dl, h
       </div>
       {stat != null && <div className="dt-stat">{stat}</div>}
       {hasDl && <div className="dt-dlc">{<DlMark state={dl} />}</div>}
+      {like !== undefined && (
+        <div className="dt-like">
+          {like && <LikeButton trackId={like} size="sm" hover />}
+        </div>
+      )}
       <div className="dt-dur">{duration}</div>
       <div className="dt-end">
         {end ?? (

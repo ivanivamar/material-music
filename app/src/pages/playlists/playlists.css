@@ -11,6 +11,16 @@
 .plc-tile img, .plc-full { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
 .plc.is-empty { display: flex; align-items: center; justify-content: center; background: var(--surface-1); color: var(--ink-tertiary); }
 .plc.is-empty svg { width: 34%; height: 34%; }
+/* Liked songs: rose tile, big heart + two rising ones */
+.plc.plc-liked {
+  background:
+    radial-gradient(120% 90% at 30% 15%, oklch(0.80 0.13 20 / 0.9), transparent 60%),
+    linear-gradient(150deg, oklch(0.66 0.17 12), oklch(0.45 0.15 4) 70%, oklch(0.36 0.12 358));
+}
+.plc-liked-art { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.plc-liked-big { fill: oklch(0.97 0.018 12); filter: drop-shadow(0 2px 3px oklch(0.25 0.1 5 / 0.45)); }
+.plc-liked-s1 { fill: oklch(0.93 0.05 14); opacity: .9; }
+.plc-liked-s2 { fill: oklch(0.88 0.08 16); opacity: .75; }
 
 /* ── Playlist page ─────────────────────────────────── */
 .pl-page { position: relative; }

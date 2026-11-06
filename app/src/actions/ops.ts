@@ -13,7 +13,8 @@ import { libraryStore } from '../state/library'
 import { nowPlayingStore } from '../state/nowPlaying'
 import { playerStore } from '../state/player'
 import { alreadyIn, playlistInfo } from '../state/playlistViews'
-import { playlistsStore } from '../state/playlists'
+import { LIKED_ID, LIKED_NAME, playlistsStore } from '../state/playlists'
+import { likedIndex } from '../state/likes'
 import type { SmartRules } from '../state/smart'
 import { fmtBytes, plural } from '../state/views'
 
@@ -68,6 +69,24 @@ export function addToPlaylist(toast: Toast, playlistId: string, trackIds: string
     meta: dup.size ? `${dup.size} ALREADY IN IT · SKIPPED` : undefined,
     action: { label: 'Undo', onClick: () => playlistsStore.removeEntries(playlistId, ids) },
   })
+}
+
+/**
+ * Heart / unheart a song. A like is quiet when the heart button's own animation already says so
+ * (`quiet`); an unlike always offers Undo, since the song drops out of Liked songs.
+ */
+export function setLike(toast: Toast, trackId: string, on: boolean, opts: { quiet?: boolean } = {}) {
+  if (on) {
+    const added = playlistsStore.setLiked(trackId, true)
+    if (!added.length) return
+    djStore.noteSaved([trackId]) // DJ learning: a song kept from a session
+    if (!opts.quiet)
+      toast.show({ icon: 'heartF', tone: 'like', text: `Added ${what([trackId])} to ${LIKED_NAME}.`, action: { label: 'Undo', onClick: () => playlistsStore.removeEntries(LIKED_ID, added) } })
+    return
+  }
+  const gone = playlistsStore.setLiked(trackId, false, likedIndex().entries.get(trackId) ?? [])
+  if (!gone.length) return
+  toast.show({ icon: 'heart', mutedIcon: true, text: `Removed ${what([trackId])} from ${LIKED_NAME}.`, action: { label: 'Undo', onClick: () => playlistsStore.restoreEntries(LIKED_ID, gone) } })
 }
 
 export function createPlaylist(toast: Toast, name: string, trackIds: string[], open: boolean) {

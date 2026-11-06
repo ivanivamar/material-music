@@ -8,6 +8,7 @@
  * sheet from below (phone) over a scrim; the queue is its own panel (QueuePanel.tsx).
  * Opened from the player bar / mini player. Esc or Back closes (AppShell + history).
  */
+import { LikeButton } from '../components/LikeButton'
 import { useEffect, useRef, useState, type CSSProperties, type MouseEvent, type PointerEvent } from 'react'
 import { Badge, IconButton, ThinSlider, WaveSeek } from '../components/ui'
 import { Icon } from '../design/icons'
@@ -317,6 +318,7 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
                           {fmtQ.detail}
                         </span>
                       )}
+                      <LikeButton trackId={songTrack.id} size="lg" ink className="np-like" />
                     </div>
                   </div>
                 )

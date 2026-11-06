@@ -17,7 +17,7 @@ export interface ToastInput {
   mutedIcon?: boolean
   meta?: ReactNode
   action?: { label: string; onClick: () => void }
-  tone?: 'default' | 'danger' | 'dj'
+  tone?: 'default' | 'danger' | 'dj' | 'like'
   /** 0..1 — thin glowing line along the bottom (uploads) */
   progress?: number
   /** ms; default 4500. 0 = stays until dismissed/updated */
@@ -214,7 +214,7 @@ function ToastView({
   return (
     <div
       ref={ref}
-      className={`toast ${t.tone === 'danger' ? 'toast-danger' : t.tone === 'dj' ? 'toast-dj' : ''} ${t.leaving ? 'is-leaving' : ''} ${swiped ? 'is-swiped' : ''}`}
+      className={`toast ${t.tone === 'danger' ? 'toast-danger' : t.tone === 'dj' ? 'toast-dj' : t.tone === 'like' ? 'toast-like' : ''} ${t.leaving ? 'is-leaving' : ''} ${swiped ? 'is-swiped' : ''}`}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={(e) => end(e, false)}

@@ -97,6 +97,8 @@
 .qp-like:hover, .qp-like.is-on { color: #fff; }
 .qp-like.is-pop { transform: scale(1.25); }
 .qp-nd { width: 40px; text-align: right; }
+.qp-like { margin: 0 -4px 0 0; }
+.qp-now-like { align-self: center; margin: 0 -2px 0 0; }
 .qp-acts { display: flex; align-items: center; flex: none; }
 .qp-act { flex: none;
 }

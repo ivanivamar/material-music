@@ -15,7 +15,7 @@ import { addToPlaylist } from '../actions/ops'
 import { PlaylistCover } from '../pages/playlists/PlaylistCover'
 import { useLibrary } from '../state/library'
 import { playlistInfo } from '../state/playlistViews'
-import { playlistsStore, sidebarOrder, usePlaylists, type Playlist } from '../state/playlists'
+import { LIKED_ID, playlistsStore, sidebarOrder, usePlaylists, type Playlist } from '../state/playlists'
 import { usePlayer } from '../state/player'
 import { plural } from '../state/views'
 import { NAV, href, playlistHref, type NavItem, type RouteKey } from './routes'
@@ -84,7 +84,8 @@ function SidebarPlaylists({ active }: { active: string | null }) {
             dropMark={drag && drop?.index === i ? 'before' : drag && drop?.index === i + 1 && i === ordered.length - 1 ? 'after' : null}
             onReorderStart={() => setDrag({ id: p.id })}
             onReorderOver={(before) => {
-              const index = before ? i : i + 1
+              // Liked songs stays on top: nothing drops above it
+              const index = p.id === LIKED_ID ? 1 : before ? i : i + 1
               if (drop?.index !== index) setDrop({ index })
             }}
             onReorderDrop={() => {
@@ -96,7 +97,7 @@ function SidebarPlaylists({ active }: { active: string | null }) {
             onReorderEnd={endDrag}
           />
         ))}
-        {loaded && !list.length && <div className="sb-pl-none">No playlists yet</div>}
+        {loaded && !list.some((p) => p.id !== LIKED_ID) && <div className="sb-pl-none">No playlists yet</div>}
       </div>
     </section>
   )
@@ -129,6 +130,7 @@ function SidebarPlaylist({
   const [over, setOver] = useState(false)
   const count = data ? playlistInfo(data, p).ids.length : 0
   const playing = player.playing && player.context?.kind === 'playlist' && player.context.id === p.id
+  const pinned = p.id === LIKED_ID
   // smart playlists fill themselves: not a drop target
   const accepts = (e: DragEvent) => !p.smart && e.dataTransfer.types.includes(DRAG_MIME)
   return (
@@ -136,8 +138,9 @@ function SidebarPlaylist({
       href={playlistHref(p.id)}
       className={`sb-pl ${on ? 'is-active' : ''} ${over ? 'is-drop' : ''} ${dragging ? 'is-dragging' : ''} ${dropMark ? `is-mark-${dropMark}` : ''}`}
       aria-current={on ? 'page' : undefined}
-      draggable
+      draggable={!pinned}
       onDragStart={(e) => {
+        if (pinned) return e.preventDefault()
         e.dataTransfer.effectAllowed = 'move'
         e.dataTransfer.setData(REORDER_MIME, p.id)
         e.dataTransfer.setData('text/plain', p.name)
@@ -177,7 +180,7 @@ function SidebarPlaylist({
         addToPlaylist(toast, p.id, ids)
       }}
     >
-      <PlaylistCover playlist={p} size={28} lazy className={`sb-pl-cover ${p.smart ? 'is-smart' : ''}`} />
+      <PlaylistCover playlist={p} size={28} lazy className={`sb-pl-cover ${p.smart ? 'is-smart' : ''} ${pinned ? 'is-liked' : ''}`} />
       <span className="sb-pl-text">
         <span className="sb-pl-name">{p.name}</span>
         <span className="sb-pl-meta">{p.smart ? `${plural(count, 'song', 'songs')} · smart` : plural(count, 'track', 'tracks')}</span>

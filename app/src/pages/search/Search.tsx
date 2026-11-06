@@ -7,6 +7,7 @@
  *   Nothing: clover + search_off, "Nothing in your library matches ‘…’", Did you mean / Clear search.
  * Matched text is marked (coral tint). ↑ / ↓ move between results; ↑ from the first goes back to the field.
  */
+import { LikeButton } from '../../components/LikeButton'
 import { useMemo, useRef, type CSSProperties, type KeyboardEvent, type ReactNode } from 'react'
 import { Badge, Button, CookieButton } from '../../components/ui'
 import { useCover } from '../../lib/covers'
@@ -213,6 +214,7 @@ function TopCard({ c, top, r, remember, phone }: { c: Catalogue; top: TopHit; r:
   let play: () => void
   let active = ctx.active
   let playing = ctx.playing
+  let likeId: string | null = null
   if (top.kind === 'artist') {
     const info = artistInfos(c).get(top.item.id)
     const n = info?.albums.length ?? 0
@@ -247,6 +249,7 @@ function TopCard({ c, top, r, remember, phone }: { c: Catalogue; top: TopHit; r:
     play = open
     active = now.id === top.item.id
     playing = active && now.playing
+    likeId = top.item.id
   }
 
   const menuTarget: ActionTarget =
@@ -280,6 +283,7 @@ function TopCard({ c, top, r, remember, phone }: { c: Catalogue; top: TopHit; r:
         </div>
       </div>
       <div className="sr-top-play" onClick={(e) => e.stopPropagation()}>
+        {likeId && <LikeButton trackId={likeId} size="lg" className="sr-top-like" />}
         <CookieButton
           size={phone ? 52 : 64}
           iconSize={phone ? 28 : 32}

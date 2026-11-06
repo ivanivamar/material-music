@@ -517,6 +517,7 @@ function TopSongs({ c, stats, label }: { c: Catalogue; stats: PeriodStats; label
               duration={r.item.duration ? formatTime(r.item.duration) : '—'}
               onPlay={() => playList(ids, context, { start: i })}
               onMore={(e) => actions.menu({ kind: 'track', trackId: r.item.id }, e)}
+              like={r.item.id}
               rowProps={trackDrag(() => [r.item.id], `${r.item.title} · ${r.item.artist}`)}
             />
           )
