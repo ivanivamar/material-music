@@ -369,13 +369,6 @@ function dominant<T>(items: T[], min: number): T | null {
   return best !== null && n / Math.max(1, items.length) >= min ? best : null
 }
 
-/** Distinct artists among `tracks`. */
-function artistCount(tracks: Iterable<DjTrack>): number {
-  const s = new Set<string>()
-  for (const t of tracks) s.add(t.artistId)
-  return s.size
-}
-
 /**
  * A (sub-)theme needs enough artists to fill a session within the per-artist cap (2), else a niche
  * genre or decade owned by one artist turned a whole Never played session into that artist.
