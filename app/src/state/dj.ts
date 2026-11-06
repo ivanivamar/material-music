@@ -344,6 +344,7 @@ function plan(run: Pick<DjRun, 'mode' | 'used' | 'skippedEarly' | 'count'>, last
     used: new Set(run.used),
     skipped: new Set(run.skippedEarly),
     last: last?.theme ?? null,
+    lastSongs: last?.songs,
     lastSkipped,
     scores: djScores(),
     n: run.count + 1,
