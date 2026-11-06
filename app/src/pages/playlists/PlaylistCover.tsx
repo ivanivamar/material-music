@@ -2,8 +2,8 @@
  * Playlist cover (handoff 09): the custom image when there is one, else a 2×2 mosaic of the first
  * four different album covers (gap 2px on #0B0B0C). One album → its cover fills the tile; two or
  * three → they repeat across the four tiles (a b / b a, a b / c a); none → the playlist glyph.
- * Liked songs has its own fixed cover: a rose tile with a big heart and two small ones rising
- * from it (the heart buttons' fountain, frozen).
+ * Liked songs has its own fixed cover: a dark warm tile with a top-left glow, a dot grid fading in
+ * from the top-right, two quarter rings in the bottom-left and a big coral heart in the middle.
  */
 import type { CSSProperties } from 'react'
 import { Icon, type IconName } from '../../design/icons'
@@ -89,15 +89,35 @@ function MosaicTiles({ covers, lazy = false }: { covers: string[]; lazy?: boolea
   )
 }
 
+/** Dot grid for the Liked cover: top-right, fading out towards the middle (viewBox units). */
+const LIKED_DOTS = (() => {
+  const out: { x: number; y: number; r: number; o: number }[] = []
+  for (let y = 5; y < 64; y += 6.4)
+    for (let x = 95; x > 44; x -= 6.4) {
+      const d = Math.hypot(100 - x, y) / 62
+      if (d >= 1) continue
+      const t = 1 - d
+      out.push({ x: +x.toFixed(2), y: +y.toFixed(2), r: +(0.55 + 0.35 * t).toFixed(2), o: +(0.12 + 0.5 * t * t).toFixed(2) })
+    }
+  return out
+})()
+
 /** The Liked songs cover: one SVG that scales with the tile, so the same look from 26 to 264 px. */
 export function LikedCover({ size, className, style }: { size?: number; className?: string; style?: CSSProperties }) {
   const cls = ['plc', 'plc-liked', className].filter(Boolean).join(' ')
   return (
     <div className={cls} style={{ ...(size ? { width: size, height: size } : {}), ...style }} role="img" aria-label="Liked songs">
       <svg className="plc-liked-art" viewBox="0 0 100 100" aria-hidden>
-        <path className="plc-liked-big" d={heartAt(50, 59, 2.55)} />
-        <path className="plc-liked-s1" d={heartAt(78, 22, 0.78)} transform="rotate(16 78 22)" />
-        <path className="plc-liked-s2" d={heartAt(23, 25, 0.54)} transform="rotate(-18 23 25)" />
+        <g className="plc-liked-dots">
+          {LIKED_DOTS.map((d, i) => (
+            <circle key={i} cx={d.x} cy={d.y} r={d.r} opacity={d.o} />
+          ))}
+        </g>
+        <g className="plc-liked-rings">
+          <circle cx="8" cy="95" r="33" />
+          <circle cx="8" cy="95" r="45" />
+        </g>
+        <path className="plc-liked-big" d={heartAt(50, 52, 2.4)} />
       </svg>
     </div>
   )

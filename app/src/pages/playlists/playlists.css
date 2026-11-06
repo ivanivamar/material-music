@@ -11,16 +11,17 @@
 .plc-tile img, .plc-full { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
 .plc.is-empty { display: flex; align-items: center; justify-content: center; background: var(--surface-1); color: var(--ink-tertiary); }
 .plc.is-empty svg { width: 34%; height: 34%; }
-/* Liked songs: rose tile, big heart + two rising ones */
+/* Liked songs: dark warm tile, top-left glow, dot grid, rings, coral heart */
 .plc.plc-liked {
   background:
-    radial-gradient(120% 90% at 30% 15%, oklch(0.80 0.13 20 / 0.9), transparent 60%),
-    linear-gradient(150deg, oklch(0.66 0.17 12), oklch(0.45 0.15 4) 70%, oklch(0.36 0.12 358));
+    radial-gradient(70% 65% at 20% 18%, rgb(92 56 44 / .95), rgb(70 42 34 / .5) 45%, transparent 75%),
+    linear-gradient(160deg, #24191600, #1b1412 80%),
+    #1d1513;
 }
 .plc-liked-art { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-.plc-liked-big { fill: oklch(0.97 0.018 12); filter: drop-shadow(0 2px 3px oklch(0.25 0.1 5 / 0.45)); }
-.plc-liked-s1 { fill: oklch(0.93 0.05 14); opacity: .9; }
-.plc-liked-s2 { fill: oklch(0.88 0.08 16); opacity: .75; }
+.plc-liked-dots { fill: #F39A7D; }
+.plc-liked-rings { fill: none; stroke: #F39A7D; stroke-opacity: .22; stroke-width: .55; }
+.plc-liked-big { fill: #F39A7D; filter: drop-shadow(0 1px 2px rgb(0 0 0 / .35)); }
 
 /* ── Playlist page ─────────────────────────────────── */
 .pl-page { position: relative; }
