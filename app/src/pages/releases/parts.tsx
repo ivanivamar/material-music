@@ -250,7 +250,10 @@ export const canPreview = (it: FeedItem) => !it.upcoming && it.status !== 'lib'
 
 function previewQuery(it: FeedItem) {
   const artists = [it.rel.a, ...it.owners.map((o) => o.name)].filter((a, i, all) => a && all.indexOf(a) === i).slice(0, 3)
-  return { artists, title: it.rel.t, n: it.detail?.tracks.length ?? 0, type: it.rel.type }
+  // Deezer artist ids we already know: the library catalogue's, or a Discover follow's
+  const follow = releasesStore.get().doc.follow
+  const dz = it.owners.map((o) => o.deezerId ?? follow[o.id]?.[0]?.dz ?? null).filter((x): x is number => typeof x === 'number' && x > 0)
+  return { artists, dz: [...new Set(dz)].slice(0, 3), title: it.rel.t, date: it.rel.date, n: it.detail?.tracks.length ?? 0, type: it.rel.type }
 }
 
 export const loadPreviews = (it: FeedItem) => fetchDzPreviews(it.rel.id, previewQuery(it))
@@ -278,15 +281,16 @@ export function useDzPreviews(it: FeedItem, enabled: boolean): PreviewLoad {
   return res.dz && res.dz.tracks.some((t) => t.p) ? { state: 'ok', dz: res.dz } : { state: 'none' }
 }
 
+/** Same folding as the proxy: any script, full-width → normal, no spacing / punctuation (Japanese titles vary there). */
 const normT = (s: string) =>
   s
-    .normalize('NFKD')
-    .replace(/[̀-ͯ]/g, '')
+    .normalize('NFKC')
     .toLowerCase()
-    .replace(/\(.*?\)|\[.*?\]/g, '')
+    .replace(/\(.*?\)|\[.*?\]|（.*?）|【.*?】/g, '')
     .replace(/\s+(feat\.?|ft\.?|featuring)\s.*$/, '')
-    .replace(/[^\p{L}\p{N}]+/gu, ' ')
-    .trim()
+    .normalize('NFKD')
+    .replace(/\p{M}/gu, '')
+    .replace(/[^\p{L}\p{N}]+/gu, '')
 
 /** MusicBrainz tracklist index → Deezer track index (by title, else by position when both lists are the same length). */
 export function mapPreviews(mb: [string, number | null][], dz: DzPreviews): (number | null)[] {

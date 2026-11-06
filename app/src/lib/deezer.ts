@@ -195,12 +195,14 @@ export interface DzPreviews {
 const PREVIEW_TTL = 10 * 60_000
 const previewMemo = new Map<string, { at: number; p: Promise<DzPreviews | null> }>()
 
-export function fetchDzPreviews(key: string, q: { artists: string[]; title: string; n: number; type: string }): Promise<DzPreviews | null> {
+export function fetchDzPreviews(key: string, q: { artists: string[]; dz: number[]; title: string; date: string; n: number; type: string }): Promise<DzPreviews | null> {
   const hit = previewMemo.get(key)
   if (hit && Date.now() - hit.at < PREVIEW_TTL) return hit.p
   const params = new URLSearchParams()
   for (const a of q.artists) params.append('artist', a)
+  for (const id of q.dz) params.append('dz', String(id))
   params.set('title', q.title)
+  if (q.date) params.set('date', q.date)
   if (q.n) params.set('n', String(q.n))
   params.set('type', q.type)
   const p = fetch(`${API_BASE}api/deezer/previews?${params}`, { headers: { 'X-Pelagic': '1' } }).then(async (res) => {
