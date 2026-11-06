@@ -1,5 +1,6 @@
 /**
- * DJ engine (step 22a): pure functions, no stores, no DOM — headless-testable.
+ * DJ engine (step 22a; refactored Nov 2026): pure functions, no stores, no DOM — headless-testable
+ * (tests/dj-engine.test.ts, `npm test`).
  *
  * A DJ run is a chain of sessions: 6–9 songs (random per session) around one theme, introduced by
  * a short spoken line. This file decides everything about a session except playing it:
@@ -7,25 +8,31 @@
  *   buildLibrary()  per-track facts the DJ needs (plays, last played, added, genres, era), once per
  *                   catalogue / history / genres change
  *   buildSession()  pick a theme (weighted by what the DJ has learned, ~15 % exploration, never the
- *                   same kind twice in a row), a size, a pool, the songs (max 1 per album / 2 per
- *                   artist, fresh songs preferred), an order with a gentle arc, a title and the line
- *
- * Artist variety (Nov 2026 fix): sub-themes and the DJ's own genre picks need a few artists (a
- * one-artist genre or decade used to turn a whole Never played session into that artist); picks
- * are weighted ~1/√(artist's songs in the pool) so big discographies don't win most slots; the last
- * session's artists step back; and the caps are only lifted after the sub-theme is dropped and
- * the fallback pool is tried.
+ *                   same kind twice in a row), a size, the songs, an order with a gentle arc, a
+ *                   title and the line
  *   featureScores() learning: session outcomes → scores per feature (theme kind, genre, decade,
  *                   new / familiar / never played), exponential decay with a 60-day half-life
  *
- * Themes. The four session types Ivan can choose (Genre, Never played, Forgotten, New additions);
- * Endless mode (all four on) also mixes in Favourites, Decade, Artist sets and Wildcards.
- * Forgotten = played before, not in the last six months. History only starts on Oct 15 2026, so
- * until spring 2027 Forgotten quietly fills its sessions with never-played songs.
+ * Where things live:
+ *   KINDS           every session type in one entry: label, weight, liked share, pool, when it's
+ *                   usable, its theme (and optional era / genre narrowing), fit, ranked fallbacks
+ *   pickSongs()     every variety rule: max 1 per album / 2 per artist (then 2 / 3), big
+ *                   discographies weighted ~1/√songs, the last session's artists step back, and
+ *                   the pool ladder: theme → theme without its narrowing → fallbacks, best first;
+ *                   the caps are only lifted once every pool is used up
+ *   orderForFlow()  the arc, then spreadArtists(): never the same artist twice in a row
+ *   describe()      the words
  *
- * Liked songs (Nov 2026). The hearts matter to some sessions, not all (LIKED_SHARE: about how much
- * of the session goes to liked songs first, ±25 %, when the theme has them; the rest is picked
- * as usual and may hold more by chance):
+ * Themes. The four session types Ivan can choose (Genre, Never played, Forgotten, New additions);
+ * Endless mode (all four on) also mixes in Favourites, Decade, Artist sets, Wildcards and Liked
+ * songs. Forgotten = played before, not in the last six months. History only starts on Oct 15
+ * 2026, so until spring 2027 Forgotten quietly fills its sessions with never-played songs.
+ * Sub-themes (an era or a genre inside Never played etc.) and the DJ's own genre picks need a few
+ * artists: a one-artist genre or decade once turned a whole session into that artist.
+ *
+ * Liked songs (Nov 2026). The hearts matter to some sessions, not all (`likedShare`: about how
+ * much of the session goes to liked songs first, ±25 %, when the theme has them; the rest is
+ * picked as usual and may hold more by chance):
  *   - Favourites counts a liked song as a favourite even with few plays: about half hearts;
  *   - Forgotten digs up liked songs first ("you even gave some of these a heart"): about half;
  *   - Genre, Decade and Artist sets lean towards liked songs a little: about a quarter to a third;
@@ -41,41 +48,12 @@ export type DjType = 'genre' | 'never' | 'forgotten' | 'new'
 export type ThemeKind = DjType | 'favourites' | 'decade' | 'artist' | 'wild' | 'liked'
 export const DJ_TYPES: DjType[] = ['genre', 'never', 'forgotten', 'new']
 
-export const TYPE_LABEL: Record<ThemeKind, string> = {
-  genre: 'Genre',
-  never: 'Never played',
-  forgotten: 'Forgotten',
-  new: 'New additions',
-  favourites: 'Favourites',
-  decade: 'Decade',
-  artist: 'Artist set',
-  wild: 'Wildcard',
-  liked: 'Liked songs',
-}
-/** mono label (session type line, panel) */
-export const TYPE_UPPER: Record<ThemeKind, string> = {
-  genre: 'GENRE',
-  never: 'NEVER PLAYED',
-  forgotten: 'FORGOTTEN',
-  new: 'NEW ADDITIONS',
-  favourites: 'FAVOURITES',
-  decade: 'DECADE',
-  artist: 'ARTIST SET',
-  wild: 'WILDCARD',
-  liked: 'LIKED SONGS',
-}
-
 const DAY = 86_400_000
 export const FORGOTTEN_MS = 182 * DAY
 export const NEW_DAYS = 30
 const RECENT_MS = 3 * DAY
 /** a liked song not heard for this long is a "forgotten heart" (Liked songs sessions dig these up first) */
 const LIKED_STALE_MS = 30 * DAY
-/**
- * Share of a session kept for liked songs, per session kind. The kinds left out don't look at the
- * hearts at all (a Liked songs session is all hearts by its pool).
- */
-export const LIKED_SHARE: Partial<Record<ThemeKind, number>> = { favourites: 0.5, forgotten: 0.5, genre: 0.3, decade: 0.3, artist: 0.25 }
 export const MIN_SIZE = 6
 export const MAX_SIZE = 9
 
@@ -351,7 +329,6 @@ export interface BuildContext {
 const score = (scores: Map<string, number> | undefined, f: string) => Math.max(-2.5, Math.min(2.5, scores?.get(f) ?? 0))
 const boost = (scores: Map<string, number> | undefined, f: string) => Math.exp(0.6 * score(scores, f))
 
-const BASE_WEIGHT: Record<ThemeKind, number> = { genre: 3, never: 2, forgotten: 1.4, new: 1.6, favourites: 1.1, decade: 1, artist: 1, wild: 0.7, liked: 1.2 }
 const EXPLORE = 0.15
 
 const decadeOf = (y: number | null) => (y ? Math.floor(y / 10) * 10 : null)
@@ -369,16 +346,17 @@ function dominant<T>(items: T[], min: number): T | null {
   return best !== null && n / Math.max(1, items.length) >= min ? best : null
 }
 
+function countBy<T>(xs: T[]): Map<T, number> {
+  const m = new Map<T, number>()
+  for (const x of xs) m.set(x, (m.get(x) ?? 0) + 1)
+  return m
+}
+
 /**
  * A (sub-)theme needs enough artists to fill a session within the per-artist cap (2), else a niche
  * genre or decade owned by one artist turned a whole Never played session into that artist.
  */
 const minArtists = (size: number) => Math.max(3, Math.ceil(size / 2))
-
-interface Picked {
-  theme: Theme
-  pool: DjTrack[]
-}
 
 /** Genre keys for a genre session: the start view's picks, else a seed + 0–2 neighbours. */
 function pickGenres(lib: DjLibrary, mode: Mode, avail: DjTrack[], ctx: BuildContext, rng: Rng): string[] | null {
@@ -452,176 +430,355 @@ function inTheme(t: DjTrack, th: Theme): boolean {
   return true
 }
 
-function poolFor(lib: DjLibrary, kind: ThemeKind, avail: DjTrack[]): DjTrack[] {
-  const now = lib.now
-  switch (kind) {
-    case 'never':
-      return avail.filter(isNever)
-    case 'forgotten':
-      return avail.filter((t) => isForgotten(t, now))
-    case 'new': {
-      for (const days of [NEW_DAYS, 60, 90]) {
-        const p = avail.filter((t) => isNew(t, now, days))
-        if (p.length >= MIN_SIZE || days === 90) return p
+
+/* ── Session types ──────────────────────────────────── */
+
+interface Picked {
+  theme: Theme
+  pool: DjTrack[]
+  /**
+   * The same session without its sub-theme (era / genre narrowing), tried before the fallback.
+   * Songs from here (not `pool`) switch the session to this theme, so the title doesn't promise
+   * an era it no longer keeps.
+   */
+  wide?: { theme: Theme; pool: DjTrack[] }
+}
+
+/** What a session type needs to know while a session is being planned. */
+interface Plan {
+  lib: DjLibrary
+  mode: Mode
+  /** the library minus this run's songs */
+  avail: DjTrack[]
+  size: number
+  ctx: BuildContext
+  rng: Rng
+  /** a type's own pool (memoised per session) */
+  pool: (kind: ThemeKind) => DjTrack[]
+}
+
+/**
+ * One session type, all in one place. The words (title, spoken line, shortage note) live in
+ * `describe()` below: they share too much phrasing to split per type.
+ */
+interface KindDef {
+  label: string
+  /** mono label (session type line, panel) */
+  upper: string
+  /** only in Endless (all four types on) */
+  endless?: boolean
+  /** how often it comes up before learning */
+  weight: (p: Plan) => number
+  /** about how much of the session goes to liked songs first; absent = ignores hearts */
+  likedShare?: number
+  /** its songs; default: the whole (available) library */
+  pool?: (lib: DjLibrary, avail: DjTrack[]) => DjTrack[]
+  /** enough songs to run a session of this type */
+  usable: (p: Plan) => boolean
+  /** the theme and its pool; null = play a Wildcard instead */
+  theme: (p: Plan) => Picked | null
+  /** fit to the theme, per song (1 = neutral) */
+  fit?: (t: DjTrack, theme: Theme, now: number) => number
+  /** where to look when the theme runs short, best first */
+  fallback: (p: Plan, theme: Theme) => DjTrack[][]
+}
+
+/** The type's pool, maybe narrowed to an era or a genre (never / forgotten / new / liked). */
+function narrowed(p: Plan, kind: ThemeKind): Picked {
+  const pool = p.pool(kind)
+  const sub = subTheme(pool, p.size, p.rng)
+  const theme: Theme = { kind, ...sub }
+  if (!sub.decade && !sub.genres) return { theme, pool }
+  return { theme, pool: pool.filter((t) => inTheme(t, theme)), wide: { theme: { kind }, pool } }
+}
+
+const whole = (p: Plan) => [p.avail]
+const played = (p: Plan) => p.avail.filter((t) => t.plays > 0)
+const mostPlayed = (p: Plan) => p.avail.filter((t) => t.plays >= 2)
+
+export const KINDS: Record<ThemeKind, KindDef> = {
+  genre: {
+    label: 'Genre',
+    upper: 'GENRE',
+    weight: () => 3,
+    likedShare: 0.3,
+    usable: (p) => p.avail.some((t) => t.gkeys.length),
+    theme: (p) => {
+      const genres = pickGenres(p.lib, p.mode, p.avail, p.ctx, p.rng)
+      if (!genres?.length) return null
+      const pool = p.avail.filter((t) => t.gkeys.some((k) => genres.includes(k)))
+      // a big pool may narrow to one era so sessions of the same genres differ
+      const sub = pool.length > p.size * 4 && p.rng() < 0.35 ? subTheme(pool, p.size, p.rng) : {}
+      if (!sub.decade) return { theme: { kind: 'genre', genres }, pool }
+      const theme: Theme = { kind: 'genre', genres, decade: sub.decade }
+      return { theme, pool: pool.filter((t) => inTheme(t, theme)), wide: { theme: { kind: 'genre', genres }, pool } }
+    },
+    // neighbouring genres (they share albums), then anything
+    fallback: (p, theme) => {
+      const near = new Set((theme.genres ?? []).flatMap((k) => (p.lib.neighbours.get(k) ?? []).slice(0, 5)))
+      return [p.avail.filter((t) => t.gkeys.some((k) => near.has(k))), p.avail]
+    },
+  },
+  never: {
+    label: 'Never played',
+    upper: 'NEVER PLAYED',
+    weight: () => 2,
+    pool: (_, avail) => avail.filter(isNever),
+    usable: (p) => p.pool('never').length > 0,
+    theme: (p) => narrowed(p, 'never'),
+    // forgotten songs feel closest to unplayed ones, then anything played
+    fallback: (p) => [p.avail.filter((t) => isForgotten(t, p.lib.now)), played(p)],
+  },
+  forgotten: {
+    label: 'Forgotten',
+    upper: 'FORGOTTEN',
+    // while history is young it can only borrow never-played songs: rarer then
+    weight: (p) => (p.pool('forgotten').length ? 1.4 : 0.56),
+    likedShare: 0.5,
+    pool: (lib, avail) => avail.filter((t) => isForgotten(t, lib.now)),
+    // Forgotten borrows never-played songs while history is young
+    usable: (p) => p.pool('forgotten').length > 0 || p.pool('never').length > 0,
+    theme: (p) => narrowed(p, 'forgotten'),
+    fallback: (p) => [p.pool('never'), p.avail],
+  },
+  new: {
+    label: 'New additions',
+    upper: 'NEW ADDITIONS',
+    weight: () => 1.6,
+    // the last 30 days, widening to 60 / 90 when that's too few
+    pool: (lib, avail) => {
+      for (const days of [NEW_DAYS, 60]) {
+        const p = avail.filter((t) => isNew(t, lib.now, days))
+        if (p.length >= MIN_SIZE) return p
       }
-      return []
-    }
-    case 'favourites': {
-      // the most played, plus every liked song (a heart makes it a favourite even before the plays do)
-      const top = avail
+      return avail.filter((t) => isNew(t, lib.now, 90))
+    },
+    usable: (p) => p.pool('new').length > 0,
+    theme: (p) => narrowed(p, 'new'),
+    fit: (t, _, now) => 1 + Math.max(0, 1 - (now - t.addedAt) / (90 * DAY)),
+    fallback: (p) => [p.pool('never'), p.avail],
+  },
+  favourites: {
+    label: 'Favourites',
+    upper: 'FAVOURITES',
+    endless: true,
+    weight: () => 1.1,
+    likedShare: 0.5,
+    // the most played, plus every liked song (a heart makes it a favourite even before the plays do)
+    pool: (_, avail) => [
+      ...avail.filter(isLiked),
+      ...avail
         .filter((t) => t.plays >= 2 && !isLiked(t))
         .sort((a, b) => b.plays - a.plays)
-        .slice(0, 150)
-      return [...avail.filter(isLiked), ...top]
-    }
-    case 'liked':
-      return avail.filter(isLiked)
-    default:
-      return avail
-  }
+        .slice(0, 150),
+    ],
+    usable: (p) => p.pool('favourites').length >= p.size,
+    theme: (p) => ({ theme: { kind: 'favourites' }, pool: p.pool('favourites') }),
+    fit: (t) => Math.log2(2 + t.plays),
+    fallback: whole,
+  },
+  decade: {
+    label: 'Decade',
+    upper: 'DECADE',
+    endless: true,
+    weight: () => 1,
+    likedShare: 0.3,
+    usable: (p) => p.avail.some((t) => t.year),
+    theme: (p) => {
+      const m = new Map<number, { n: number; artists: Set<string> }>()
+      for (const t of p.avail) {
+        const d = decadeOf(t.year)
+        if (!d) continue
+        let e = m.get(d)
+        if (!e) m.set(d, (e = { n: 0, artists: new Set() }))
+        e.n++
+        e.artists.add(t.artistId)
+      }
+      // decades with a few artists in them, if there are any
+      const varied = [...m.keys()].filter((d) => m.get(d)!.artists.size >= minArtists(p.size))
+      const decade = weighted(varied.length ? varied : [...m.keys()], (d) => Math.sqrt(m.get(d)!.n) * boost(p.ctx.scores, `decade:${d}`), p.rng)
+      return decade ? { theme: { kind: 'decade', decade }, pool: p.avail.filter((t) => decadeOf(t.year) === decade) } : null
+    },
+    fallback: whole,
+  },
+  artist: {
+    label: 'Artist set',
+    upper: 'ARTIST SET',
+    endless: true,
+    weight: () => 1,
+    likedShare: 0.25,
+    usable: (p) => p.avail.length >= p.size,
+    theme: (p) => {
+      const m = countBy(p.avail.map((t) => t.artistId))
+      const artistId = weighted(
+        [...m].filter(([, n]) => n >= 4).map(([k]) => k),
+        (k) => Math.sqrt(m.get(k)!),
+        p.rng,
+      )
+      if (!artistId) return null
+      // the artist, plus "friends": songs that share a genre with them
+      const own = p.avail.filter((t) => t.artistId === artistId)
+      const keys = new Set(own.flatMap((t) => t.gkeys))
+      const friends = p.avail.filter((t) => t.artistId !== artistId && t.gkeys.some((k) => keys.has(k)))
+      return { theme: { kind: 'artist', artistId }, pool: [...own, ...friends] }
+    },
+    fit: (t, theme) => (t.artistId === theme.artistId ? 2.2 : 1),
+    fallback: whole,
+  },
+  wild: {
+    label: 'Wildcard',
+    upper: 'WILDCARD',
+    endless: true,
+    weight: () => 0.7,
+    usable: (p) => p.avail.length > 0,
+    theme: (p) => ({ theme: { kind: 'wild' }, pool: p.avail }),
+    fallback: whole,
+  },
+  liked: {
+    label: 'Liked songs',
+    upper: 'LIKED SONGS',
+    endless: true,
+    weight: () => 1.2,
+    pool: (_, avail) => avail.filter(isLiked),
+    usable: (p) => p.pool('liked').length >= p.size,
+    theme: (p) => narrowed(p, 'liked'),
+    // a Liked songs session digs up the hearts not heard lately first
+    fit: (t, _, now) => (t.last < now - LIKED_STALE_MS ? 2.2 : 1),
+    // favourites by plays, then anything
+    fallback: (p) => [mostPlayed(p), p.avail],
+  },
 }
+
+const kindTable = <T,>(f: (d: KindDef) => T) => Object.fromEntries(Object.entries(KINDS).map(([k, d]) => [k, f(d)])) as Record<ThemeKind, T>
+export const TYPE_LABEL: Record<ThemeKind, string> = kindTable((d) => d.label)
+/** mono label (session type line, panel) */
+export const TYPE_UPPER: Record<ThemeKind, string> = kindTable((d) => d.upper)
+/**
+ * Share of a session kept for liked songs, per session kind. The kinds left out don't look at the
+ * hearts at all (a Liked songs session is all hearts by its pool).
+ */
+export const LIKED_SHARE: Partial<Record<ThemeKind, number>> = Object.fromEntries(Object.entries(KINDS).flatMap(([k, d]) => (d.likedShare ? [[k, d.likedShare]] : [])))
 
 /** Which theme next (Endless: weighted over kinds; a type-only run keeps to its types). */
-function pickTheme(lib: DjLibrary, mode: Mode, avail: DjTrack[], size: number, ctx: BuildContext, rng: Rng): Picked {
-  const allTypes = DJ_TYPES.every((k) => mode.types.includes(k))
-  const kinds: ThemeKind[] = [...mode.types]
-  if (mode.endless && allTypes) kinds.push('favourites', 'decade', 'artist', 'wild', 'liked')
-  const pools = new Map<ThemeKind, DjTrack[]>()
-  const poolOf = (k: ThemeKind) => {
-    let p = pools.get(k)
-    if (!p) pools.set(k, (p = poolFor(lib, k, avail)))
-    return p
-  }
-  // usable: enough songs (Forgotten borrows never-played songs while history is young)
-  const usable = kinds.filter((k) => {
-    if (k === 'genre') return avail.some((t) => t.gkeys.length)
-    if (k === 'forgotten') return poolOf('forgotten').length > 0 || poolOf('never').length > 0
-    if (k === 'decade') return avail.some((t) => t.year)
-    if (k === 'artist') return avail.length >= size
-    return poolOf(k).length >= (k === 'favourites' || k === 'liked' ? size : 1)
-  })
+function pickTheme(p: Plan): Picked {
+  const allTypes = DJ_TYPES.every((k) => p.mode.types.includes(k))
+  const kinds = (Object.keys(KINDS) as ThemeKind[]).filter((k) => (KINDS[k].endless ? p.mode.endless && allTypes : p.mode.types.includes(k as DjType)))
+  const usable = kinds.filter((k) => KINDS[k].usable(p))
   let cands = usable.length ? usable : (['wild'] as ThemeKind[])
-  if (cands.length > 1 && ctx.last) cands = cands.filter((k) => k !== ctx.last!.kind) // never twice in a row
-  const explore = rng() < EXPLORE
-  const kind = explore
-    ? cands[Math.floor(rng() * cands.length)]
-    : weighted(cands, (k) => BASE_WEIGHT[k] * boost(ctx.scores, `type:${k}`) * (k === 'forgotten' && !poolOf('forgotten').length ? 0.4 : 1), rng)!
-
-  if (kind === 'genre') {
-    const genres = pickGenres(lib, mode, avail, ctx, rng)
-    if (genres?.length) {
-      const pool = avail.filter((t) => t.gkeys.some((k) => genres.includes(k)))
-      // a big pool may narrow to one era so sessions of the same genres differ
-      const sub = pool.length > size * 4 && rng() < 0.35 ? subTheme(pool, size, rng) : {}
-      const theme: Theme = { kind, genres, ...(sub.decade ? { decade: sub.decade } : {}) }
-      return { theme, pool: pool.filter((t) => inTheme(t, theme)) }
-    }
-    return { theme: { kind: 'wild' }, pool: avail }
-  }
-  if (kind === 'decade') {
-    const m = new Map<number, number>()
-    const da = new Map<number, Set<string>>()
-    for (const t of avail) {
-      const d = decadeOf(t.year)
-      if (!d) continue
-      m.set(d, (m.get(d) ?? 0) + 1)
-      let s = da.get(d)
-      if (!s) da.set(d, (s = new Set()))
-      s.add(t.artistId)
-    }
-    const varied = [...m.keys()].filter((d) => da.get(d)!.size >= minArtists(size))
-    const decade = weighted(varied.length ? varied : [...m.keys()], (d) => Math.sqrt(m.get(d)!) * boost(ctx.scores, `decade:${d}`), rng)
-    if (decade) return { theme: { kind, decade }, pool: avail.filter((t) => decadeOf(t.year) === decade) }
-    return { theme: { kind: 'wild' }, pool: avail }
-  }
-  if (kind === 'artist') {
-    const m = new Map<string, number>()
-    for (const t of avail) m.set(t.artistId, (m.get(t.artistId) ?? 0) + 1)
-    const artistId = weighted(
-      [...m].filter(([, n]) => n >= 4).map(([k]) => k),
-      (k) => Math.sqrt(m.get(k)!),
-      rng,
-    )
-    if (artistId) {
-      const own = avail.filter((t) => t.artistId === artistId)
-      const keys = new Set(own.flatMap((t) => t.gkeys))
-      const friends = avail.filter((t) => t.artistId !== artistId && t.gkeys.some((k) => keys.has(k)))
-      return { theme: { kind, artistId }, pool: [...own, ...friends] }
-    }
-    return { theme: { kind: 'wild' }, pool: avail }
-  }
-  const pool = poolOf(kind)
-  if (kind === 'never' || kind === 'forgotten' || kind === 'new' || kind === 'liked') {
-    const sub = subTheme(pool, size, rng)
-    const theme: Theme = { kind, ...sub }
-    return { theme, pool: pool.filter((t) => inTheme(t, theme)) }
-  }
-  return { theme: { kind }, pool }
+  if (cands.length > 1 && p.ctx.last) cands = cands.filter((k) => k !== p.ctx.last!.kind) // never twice in a row
+  const kind = p.rng() < EXPLORE ? cands[Math.floor(p.rng() * cands.length)] : weighted(cands, (k) => KINDS[k].weight(p) * boost(p.ctx.scores, `type:${k}`), p.rng)!
+  return KINDS[kind].theme(p) ?? KINDS.wild.theme(p)!
 }
 
-/** Pick `size` songs from `pool`: weighted by fit + freshness + chance, max per album / artist (+ the liked share). */
+/* ── Picking songs (every variety rule lives here) ──── */
+
 type Limits = [perAlbum: number, perArtist: number][]
 /** max 1 per album / 2 per artist, then 2 / 3: what a session normally allows */
 const STRICT: Limits = [
   [1, 2],
   [2, 3],
 ]
-/** last resort, once every other pool is used up */
+/** last resort, once every pool is used up */
 const LOOSE: Limits = [[99, 99]]
+/** an Artist set's own artist may have this many (at most half the session, so they never sit back to back) */
+const ARTIST_SET_OWN = 4
+/** artists from the session before step back this much */
+const PREV_ARTIST = 0.35
 
-function pickSongs(pool: DjTrack[], size: number, theme: Theme, lib: DjLibrary, ctx: BuildContext, rng: Rng, taken: DjTrack[] = [], limits: Limits = STRICT): DjTrack[] {
-  const share = LIKED_SHARE[theme.kind]
-  if (!share || taken.length) return fillSongs(pool, size, theme, lib, ctx, rng, taken, limits)
-  // hearts first, up to this session's share (learned: heart-heavy sessions that landed ask for more)
-  const want = Math.round(size * Math.min(0.75, share * boost(ctx.scores, 'liked:yes')) * (0.75 + rng() * 0.5))
-  const hearts = want > 0 ? fillSongs(pool.filter(isLiked), Math.min(want, size), theme, lib, ctx, rng, [], limits) : []
-  return fillSongs(pool, size, theme, lib, ctx, rng, hearts, limits)
+/**
+ * Songs for a session from `tiers`, best tier first: hearts first (the type's liked share, from
+ * the first tier), then each tier in turn within the caps, and only when every tier is used up
+ * the caps are lifted. A lower tier is only reached when the ones above can't fill the session.
+ */
+function pickSongs(tiers: DjTrack[][], size: number, theme: Theme, lib: DjLibrary, ctx: BuildContext, rng: Rng): DjTrack[] {
+  let out: DjTrack[] = []
+  const share = KINDS[theme.kind].likedShare
+  if (share) {
+    // learned: heart-heavy sessions that landed ask for more
+    const want = Math.round(size * Math.min(0.75, share * boost(ctx.scores, 'liked:yes')) * (0.75 + rng() * 0.5))
+    if (want > 0) out = fillSongs(tiers[0].filter(isLiked), Math.min(want, size), theme, lib, ctx, rng, out, STRICT)
+  }
+  for (const tier of tiers) {
+    if (out.length >= size) break
+    out = fillSongs(tier, size, theme, lib, ctx, rng, out, STRICT)
+  }
+  if (out.length < size) out = fillSongs(tiers.flat(), size, theme, lib, ctx, rng, out, LOOSE)
+  return out
 }
 
-function fillSongs(pool: DjTrack[], size: number, theme: Theme, lib: DjLibrary, ctx: BuildContext, rng: Rng, taken: DjTrack[] = [], limits: Limits = STRICT): DjTrack[] {
+function fillSongs(pool: DjTrack[], size: number, theme: Theme, lib: DjLibrary, ctx: BuildContext, rng: Rng, taken: DjTrack[], limits: Limits): DjTrack[] {
   const out = [...taken]
+  const have = new Set(out.map((t) => t.id))
   const now = lib.now
+  const kindFit = KINDS[theme.kind].fit
+  const ownArtist = (t: DjTrack) => theme.kind === 'artist' && t.artistId === theme.artistId
   // variety: an artist with a big discography shouldn't win most picks just by having more songs
-  // (weight ~ 1/√songs in the pool), and the last session's artists step back a little
-  const perArtist = new Map<string, number>()
-  for (const t of pool) perArtist.set(t.artistId, (perArtist.get(t.artistId) ?? 0) + 1)
+  // (weight ~ 1/√ songs in the pool), and the last session's artists step back a little
+  const perArtist = countBy(pool.map((t) => t.artistId))
   const prevArtists = new Set((ctx.lastSongs ?? []).map((id) => lib.byId.get(id)?.artistId).filter((a): a is string => !!a))
-  const fit = (t: DjTrack) => {
-    let w = 1
-    if (theme.kind === 'favourites') w *= Math.log2(2 + t.plays)
-    if (theme.kind === 'new') w *= 1 + Math.max(0, 1 - (now - t.addedAt) / (90 * DAY))
-    if (theme.kind === 'artist' && t.artistId === theme.artistId) w *= 2.2
-    // a Liked songs session digs up the hearts not heard lately first
-    if (theme.kind === 'liked' && t.last < now - LIKED_STALE_MS) w *= 2.2
-    if (!(theme.kind === 'artist' && t.artistId === theme.artistId)) {
+  const weight = (t: DjTrack) => {
+    let w = kindFit ? kindFit(t, theme, now) : 1
+    if (!ownArtist(t)) {
       w /= Math.sqrt(perArtist.get(t.artistId) ?? 1)
-      if (prevArtists.has(t.artistId)) w *= 0.35
+      if (prevArtists.has(t.artistId)) w *= PREV_ARTIST
     }
     if (t.last > now - RECENT_MS) w *= 0.25 // played in the last 3 days
     if (t.penalty) w *= 0.3
     if (ctx.skipped?.has(t.id)) w *= 0.2
     return w * (0.35 + rng())
   }
+  // pools can overlap (a fallback tier often holds the tiers above): each song once
+  const fresh = new Map<string, DjTrack>()
+  for (const t of pool) if (!ctx.used.has(t.id) && !have.has(t.id)) fresh.set(t.id, t)
+  const scored = [...fresh.values()].map((t) => ({ t, w: weight(t) })).sort((a, b) => b.w - a.w)
   for (const [perAlbum, artistCap] of limits) {
     if (out.length >= size) break
-    const albums = new Map<string, number>()
-    const artists = new Map<string, number>()
-    for (const t of out) {
-      albums.set(t.albumId, (albums.get(t.albumId) ?? 0) + 1)
-      artists.set(t.artistId, (artists.get(t.artistId) ?? 0) + 1)
-    }
-    const artistMax = (t: DjTrack) => (theme.kind === 'artist' && t.artistId === theme.artistId ? Math.max(4, artistCap) : artistCap)
-    const scored = pool
-      .filter((t) => !ctx.used.has(t.id) && !out.includes(t))
-      .map((t) => ({ t, w: fit(t) }))
-      .sort((a, b) => b.w - a.w)
+    const albums = countBy(out.map((t) => t.albumId))
+    const artists = countBy(out.map((t) => t.artistId))
     for (const { t } of scored) {
       if (out.length >= size) break
-      if ((albums.get(t.albumId) ?? 0) >= perAlbum || (artists.get(t.artistId) ?? 0) >= artistMax(t)) continue
+      if (have.has(t.id)) continue
+      if ((albums.get(t.albumId) ?? 0) >= perAlbum || (artists.get(t.artistId) ?? 0) >= (ownArtist(t) ? Math.max(Math.min(ARTIST_SET_OWN, Math.ceil(size / 2)), artistCap) : artistCap)) continue
       out.push(t)
+      have.add(t.id)
       albums.set(t.albumId, (albums.get(t.albumId) ?? 0) + 1)
       artists.set(t.artistId, (artists.get(t.artistId) ?? 0) + 1)
     }
+  }
+  return out
+}
+
+/**
+ * No artist twice in a row, moving as little as possible: walk the order and take the first
+ * remaining song that doesn't repeat the last artist and still leaves an arrangement without
+ * repeats (most songs by one artist ≤ half of what's left). The old swap pass could get stuck
+ * (A B A C B B stayed as it was).
+ */
+export function spreadArtists(songs: DjTrack[]): DjTrack[] {
+  const clashes = songs.some((t, i) => i > 0 && t.artistId === songs[i - 1].artistId)
+  if (!clashes) return songs
+  const rest = [...songs]
+  const out: DjTrack[] = []
+  const left = countBy(rest.map((t) => t.artistId))
+  // can `r` songs with these counts follow `prev` without a repeat?
+  const fine = (prev: string, r: number) => {
+    for (const [a, n] of left) if (n > (a === prev ? Math.floor(r / 2) : Math.ceil(r / 2))) return false
+    return true
+  }
+  while (rest.length) {
+    const prev = out[out.length - 1]?.artistId ?? ''
+    let i = rest.findIndex((t) => {
+      if (t.artistId === prev) return false
+      left.set(t.artistId, left.get(t.artistId)! - 1)
+      const ok = fine(t.artistId, rest.length - 1)
+      left.set(t.artistId, left.get(t.artistId)! + 1)
+      return ok
+    })
+    if (i < 0) i = rest.findIndex((t) => t.artistId !== prev) // can't be done: as few repeats as we can
+    if (i < 0) i = 0
+    const [t] = rest.splice(i, 1)
+    left.set(t.artistId, left.get(t.artistId)! - 1)
+    out.push(t)
   }
   return out
 }
@@ -649,7 +806,7 @@ export function orderForFlow(songs: DjTrack[], rng: Rng): DjTrack[] {
     if (mid - d < 0 && mid + d >= n) break
   }
   for (const i of order) if (!slots[i] && rest.length) slots[i] = rest.shift()!
-  let out = slots.filter((x): x is DjTrack => !!x)
+  const out = slots.filter((x): x is DjTrack => !!x)
   // drift: between the fixed opener / peak / closer, neighbours that share a genre or era sit together
   const similar = (a: DjTrack, b: DjTrack) => (a.gkeys.some((k) => b.gkeys.includes(k)) ? 1 : 0) + (decadeOf(a.year) === decadeOf(b.year) ? 0.5 : 0)
   for (let i = 1; i < n - 2; i++) {
@@ -659,22 +816,7 @@ export function orderForFlow(songs: DjTrack[], rng: Rng): DjTrack[] {
     }
   }
   // no artist back to back: swap a clashing song with one that clashes with nothing where it lands
-  const clash = (a: DjTrack[], i: number) => (i > 0 && a[i].artistId === a[i - 1].artistId ? 1 : 0) + (i < n - 1 && a[i].artistId === a[i + 1].artistId ? 1 : 0)
-  const total = (a: DjTrack[]) => a.reduce((s, _, i) => s + clash(a, i), 0)
-  out = [...out]
-  for (let pass = 0; pass < n && total(out) > 0; pass++) {
-    for (let i = 1; i < n; i++) {
-      if (out[i].artistId !== out[i - 1].artistId) continue
-      const before = total(out)
-      for (let k = 0; k < n; k++) {
-        if (k === i || k === i - 1) continue
-        ;[out[i], out[k]] = [out[k], out[i]]
-        if (total(out) < before) break
-        ;[out[i], out[k]] = [out[k], out[i]]
-      }
-    }
-  }
-  return out
+  return spreadArtists(out)
 }
 
 /* ── Words ──────────────────────────────────────────── */
@@ -832,60 +974,47 @@ function featuresOf(theme: Theme, songs: DjTrack[], now: number): string[] {
   return f
 }
 
-/** Fallback pools when a theme runs short. */
-function fallbackPool(lib: DjLibrary, theme: Theme, avail: DjTrack[]): DjTrack[] {
-  switch (theme.kind) {
-    case 'never':
-      return [...avail.filter((t) => isForgotten(t, lib.now)), ...avail.filter((t) => t.plays > 0)]
-    case 'forgotten':
-      return [...avail.filter(isNever), ...avail]
-    case 'new':
-      return [...avail.filter(isNever), ...avail]
-    case 'liked':
-      return [...avail.filter((t) => t.plays >= 2).sort((a, b) => b.plays - a.plays), ...avail]
-    case 'genre': {
-      const near = new Set((theme.genres ?? []).flatMap((k) => (lib.neighbours.get(k) ?? []).slice(0, 5)))
-      return [...avail.filter((t) => t.gkeys.some((k) => near.has(k))), ...avail]
-    }
-    default:
-      return avail
-  }
-}
-
 /** The next session of a run. Null only when nothing in the library can be played. */
 export function buildSession(lib: DjLibrary, mode: Mode, ctx: BuildContext): SessionPlan | null {
   const rng = ctx.rng ?? Math.random
   const avail = lib.tracks.filter((t) => !ctx.used.has(t.id))
   if (!avail.length) return null
   const size = MIN_SIZE + Math.floor(rng() * (MAX_SIZE - MIN_SIZE + 1))
-  const picked = pickTheme(lib, mode, avail, size, ctx, rng)
+  const pools = new Map<ThemeKind, DjTrack[]>()
+  const p: Plan = {
+    lib,
+    mode,
+    avail,
+    size,
+    ctx,
+    rng,
+    pool: (k) => {
+      let x = pools.get(k)
+      if (!x) pools.set(k, (x = KINDS[k].pool?.(lib, avail) ?? avail))
+      return x
+    },
+  }
+  const picked = pickTheme(p)
   let theme = picked.theme
-  const pool = picked.pool
-  let songs = pickSongs(pool, size, theme, lib, ctx, rng)
-  let shortage: { have: number; kind: ThemeKind } | null = null
-  // Short within the per-artist / per-album caps? Widen step by step, keeping the caps, before
-  // ever letting one artist fill the session: (1) drop the sub-theme (era / genre) of a
-  // Never played / Forgotten / New / Liked session, (2) the fallback pool, (3) only then lift the caps.
-  if (songs.length < size && (theme.decade || theme.genres) && theme.kind !== 'genre') {
-    const wide = poolFor(lib, theme.kind, avail)
-    songs = pickSongs(wide, size, theme, lib, ctx, rng, songs)
-    theme = { kind: theme.kind } // the title / line no longer promise that era or genre
-  }
-  if (songs.length < size) {
-    const have = songs.length
-    const fb = fallbackPool(lib, theme, avail)
-    songs = pickSongs(fb, size, theme, lib, ctx, rng, songs)
-    if (songs.length < size) songs = pickSongs([...pool, ...fb], size, theme, lib, ctx, rng, songs, LOOSE)
-    // the note only when songs really came from outside the theme (not when the caps were just lifted)
-    const inPool = new Set(pool.map((t) => t.id))
-    if (songs.length > have && songs.some((t) => !inPool.has(t.id))) shortage = { have, kind: theme.kind }
-  }
+  // the pool ladder: the theme → the theme without its era / genre narrowing → the type's fallbacks
+  const tiers = [picked.pool, ...(picked.wide ? [picked.wide.pool] : []), ...KINDS[theme.kind].fallback(p, theme)]
+  const songs = pickSongs(tiers, size, theme, lib, ctx, rng)
   if (!songs.length) return null
+  const inPool = (pool: DjTrack[]) => {
+    const ids = new Set(pool.map((t) => t.id))
+    return (t: DjTrack) => ids.has(t.id)
+  }
+  // widened past the narrowing: the title / line no longer promise that era or genre
+  if (picked.wide && !songs.every(inPool(picked.pool))) theme = picked.wide.theme
+  // the shortage note only when songs really came from outside the theme
+  const own = inPool(picked.wide?.pool ?? picked.pool)
+  const shortage = songs.every(own) ? null : { have: songs.filter(own).length, kind: theme.kind }
   // album neighbours (short interludes) keep their album order when two of an album made it in
   const ordered = orderForFlow(songs, rng)
   const { title, line, note } = describe(theme, ordered, lib, mode, ctx, rng, shortage)
   return { theme, songs: ordered.map((t) => t.id), title, line, note, features: featuresOf(theme, ordered, lib.now) }
 }
+
 
 /* ── Learning ───────────────────────────────────────── */
 
