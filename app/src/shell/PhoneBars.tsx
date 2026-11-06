@@ -4,12 +4,11 @@
  *   gets the coral pill indicator and a filled icon; New carries the unseen count.
  * - MiniPlayer: 68px glass bar 8px from the edges above the tabs: cover · title / artist · play (album
  *   colour circle) · next, with a 3px album-colour progress line along the bottom.
- * - PhoneTopBar: 64px top bar for the top-level pages (logo or title, actions, account avatar).
+ * - PhoneTopBar: 64px sticky top bar on every page (search field · account avatar).
  */
 import { LikeButton } from '../components/LikeButton'
-import type { ReactNode } from 'react'
 import { Icon, type IconName } from '../design/icons'
-import { AppMark } from '../components/Logo'
+import { SHAPE_PLAYING } from '../design/shapes'
 import { Marquee } from '../components/Marquee'
 import { Badge, LoadingShape } from '../components/ui'
 import { useCover } from '../lib/covers'
@@ -54,22 +53,17 @@ export function TabBar({ active, counts }: { active: RouteKey; counts?: Partial<
   )
 }
 
-/** Top bar for the top-level phone pages: the logo + name on Home, else the page title. */
-export function PhoneTopBar({ title, actions }: { title?: string; actions?: ReactNode }) {
+/** Sticky top bar on every phone page: a search field (opens Library search) and the account avatar. */
+export function PhoneTopBar({ onSearch }: { onSearch: () => void }) {
   return (
     <header className="ptb">
-      {title ? (
-        <h1 className="ptb-title">{title}</h1>
-      ) : (
-        <a className="ptb-brand" href={href('home')} aria-label="Material Music home">
-          <AppMark size={32} />
-          <span className="ptb-word">Material Music</span>
-        </a>
-      )}
-      <span className="ptb-actions">
-        {actions}
-        <AccountButton />
-      </span>
+      <button type="button" className="ptb-search" onClick={onSearch}>
+        <span className="ptb-search-ic" style={{ clipPath: SHAPE_PLAYING }} aria-hidden>
+          <Icon name="search" />
+        </span>
+        <span className="ptb-search-t">Songs, albums, artists</span>
+      </button>
+      <AccountButton />
     </header>
   )
 }

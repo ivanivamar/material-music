@@ -1,14 +1,15 @@
 /**
  * App shell (Material redesign). Desktop: sidebar on the app background, then the main panel
- * (rounded 28px, 10px inset) holding the scrolling page, the brand decoration (coral dot grid and
- * rings) and the floating player bar. Phone: top bar on the top-level pages, mini player, tab bar.
+ * (rounded 28px, 10px inset) holding the sticky top bar (search), the scrolling page, the brand decoration
+ * (coral dot grid and rings) and the floating player bar. Phone: sticky top bar (search + account) on every
+ * page, mini player, tab bar.
  * Keeps the library in sync and surfaces session / sync events as toasts.
  */
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Icon } from '../design/icons'
 import { SHAPE_PLAYING } from '../design/shapes'
 import { playList } from '../pages/library/playback'
-import { IconButton, Button, useToast } from '../components/ui'
+import { Button, useToast } from '../components/ui'
 import { libraryStore, onLibraryUpdated, useLibrary } from '../state/library'
 import { NowPlaying } from '../nowplaying/NowPlaying'
 import { QueuePanel } from '../nowplaying/QueuePanel'
@@ -23,6 +24,7 @@ import { appUpdate, usePwa } from '../lib/pwa'
 import { nativeUpdates, useNativeUpdates } from '../native/updates'
 
 import { Sidebar } from './Sidebar'
+import { TopbarSlot } from './topbarSlot'
 import { ActionHost } from '../actions/ActionHost'
 import { DjPanelHost } from '../dj/DjPanel'
 import { djStore } from '../state/dj'
@@ -433,9 +435,8 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
   }, [route.path])
 
   const key = route.kind === 'app' ? route.key : null
-  const deskSearch = key !== null && ['home', 'new', 'upload', 'downloads', 'stats', 'settings', 'health'].includes(key)
-  const phoneTop = key === 'home' || key === 'library' || key === 'downloads'
-  const phoneTitle = key === 'library' ? 'Library' : key === 'downloads' ? 'Downloads' : undefined
+  // desktop: Library puts its own (live) search field into the top bar's slot; every other page gets the pill
+  const [slot, setSlot] = useState<HTMLElement | null>(null)
   const shuffleAll = () => {
     const c = libraryStore.get().data
     if (!c) return
@@ -447,7 +448,8 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
   const page = <div className="shell-page">{children}</div>
 
   return (
-    <div className={`shell ${phone ? 'is-phone' : ''} ${phone && hasTrack ? 'has-mini' : ''} ${phone && phoneTop ? 'has-ptb' : ''} ${phone && phoneTitle ? 'has-ptb-title' : ''} ${scrolled ? 'is-scrolled' : ''}`}>
+    <TopbarSlot.Provider value={phone ? null : slot}>
+    <div className={`shell ${phone ? 'is-phone has-ptb' : ''} ${phone && hasTrack ? 'has-mini' : ''} ${scrolled ? 'is-scrolled' : ''}`}>
       {/* the full-screen player is modal: everything behind it is inert */}
       <div className="shell-layer" inert={np.open}>
         {phone ? (
@@ -459,19 +461,7 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
               <i className="sd-ring sd-r3" />
             </div>
             <main className="shell-main" ref={mainRef} id="main" tabIndex={-1}>
-              {phoneTop && (
-                <PhoneTopBar
-                  title={phoneTitle}
-                  actions={
-                    <>
-                      {key === 'library' && (
-                        <IconButton icon="shuffle" label="Shuffle library" size="lg" variant="strong" onClick={shuffleAll} />
-                      )}
-                      <IconButton icon="search" label="Search your library" size="lg" variant="strong" onClick={focusLibrarySearch} />
-                    </>
-                  }
-                />
-              )}
+              <PhoneTopBar onSearch={focusLibrarySearch} />
               {page}
             </main>
             <MiniPlayer />
@@ -497,8 +487,9 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
                 <i className="sd-ring sd-r3" />
               </div>
               <main className="shell-main" ref={mainRef} id="main" tabIndex={-1}>
-                {deskSearch && (
-                  <div className="topbar">
+                <div className="topbar">
+                  <div className="topbar-slot" ref={setSlot} hidden={key !== 'library'} />
+                  {key !== 'library' && (
                     <button type="button" className="search-pill" onClick={focusLibrarySearch}>
                       <span className="sp-ic" style={{ clipPath: SHAPE_PLAYING }}>
                         <Icon name="search" />
@@ -506,15 +497,15 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
                       <span className="sp-text">Songs, albums, artists</span>
                       <kbd className="sp-kbd">Ctrl K</kbd>
                     </button>
-                    <span className="topbar-gap" />
-                    {key === 'home' && (
-                      <Button variant="filled" size="xl" className="shuffle-all" onClick={shuffleAll}>
-                        <Icon name="shuffle" />
-                        Shuffle all
-                      </Button>
-                    )}
-                  </div>
-                )}
+                  )}
+                  <span className="topbar-gap" />
+                  {key === 'home' && (
+                    <Button variant="filled" size="xl" className="shuffle-all" onClick={shuffleAll}>
+                      <Icon name="shuffle" />
+                      Shuffle all
+                    </Button>
+                  )}
+                </div>
                 {page}
               </main>
               <PlayerBar />
@@ -527,5 +518,6 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
       <ActionHost />
       <DjPanelHost />
     </div>
+    </TopbarSlot.Provider>
   )
 }

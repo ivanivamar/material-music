@@ -5,12 +5,12 @@
 
 /* a faint wash of the art's colour at the top of the panel (neutral for grey art) */
 .dt-wash {
-  position: absolute !important; z-index: 0 !important; left: calc(-1 * var(--px)); right: calc(-1 * var(--px)); top: -40px; height: 520px; pointer-events: none;
+  position: absolute !important; z-index: 0 !important; left: calc(-1 * var(--px)); right: calc(-1 * var(--px)); top: calc(-40px - var(--bar-lift, 0px)); height: 520px; pointer-events: none;
   background: radial-gradient(70% 90% at 22% 0%, oklch(0.30 calc(0.07 * var(--hc)) var(--h) / 0.55), transparent 70%);
 }
 /* artist banner: background photo (or the photo blurred), faded into the page */
 .dt-banner {
-  position: absolute !important; z-index: 0 !important; left: calc(-1 * var(--px)); right: calc(-1 * var(--px)); top: -40px; height: 440px; pointer-events: none;
+  position: absolute !important; z-index: 0 !important; left: calc(-1 * var(--px)); right: calc(-1 * var(--px)); top: calc(-40px - var(--bar-lift, 0px)); height: 440px; pointer-events: none;
   background-size: cover; background-position: center 30%; opacity: .2;
   -webkit-mask-image: linear-gradient(to bottom, #000 0%, rgba(0, 0, 0, .55) 45%, transparent 100%);
   mask-image: linear-gradient(to bottom, #000 0%, rgba(0, 0, 0, .55) 45%, transparent 100%);

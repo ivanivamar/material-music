@@ -1,7 +1,8 @@
 /**
  * Library (Material redesign, LibraryMaterial.dc.html):
  *
- *   Library · "21 albums · 15 artists · 3,912 songs"        [🔍 Search your library]  [Shuffle library]
+ *   [🔍 Search your library]                                         (the shell's sticky top bar)
+ *   Library · "21 albums · 15 artists · 3,912 songs"                                [Shuffle library]
  *   [✓ All 46] [Albums 21] [Artists 15] [Playlists 10] [Songs 3,912]      [Timeline | Grid]  ⇅ Recently added ▾
  *   ○ Added this week ─────────────────────────────── 10 items
  *   │ cards …
@@ -13,12 +14,14 @@
  *
  * Typing turns the page into results in place (pages/search/Search.tsx): the chips filter them, the bar
  * reads "10 results for ‘spi’". Clearing (✕, Esc, deleting the text) goes back to where you were.
- * Phone: the top bar's search button opens a search bar (back arrow · field) with Recent searches.
+ * Desktop: the field is portalled into the shell's sticky top bar (shell/topbarSlot.ts).
+ * Phone: the top bar's search field opens a search bar (back arrow · field) with Recent searches.
  *
  * Android app: "Offline only" narrows Albums / Artists / Songs (and All's albums / artists) to what plays
  * from the phone; without a connection the offline banner shows and unplayable albums dim.
  */
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Chip, IconButton, Button, EmptyState, Menu, MenuItem, MenuLabel, MenuSeparator, OfflineBanner, Toggle, useToast, Segmented } from '../../components/ui'
 import { offlineIndex, useDownloads, useOnline, type OfflineIndex } from '../../state/downloads'
 import { Icon, type IconName } from '../../design/icons'
@@ -27,6 +30,7 @@ import { libraryStats, tracksByAlbum, useLibrary, type Catalogue, type Track } f
 import { libraryPrefs, useLibraryPrefs, type ArtistSort, type LibraryView, type MixedSort } from '../../state/libraryPrefs'
 import { usePlaylists } from '../../state/playlists'
 import { LIBRARY_TABS, go, libraryHref, type LibraryTab } from '../../shell/routes'
+import { TopbarSlot } from '../../shell/topbarSlot'
 import { ALBUM_SORTS, allAlbums, allTracks, artistsByName, byName, fmtN, sortAlbums, sortTracks, type AlbumSort, type ArtistInfo, type SongSort } from '../../state/views'
 import { playList, useContextState } from './playback'
 import { playerStore } from '../../state/player'
@@ -49,6 +53,7 @@ export function Library({ tab: routeTab }: { tab: LibraryTab | null }) {
   const touch = isTouch()
   const toast = useToast()
   const { list: lists } = usePlaylists()
+  const topbarSlot = useContext(TopbarSlot)
 
   useEffect(() => {
     if (routeTab && routeTab !== libraryPrefs.get().tab) libraryPrefs.set({ tab: routeTab })
@@ -175,16 +180,22 @@ export function Library({ tab: routeTab }: { tab: LibraryTab | null }) {
           </div>
         )
       ) : (
+        !empty && topbarSlot && createPortal(field, topbarSlot)
+      )}
+      {!phoneSearching && (
         <header className="lb-head">
           <div className="lb-head-text">
             <h1 className="lb-title">Library</h1>
             <div className="lb-meta">{headMeta}</div>
           </div>
-          {!empty && field}
-          <Button variant="filled" size="xl" className="shuffle-all lb-shuffle" onClick={shuffleAll} disabled={empty}>
-            <Icon name="shuffle" />
-            Shuffle library
-          </Button>
+          {phone ? (
+            !empty && <IconButton icon="shuffle" label="Shuffle library" size="lg" variant="strong" className="lb-shuffle" onClick={shuffleAll} />
+          ) : (
+            <Button variant="filled" size="xl" className="shuffle-all lb-shuffle" onClick={shuffleAll} disabled={empty}>
+              <Icon name="shuffle" />
+              Shuffle library
+            </Button>
+          )}
         </header>
       )}
 

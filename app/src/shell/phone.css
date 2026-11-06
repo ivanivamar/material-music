@@ -4,9 +4,12 @@
  * desktop page styles regardless of stylesheet order.
  */
 
-/* ── Shell (Material redesign): top bar on top-level pages, 96px tab bar, 68px glass mini player ── */
+/* ── Shell (Material redesign): sticky top bar on every page, 96px tab bar, 68px glass mini player ── */
 .shell.is-phone {
   --android-tabs-h: 96px; --android-mini-h: 68px;
+  /* the sticky top bar's height (secondary sticky bars sit under it), and how much lower page content
+     starts than it did without a top bar (page decorations reach up by this to stay put) */
+  --bar-h: calc(64px + env(safe-area-inset-top)); --bar-lift: 54px;
   grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); grid-template-areas: 'main';
   background: var(--panel);
 }
@@ -22,20 +25,23 @@
 .shell.is-phone.has-mini .shell-page {
   padding-bottom: calc(var(--android-tabs-h) + var(--android-mini-h) + 40px + env(safe-area-inset-bottom));
 }
-/* the top bar carries the page title on the top-level pages */
-.shell.is-phone.has-ptb-title .shell-page .ph-title { display: none; }
 
 .ptb {
-  height: 64px; padding: env(safe-area-inset-top) 8px 0 16px; box-sizing: content-box; display: flex; align-items: center; gap: 10px;
+  height: 64px; padding: env(safe-area-inset-top) 4px 0 12px; box-sizing: content-box; display: flex; align-items: center; gap: 4px;
   /* sticky over the page; solid once content scrolls under it */
   position: sticky; top: 0; z-index: 5; background: transparent;
   transition: background-color 200ms var(--ease-std);
 }
 .shell.is-phone.is-scrolled .ptb { background: var(--panel); }
-.ptb-brand { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; color: var(--ink-primary); text-decoration: none; }
-.ptb-word { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ptb-title { flex: 1; min-width: 0; margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ptb-actions { display: flex; align-items: center; gap: 2px; flex: none; }
+.ptb-search {
+  flex: 1; min-width: 0; height: 48px; border-radius: 999px; border: 0; font: inherit; text-align: left; cursor: text;
+  display: flex; align-items: center; gap: 12px; padding: 0 16px 0 6px;
+  background: oklch(0.225 0.008 40); box-shadow: inset 0 0 0 1px oklch(0.30 0.01 40);
+  color: var(--ink-secondary); font-size: 16px; -webkit-tap-highlight-color: transparent;
+}
+.ptb-search:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--brand); }
+.ptb-search-ic { width: 36px; height: 36px; flex: none; display: flex; align-items: center; justify-content: center; background: var(--brand); color: var(--on-brand); font-size: 18px; }
+.ptb-search-t { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ptb-av {
   width: 48px; height: 48px; padding: 0; border: 0; border-radius: 999px; background: none; cursor: pointer; color: var(--ink-primary);
   display: inline-flex; align-items: center; justify-content: center;

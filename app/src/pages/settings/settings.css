@@ -2,7 +2,7 @@
 
 /* ── Desktop: sticky section list + 740px column ──── */
 .st { display: grid; grid-template-columns: 200px minmax(0, 740px); gap: 64px; padding: 12px 0 80px; }
-.st-side { position: sticky; top: 32px; align-self: start; display: flex; flex-direction: column; gap: 24px; }
+.st-side { position: sticky; top: calc(var(--bar-h, 0px) + 16px); align-self: start; display: flex; flex-direction: column; gap: 24px; }
 .st-head { display: flex; flex-direction: column; gap: 4px; }
 .st-title { margin: 0; font-size: 45px; font-weight: 700; letter-spacing: -0.025em; line-height: 1.05; color: var(--ink-primary); }
 .st-meta { font-size: 14px; color: var(--ink-secondary); }
@@ -93,10 +93,11 @@
 /* ── Phone layout ─────────────────────────────────── */
 .st-phone { display: block; padding-bottom: 16px; }
 .st-phead {
-  position: sticky; top: 0; z-index: 3;
+  /* sits under the shell's sticky top bar */
+  position: sticky; top: var(--bar-h, 0px); z-index: 3;
   display: flex; align-items: center; gap: 6px;
-  height: calc(64px + env(safe-area-inset-top)); box-sizing: border-box;
-  margin: calc(-16px - env(safe-area-inset-top)) -20px 12px; padding: env(safe-area-inset-top) 20px 0 8px;
+  height: 64px; box-sizing: border-box;
+  margin: -8px -20px 12px; padding: 0 20px 0 8px;
   background: oklch(0.17 0.006 40 / 0.88);
   -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
 }

@@ -39,7 +39,7 @@
 
 /* sticky bar: chips · views · sort */
 .lb-bar {
-  position: sticky; top: 0; z-index: 3; margin: 0 calc(-1 * var(--px)); padding: 12px var(--px);
+  position: sticky; top: var(--bar-h, 0px); z-index: 3; margin: 0 calc(-1 * var(--px)); padding: 12px var(--px);
   display: flex; align-items: center; gap: 8px; background: var(--panel);
 }
 .lb-chips { display: flex; align-items: center; gap: 8px; min-width: 0; }
@@ -158,6 +158,10 @@
 /* ── Phone ─────────────────────────────────────────── */
 html[data-lib-search] .shell.is-phone .ptb { display: none; }
 .shell.is-phone .lb { --px: 16px; gap: 12px; padding-top: 0; }
+.shell.is-phone .lb-head { align-items: center; gap: 12px; margin: 4px 0 0; }
+.shell.is-phone .lb-title { font-size: 36px; letter-spacing: -0.025em; }
+.shell.is-phone .lb-meta { font-size: 13px; }
+.shell.is-phone .lb-shuffle { margin-right: -4px; }
 .shell.is-phone .lb-phsearch { position: sticky; top: 0; z-index: 4; margin: -8px -16px 0; padding: calc(8px + env(safe-area-inset-top)) 12px 8px 4px; display: flex; align-items: center; gap: 4px; background: var(--panel); }
 .shell.is-phone .lb-field-wrap { width: auto; flex: 1; min-width: 0; }
 .shell.is-phone .lb-field { height: 48px; padding: 0 4px 0 18px; gap: 4px; }
@@ -204,4 +208,4 @@ html[data-lib-search] .shell.is-phone .ptb { display: none; }
 .shell.is-phone .sr-none { padding: 32px 8px 24px; }
 .shell.is-phone .sr-none-t { font-size: 20px; }
 /* sits under the sticky top bar (or, while searching, under the sticky search field: same height) */
-.shell.is-phone.has-ptb .lb-bar, html[data-lib-search] .shell.is-phone .lb-bar { top: calc(64px + env(safe-area-inset-top)); }
+.shell.is-phone .lb-bar { top: var(--bar-h); }
