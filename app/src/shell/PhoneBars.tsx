@@ -79,9 +79,6 @@ export function MiniPlayer() {
         aria-label="Open the full-screen player"
         title="Open the full-screen player"
         onPointerDown={drag.onPointerDown}
-        onPointerMove={drag.onPointerMove}
-        onPointerUp={drag.onPointerUp}
-        onPointerCancel={drag.onPointerCancel}
         onClick={() => !drag.swallowClick() && nowPlayingStore.open('np')}
       >
         <span aria-hidden />

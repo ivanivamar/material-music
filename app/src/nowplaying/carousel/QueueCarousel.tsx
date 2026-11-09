@@ -326,7 +326,7 @@ function CarouselCard({ slot, variant, id, group, focused, browsing, height, lab
       ? `${p.playing ? 'Playing' : 'Paused'}: ${title}${by}${variant === 'bar' ? '. Open the player.' : ''}`
       : `${title}${by} · ${GROUP_LABEL[group]}`
 
-  const style = { '--qc-x': `${slot.x}px`, '--qc-w': `${slot.w}px`, '--qc-h': `${height}px` } as CSSProperties
+  const style = { '--qc-x': `${slot.x}px`, '--qc-w': `${slot.w}px` } as CSSProperties
 
   return (
     <div

@@ -157,7 +157,11 @@ a.np-from-l:hover { color: var(--np-on); text-decoration: underline; text-underl
   --np-mini-top: calc(100dvh - var(--np-mini-b) - var(--android-mini-h));
   inset: calc(var(--np-u) * var(--np-mini-top)) calc(var(--np-u) * 8px) calc(var(--np-u) * var(--np-mini-b));
   border-radius: calc(var(--np-u) * 28px);
-  background: color-mix(in oklch, var(--mini-band), var(--glass-np) calc(var(--np-t) * 100%));
+  /* opaque, and no backdrop blur: re-blurring the page under a box that changes size every frame is
+     what made the morph flicker on Android */
+  background: color-mix(in oklch, var(--mini-band), oklch(0.15 0.02 var(--h)) calc(var(--np-t) * 100%));
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+  contain: layout paint;
   box-shadow: 0 14px 32px -12px rgb(0 0 0 / calc(var(--np-u) * .65));
   animation: none;
 }
@@ -170,6 +174,7 @@ a.np-from-l:hover { color: var(--np-on); text-decoration: underline; text-underl
   height: calc(var(--np-u) * 30px); opacity: var(--np-u); color: var(--ink-secondary);
 }
 .np-band > span { width: 28px; height: 4px; border-radius: 2px; background: currentColor; }
+.np.is-phone .np-head, .np.is-phone .np-head * { -webkit-user-drag: none; user-select: none; -webkit-user-select: none; }
 .np.is-phone .np-head { height: calc(var(--np-t) * 64px); opacity: clamp(0, calc((var(--np-t) - .35) / .65), 1); overflow: hidden; touch-action: none; }
 .np.is-phone .np-body { padding: calc(var(--np-t) * 4px) calc(var(--np-t) * 16px) 0; }
 .np.is-phone .np-stage {

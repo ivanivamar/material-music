@@ -179,9 +179,6 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
           className="np-band"
           aria-hidden
           onPointerDown={headDrag.onPointerDown}
-          onPointerMove={headDrag.onPointerMove}
-          onPointerUp={headDrag.onPointerUp}
-          onPointerCancel={headDrag.onPointerCancel}
         >
           <span />
         </div>
@@ -190,9 +187,8 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
       <header
         className="np-head"
         onPointerDown={phone ? headDrag.onPointerDown : undefined}
-        onPointerMove={phone ? headDrag.onPointerMove : undefined}
-        onPointerUp={phone ? headDrag.onPointerUp : undefined}
-        onPointerCancel={phone ? headDrag.onPointerCancel : undefined}
+        // the "Playing from" link would otherwise start a native link drag instead of ours
+        onDragStart={phone ? (e) => e.preventDefault() : undefined}
       >
         <IconButton
           ref={closeRef}

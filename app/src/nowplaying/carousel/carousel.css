@@ -1,7 +1,7 @@
 /* Queue carousel + reorder mode (Nov 2026 carousel player). One stylesheet for every surface:
    .qc-bar (desktop player bar) · .qc-mini (phone mini player) · .qc-full (phone full-screen player)
    · .qc-strip (the row under the desktop full-screen player's cover).
-   Geometry comes from layout.ts as --qc-x / --qc-w / --qc-h; colours only from tokens. */
+   Geometry comes from layout.ts as --qc-x / --qc-w (heights follow the container); colours only from tokens. */
 
 /* ── Carousel ─────────────────────────────────────────────────────────── */
 .qc {
@@ -20,7 +20,8 @@
 
 .qc-card {
   position: absolute; top: var(--qc-top); left: 0;
-  width: var(--qc-w); height: var(--qc-h);
+  /* height from CSS, not JS: during the phone morph it tracks the container in the same frame */
+  width: var(--qc-w); height: calc(100% - var(--qc-top));
   translate: var(--qc-x) 0;
   transition: translate var(--qc-move), width var(--qc-move);
   animation: qc-in 320ms var(--ease-std) both;
