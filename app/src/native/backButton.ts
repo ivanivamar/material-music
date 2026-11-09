@@ -41,7 +41,7 @@ export function handleBack(): void {
   }
   for (let i = topOverlays.length - 1; i >= 0; i--) if (topOverlays[i]()) return
   const ui = nowPlayingStore.get()
-  if (ui.queue) return nowPlayingStore.closeQueue()
+  if (ui.reorder) return nowPlayingStore.closeReorder()
   if (ui.open) return nowPlayingStore.close()
   for (let i = overlays.length - 1; i >= 0; i--) if (overlays[i]()) return
   if (canGoBack()) return back(href('home'))

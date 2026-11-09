@@ -17,6 +17,7 @@ import { lyricsScript, useRomaji, type RomajiState } from '../lib/romaji'
 import { settingsStore, useSettings } from '../state/settings'
 import type { Track } from '../state/library'
 import { playerStore } from '../state/player'
+import './lyrics.css'
 
 /**
  * The engine reports position ~4×/s; between reports we extrapolate from the wall clock so

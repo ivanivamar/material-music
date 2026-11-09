@@ -55,9 +55,21 @@
 }
 .mm-mode::before { content: ''; position: absolute; inset: -7px; border-radius: 999px; }
 .mm-mode .ms { font-size: 22px; }
-.mm-mode:hover { color: var(--ink-primary); }
+.mm-mode:hover { color: var(--ink-primary); background: rgba(255, 255, 255, .08); }
+.mm-mode:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 .mm-mode.is-on { width: 34px; border-radius: 11px; background: var(--album); color: var(--on-album); }
-.mm-mode.is-off { color: oklch(0.55 0.02 290); cursor: default; }
+.mm-mode.is-on:hover { background: var(--album-hi); }
+.mm-mode.is-off, .mm-mode.is-off:hover { color: var(--ink-ghost); background: transparent; cursor: default; }
+/* lg: the full-screen player (48px) */
+.mm-mode-slot.is-lg { width: 56px; }
+.mm-mode.is-lg { width: 56px; height: 48px; border-radius: 24px; }
+.mm-mode.is-lg .ms { font-size: 24px; }
+.mm-mode.is-lg.is-on { width: 48px; border-radius: 15px; }
+/* labelled (phone full-screen bottom row): a pill that tightens its corners when on */
+.mm-mode-slot.has-text { width: auto; }
+.mm-mode.has-text, .mm-mode.has-text.is-on { width: auto; gap: 8px; padding: 0 18px 0 14px; font: inherit; font-size: 14px; font-weight: 600; }
+.mm-mode.has-text { border-radius: 24px; }
+.mm-mode.has-text.is-on { border-radius: 15px; }
 .mm-mode-badge { position: absolute; right: 2px; top: 1px; font-size: 9px; font-weight: 700; line-height: 1; }
 
 /* Snackbar (Material redesign): inverse light surface, dark ink, coral action */
@@ -121,6 +133,8 @@
 .btn-filled:active:not(:disabled), .btn-primary:active:not(:disabled) { background: oklch(0.40 0.10 38); box-shadow: none; }
 .btn-brand { background: var(--brand); color: var(--on-brand); }
 .btn-brand:hover:not(:disabled) { filter: brightness(1.06); }
+.btn-album { background: var(--album); color: var(--on-album); }
+.btn-album:hover:not(:disabled) { background: var(--album-hi); box-shadow: 0 4px 12px -4px rgba(0, 0, 0, .5); }
 .btn-tonal { background: oklch(0.36 0.035 38); color: oklch(0.92 0.025 38); }
 .btn-tonal:hover:not(:disabled) { background: oklch(0.40 0.045 38); }
 .btn-secondary { background: oklch(0.30 0.012 40); color: var(--ink-primary); }
@@ -150,7 +164,7 @@
 .btn-warn-outlined:hover:not(:disabled) { background: oklch(0.84 0.08 95 / 0.12); }
 
 /* disabled: container buttons go neutral (M3), the rest fade */
-:is(.btn-filled, .btn-primary, .btn-brand, .btn-tonal, .btn-secondary, .btn-danger, .btn-error):is(:disabled, [aria-disabled='true']) {
+:is(.btn-filled, .btn-primary, .btn-album, .btn-brand, .btn-tonal, .btn-secondary, .btn-danger, .btn-error):is(:disabled, [aria-disabled='true']) {
   background: oklch(0.30 0.01 40); color: oklch(0.55 0.012 40); box-shadow: none; filter: none;
 }
 :is(.btn-outlined, .btn-outlined-ink, .btn-ghost, .btn-plain, .btn-danger-outlined):is(:disabled, [aria-disabled='true']) { opacity: .45; }

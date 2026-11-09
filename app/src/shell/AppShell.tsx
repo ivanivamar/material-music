@@ -12,7 +12,6 @@ import { playList } from '../pages/library/playback'
 import { Button, useToast } from '../components/ui'
 import { libraryStore, onLibraryUpdated, useLibrary } from '../state/library'
 import { NowPlaying } from '../nowplaying/NowPlaying'
-import { QueuePanel } from '../nowplaying/QueuePanel'
 import { nowPlayingStore, useNowPlayingUi } from '../state/nowPlaying'
 import { onPlayerNotice, playerStore, usePlayer } from '../state/player'
 import { focusLibrarySearch } from '../state/search'
@@ -370,30 +369,29 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
-  // Esc closes the queue panel first, then the full-screen player
+  // Esc leaves reorder mode first, then closes the full-screen player
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape' || e.defaultPrevented) return
       const ui = nowPlayingStore.get()
-      if (!ui.queue && !ui.open) return
+      if (!ui.open) return
       const el = e.target as HTMLElement | null
       if (!ui.open && el?.closest('input, textarea, select, [contenteditable="true"]')) return
       e.preventDefault()
-      if (ui.queue) nowPlayingStore.closeQueue()
+      if (ui.reorder) nowPlayingStore.closeReorder()
       else nowPlayingStore.close()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
-  // Any navigation (e.g. "/" to Library search) takes the full-screen player and queue panel down with it
+  // Any navigation (e.g. "/" to Library search) takes the full-screen player down with it
   const npPath = useRef(route.path)
   useEffect(() => {
     if (npPath.current === route.path) return
     npPath.current = route.path
     const ui = nowPlayingStore.get()
     if (ui.open) nowPlayingStore.close()
-    else if (ui.queue) nowPlayingStore.closeQueue()
   }, [route.path])
 
   // Background sync failure (first-load failures have their own screen)
@@ -514,7 +512,6 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
         )}
       </div>
       <NowPlaying />
-      <QueuePanel />
       <ActionHost />
       <DjPanelHost />
     </div>

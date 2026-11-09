@@ -6,7 +6,7 @@
 
 /* ── Shell (Material redesign): sticky top bar on every page, 96px tab bar, 68px glass mini player ── */
 .shell.is-phone {
-  --android-tabs-h: 96px; --android-mini-h: 68px;
+  --android-tabs-h: 96px; --android-mini-h: 76px;
   /* the sticky top bar's height (secondary sticky bars sit under it), and how much lower page content
      starts than it did without a top bar (page decorations reach up by this to stay put) */
   --bar-h: calc(64px + env(safe-area-inset-top)); --bar-lift: 54px;
@@ -86,37 +86,14 @@
 .as-item:disabled .as-ic { color: var(--ink-ghost); }
 
 .mini {
-  position: fixed; left: 8px; right: 8px; z-index: 21;
-  bottom: calc(var(--android-tabs-h) + 8px + env(safe-area-inset-bottom));
-  height: var(--android-mini-h); border-radius: 16px; overflow: hidden; isolation: isolate;
-  display: flex; align-items: center; gap: 4px; padding: 0 4px 0 8px;
-  background: var(--glass-bar);
-  -webkit-backdrop-filter: blur(28px) saturate(1.5); backdrop-filter: blur(28px) saturate(1.5);
-  box-shadow: 0 6px 18px -6px rgba(0, 0, 0, .5), inset 0 0 0 1px var(--glass-bar-rim), inset 0 1px 0 rgba(255, 255, 255, .08);
+  position: fixed; left: 0; right: 0; z-index: 21;
+  bottom: calc(var(--android-tabs-h) + env(safe-area-inset-bottom));
+  height: calc(var(--android-mini-h) + 16px); padding: 8px;
+  background: var(--panel);
 }
-.mini-open { flex: 1; min-width: 0; height: 100%; display: flex; align-items: center; gap: 12px; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
-.mini-cover-wrap { flex: none; display: flex; }
-.mini-like { margin-right: -4px; }
-.mini-like:not(.is-on) { color: oklch(0.85 0.012 40); }
-.mini-cover { width: 52px; height: 52px; flex: none; border-radius: 10px; object-fit: cover; display: block; }
-.mini-cover-empty { background: var(--surface-2); }
-.mini-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-.mini-title-row { display: flex; align-items: center; gap: 6px; min-width: 0; }
-.mini-title { font-size: 14px; font-weight: 600; min-width: 0; color: oklch(0.95 0.006 40); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.mini-sub { font-size: 12px; color: oklch(0.79 0.014 40); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.mini-play {
-  position: relative; width: 48px; height: 48px; flex: none; border: 0; padding: 0; border-radius: 999px; cursor: pointer;
-  background: var(--album); color: var(--on-album);
-  display: inline-flex; align-items: center; justify-content: center;
-}
-.mini-play .ms { font-size: 28px; }
-.mini-next { width: 48px; height: 48px; flex: none; border: 0; padding: 0; background: none; cursor: pointer; color: oklch(0.95 0.006 40); display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; }
-.mini-next .ms { font-size: 28px; }
-.mini-progress { position: absolute; left: 0; bottom: 0; height: 3px; background: var(--album); transition: width .5s linear; }
 
 /* toasts: above the mini-player and tabs */
-html[data-phone]:not([data-np]) .toasts.toasts-shell { left: 0; right: 0; bottom: calc(var(--android-tabs-h) + var(--android-mini-h) + 24px + env(safe-area-inset-bottom)); }
-html[data-phone][data-qp] .toasts.toasts-shell { right: 0; }
+html[data-phone]:not([data-np]) .toasts.toasts-shell { left: 0; right: 0; bottom: calc(var(--android-tabs-h) + var(--android-mini-h) + 32px + env(safe-area-inset-bottom)); }
 
 /* ── Page header ── */
 .shell.is-phone .ph { align-items: flex-start; gap: 16px; margin-bottom: 20px; }
@@ -269,69 +246,12 @@ html[data-phone][data-qp] .toasts.toasts-shell { right: 0; }
 .shell.is-phone .np[data-swipe="dragging"] { transition: none; }
 .shell.is-phone .np[data-swipe="springing"] { transition: transform .3s var(--ease-std); }
 .shell.is-phone .np[data-swipe="swiped"] { animation: none !important; transition: transform .26s cubic-bezier(.4, 0, 1, 1); pointer-events: none; }
-.shell.is-phone .np-head { height: 56px; padding: 0 4px; grid-template-columns: 48px minmax(0, 1fr) 48px; }
-.shell.is-phone .np-close { background: none; }
 .shell.is-phone .np-from { gap: 2px; }
 .shell.is-phone .np-from-l { max-width: 100%; }
+.shell.is-phone .np { --np-sat: env(safe-area-inset-top, 0px); padding-top: var(--np-sat); }
+/* the rest of the phone layout lives with the player (nowplaying.css, .np.is-phone) */
 
-.shell.is-phone .np { --np-sat: env(safe-area-inset-top, 0px); padding-top: var(--np-sat); --np-cover: max(180px, min(calc(100vw - 56px), calc(100vh - 440px - var(--np-sat)))); }
-.shell.is-phone .np-main {
-  flex-direction: column; align-items: stretch; justify-content: flex-start; gap: 0; padding: 16px 0 0;
-  overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain;
-}
-/* cover row (CoverSwipe.tsx): the queue's covers side by side, one full-width slot per song, in an
-   overflow-hidden scroller that only the component moves; pan-y keeps vertical drags for swipe-down-to-close.
-   The tilt and shadow sit on each slot so neighbours slide in tilted too. */
-.shell.is-phone .np-cover-wrap { transform: none; filter: none; align-self: stretch; }
-.npc { width: 100%; height: calc(var(--np-cover) + 60px); margin-bottom: -44px; overflow: hidden; touch-action: pan-y; -webkit-touch-callout: none; user-select: none; }
-.npc-track { display: flex; height: 100%; }
-.npc-slot { flex: 0 0 100%; display: flex; justify-content: center; align-items: flex-start; padding-top: 8px; }
-.npc-slot .np-cover { transform: rotate(-3deg); filter: drop-shadow(0 22px 30px rgba(0, 0, 0, .55)); }
-.shell.is-phone .np-info { max-width: none; padding: 32px 28px 0; gap: 18px; }
-.shell.is-phone .np-title-col { gap: 0; }
-.shell.is-phone .np-title { font-size: 28px; letter-spacing: -0.02em; line-height: 1.15; display: block; white-space: nowrap; }
-.shell.is-phone .np-chip { align-self: flex-start; margin-bottom: 8px; }
-.shell.is-phone .np-by { font-size: 14px; margin-top: 4px; }
-.shell.is-phone .np-q { height: 22px; padding: 0 8px; margin-bottom: 2px; }
-.shell.is-phone .np-seek .mm-seek-hit { padding: 8px 0; }
-.shell.is-phone .np-transport { max-width: none; }
-.shell.is-phone .np-mode-slot { width: 64px; }
-.shell.is-phone .np-mode { width: 64px; height: 48px; border-radius: 24px; }
-.shell.is-phone .np-mode .ms { font-size: 24px; }
-.shell.is-phone .np-mode.is-on { width: 48px; border-radius: 15px; }
-.shell.is-phone .np-skip { width: 48px; height: 48px; }
-.np-phone-actions { margin-top: auto; padding: 24px 20px calc(36px + env(safe-area-inset-bottom)); display: flex; align-items: center; justify-content: space-between; gap: 8px; flex: none; }
-.np-main:has(> .np-dj-hint) .np-phone-actions { padding-bottom: 8px; }
-.shell.is-phone .np-dj-hint { margin-top: 0; padding: 0 20px calc(24px + env(safe-area-inset-bottom)); }
-.np-phone-actions .np-vbtn.is-sq { width: 64px; height: 48px; padding: 0; justify-content: center; border-radius: 24px; background: rgba(255, 255, 255, .08); box-shadow: none; }
-.np-phone-actions .np-vbtn.is-sq .ms { font-size: 24px; }
-.np-phone-actions .np-vbtn.is-sq.is-on { width: 48px; border-radius: 15px; background: var(--album-hi); color: var(--on-album); }
-.np-phone-actions .np-vbtn.is-sq.is-dj-tune { width: 48px; color: var(--dj); }
-.np-phone-actions .djb.djb-phone { height: 48px; padding: 0 20px 0 16px; border-radius: 24px; }
-.np-phone-actions .djb.djb-phone.is-on { border-radius: 15px; }
-
-/* lyrics: floating bottom sheet (matches .qp in layout, rest offset and header drag) */
-.shell.is-phone .np-scrim { top: 0; bottom: 0; z-index: 44; background: rgba(5, 5, 5, .45); will-change: opacity; }
-.shell.is-phone .np-panel {
-  --np-ly-rest: max(0px, calc(192px - env(safe-area-inset-top, 0px)));
-  left: 8px; right: 8px; top: calc(env(safe-area-inset-top, 0px) + 8px); bottom: calc(8px + env(safe-area-inset-bottom, 0px));
-  width: auto; max-width: none; z-index: 45;
-  opacity: 1; transform: translate3d(0, calc(100% + 24px), 0);
-  will-change: transform;
-  transition: transform var(--dur-panel) var(--ease), visibility 0s linear var(--dur-panel);
-}
-.shell.is-phone .np-panel.is-expanded { --np-ly-rest: 0px; }
-.shell.is-phone .np-panel.is-open { transform: translate3d(0, var(--np-ly-rest), 0); transition: transform .5s var(--ease), visibility 0s; }
-.shell.is-phone .np-panel.is-grabbing, .shell.is-phone .np-scrim.is-grabbing { transition: none; }
-.shell.is-phone .np-panel-card {
-  bottom: calc(var(--np-ly-rest) + var(--np-ly-drag-up, 0px)); border-radius: 28px;
-  box-shadow: 0 -20px 60px -20px rgba(0, 0, 0, .8), inset 0 1px 0 rgba(255, 255, 255, .05);
-}
-.shell.is-phone .np-panel-head { gap: 10px; padding: 10px 18px 14px; touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none; }
-.np-panel-grab { align-self: center; display: flex; align-items: center; justify-content: center; width: 72px; height: 16px; margin: -6px 0 -6px; cursor: grab; }
-.np-panel-grab > span { width: 36px; height: 4px; border-radius: 4px; background: rgba(255, 255, 255, .25); transition: background .2s, width .3s var(--ease); }
-.np-panel.is-grabbing .np-panel-grab > span { background: rgba(255, 255, 255, .6); width: 44px; }
-.shell.is-phone .np-panel-title { font-size: 22px; }
+/* lyrics on the phone: smaller lines */
 .shell.is-phone .ly-list { left: 12px; right: 12px; padding: 12px 0 20px; }
 .shell.is-phone .ly-line { font-size: 18px; padding: 10px 12px 10px 14px; }
 .shell.is-phone .ly-line.is-on { font-size: 22px; padding: 14px 14px 14px 16px; border-radius: 20px; }
@@ -339,76 +259,6 @@ html[data-phone][data-qp] .toasts.toasts-shell { right: 0; }
 .shell.is-phone .ly-viewport { -webkit-mask-image: none !important; mask-image: none !important; }
 .shell.is-phone .ly-plain { padding: 18px 20px 28px; }
 .shell.is-phone .ly-plain p { font-size: 18px; }
-
-/* ── Queue: floating bottom sheet (design_handoff_queue_popover, 07 "QUEUE / SHEET OVER NOW PLAYING") ──
-   8px from the sides and the bottom, resting with its top 200px down the screen (the now-playing
-   art stays faintly visible above it), radius 28, same glass as the desktop popover.
-   The sheet (.qp) is always laid out at full height (8px under the status bar) and only ever moves
-   with translateY (GPU): --qp-rest = how far down it rests (0 when expanded); closed = off-screen.
-   The glass card inside stops --qp-rest above the sheet's bottom, so at rest it ends 8px above
-   the screen edge. Changing a layer's size while dragging made the Android WebView re-rasterise
-   it every frame (the sheet blinked out), so a drag only ever changes the transform. */
-.shell.is-phone .qp-scrim, .shell.is-phone .qp-scrim.is-over-np { top: 0; bottom: 0; z-index: 44; will-change: opacity; }
-.shell.is-phone .qp, .shell.is-phone .qp.is-over-np {
-  --qp-rest: max(0px, calc(192px - env(safe-area-inset-top, 0px)));
-  left: 8px; right: 8px; top: calc(env(safe-area-inset-top, 0px) + 8px); bottom: calc(8px + env(safe-area-inset-bottom, 0px));
-  width: auto; max-width: none; z-index: 45;
-  opacity: 1; transform: translate3d(0, calc(100% + 24px), 0);
-  will-change: transform;
-  transition: transform var(--dur-panel) var(--ease), visibility 0s linear var(--dur-panel);
-}
-.shell.is-phone .qp.is-expanded { --qp-rest: 0px; }
-.shell.is-phone .qp.is-open { transform: translate3d(0, var(--qp-rest), 0); transition: transform .5s var(--ease), visibility 0s; }
-.shell.is-phone .qp.is-grabbing, .shell.is-phone .qp-scrim.is-grabbing { transition: none; }
-.shell.is-phone .qp-card {
-  bottom: var(--qp-rest); border-radius: 28px;
-  box-shadow: 0 -20px 60px -20px rgba(0, 0, 0, .8), inset 0 1px 0 rgba(255, 255, 255, .05);
-}
-
-/* header = grab area (handle, title, buttons) */
-.shell.is-phone .qp-head { gap: 12px; padding: 10px 18px 14px; touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none; }
-.qp-grab { align-self: center; display: flex; align-items: center; justify-content: center; width: 72px; height: 16px; margin: -6px 0 -6px; cursor: grab; }
-.qp-grab > span { width: 36px; height: 4px; border-radius: 4px; background: rgba(255, 255, 255, .25); transition: background .2s, width .3s var(--ease); }
-.qp.is-grabbing .qp-grab > span { background: rgba(255, 255, 255, .6); width: 44px; }
-.shell.is-phone .qp-head-row { gap: 10px; }
-.shell.is-phone .qp-src-cover, .shell.is-phone .qp-src .plc { width: 20px; height: 20px; }
-.shell.is-phone .qp-src-k { font-size: 9px; }
-
-/* one scroller */
-.shell.is-phone .qp-list { padding: 12px 10px; scrollbar-width: none; }
-.shell.is-phone .qp-list::-webkit-scrollbar { display: none; }
-.shell.is-phone .qp-rule { padding: 0 8px; }
-.shell.is-phone .qp-t { font-size: 15px; }
-
-/* rows: vertical pans scroll the list, horizontal ones are ours (swipe left = remove);
-   a long press lifts the row, so no text selection / callout */
-.shell.is-phone .qp-row { touch-action: pan-y; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
-.shell.is-phone .qp-prow { height: 56px; }
-.shell.is-phone .qp-prow .qp-row-in { padding: 0 10px 0 8px; will-change: transform; }
-.shell.is-phone .qp-pcover { width: 40px; height: 40px; border-radius: 9px; }
-.shell.is-phone .qp-nrow { height: 60px; cursor: pointer; }
-.shell.is-phone .qp-nrow .qp-row-in { gap: 10px; padding: 0 8px 0 4px; will-change: transform; }
-.shell.is-phone .qp-nrow:hover .qp-row-in { background: oklch(0.23 0.008 40); }
-.shell.is-phone .qp-prow:hover .qp-row-in { background: oklch(0.195 0.006 40); }
-.shell.is-phone .qp-prow:hover .qp-pnum { background: rgba(255, 255, 255, .06); color: oklch(0.66 0.012 40); }
-.shell.is-phone .qp-prow:hover .qp-pn-done { display: inline-flex; }
-.shell.is-phone .qp-prow:hover .qp-pn-play { display: none; }
-.shell.is-phone .qp-now:hover .qp-now-play { opacity: 0; }
-.shell.is-phone .qp-grip {
-  width: 24px; font-size: 18px; color: var(--ink-tertiary); align-self: stretch;
-  /* wider hit area than it looks; a press here lifts the row at once */
-  margin-left: -6px; padding-left: 6px; box-sizing: content-box; touch-action: none; cursor: grab;
-}
-.shell.is-phone .qp-ncover { width: 42px; height: 42px; }
-.shell.is-phone .qp-nd { width: auto; padding-right: 6px; }
-.shell.is-phone .qp-row.is-drag .qp-row-in { opacity: .45; background: var(--surface-2); }
-/* swipe left: a red strip fills the space the row leaves behind */
-.qp-swipe-bg {
-  position: absolute; top: 0; bottom: 0; right: 0; width: 0; overflow: hidden; border-radius: 12px;
-  display: flex; align-items: center; justify-content: flex-end;
-  background: rgba(var(--warn-rgb), .16); color: var(--warn); font-size: 18px; pointer-events: none;
-}
-.qp-swipe-bg > svg { flex: none; margin-right: 18px; }
 
 /* toasts: full width, one line of text + action (the mono meta is dropped) */
 html[data-phone] .toast { width: calc(100% - 16px); }

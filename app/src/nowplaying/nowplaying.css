@@ -1,6 +1,7 @@
-/* Full-screen Now playing — Material redesign (NowPlayingMaterial.dc.html, neutral surfaces). */
+/* Full-screen player (Nov 2026 carousel player): blurred-cover background, header, the queue carousel
+   (carousel/carousel.css) with the lyrics slot beside it (desktop) or under the controls (phone), and
+   the controls. The controls themselves are styled once in player.css; lyric lines in lyrics.css. */
 .np {
-  --np-cover: max(200px, min(calc(100vh - 84px - 36px - 40px), calc((100vw - 128px - 56px) * .48), 480px));
   --np-on: oklch(0.95 0.006 40);
   --np-on-var: oklch(0.80 0.014 40);
   --np-dim: oklch(0.62 0.012 40);
@@ -41,322 +42,88 @@
   height: 84px; flex: none; padding: 0 24px;
   display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center;
 }
-.np-close {
-  justify-self: start;
-}
-.np-close.is-hidden { visibility: hidden; }
+.np-close { justify-self: start; }
 .np-from { text-align: center; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .np-from-k { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; letter-spacing: .12em; color: var(--np-on-var); }
 .np-from-k.has-dj { color: var(--dj); }
 .np-from-k svg { width: 14px; height: 14px; }
 .np-from-l { font-size: 14px; font-weight: 600; color: var(--np-on); text-decoration: none; max-width: 480px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 a.np-from-l:hover { color: var(--np-on); text-decoration: underline; text-underline-offset: 3px; }
-.np-head-r { justify-self: end; display: flex; gap: 4px; }
-.np-more { color: var(--np-on-var); }
-.np-more:hover:not(:disabled) { color: var(--np-on); }
+.np-head-r { justify-self: end; display: flex; align-items: center; gap: 4px; }
 
-/* main: tilted cover | info column */
-.np-main { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; gap: 56px; padding: 0 64px 36px; }
-@media (max-width: 1299px) { .np-main { padding: 0 40px 36px; } }
-.np-cover-wrap { flex: none; transform: rotate(-3deg); filter: drop-shadow(0 30px 40px rgba(0, 0, 0, .55)); }
-.np-cover { display: block; width: var(--np-cover); height: var(--np-cover); border-radius: calc(var(--np-cover) * .18); object-fit: cover; }
-.np-cover-empty { background: var(--surface-1); }
-.np-info { flex: 1; min-width: 0; max-width: 560px; display: flex; flex-direction: column; gap: 28px; transition: opacity .5s var(--ease-std); }
-.np-info.is-handing { opacity: 0; }
-.np-text { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
-.np-badges { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.np-q {
-  display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 10px; border-radius: 12px; flex: none;
-  box-shadow: inset 0 0 0 1.5px var(--np-on-var); font-size: 11px; line-height: 1; font-weight: 500; color: var(--np-on-var); font-variant-numeric: tabular-nums; white-space: nowrap;
+/* body: the carousel (or reorder strip) and, on desktop, the lyrics slot beside it */
+.np-body { flex: 1; min-height: 0; display: flex; gap: 24px; padding: 8px 48px 0; }
+.np-stage { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; padding-bottom: 72px; }
+.np-stage > .qc, .np-stage > .rq { flex: 1; min-height: 0; }
+.np.is-reorder .np-stage { padding-bottom: 16px; }
+
+.np-side {
+  flex: none; width: 520px; min-height: 0; display: flex; flex-direction: column; overflow: hidden;
+  margin-top: 28px; margin-bottom: 72px; border-radius: var(--r-xl);
+  background: oklch(0.14 0.008 var(--h) / .55); box-shadow: inset 0 0 0 1px var(--np-hair);
+  animation: np-side-in 480ms var(--ease-shape) both;
 }
-.np-q b { font-weight: 700; letter-spacing: .04em; color: var(--album-hi); }
-.np-title-row { display: flex; align-items: flex-end; gap: 12px; min-width: 0; }
-.np-like { margin: 0 -8px -6px 0; }
-.np-like:not(.is-on) { color: oklch(0.85 0.012 40); }
-.np-title-col { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
-.np-title {
-  margin: 0; font-size: 52px; font-weight: 700; letter-spacing: -0.025em; line-height: 1.08;
-  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-wrap: balance;
-}
-@media (max-width: 1299px) { .np-title { font-size: 42px; } }
-.np-by { font-size: 16px; color: var(--np-on-var); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.np-by a { color: inherit; text-decoration: none; }
-.np-by a:hover { color: var(--np-on); text-decoration: underline; text-underline-offset: 3px; }
+@keyframes np-side-in { from { opacity: 0; width: 0; } to { opacity: 1; width: 520px; } }
+@media (max-width: 1299px) { .np-side { width: 420px; } @keyframes np-side-in { from { opacity: 0; width: 0; } to { opacity: 1; width: 420px; } } }
+.np-side-head { flex: none; display: flex; align-items: center; gap: 8px; padding: 18px 14px 12px 22px; box-shadow: inset 0 -1px 0 var(--np-hair); }
+.np-side-titles { flex: 1; min-width: 0; }
+.np-side-title { font-size: 22px; font-weight: 600; letter-spacing: -0.015em; }
+.np-side-sub { font-size: 12px; color: var(--np-on-var); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.np-side-body { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.np-side-intro { flex: 1; min-height: 0; overflow-y: auto; padding: 22px; }
+.np-side-intro .dji-title { font-size: 32px; }
+.np-side-intro .dji-line { font-size: 22px; }
+
+/* desktop controls: one row under the carousel */
+.np-controls { flex: none; display: flex; align-items: center; gap: 8px; padding: 12px 48px 32px; color: var(--np-on-var); }
+.np-controls .pl-transport { color: var(--np-on); margin-right: 12px; }
+.np-controls .np-seek { flex: 1; min-width: 160px; margin-right: 12px; }
+.np-sep { width: 1px; height: 28px; margin: 0 6px; background: var(--np-hair); flex: none; }
 .np-seek { color: var(--np-on-var); }
-.np-seek .mm-seek-hit { padding: 8px 0; }
 .np .mm-wave-track { background: oklch(0.40 0.01 40 / 0.7) !important; }
-
-/* transport */
-.np-transport { display: flex; align-items: center; justify-content: space-between; max-width: 460px; }
-.np-mode-slot { width: 76px; flex: none; display: flex; justify-content: center; }
-.np-mode {
-  width: 76px; height: 56px; border: 0; padding: 0; border-radius: 28px; cursor: pointer;
-  background: transparent; color: var(--np-on);
-  display: inline-flex; align-items: center; justify-content: center;
-  transition: border-radius 480ms var(--ease-shape), width 480ms var(--ease-shape), background-color 200ms var(--ease-std), color 200ms var(--ease-std), transform 350ms cubic-bezier(0.42, 1.67, 0.21, 0.9);
-}
-.np-mode .ms { font-size: 28px; }
-.np-mode:hover { background: rgba(255, 255, 255, .06); }
-.np-mode:active { transform: scale(.9); }
-.np-mode.is-on { width: 56px; border-radius: 18px; background: var(--album-hi); color: var(--on-album); }
-.np-mode.is-dj-off { color: oklch(0.55 0.02 290); cursor: default; background: transparent; }
-.np-skip {
-  width: 64px; height: 64px; border: 0; padding: 0; border-radius: 32px; background: none; cursor: pointer;
-  display: inline-flex; align-items: center; justify-content: center; transition: background-color 200ms var(--ease-std);
-}
-.np-skip .ms { font-size: 36px; }
-.np-skip:hover { background: rgba(255, 255, 255, .08); }
-.np-play { transition: transform 350ms cubic-bezier(0.42, 1.67, 0.21, 0.9); }
-.np-play:active { transform: scale(.92); }
-.np .mm-cookie-shape { background: var(--album-hi) !important; }
-
-/* Lyrics · DJ · Queue chips + volume */
-.np-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; row-gap: 12px; }
-.np-flex { flex: 1; }
-.np-vbtn {
-  height: 40px; padding: 0 16px 0 12px; border: 0; border-radius: 20px; cursor: pointer;
-  display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600;
-  background: rgba(255, 255, 255, .06); color: var(--np-on); box-shadow: inset 0 0 0 1px var(--np-edge);
-  transition: border-radius 480ms var(--ease-shape), width 480ms var(--ease-shape), background-color 250ms, color 250ms;
-}
-.np-vbtn .ms { font-size: 22px; }
-.np-vbtn.is-on { background: var(--album-hi); color: var(--on-album); box-shadow: none; border-radius: 12px; }
-.np-vbtn-n { font-weight: 500; opacity: .8; font-variant-numeric: tabular-nums; }
-.np-vbtn.is-dj-off { color: oklch(0.55 0.02 290); cursor: default; }
-.np-vol { display: inline-flex; align-items: center; gap: 10px; color: var(--np-on-var); }
-.np-mute { border: 0; padding: 0; background: none; cursor: pointer; display: inline-flex; color: inherit; }
-.np-mute .ms { font-size: 24px; }
 .np .mm-thin-track { background: oklch(0.40 0.01 40 / 0.7); }
 
-/* DJ button in the player: a violet-outlined chip, filled violet while on air */
+/* DJ button in the player: its own violet chip (not a player toggle) */
 .np .djb.djb-np, .np .djb.djb-phone {
   height: 40px; padding: 0 16px 0 12px; border-radius: 20px; border: 0;
   background: rgba(255, 255, 255, .06); color: var(--dj); box-shadow: inset 0 0 0 1px oklch(0.84 0.09 290 / 0.45);
 }
+.np .djb.djb-phone { height: 48px; border-radius: 24px; }
 .np .djb.is-on { background: var(--dj); color: var(--on-dj); box-shadow: 0 0 24px -6px oklch(0.84 0.09 290 / 0.55); border-radius: 12px; }
+.np .djb.djb-phone.is-on { border-radius: 15px; }
+
+/* phone: carousel · seek · shuffle / transport / repeat · lyrics · Lyrics / DJ / Reorder */
+.np.is-phone .np-head { height: 64px; padding: 0 8px; }
+.np.is-phone .np-body { flex-direction: column; padding: 4px 16px 0; }
+.np.is-phone .np-stage { padding-bottom: 0; }
+.np.is-phone.has-side .np-stage { flex: none; height: clamp(150px, 26vh, 240px); }
+.np.is-phone.is-reorder .np-stage { padding-bottom: 8px; }
+.np-phone-controls { flex: none; display: flex; flex-direction: column; gap: 8px; padding: 16px 20px 4px; }
+.np-transport-row { display: flex; align-items: center; justify-content: space-between; }
+.np-transport-row .pl-transport { gap: 12px; color: var(--np-on); }
+.np.is-phone .np-side { width: auto; flex: 1; margin: 8px 16px 0; animation: np-side-up 420ms var(--ease-shape) both; }
+@keyframes np-side-up { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+.np.is-phone .np-side-head { padding: 12px 14px 8px 18px; }
+.np.is-phone .np-side-title { font-size: 16px; }
+.np.is-phone .np-side-intro { padding: 16px 18px; }
+.np-bottom {
+  flex: none; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px;
+  padding: 12px 16px calc(16px + env(safe-area-inset-bottom));
+}
+.np-bottom > :first-child { justify-self: start; }
+.np-bottom > :last-child { justify-self: end; }
 
 /* While the DJ plays a song (not its own intro / start scene), the cover owns the colour: DJ accents
-   take the album palette instead of violet, and the DJ chip goes tonal like the quality badge. */
+   take the album palette instead of violet, and the DJ button goes neutral. */
 .np:not(.is-dj-scene) {
   --dj: var(--album-hi);
   --dj-hover: color-mix(in oklch, var(--album-hi) 85%, white);
   --dj-light: color-mix(in oklch, var(--album-hi) 70%, white);
   --on-dj: var(--on-album);
 }
-/* the kit Badge, retinted to the album colour outside the DJ scene */
-.np:not(.is-dj-scene) .np-chip { background: transparent; color: var(--np-on-var); box-shadow: inset 0 0 0 1.5px var(--np-on-var); font-weight: 600; letter-spacing: .04em; }
 .np:not(.is-dj-scene) .djb.djb-np:not(.is-on), .np:not(.is-dj-scene) .djb.djb-phone:not(.is-on) { color: var(--np-on); box-shadow: inset 0 0 0 1px var(--np-edge); }
 .np:not(.is-dj-scene) .djb.is-on, .np:not(.is-dj-scene) .djb.is-on:hover { box-shadow: none; }
-.np:not(.is-dj-scene) .np-vbtn.is-dj-tune { color: var(--np-on); }
-.np:not(.is-dj-scene) .np-vbtn.is-dj-tune:hover { background: rgba(255, 255, 255, .1); color: var(--np-on); }
 .np:not(.is-dj-scene) .np-from-k.has-dj { color: var(--np-on-var); }
-.np:not(.is-dj-scene) .np-mode.is-dj-off, .np:not(.is-dj-scene) .np-vbtn.is-dj-off { color: var(--np-on-var); opacity: .4; }
-
-/* lyrics panel (desktop: right side popover; phone: sheet from below) */
-.np-scrim {
-  position: absolute; inset: 0; z-index: 20;
-  background: rgba(5, 5, 5, .35); opacity: 0; pointer-events: none;
-  transition: opacity 500ms cubic-bezier(0.2, 0, 0, 1);
-}
-.np-scrim.is-open { opacity: 1; pointer-events: auto; }
-.np-panel {
-  position: absolute; right: 20px; top: 96px; bottom: 20px; width: min(432px, 36vw); z-index: 21;
-  opacity: 0; transform: translateY(-10px) scale(.98); transform-origin: top right;
-  visibility: hidden; pointer-events: none;
-  transition: opacity 500ms cubic-bezier(0.2, 0, 0, 1), transform 500ms cubic-bezier(0.2, 0, 0, 1), visibility 0s linear .5s;
-}
-.np-panel.is-open {
-  opacity: 1; transform: none; visibility: visible; pointer-events: auto;
-  transition: opacity 500ms cubic-bezier(0.2, 0, 0, 1), transform 500ms cubic-bezier(0.2, 0, 0, 1), visibility 0s;
-}
-.np-panel-card {
-  position: absolute; inset: 0; display: flex; flex-direction: column; overflow: hidden;
-  border-radius: var(--r-xl); background: var(--glass-panel);
-  -webkit-backdrop-filter: blur(28px) saturate(1.2); backdrop-filter: blur(28px) saturate(1.2);
-  box-shadow: 0 40px 100px -30px rgba(0, 0, 0, .85), inset 0 0 0 1px var(--glass-panel-edge);
-}
-.np-panel-head { display: flex; flex-direction: column; gap: 12px; padding: 20px 14px 14px 22px; box-shadow: inset 0 -1px 0 var(--np-hair); flex: none; }
-.np-panel-head-row { display: flex; align-items: center; gap: 8px; }
-.np-panel-titles { flex: 1; min-width: 0; }
-.np-panel-title { font-size: 24px; font-weight: 600; letter-spacing: -0.015em; }
-.np-panel-sub { font-size: 12px; color: var(--np-on-var); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.np-panel-x { color: inherit; }
-.np-ly-col { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; }
-.np.has-panel .np-main { filter: none; }
-
-/* lyric lines (Lyrics.tsx): Material 3 Expressive active card, typography & motion */
-.ly-viewport {
-  position: relative; flex: 1; min-height: 0; overflow: hidden;
-}
-.ly-viewport.has-top-fade {
-  -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 12%, #000 100%);
-  mask-image: linear-gradient(180deg, transparent 0%, #000 12%, #000 100%);
-}
-.ly-viewport.has-bot-fade {
-  -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 88%, transparent 100%);
-  mask-image: linear-gradient(180deg, #000 0%, #000 88%, transparent 100%);
-}
-.ly-viewport.has-top-fade.has-bot-fade {
-  -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 12%, #000 88%, transparent 100%);
-  mask-image: linear-gradient(180deg, #000 0%, #000 88%, transparent 100%);
-}
-.ly-list {
-  position: absolute; left: 14px; right: 14px; top: 0;
-  padding: 14px 0 24px;
-  display: flex; flex-direction: column; gap: 4px;
-  transition: transform 750ms var(--ease-std);
-  will-change: transform;
-}
-.ly-list.is-snap, .ly-list.is-touching { transition: none; }
-.ly-list.is-manual:not(.is-touching) { transition: transform .25s var(--ease-std); }
-.np .ly-line {
-  position: relative; display: flex; align-items: center; gap: 12px;
-  width: 100%; text-align: left; padding: 12px 14px 12px 16px; margin: 0;
-  border: 0; border-radius: 16px; background: transparent; cursor: pointer;
-  font-family: var(--font-sans); font-size: 20px; font-weight: 600; line-height: 1.3; letter-spacing: -0.012em;
-  color: var(--np-on); overflow-wrap: anywhere;
-  transition:
-    opacity 550ms var(--ease-std),
-    color 350ms var(--ease-std),
-    background-color 300ms var(--ease-std),
-    border-radius 480ms var(--ease-shape),
-    padding 420ms var(--ease-shape),
-    margin 420ms var(--ease-shape),
-    transform 380ms cubic-bezier(0.42, 1.67, 0.21, 0.9),
-    box-shadow 350ms var(--ease-std);
-}
-.np .ly-line.is-past { font-weight: 500; color: var(--np-on-var); }
-.np .ly-line:hover:not(.is-on) {
-  opacity: .95 !important;
-  background: rgba(255, 255, 255, .055);
-  border-radius: 18px;
-}
-.np .ly-line:active { transform: scale(.985); }
-.np .ly-line.is-on {
-  padding: 16px 16px 16px 18px;
-  margin: 4px 0;
-  border-radius: 22px;
-  font-size: 25px;
-  font-weight: 700;
-  line-height: 1.22;
-  letter-spacing: -0.02em;
-  color: var(--album-hi);
-  background:
-    linear-gradient(125deg, color-mix(in oklch, var(--album-hi) 18%, oklch(0.26 0.01 40)), oklch(0.22 0.008 40) 72%);
-  box-shadow:
-    inset 0 0 0 1px color-mix(in oklch, var(--album-hi) 36%, rgba(255, 255, 255, .1)),
-    0 16px 34px -18px rgba(0, 0, 0, .8);
-}
-.np .ly-line.is-on:hover { opacity: 1 !important; }
-.ly-bar {
-  width: 4px; align-self: stretch; min-height: 22px; border-radius: 999px; flex: none;
-  background: var(--album-hi);
-  box-shadow: 0 0 12px color-mix(in oklch, var(--album-hi) 70%, transparent);
-  margin-right: -12px; opacity: 0; transform: scaleY(.25);
-  transition: opacity 280ms var(--ease-std), transform 480ms var(--ease-shape), margin-right 380ms var(--ease-shape);
-}
-.ly-line.is-on .ly-bar {
-  margin-right: 2px; opacity: 1; transform: scaleY(1);
-}
-.ly-body { flex: 1; min-width: 0; display: block; }
-.ly-text { display: block; text-wrap: pretty; }
-.ly-side {
-  flex: none; align-self: center;
-  display: inline-flex; align-items: center; gap: 6px;
-  height: 24px; padding: 0 8px; border-radius: 999px;
-  background: rgba(255, 255, 255, .07);
-  font-size: 11px; font-weight: 600; color: var(--np-on-var);
-  font-variant-numeric: tabular-nums;
-  opacity: 0; transform: scale(.88);
-  transition: opacity 220ms var(--ease-std), transform 320ms var(--ease-shape), background-color 220ms;
-}
-.ly-line:hover .ly-side, .ly-line:focus-visible .ly-side, .ly-line.is-on .ly-side {
-  opacity: 1; transform: none;
-}
-.ly-line.is-on .ly-side {
-  background: color-mix(in oklch, var(--album-hi) 18%, rgba(0, 0, 0, .25));
-  color: var(--album-hi);
-  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--album-hi) 32%, transparent);
-}
-.ly-line.is-on .ly-side .eq { height: 10px; }
-.ly-line.is-on .ly-side .eq > span { height: 10px; background: var(--album-hi); }
-
-.ly-dots { display: inline-flex; align-items: center; gap: 8px; padding: 4px 0; }
-.ly-dots > i {
-  width: 9px; height: 9px; border-radius: 999px; background: currentColor; opacity: .55;
-  transition: transform 380ms var(--ease-shape), opacity 300ms;
-}
-.ly-line.is-on .ly-dots > i { opacity: .9; }
-.ly-dots.is-playing > i { animation: ly-dot-pulse 1.4s ease-in-out infinite; }
-.ly-dots.is-playing > i:nth-child(2) { animation-delay: .22s; }
-.ly-dots.is-playing > i:nth-child(3) { animation-delay: .44s; }
-@keyframes ly-dot-pulse {
-  0%, 100% { transform: scale(.85); opacity: .45; }
-  50% { transform: scale(1.28); opacity: 1; }
-}
-
-.np .ly-sync-btn {
-  position: absolute; right: 18px; bottom: 14px; z-index: 3;
-  height: 36px; padding: 0 14px 0 11px; border: 0; border-radius: 999px; cursor: pointer;
-  display: inline-flex; align-items: center; gap: 6px;
-  background: var(--album-hi); color: var(--on-album);
-  font-size: 13px; font-weight: 700;
-  box-shadow: 0 10px 24px -6px rgba(0, 0, 0, .65);
-  animation: ly-sync-in 280ms var(--ease-shape) both;
-  transition: transform 250ms var(--ease-shape);
-}
-.np .ly-sync-btn .ms { font-size: 18px; color: inherit; }
-.np .ly-sync-btn:hover { transform: translateY(-2px); }
-.np .ly-sync-btn:active { transform: scale(.94); }
-@keyframes ly-sync-in { from { opacity: 0; transform: translateY(10px) scale(.9); } to { opacity: 1; transform: none; } }
-
-.ly-foot {
-  flex: none; display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  padding: 10px 20px 12px; box-shadow: inset 0 1px 0 var(--np-hair);
-}
-.ly-badge {
-  display: inline-flex; align-items: center; gap: 7px;
-  height: 24px; padding: 0 10px; border-radius: 999px;
-  background: rgba(255, 255, 255, .06); box-shadow: inset 0 0 0 1px var(--np-edge);
-  font-size: 10px; font-weight: 700; letter-spacing: .12em; color: var(--np-on-var);
-}
-.ly-badge-dot {
-  width: 6px; height: 6px; border-radius: 50%;
-  background: var(--album-hi); box-shadow: 0 0 8px var(--album-hi);
-}
-.ly-badge.is-dj .ly-badge-dot { background: var(--dj); box-shadow: 0 0 8px var(--dj); }
-.ly-hint { font-size: 10px; font-weight: 600; letter-spacing: .12em; color: var(--np-dim); }
-
-.ly-plain {
-  position: absolute; inset: 0; overflow-y: auto; padding: 20px 22px 32px;
-  scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, .14) transparent;
-}
-.ly-plain p { margin: 0; padding: 6px 4px; font-size: 20px; font-weight: 500; line-height: 1.4; letter-spacing: -0.01em; color: var(--np-on); }
-.ly-plain p.is-gap { height: 22px; }
-.ly-empty { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 24px; text-align: center; }
-
-/* narrower windows: cover above the info column */
-@media (max-width: 960px) {
-  .np { --np-cover: min(320px, 60vw); }
-  .np-main { flex-direction: column; overflow-y: auto; padding: 8px 40px 36px; gap: 32px; justify-content: flex-start; }
-  .np-info { width: 100%; }
-}
-
-.np .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 /* toasts over the full-screen player: centred on the screen */
 html[data-np] .toasts.toasts-shell { left: 0; bottom: 40px; }
-
-/* Lyrics romaji (Nov 2026): a smaller Latin line under each Japanese line */
-.ly-roma { display: block; margin-top: 2px; font-size: .62em; font-weight: 500; letter-spacing: 0; line-height: 1.3; color: var(--np-on-var); opacity: .85; text-wrap: pretty; }
-.ly-line.is-on .ly-roma { opacity: 1; }
-.ly-plain p .ly-roma { font-size: 15px; margin-top: 1px; }
-.ly-romaji {
-  display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 12px 0 8px; margin-right: auto;
-  border: 0; border-radius: 999px; cursor: pointer; font: inherit; font-size: 12px; font-weight: 700;
-  background: rgba(255, 255, 255, .06); box-shadow: inset 0 0 0 1px var(--np-edge); color: var(--np-on-var);
-  transition: background-color 150ms var(--ease-std), color 150ms var(--ease-std);
-}
-.ly-romaji-a { font-size: 11px; font-weight: 600; padding: 2px 6px; border-radius: 8px; background: rgba(255, 255, 255, .08); }
-.ly-romaji.is-on { background: var(--album-hi); color: var(--on-album); box-shadow: none; }
-.ly-romaji.is-on .ly-romaji-a { background: rgba(0, 0, 0, .14); }

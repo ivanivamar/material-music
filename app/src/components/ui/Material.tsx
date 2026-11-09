@@ -345,12 +345,38 @@ export function ValueSlider({
   )
 }
 
-/** Shuffle / repeat style toggle: off = plain 46px icon, on = 34px album-colour rounded square. */
-export function ModeToggle({ icon, on, label, disabled, onClick, badge }: { icon: IconName; on: boolean; label: string; disabled?: boolean; onClick: () => void; badge?: string }) {
+/**
+ * Player toggle (shuffle, repeat, lyrics, reorder): off = a plain icon (no fill), on = an album-colour
+ * rounded square (`text`: a labelled pill that tightens its corners when on, phone full-screen player).
+ * The one definition for every on/off player button.
+ */
+export function ModeToggle({
+  icon,
+  on,
+  label,
+  disabled,
+  onClick,
+  badge,
+  text,
+  size = 'md',
+}: {
+  icon: IconName
+  on: boolean
+  label: string
+  disabled?: boolean
+  onClick: () => void
+  badge?: string
+  /** visible label next to the icon */
+  text?: string
+  /** md 34px (bars) · lg 48px (full-screen player) */
+  size?: 'md' | 'lg'
+}) {
+  const cls = ['mm-mode', on && 'is-on', disabled && 'is-off', text && 'has-text', size === 'lg' && 'is-lg'].filter(Boolean).join(' ')
   return (
-    <span className="mm-mode-slot">
-      <button type="button" className={`mm-mode ${on ? 'is-on' : ''} ${disabled ? 'is-off' : ''}`} aria-pressed={on} aria-label={label} title={label} onClick={() => !disabled && onClick()}>
+    <span className={`mm-mode-slot ${size === 'lg' ? 'is-lg' : ''} ${text ? 'has-text' : ''}`}>
+      <button type="button" className={cls} aria-pressed={on} aria-disabled={disabled || undefined} aria-label={text ? undefined : label} title={label} onClick={() => !disabled && onClick()}>
         <Icon name={icon} />
+        {text && <span className="mm-mode-t">{text}</span>}
         {badge && <span className="mm-mode-badge">{badge}</span>}
       </button>
     </span>

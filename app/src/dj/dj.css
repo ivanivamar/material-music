@@ -99,39 +99,6 @@
 .djb-bar .djb-tip { left: auto; right: -8px; transform: none; }
 @media (hover: hover) { .djb:hover:not(.is-pressed) .djb-tip { opacity: 1; } }
 
-/* Tune button beside DJ when on, and Queue button while the DJ plays */
-.np-vbtn.is-dj-tune { color: var(--dj); }
-.np-vbtn.is-dj-tune:hover { background: oklch(0.84 0.09 290 / 0.14); color: var(--dj-light); }
-.np-vbtn.is-dj-off, .np-vbtn.is-dj-off:hover { color: var(--ink-ghost); opacity: 0.45; cursor: not-allowed; box-shadow: none; background: rgba(255, 255, 255, 0.04); }
-.dj-off-wrap { position: relative; display: inline-flex; }
-.dj-off-tip {
-  position: absolute; bottom: 52px; left: 50%; transform: translateX(-50%); z-index: 5; white-space: nowrap;
-  padding: 9px 14px; border-radius: 12px; background: oklch(0.22 0.012 40); font-size: 13px; color: var(--ink-secondary);
-  box-shadow: 0 18px 40px -14px rgba(0, 0, 0, 0.8), inset 0 0 0 1px oklch(0.34 0.015 40); opacity: 0; pointer-events: none; transition: opacity 200ms var(--ease-std);
-}
-@media (hover: hover) { .dj-off-wrap:hover .dj-off-tip { opacity: 1; } }
-.ibtn.is-dj-off, .ibtn.is-dj-off:hover:not(:disabled) { color: var(--ink-ghost) !important; background: none !important; box-shadow: none !important; cursor: not-allowed; }
-.np-dj-hint { text-align: center; font-size: 11px; color: var(--ink-tertiary); margin-top: 8px; }
-
-/* ── cover spot: mark ⇄ cover hand-over ── */
-.np-cover-wrap.is-intro { transform: none; }
-.dj-stack { position: relative; width: var(--np-cover); height: var(--np-cover); flex: none; }
-.dj-stack > .dj-stack-cover, .dj-stack > .dj-stack-mark { position: absolute; inset: 0; }
-.dj-stack-cover { transition: opacity 1.2s ease, transform 1.4s var(--ease); }
-.dj-stack-mark { transition: opacity 1.2s ease, transform 1.4s var(--ease); }
-.dj-stack.is-intro .dj-stack-cover { opacity: 0; transform: scale(1.03); }
-.dj-stack:not(.is-intro) .dj-stack-mark { opacity: 0; transform: scale(0.96); pointer-events: none; }
-.dj-stack .np-cover, .dj-stack .np-ly-cover { width: 100%; height: 100%; }
-.dj-stack.is-ly { width: 52px; height: 52px; }
-.dj-pool {
-  position: absolute; left: 50%; top: 50%; width: 920px; height: 860px; margin: -430px 0 0 -460px; pointer-events: none; z-index: -1;
-  background: radial-gradient(closest-side, oklch(0.84 0.09 290 / 0.14), transparent); transition: opacity 0.25s;
-}
-html[data-motion='reduced'] .dj-stack-cover, html[data-motion='reduced'] .dj-stack-mark { transition: none; }
-@media (prefers-reduced-motion: reduce) {
-  html:not([data-motion='full']) .dj-stack-cover, html:not([data-motion='full']) .dj-stack-mark { transition: none; }
-}
-
 /* ── intro column ── */
 .dji { display: flex; flex-direction: column; gap: 28px; min-width: 0; }
 .dji-head { display: flex; flex-direction: column; gap: 12px; }
@@ -163,17 +130,10 @@ html[data-motion='reduced'] .dji-line > span { transition: none; }
 }
 .ly-line.dj-ly-line.is-on .ly-bar { background: var(--dj); box-shadow: 0 0 12px oklch(0.84 0.09 290 / 0.7); }
 
-/* player bar / mini-player during the intro */
+/* carousel card sub line during the intro (IntroSub) */
 .dj-introsub { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
 .dj-introsub .dj-bars { height: 12px; }
 .dj-introsub-t { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
-.pb-dj-title { display: flex; align-items: center; gap: 10px; min-width: 0; }
-.pb-dj-title > :first-child { min-width: 0; overflow: hidden; }
-.mini-dj { color: var(--dj); font-size: 10px; font-weight: 700; letter-spacing: 0.06em; flex: none; }
-.mini-cover-wrap { position: relative; width: 46px; height: 46px; flex: none; }
-.mini-badge { position: absolute; right: -4px; bottom: -4px; border-radius: 6px; box-shadow: 0 0 0 2px var(--surface-1); }
-.mini-sub-row { display: flex; align-items: center; gap: 8px; min-width: 0; font-size: 12px; color: var(--ink-secondary); }
-.mini-sub-row .mini-sub { flex: 0 1 auto; }
 
 /* ── start view ── */
 .djs {

@@ -1,0 +1,30 @@
+/* Player controls shared by the player bar, the mini player and the full-screen player
+   (nowplaying/parts.tsx). The surfaces only place them. */
+.pl-transport { display: inline-flex; align-items: center; gap: 8px; flex: none; }
+.pl-skip {
+  flex: none; border: 0; padding: 0; border-radius: 999px; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: none; color: var(--ink-primary);
+  transition: background 160ms var(--ease-std);
+}
+.pl-skip .ms { font-size: inherit; }
+.pl-skip:hover:not(:disabled) { background: rgba(255, 255, 255, .08); }
+.pl-skip:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.pl-skip:disabled { opacity: .4; cursor: default; }
+
+.pl-volume { display: inline-flex; align-items: center; gap: 6px; flex: none; color: var(--ink-secondary); }
+.pl-mute {
+  width: 36px; height: 36px; border: 0; padding: 0; border-radius: 999px; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; background: none; color: inherit;
+}
+.pl-mute .ms { font-size: 22px; }
+.pl-mute:hover { background: rgba(255, 255, 255, .08); color: var(--ink-primary); }
+.pl-mute:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+
+.pl-quality {
+  display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 8px; flex: none;
+  border-radius: 999px; box-shadow: inset 0 0 0 1.5px var(--ink-secondary); white-space: nowrap;
+  font-size: 11px; line-height: 1; font-weight: 500; color: var(--ink-secondary); font-variant-numeric: tabular-nums;
+}
+.pl-quality b { font-weight: 700; letter-spacing: .04em; color: var(--album); }
+

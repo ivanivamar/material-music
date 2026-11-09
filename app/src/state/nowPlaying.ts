@@ -1,7 +1,8 @@
 /**
- * Now Playing UI state (step 6): is the full-screen player open, which view it shows
- * (now playing ⇄ lyrics), and whether the queue panel is open. Handoff 08: Queue and Lyrics
- * toggle independently, so both panels can be open together.
+ * Now Playing UI state: is the full-screen player open, does it show the lyrics beside / under the
+ * queue carousel, and is the carousel in reorder mode (Nov 2026 carousel player: the queue *is* the
+ * full-screen player, so there is no separate queue panel any more). Lyrics and reorder exclude
+ * each other.
  *
  * Opening the full-screen player pushes a history entry (same hash, `history.state.pelagicNp`)
  * so the browser / mouse Back button closes it instead of leaving the page.
@@ -15,10 +16,11 @@ export type NpView = 'np' | 'lyrics'
 export interface NowPlayingUi {
   open: boolean
   view: NpView
-  queue: boolean
+  /** the carousel is in reorder mode (drag songs by their handle, drop on Remove) */
+  reorder: boolean
 }
 
-let state: NowPlayingUi = { open: false, view: 'np', queue: false }
+let state: NowPlayingUi = { open: false, view: 'np', reorder: false }
 const listeners = new Set<() => void>()
 function set(patch: Partial<NowPlayingUi>) {
   state = { ...state, ...patch }
@@ -34,7 +36,7 @@ let pendingHref: string | null = null
 if (hasEntry()) window.history.replaceState(null, '')
 
 window.addEventListener('popstate', () => {
-  if (state.open && !hasEntry()) set({ open: false, queue: false })
+  if (state.open && !hasEntry()) set({ open: false, reorder: false })
   if (pendingHref) {
     const to = pendingHref
     pendingHref = null
@@ -56,7 +58,7 @@ export const nowPlayingStore = {
     if (!state.open) return
     if (hasEntry())
       window.history.back() // popstate closes
-    else set({ open: false, queue: false })
+    else set({ open: false, reorder: false })
   },
   /** Close the player and go to an in-app href (album / artist links inside it). */
   closeAndGo(href: string) {
@@ -64,7 +66,7 @@ export const nowPlayingStore = {
       pendingHref = href
       window.history.back()
     } else {
-      set({ open: false, queue: false })
+      set({ open: false, reorder: false })
       go(href)
     }
   },
@@ -75,24 +77,31 @@ export const nowPlayingStore = {
   toggleLyrics() {
     if (!state.open) nowPlayingStore.open('lyrics')
     else set({ view: state.view === 'lyrics' ? 'np' : 'lyrics' })
+    if (state.reorder) set({ reorder: false })
   },
-  toggleQueue() {
-    set({ queue: !state.queue })
+  /** Reorder mode (opens the full-screen player first when it's closed). */
+  openReorder() {
+    if (!state.open) nowPlayingStore.open('np')
+    set({ reorder: true, view: 'np' })
   },
-  closeQueue() {
-    if (state.queue) set({ queue: false })
+  toggleReorder() {
+    if (state.open && state.reorder) set({ reorder: false })
+    else nowPlayingStore.openReorder()
+  },
+  closeReorder() {
+    if (state.reorder) set({ reorder: false })
   },
   /** Nothing to show (queue cleared, signed out): close without touching history beyond our entry. */
   reset() {
     if (state.open && hasEntry()) window.history.back()
-    set({ open: false, queue: false })
+    set({ open: false, reorder: false })
   },
 }
 
 onAccountReset(() => {
   if (hasEntry()) window.history.replaceState(null, '')
   pendingHref = null
-  set({ open: false, view: 'np', queue: false })
+  set({ open: false, view: 'np', reorder: false })
 })
 
 export function useNowPlayingUi(): NowPlayingUi {

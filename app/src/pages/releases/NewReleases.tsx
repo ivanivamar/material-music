@@ -129,7 +129,7 @@ function Page({ c }: { c: Catalogue }) {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape' || e.defaultPrevented) return
       const ui = nowPlayingStore.get()
-      if (ui.open || ui.queue) return
+      if (ui.open) return
       e.preventDefault()
       setPanelState(null)
     }

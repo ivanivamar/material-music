@@ -2,26 +2,16 @@
  * Phone shell (Material redesign, HomeMaterial.dc.html phone form):
  * - TabBar: 96px navigation bar, four destinations (Home · Library · New · Downloads); the active one
  *   gets the coral pill indicator and a filled icon; New carries the unseen count.
- * - MiniPlayer: 68px glass bar 8px from the edges above the tabs: cover · title / artist · play (album
- *   colour circle) · next, with a 3px album-colour progress line along the bottom.
+ * - MiniPlayer: the queue carousel (76px) above the tabs.
  * - PhoneTopBar: 64px sticky top bar on every page (search field · account avatar).
  */
-import { LikeButton } from '../components/LikeButton'
 import { Icon, type IconName } from '../design/icons'
 import { SHAPE_PLAYING } from '../design/shapes'
-import { Marquee } from '../components/Marquee'
-import { Badge, LoadingShape } from '../components/ui'
-import { useCover } from '../lib/covers'
-import { useLibrary } from '../state/library'
-import { nowPlayingStore } from '../state/nowPlaying'
-import { playerStore, usePlayer } from '../state/player'
 import { AccountButton } from '../pages/AccountMenu'
 import { href, type RouteKey } from './routes'
 import { isIntroId } from '../state/player'
-import { useDjView } from '../state/djUi'
-import { IntroSub, LiveMark } from '../dj/DjIntro'
-import { useIntroProgress } from '../dj/live'
-import { trackOf, albumOf } from '../state/previews'
+import { QueueCarousel } from '../nowplaying/carousel/QueueCarousel'
+import { useCurrent } from '../nowplaying/player'
 
 const TABS: { key: RouteKey; label: string; icon: IconName }[] = [
   { key: 'home', label: 'Home', icon: 'home' },
@@ -69,50 +59,17 @@ export function PhoneTopBar({ onSearch }: { onSearch: () => void }) {
   )
 }
 
+/**
+ * Phone mini player (Nov 2026 carousel player): the queue carousel, 76px tall, full width above the
+ * tabs — the playing song is the hero card with the play button on it and a solid progress line
+ * along its bottom edge. Tap the card to open the full-screen player; swipe sideways to browse.
+ */
 export function MiniPlayer() {
-  const p = usePlayer()
-  const { data } = useLibrary()
-  const dj = useDjView()
-  const id = p.index >= 0 ? p.queue[p.index] : null
-  const intro = dj.on && isIntroId(id) && !!dj.session
-  const track = (id && trackOf(data, id)) || null
-  const album = track ? albumOf(data, track.albumId) : undefined
-  const cover = useCover(album?.cover)
-  const introProgress = useIntroProgress(intro ? id : null)
-  if (!track && !intro) return null
-  const frac = intro ? introProgress.frac : track?.duration ? Math.min(1, p.position / track.duration) : 0
-  const title = intro ? (dj.session?.title ?? 'DJ') : track!.title
-  const chip = p.remote ? (
-    <Badge size="sm" tone="album-container">On {p.remote.name}</Badge>
-  ) : dj.on ? (
-    <Badge size="sm" tone="dj">{intro ? 'DJ · intro' : 'DJ'}</Badge>
-  ) : p.context?.kind === 'radio' ? (
-    <Badge size="sm">Radio</Badge>
-  ) : null
-  const open = () => nowPlayingStore.open('np')
-
+  const { id, track } = useCurrent()
+  if (!track && !isIntroId(id)) return null
   return (
     <div className="mini" role="region" aria-label="Player">
-      <button type="button" className="mini-open" onClick={open} aria-label={intro ? `DJ intro: ${title}. Open player.` : `Now playing${p.remote ? ` on ${p.remote.name}` : ''}: ${track!.title} by ${track!.artist}. Open player.`}>
-        <span className="mini-cover-wrap">
-          {intro && id ? <LiveMark item={id} size={52} /> : cover ? <img className="mini-cover" src={cover} alt="" /> : <span className="mini-cover mini-cover-empty" aria-hidden />}
-        </span>
-        <span className="mini-text">
-          <span className="mini-title-row">
-            <Marquee className="mini-title" text={title} />
-            {chip}
-          </span>
-          {intro && id && dj.session ? <IntroSub item={id} /> : <Marquee className="mini-sub" text={track!.artist} />}
-        </span>
-      </button>
-      {!intro && track && <LikeButton trackId={track.id} size="md" ink className="mini-like" />}
-      <button type="button" className="mini-play" aria-label={p.playing ? 'Pause' : 'Play'} aria-busy={p.buffering || undefined} onClick={() => playerStore.toggle()}>
-        {p.buffering ? <LoadingShape size={26} /> : <Icon name={p.playing ? 'pauseF' : 'playF'} />}
-      </button>
-      <button type="button" className="mini-next" aria-label="Next" onClick={() => playerStore.next()}>
-        <Icon name="next" filled />
-      </button>
-      <span className="mini-progress" aria-hidden style={{ width: `${frac * 100}%` }} />
+      <QueueCarousel variant="mini" />
     </div>
   )
 }

@@ -15,6 +15,8 @@ export type ButtonVariant =
   | 'danger'
   | 'danger-outlined'
   | 'error'
+  /** the playing album's colour (player surfaces: reorder Done, back to Now playing) */
+  | 'album'
   /** DJ violet (DJ start / panel) */
   | 'dj'
   | 'dj-outlined'

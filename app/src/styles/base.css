@@ -121,3 +121,6 @@ a:hover { color: var(--brand-hi); }
 }
 html[data-motion='reduced'] .mm-anim { animation: none !important; }
 html[data-motion='reduced'] .mm-shape { transition: none !important; }
+
+/* visually hidden, still read by screen readers (live regions in the player and lyrics) */
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }

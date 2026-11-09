@@ -1,62 +1,36 @@
-/* Desktop player bar (Material redesign): 96px floating glass bar inside the main panel,
-   28px from its sides and bottom. Neutral glass; album colour only on small accents. */
+/* Desktop player bar (Nov 2026 carousel player): a 100px floating pane inside the main panel, 28px
+   from its sides and bottom — the queue carousel on the left, two rows of controls on the right
+   (buttons above, the wavy progress below). Controls: nowplaying/player.css; carousel: carousel.css. */
 .pb {
   position: absolute; left: 18px; right: 28px; bottom: 28px; z-index: 5;
-  height: 96px; border-radius: var(--r-xl);
-  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) minmax(0, 1fr); align-items: center; gap: 28px;
-  padding: 0 20px 0 16px; isolation: isolate;
-  background: var(--glass-bar);
-  -webkit-backdrop-filter: blur(28px) saturate(1.5); backdrop-filter: blur(28px) saturate(1.5);
-  color: oklch(0.95 0.006 40);
-  box-shadow: var(--shadow-bar), inset 0 0 0 1px var(--glass-bar-rim), inset 0 1px 0 rgba(255, 255, 255, .08);
+  height: 100px; border-radius: 32px; padding: 10px 20px 10px 10px;
+  display: flex; align-items: center; gap: 20px; isolation: isolate;
+  background: var(--panel); color: var(--ink-primary);
+  box-shadow: inset 0 0 0 1px var(--border), 0 12px 32px -12px rgba(0, 0, 0, .55);
   cursor: pointer;
 }
 .pb.is-empty { cursor: default; }
 .pb button { font: inherit; }
 
-/* left: tilted cover, title, artist */
-.pb-now { display: flex; align-items: center; gap: 14px; min-width: 0; }
-.pb-expand { flex: none; padding: 0; border: 0; background: none; cursor: pointer; transform: rotate(-4deg); filter: drop-shadow(0 8px 12px rgba(0, 0, 0, .5)); transition: transform 350ms var(--ease-shape); }
-.pb-expand:hover { transform: rotate(0deg) scale(1.04); }
-.pb-cover { display: block; width: 64px; height: 64px; border-radius: 14px; object-fit: cover; }
-.pb-cover-empty { display: flex; align-items: center; justify-content: center; background: var(--surface-2); color: var(--ink-tertiary); font-size: 22px; transform: rotate(-4deg); }
-.pb-text { min-width: 0; display: flex; flex-direction: column; }
-.pb-like { margin-left: -6px; }
-.pb-title-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.pb-title { font-size: 16px; font-weight: 700; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.pb-sub { font-size: 12px; color: oklch(0.79 0.014 40); min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.pb-link { color: inherit; text-decoration: none; }
-.pb-link:hover { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
-.pb-sub.pb-link { color: oklch(0.79 0.014 40); }
-
-/* centre: transport + wave */
-.pb-center { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-.pb-transport { display: flex; align-items: center; justify-content: center; gap: 10px; }
-.pb-skip {
-  padding: 4px; border: 0; background: none; color: inherit; cursor: pointer; border-radius: 999px;
-  display: inline-flex; align-items: center; justify-content: center;
+.pb-carousel { flex: 0 1 480px; min-width: 300px; height: 80px; }
+.pb-empty { flex: 0 1 480px; min-width: 300px; height: 80px; display: flex; align-items: center; gap: 14px; padding-left: 6px; }
+.pb-empty-ic {
+  width: 80px; height: 80px; flex: none; border-radius: 24px; background: var(--surface-2);
+  display: flex; align-items: center; justify-content: center; color: var(--ink-tertiary); font-size: 28px;
 }
-.pb-skip .ms { font-size: 28px; }
-.pb-skip:disabled { opacity: .4; cursor: default; }
-.pb .mm-seek { color: oklch(0.79 0.014 40); }
+.pb-empty-t { display: flex; flex-direction: column; gap: 2px; font-size: 12px; color: var(--ink-secondary); }
+.pb-empty-t b { font-size: 15px; color: var(--ink-primary); }
 
-/* right: quality pill, panels, DJ, volume */
-.pb-right { display: flex; align-items: center; justify-content: flex-end; gap: 2px; color: oklch(0.79 0.014 40); min-width: 0; }
-.pb-quality {
-  display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 8px; margin-right: 4px; flex: none;
-  border-radius: 999px; box-shadow: inset 0 0 0 1.5px oklch(0.79 0.014 40); white-space: nowrap;
-  font-size: 11px; line-height: 1; font-variant-numeric: tabular-nums;
-}
-.pb-quality b { font-weight: 700; letter-spacing: .04em; color: var(--album); }
-.pb-quality span { font-weight: 500; }
-/* toolbar icons are kit IconButtons; these are their states here */
-.pb-ib.is-on { background: var(--album-container); color: var(--album); }
-.pb-ib.is-dj-off { color: oklch(0.55 0.02 290); cursor: default; }
-.pb-volume { display: inline-flex; align-items: center; gap: 4px; margin-left: 4px; }
-@media (max-width: 1299px) {
-  .pb { gap: 18px; }
-  .pb-quality { display: none; }
-  .pb .mm-thin { width: 56px !important; }
-}
+.pb-controls { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 2px; }
+.pb-row { display: flex; align-items: center; gap: 4px; min-width: 0; color: var(--ink-secondary); }
+.pb-row .pl-transport { margin-right: 6px; color: var(--ink-primary); }
+.pb-sep { width: 1px; height: 24px; margin: 0 6px; background: var(--border); flex: none; }
+.pb-flex { flex: 1; min-width: 4px; }
+.pb-row .pl-quality { margin-right: 4px; }
+.pb-seek { padding: 0 2px; }
 
-.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+/* the controls drop extras as their own width shrinks (the carousel keeps its 480px first) */
+.pb-controls { container-type: inline-size; }
+@container (max-width: 660px) { .pb-row .pl-quality { display: none; } }
+@container (max-width: 540px) { .pb-row .pl-volume .mm-thin, .pb-sep { display: none; } }
+@media (max-width: 1299px) { .pb { gap: 14px; } }
