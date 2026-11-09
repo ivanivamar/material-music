@@ -338,7 +338,7 @@ function CarouselCard({ slot, variant, id, group, focused, browsing, height, lab
           <ItemArt item={item} size={Math.min(slot.w, height)} active={now} />
         </div>
         {showText && <span className="qc-scrim" aria-hidden />}
-        <button type="button" className="qc-hit" aria-label={aria} title={strip ? `${title}${track ? ` · ${track.artist}` : ''}` : undefined} aria-current={now ? 'true' : undefined} onClick={click} />
+        <button type="button" className="qc-hit" aria-label={aria} aria-current={now ? 'true' : undefined} onClick={click} />
 
         {showText && (
           <div className="qc-text">
