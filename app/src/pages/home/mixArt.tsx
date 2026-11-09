@@ -50,13 +50,16 @@ function rng(seed: number) {
   }
 }
 
-/** Grain: noise added to the picture, about a device pixel wide whatever the drawn size. */
+/**
+ * Grain: fine noise added to the picture — a texture, not a veil (Ivan, Nov 9: the first version hid
+ * the sun and the bands). About one CSS pixel per grain whatever the drawn size, low contrast.
+ */
 function Grain({ id, size, amount }: { id: string; size: number; amount: number }) {
-  const freq = Math.min(0.9, Math.max(0.18, (0.62 * size) / S))
+  const freq = Math.min(1.4, Math.max(0.35, (1.1 * size) / S))
   return (
     <filter id={id} x="0" y="0" width="100%" height="100%" colorInterpolationFilters="sRGB">
       <feTurbulence type="fractalNoise" baseFrequency={freq} numOctaves={3} seed={5} stitchTiles="stitch" result="n" />
-      <feColorMatrix in="n" type="matrix" values="1.6 0 0 0 -0.3  1.6 0 0 0 -0.3  1.6 0 0 0 -0.3  0 0 0 0 1" result="g" />
+      <feColorMatrix in="n" type="matrix" values="1 0 0 0 0  1 0 0 0 0  1 0 0 0 0  0 0 0 0 1" result="g" />
       <feComposite in="SourceGraphic" in2="g" operator="arithmetic" k1={0} k2={1} k3={amount} k4={-amount / 2} />
     </filter>
   )
@@ -72,7 +75,7 @@ export function DayCover({ part, size, radius }: { part: PartId; size: number; r
   return (
     <svg className="mix-art-svg" viewBox={`0 0 ${S} ${S}`} width={size} height={size} style={{ borderRadius: radius, display: 'block' }} aria-hidden>
       <defs>
-        <Grain id={id('gr')} size={size} amount={part === 'night' || part === 'late' ? 0.42 : 0.5} />
+        <Grain id={id('gr')} size={size} amount={part === 'night' || part === 'late' ? 0.16 : 0.2} />
         <linearGradient id={id('sky')} x1="0" y1="0" x2="0" y2="1">
           {stops([
             [0, p.sky[0], 1],
@@ -219,7 +222,7 @@ export function LeakCover({ week, size, radius }: { week: string; size: number; 
   return (
     <svg className="mix-art-svg" viewBox={`0 0 ${S} ${S}`} width={size} height={size} style={{ borderRadius: radius, display: 'block' }} aria-hidden>
       <defs>
-        <Grain id={id('gr')} size={size} amount={0.55} />
+        <Grain id={id('gr')} size={size} amount={0.21} />
         <filter id={id('big')} x="-60%" y="-60%" width="220%" height="220%">
           <feGaussianBlur stdDeviation="55" />
         </filter>
