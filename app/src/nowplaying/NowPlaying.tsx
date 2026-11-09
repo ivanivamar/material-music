@@ -319,7 +319,7 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
             <section className="np-queue" aria-label="Queue">
               <div className="np-queue-head">
                 <span className="np-queue-title">{dj.on ? 'The DJ picks what plays next' : 'Up next'}</span>
-                <span className="np-queue-hint">{dj.on ? 'Played songs and the current one' : 'Scroll or click to browse · hold a song to reorder'}</span>
+                <span className="np-queue-hint">{dj.on ? 'Played songs and the current one' : 'Click to play · scroll to browse · hold a song to reorder'}</span>
               </div>
               <QueueCarousel variant="strip" className="np-strip" />
             </section>

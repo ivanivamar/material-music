@@ -5,7 +5,8 @@
  *   - `mini`  phone mini player:       the same, with the play button and a progress line on the hero
  *   - `full`  phone full-screen player: a giant hero, one played pill before it, labels above
  *   - `strip` desktop full-screen player: a short row under the square cover — the next song large,
- *             the one after medium, then square tiles (the playing song is the big cover above it)
+ *             the one after medium, then square tiles (the playing song is the big cover above it).
+ *             Like the mini player, a click plays the song; the wheel browses.
  *
  * - Every card is the cover, full bleed, with the text on a scrim (title + artist on the hero,
  *   title on the medium card, nothing on the pills). The row always fills its width exactly
@@ -190,8 +191,8 @@ export function QueueCarousel({ variant, className, morph = 1 }: { variant: Caro
       swallowClick.current = false
       return
     }
-    // mini player: a tap plays that song (the playing one: play / pause)
-    if (variant === 'mini') {
+    // mini player and the desktop strip: a click plays that song (the playing one: play / pause)
+    if (variant === 'mini' || variant === 'strip') {
       browseTo(null)
       playerStore.jump(i)
       return
@@ -300,10 +301,10 @@ function CarouselCard({ slot, variant, id, group, focused, browsing, height, lab
   // the mini player plays on tap, so no browse actions there
   const actions = hero && !now && canEdit && !mini
   const quick = !hero && group !== 'now' && canEdit && !mini && !isTouch() && slot.w >= 44
-  // mini: a press-in pop on the card that was tapped to play (the ripple itself is the global one, design/ripple.ts)
+  // mini / strip: a press-in pop on the card that was clicked to play (the ripple itself is the global one, design/ripple.ts)
   const [pop, setPop] = useState(false)
   const click = () => {
-    if (mini && !now) setPop(true)
+    if ((mini || strip) && !now) setPop(true)
     onClick()
   }
 
@@ -314,7 +315,7 @@ function CarouselCard({ slot, variant, id, group, focused, browsing, height, lab
       : GROUP_LABEL[group]
 
   const by = track ? ` by ${track.artist}` : ''
-  const aria = mini
+  const aria = mini || strip
     ? `${now ? (p.playing ? 'Pause' : 'Play') : 'Play'} ${title}${by}`
     : now
       ? `${p.playing ? 'Playing' : 'Paused'}: ${title}${by}${variant === 'bar' ? '. Open the player.' : ''}`
@@ -386,7 +387,8 @@ function CarouselCard({ slot, variant, id, group, focused, browsing, height, lab
 
         {actions && (
           <div className="qc-actions">
-            <IconButton icon="playF" label="Play now" size={full ? 'md' : 'sm'} className="qc-act is-primary" onClick={onPlayNow} />
+            {/* the strip plays on click already */}
+            {!strip && <IconButton icon="playF" label="Play now" size={full ? 'md' : 'sm'} className="qc-act is-primary" onClick={onPlayNow} />}
             <IconButton icon="playNext" label="Play next" size={full ? 'md' : 'sm'} className="qc-act" onClick={onPlayNext} />
             <IconButton icon="x" label="Remove from the queue" size={full ? 'md' : 'sm'} className="qc-act" onClick={onRemove} />
           </div>
