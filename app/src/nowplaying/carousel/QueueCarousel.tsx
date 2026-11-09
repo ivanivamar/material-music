@@ -34,7 +34,7 @@ import { albumHref, artistHref } from '../../shell/routes'
 import { IntroSub } from '../../dj/DjIntro'
 import { NpLink } from '../parts'
 import { nowKicker, useProgress, useQueueEdits } from '../player'
-import { multiBrowse, type CarouselSizes, type Slot } from './layout'
+import { lastFullFocus, multiBrowse, type CarouselSizes, type Slot } from './layout'
 import { useQueueItem } from './useQueueItem'
 import { ItemArt } from './ItemArt'
 import { grabIntoReorder, LONG_PRESS_MS, LONG_PRESS_SLOP } from './grab'
@@ -54,7 +54,7 @@ const FLICK_UP = 50
  *  mini player's sizes (0) to the full screen's (1) while the player is being dragged open / closed. */
 function sizesFor(variant: CarouselVariant, w: number, morph: number): CarouselSizes {
   if (variant === 'bar') return { hero: Math.min(280, Math.round(w * 0.58)), med: 120, small: 48, gap: 8, prev: 0 }
-  if (variant === 'strip') return { hero: 300, med: 200, small: 112, gap: 8, prev: 0 }
+  if (variant === 'strip') return { hero: 300, med: 200, small: 112, gap: 8, prev: 0, medMax: 300 }
   const mini = { hero: Math.max(160, w - 126), med: 82, small: 32 }
   if (variant === 'mini') return { ...mini, gap: 8, prev: 0 }
   const full = { hero: Math.min(w - 80, 360), med: 72, small: 40 }
@@ -74,29 +74,6 @@ export function QueueCarousel({ variant, className, morph = 1 }: { variant: Caro
   // the DJ keeps no upcoming queue: played songs and the current one only
   const count = p.index < 0 ? 0 : dj.on ? p.index + 1 : p.queue.length
 
-  /* ── browse ─────────────────────────────────────────── */
-  // the card the carousel rests on: the playing song (the strip, under the big cover: the next one)
-  const anchor = variant === 'strip' ? Math.min(p.index + 1, Math.max(0, count - 1)) : p.index
-  const [browse, setBrowse] = useState<number | null>(null)
-  if (browse !== null && (browse === anchor || browse >= count)) setBrowse(null)
-  const focus = browse ?? anchor
-  const hovering = useRef(false)
-  const springRef = useRef(0)
-  const browseTo = (i: number | null) => {
-    window.clearTimeout(springRef.current)
-    const next = i === null || i === anchor ? null : Math.max(0, Math.min(count - 1, i))
-    setBrowse(next)
-  }
-  useEffect(() => {
-    if (browse === null) return
-    const arm = () => {
-      window.clearTimeout(springRef.current)
-      springRef.current = window.setTimeout(() => (hovering.current ? arm() : setBrowse(null)), SPRING_BACK)
-    }
-    arm()
-    return () => window.clearTimeout(springRef.current)
-  }, [browse])
-
   /* ── measure ────────────────────────────────────────── */
   const vpRef = useRef<HTMLDivElement>(null)
   const [box, setBox] = useState({ w: 0, h: 0 })
@@ -109,10 +86,36 @@ export function QueueCarousel({ variant, className, morph = 1 }: { variant: Caro
     ro.observe(el)
     return () => ro.disconnect()
   }, [])
+  /* ── browse ─────────────────────────────────────────── */
+  // the card the carousel rests on: the playing song (the strip, under the big cover: the next one)
+  const anchor = variant === 'strip' ? Math.min(p.index + 1, Math.max(0, count - 1)) : p.index
+  const sizes = sizesFor(variant, box.w, morph)
+  // browsing stops where the row can still be filled (the strip doesn't stretch its last cards)
+  const maxFocus = box.w > 0 ? Math.max(anchor, lastFullFocus(count, box.w, sizes)) : count - 1
+  const [browse, setBrowse] = useState<number | null>(null)
+  if (browse !== null && (browse === anchor || browse >= count)) setBrowse(null)
+  const focus = Math.min(browse ?? anchor, maxFocus)
+  const hovering = useRef(false)
+  const springRef = useRef(0)
+  const browseTo = (i: number | null) => {
+    window.clearTimeout(springRef.current)
+    const next = i === null || i === anchor ? null : Math.max(0, Math.min(maxFocus, i))
+    setBrowse(next)
+  }
+  useEffect(() => {
+    if (browse === null) return
+    const arm = () => {
+      window.clearTimeout(springRef.current)
+      springRef.current = window.setTimeout(() => (hovering.current ? arm() : setBrowse(null)), SPRING_BACK)
+    }
+    arm()
+    return () => window.clearTimeout(springRef.current)
+  }, [browse])
+
   const labels = variant === 'full'
   const labelSpace = labels ? 28 * Math.max(0, Math.min(1, morph)) : 0
   const cardH = Math.max(0, box.h - labelSpace)
-  const slots = box.w > 0 && count > 0 ? multiBrowse(count, focus, box.w, sizesFor(variant, box.w, morph)) : []
+  const slots = box.w > 0 && count > 0 ? multiBrowse(count, focus, box.w, sizes) : []
   const groupOf = (i: number): Group => (i < p.index ? 'played' : i === p.index ? 'now' : 'next')
 
   /* ── gestures: wheel, swipe, flick up, long press ───── */

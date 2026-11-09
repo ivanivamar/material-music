@@ -5,7 +5,7 @@
  */
 import { test, describe } from 'node:test'
 import assert from 'node:assert/strict'
-import { multiBrowse, reorderSlot, insertionAt, visibleRange, type CarouselSizes } from '../src/nowplaying/carousel/layout.ts'
+import { multiBrowse, lastFullFocus, reorderSlot, insertionAt, visibleRange, type CarouselSizes } from '../src/nowplaying/carousel/layout.ts'
 
 const BAR: CarouselSizes = { hero: 280, med: 136, small: 48, gap: 8, prev: 0 }
 const FULL: CarouselSizes = { hero: 600, med: 300, small: 88, gap: 8, prev: 2 }
@@ -85,5 +85,25 @@ describe('reorder slots', () => {
   test('visible range covers the viewport with overscan, clamped to the list', () => {
     assert.deepEqual(visibleRange(100, 0, 500, 120, 8, 2), [0, 7])
     assert.deepEqual(visibleRange(10, 5000, 500, 120, 8, 2), [10, 10])
+  })
+})
+
+describe('strip end of queue', () => {
+  const STRIP: CarouselSizes = { hero: 300, med: 200, small: 112, gap: 8, prev: 0, medMax: 300 }
+  test('the medium item never stretches past medMax (the row ends short instead)', () => {
+    const s = multiBrowse(5, 3, 1312, STRIP)
+    assert.equal(s.find((x) => x.kind === 'med')!.w, 300)
+  })
+  test('browsing stops at the last focus that still fills the row', () => {
+    const f = lastFullFocus(20, 1312, STRIP)
+    const s = multiBrowse(20, f, 1312, STRIP)
+    const last = s[s.length - 1]
+    assert.equal(last.x + last.w, 1312)
+    assert.equal(last.index, 19, 'the last song is in the row')
+    const beyond = multiBrowse(20, f + 1, 1312, { ...STRIP, medMax: undefined })
+    assert.ok(beyond.find((x) => x.kind === 'med')!.w > 300, 'one further would stretch')
+  })
+  test('without medMax any item can be the focus', () => {
+    assert.equal(lastFullFocus(20, 1312, { ...STRIP, medMax: undefined }), 19)
   })
 })

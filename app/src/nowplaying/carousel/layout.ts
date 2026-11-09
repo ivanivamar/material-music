@@ -15,6 +15,9 @@ export interface CarouselSizes {
   gap: number
   /** how many items before the focused one to show as pills, when there is room */
   prev: number
+  /** cap for the medium item: with too few items left to fill the row it stops here (the row ends
+   *  short) instead of stretching across the whole width */
+  medMax?: number
 }
 
 export type SlotKind = 'hero' | 'med' | 'small'
@@ -51,6 +54,7 @@ export function multiBrowse(count: number, focus: number, width: number, s: Caro
       medW -= s.small + s.gap
       after++
     }
+    if (s.medMax && medW > s.medMax) medW = s.medMax
   }
 
   const slots: Slot[] = []
@@ -97,4 +101,20 @@ export function visibleRange(count: number, offset: number, extent: number, size
   const from = Math.min(count, Math.max(0, Math.floor(offset / pitch) - overscan))
   const to = Math.min(count, Math.ceil((offset + extent) / pitch) + overscan + 1)
   return [from, Math.max(from, to)]
+}
+
+/**
+ * The furthest item that can be the focus while the row still fills its width (medium item within
+ * `medMax`): browsing towards the end of a list stops there, like a scroller reaching its end, so the
+ * last items show as a full row instead of stretching. Without `medMax` every item qualifies.
+ */
+export function lastFullFocus(count: number, width: number, s: CarouselSizes): number {
+  if (count <= 0) return 0
+  if (!s.medMax) return count - 1
+  const open = { ...s, medMax: undefined }
+  for (let f = count - 1; f >= 0; f--) {
+    const med = multiBrowse(count, f, width, open).find((x) => x.kind === 'med')
+    if (med && med.w <= s.medMax) return f
+  }
+  return 0
 }
