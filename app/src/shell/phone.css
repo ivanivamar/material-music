@@ -6,7 +6,7 @@
 
 /* ── Shell (Material redesign): sticky top bar on every page, 96px tab bar, 68px glass mini player ── */
 .shell.is-phone {
-  --android-tabs-h: 96px; --android-mini-h: 114px;
+  --android-tabs-h: 96px; --android-mini-h: 122px;
   /* the mini card's bottom edge above the screen bottom (the full-screen player morphs from this card) */
   --np-mini-b: calc(var(--android-tabs-h) + 8px + env(safe-area-inset-bottom));
   /* the sticky top bar's height (secondary sticky bars sit under it), and how much lower page content
@@ -96,7 +96,7 @@
 }
 /* the handle band: tap or drag up to open the full-screen player */
 .mini-band {
-  flex: none; height: 22px; width: 100%; padding: 0; border: 0; background: none; color: var(--ink-secondary);
+  flex: none; height: 30px; width: 100%; padding: 0; border: 0; background: none; color: var(--ink-secondary);
   display: grid; place-items: center; cursor: grab; touch-action: none;
 }
 .mini-band > span { width: 28px; height: 4px; border-radius: 2px; background: currentColor; }

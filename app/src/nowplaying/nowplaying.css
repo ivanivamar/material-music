@@ -149,9 +149,8 @@ a.np-from-l:hover { color: var(--np-on); text-decoration: underline; text-underl
 .np-bottom > :last-child { justify-self: end; }
 
 /* Phone morph: the full-screen player grows out of the mini card. --np-t (0 = the mini card's rect,
-   1 = full screen) follows the finger while the handle / header is dragged (lift.ts) and animates
-   otherwise; every size below is a blend of the two layouts, so nothing jumps. */
-@property --np-t { syntax: '<number>'; inherits: true; initial-value: 1; }
+   1 = full screen) is set every frame from JS (lift.ts: the finger while dragging, then an eased
+   glide); every size below is a blend of the two layouts, so nothing jumps. */
 .np.is-phone {
   --np-t: 1;
   --np-u: calc(1 - var(--np-t));
@@ -161,28 +160,29 @@ a.np-from-l:hover { color: var(--np-on); text-decoration: underline; text-underl
   background: color-mix(in oklch, var(--mini-band), var(--glass-np) calc(var(--np-t) * 100%));
   box-shadow: 0 14px 32px -12px rgb(0 0 0 / calc(var(--np-u) * .65));
   animation: none;
-  transition: --np-t 460ms cubic-bezier(.2, .9, .25, 1);
 }
 .np.is-phone.is-closing { animation: none; pointer-events: none; }
-.np.is-phone.is-dragging, .np.is-phone.is-dragging * { transition: none; }
+/* mid-morph every frame is drawn from --np-t: no CSS transition may lag behind it */
+.np.is-phone.is-morphing, .np.is-phone.is-morphing * { transition: none !important; }
 .np.is-phone .np-bg { opacity: var(--np-t); }
 .np.is-phone .np-band {
   display: grid; place-items: center; flex: none; overflow: hidden; touch-action: none; cursor: grab;
-  height: calc(var(--np-u) * 22px); opacity: var(--np-u); color: var(--ink-secondary);
+  height: calc(var(--np-u) * 30px); opacity: var(--np-u); color: var(--ink-secondary);
 }
 .np-band > span { width: 28px; height: 4px; border-radius: 2px; background: currentColor; }
-.np.is-phone .np-head { height: calc(var(--np-t) * 64px); opacity: var(--np-t); overflow: hidden; touch-action: none; }
+.np.is-phone .np-head { height: calc(var(--np-t) * 64px); opacity: clamp(0, calc((var(--np-t) - .35) / .65), 1); overflow: hidden; touch-action: none; }
 .np.is-phone .np-body { padding: calc(var(--np-t) * 4px) calc(var(--np-t) * 16px) 0; }
 .np.is-phone .np-stage {
   padding: calc(var(--np-u) * 8px); border-radius: calc(var(--np-u) * 22px);
   background: color-mix(in oklch, var(--mini-surface) calc(var(--np-u) * 100%), transparent);
 }
 .np.is-phone .np-phone-controls {
-  max-height: calc(var(--np-t) * 220px); overflow: hidden; opacity: calc(var(--np-t) * var(--np-t));
+  /* the controls only show up near the end, so they're never seen half cut off */
+  max-height: calc(var(--np-t) * 220px); overflow: hidden; opacity: clamp(0, calc((var(--np-t) - .6) / .4), 1);
   padding: calc(var(--np-t) * 16px) 20px calc(var(--np-t) * 4px);
 }
 .np.is-phone .np-bottom {
-  max-height: calc(var(--np-t) * 120px); overflow: hidden; opacity: calc(var(--np-t) * var(--np-t));
+  max-height: calc(var(--np-t) * 120px); overflow: hidden; opacity: clamp(0, calc((var(--np-t) - .6) / .4), 1);
   padding: calc(var(--np-t) * 12px) 16px calc(var(--np-t) * (16px + env(safe-area-inset-bottom)));
 }
 

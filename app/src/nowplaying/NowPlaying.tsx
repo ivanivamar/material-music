@@ -26,7 +26,7 @@ import { playerStore, isIntroId } from '../state/player'
 import { isTouch, useIsPhone } from '../state/viewport'
 import { albumHref, artistHref } from '../shell/routes'
 import { Lyrics } from './Lyrics'
-import { useLiftDrag } from './lift'
+import { SETTLE_MS, useLiftDrag, useMorph } from './lift'
 import { LyricsToggle, NpLink, QualityPill, RepeatToggle, ReorderToggle, ShuffleToggle, Transport } from './parts'
 import { contextLine, nowKicker, useCurrent, useDuration } from './player'
 import { QueueCarousel } from './carousel/QueueCarousel'
@@ -47,8 +47,6 @@ import { trackOf, albumOf } from '../state/previews'
 import '../dj/dj.css'
 import './nowplaying.css'
 
-/** how long the open / close (and the phone morph's settle) takes; matches nowplaying.css */
-const SETTLE_MS = 460
 
 export function NowPlaying() {
   const ui = useNowPlayingUi()
@@ -85,15 +83,11 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
   const cover = useCover(bgTrack ? albumOf(data, bgTrack.albumId)?.cover : undefined)
   const closeRef = useRef<HTMLButtonElement>(null)
   const headDrag = useLiftDrag('full')
+  const motion = useMotion()
 
-  // phone morph: 0 = the mini card, 1 = full screen. Opening animates 0 → 1 from the first frame.
-  const [entered, setEntered] = useState(false)
-  useEffect(() => {
-    const raf = requestAnimationFrame(() => setEntered(true))
-    return () => cancelAnimationFrame(raf)
-  }, [])
+  // phone morph: 0 = the mini card, 1 = full screen (follows the finger, then glides to the end)
   const dragging = ui.lift !== null
-  const t = ui.lift ?? (closing || !entered ? 0 : 1)
+  const t = useMorph(ui.lift, closing ? 0 : 1, motion)
 
   // focus in on open, back to whatever opened it on close
   useEffect(() => {
@@ -163,7 +157,7 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
     'np pg-anim',
     closing && 'is-closing',
     phone && 'is-phone',
-    phone && dragging && 'is-dragging',
+    phone && (dragging || (t > 0 && t < 1)) && 'is-morphing',
     side && 'has-side',
     reorder && 'is-reorder',
     djScene && 'is-dj-scene',

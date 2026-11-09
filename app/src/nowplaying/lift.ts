@@ -5,8 +5,11 @@
  * moves, `nowPlayingStore.lift` holds the progress (0 = mini card, 1 = full screen) and the full-screen
  * player draws itself as a blend of the two layouts (nowplaying.css, --np-t), so it morphs with the
  * finger. On release it settles to the nearer end, or follows a flick.
+ *
+ * The settle is animated here in JS (useMorph), not with a CSS transition: the carousel inside
+ * computes its card sizes from the same value, so CSS and layout stay in step frame by frame.
  */
-import { useRef, type PointerEvent } from 'react'
+import { useEffect, useRef, useState, type PointerEvent } from 'react'
 import { nowPlayingStore } from '../state/nowPlaying'
 
 /** How far (px) the finger travels between the two ends: the mini card's top edge to the screen's top. */
@@ -84,4 +87,41 @@ export function useLiftDrag(from: 'mini' | 'full') {
       return v
     },
   }
+}
+
+/** How long the player takes to settle open / closed (ms). */
+export const SETTLE_MS = 460
+const ease = (k: number) => 1 - Math.pow(1 - k, 3)
+
+/**
+ * The morph value to draw (0 = mini card, 1 = full screen): the finger's while dragging, otherwise an
+ * eased glide from wherever it was to `target`. Starts at 0, so opening grows out of the mini card.
+ */
+export function useMorph(lift: number | null, target: number, motion: boolean): number {
+  const [v, setV] = useState(lift ?? 0)
+  // follow the finger (adjusting state from a changed input during render)
+  const [seen, setSeen] = useState(lift)
+  if (lift !== seen) {
+    setSeen(lift)
+    if (lift !== null) setV(lift)
+  }
+  const vRef = useRef(v)
+  useEffect(() => {
+    vRef.current = v
+  })
+  useEffect(() => {
+    if (lift !== null || !motion) return
+    const from = vRef.current
+    const d = target - from
+    if (Math.abs(d) < 0.0005) return
+    const start = performance.now()
+    let raf = requestAnimationFrame(function tick(now) {
+      const k = Math.min(1, (now - start) / SETTLE_MS)
+      setV(from + d * ease(k))
+      if (k < 1) raf = requestAnimationFrame(tick)
+    })
+    return () => cancelAnimationFrame(raf)
+  }, [lift, target, motion])
+  if (lift !== null) return lift
+  return motion ? v : target
 }

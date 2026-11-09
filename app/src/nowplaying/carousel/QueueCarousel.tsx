@@ -60,7 +60,7 @@ function sizesFor(variant: CarouselVariant, w: number, morph: number): CarouselS
   const full = { hero: Math.min(w - 80, 360), med: 72, small: 40 }
   const m = Math.max(0, Math.min(1, morph))
   const mix = (a: number, b: number) => Math.round(a + (b - a) * m)
-  return { hero: mix(mini.hero, full.hero), med: mix(mini.med, full.med), small: mix(mini.small, full.small), gap: 8, prev: m > 0.5 ? 1 : 0 }
+  return { hero: mix(mini.hero, full.hero), med: mix(mini.med, full.med), small: mix(mini.small, full.small), gap: 8, prev: m >= 1 ? 1 : 0 }
 }
 
 type Group = 'played' | 'now' | 'next'
