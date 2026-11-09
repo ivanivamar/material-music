@@ -10,6 +10,7 @@ import { parseRadioId } from '../lib/mixing'
 import { djUi, useDjView } from '../state/djUi'
 import { isTouch } from '../state/viewport'
 import { DjButton } from '../dj/DjButton'
+import { trackOf, albumOf } from '../state/previews'
 
 export interface Current {
   p: PlayerState
@@ -22,8 +23,8 @@ export function useCurrent(): Current {
   const p = usePlayer()
   const { data } = useLibrary()
   const id = p.index >= 0 ? (p.queue[p.index] ?? null) : null
-  const track = (id && data?.tracks[id]) || null
-  return { p, id, track, album: track ? data?.albums[track.albumId] : undefined }
+  const track = (id && trackOf(data, id)) || null
+  return { p, id, track, album: track ? albumOf(data, track.albumId) : undefined }
 }
 
 const KICKER: Record<PlayContext['kind'], string> = {

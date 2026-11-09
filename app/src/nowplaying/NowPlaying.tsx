@@ -38,6 +38,7 @@ import { registerBack } from '../native/backButton'
 import { DevicesButton } from '../sync/DevicesButton'
 import '../dj/dj.css'
 import './nowplaying.css'
+import { trackOf, albumOf } from '../state/previews'
 
 const closeNp = () => nowPlayingStore.close()
 
@@ -69,8 +70,8 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
   const intro = dj.on && isIntroId(item)
   const startView = djui.start
   // during an intro the cover spot holds the mark over the first song's cover (the hand-over)
-  const track = intro ? ((p.queue[p.index + 1] && data?.tracks[p.queue[p.index + 1]]) || null) : songTrack
-  const album = intro ? (track ? data?.albums[track.albumId] : undefined) : songAlbum
+  const track = intro ? ((p.queue[p.index + 1] && trackOf(data, p.queue[p.index + 1])) || null) : songTrack
+  const album = intro ? (track ? albumOf(data, track.albumId) : undefined) : songAlbum
   const cover = useCover(album?.cover)
   const closeRef = useRef<HTMLButtonElement>(null)
   const introAudio = useIntroAudio(intro && item ? djIntroInfo(item)?.sessionId : null)

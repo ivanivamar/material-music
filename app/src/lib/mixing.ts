@@ -212,7 +212,8 @@ export function historyLevel(totalPlays: number, historyStart: number, now: numb
 
 /* ── Mixes ──────────────────────────────────────────── */
 
-export type MixKind = 'daily' | 'deep' | 'redis'
+/** day: the Day mix (lib/daymix.ts); disc: Discovery (previews, state/discovery.ts) */
+export type MixKind = 'daily' | 'deep' | 'redis' | 'day' | 'disc'
 
 export interface MixPlan {
   /** `daily-<seed genre>`, `deepcuts`, `rediscover` */

@@ -14,12 +14,13 @@
 import { historyStore } from '../state/history'
 import { libraryStore } from '../state/library'
 import { isIntroId, onEngineMoved, playerStore } from '../state/player'
+import { isPreviewId, trackOf } from '../state/previews'
 
 const MIN_SECONDS = 30
 /** DJ intros (step 22) never count as plays; a typical one lasts about this long */
 const INTRO_SECONDS = 8
 
-const durationOf = (id: string | null) => (id ? (isIntroId(id) ? INTRO_SECONDS : libraryStore.get().data?.tracks[id]?.duration) : undefined)
+const durationOf = (id: string | null) => (id ? (isIntroId(id) ? INTRO_SECONDS : trackOf(libraryStore.get().data, id)?.duration) : undefined)
 const threshold = (id: string | null) => {
   const d = durationOf(id)
   return d && d > 0 ? Math.min(MIN_SECONDS, d / 2) : MIN_SECONDS
@@ -49,7 +50,8 @@ export function initPlayTracker() {
   }
 
   const add = (seconds: number, now: number) => {
-    if (!curId || isIntroId(curId) || seconds <= 0) return
+    // previews (Discovery) never count as plays
+    if (!curId || isIntroId(curId) || isPreviewId(curId) || seconds <= 0) return
     if (!startedAt) startedAt = now - seconds * 1000
     listened += seconds
     if (!counted && listened >= threshold(curId)) {
@@ -117,7 +119,7 @@ export function initPlayTracker() {
     const total = lengths.reduce((a, b) => a + b, 0)
     if (gap.length && lengths.every((d) => d > 0) && total <= budget) {
       gap.forEach((id, i) => {
-        if (!isIntroId(id)) historyStore.record(id, at)
+        if (!isIntroId(id) && !isPreviewId(id)) historyStore.record(id, at)
         at += lengths[i] * 1000
       })
     }

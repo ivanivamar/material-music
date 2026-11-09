@@ -21,6 +21,7 @@ import { isIntroId } from '../state/player'
 import { useDjView } from '../state/djUi'
 import { IntroSub, LiveMark } from '../dj/DjIntro'
 import { useIntroProgress } from '../dj/live'
+import { trackOf, albumOf } from '../state/previews'
 
 const TABS: { key: RouteKey; label: string; icon: IconName }[] = [
   { key: 'home', label: 'Home', icon: 'home' },
@@ -74,8 +75,8 @@ export function MiniPlayer() {
   const dj = useDjView()
   const id = p.index >= 0 ? p.queue[p.index] : null
   const intro = dj.on && isIntroId(id) && !!dj.session
-  const track = (id && data?.tracks[id]) || null
-  const album = track ? data?.albums[track.albumId] : undefined
+  const track = (id && trackOf(data, id)) || null
+  const album = track ? albumOf(data, track.albumId) : undefined
   const cover = useCover(album?.cover)
   const introProgress = useIntroProgress(intro ? id : null)
   if (!track && !intro) return null

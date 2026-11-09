@@ -16,6 +16,11 @@
  *   GET /api/deezer/related?id=<deezer artist id>   (or ?name=<artist>&a=<album title>… to look it up)
  *        → { found: true, id, artists: [{ id, name }] } | { found: false }   (radio, step 26)
  *        Deezer's related artists, most related first; the app keeps the ones in the library.
+ *   GET /api/deezer/top?id=<deezer artist id>&limit=<n>   (or ?name=<artist>&a=<album title>… to look it up)
+ *        → { found: true, id, name, tracks: [{ id, t, d, p, al: { id, t, c }, ar: { id, n }, link }] } | { found: false }
+ *        The artist's most popular songs with their 30 s previews (Discovery mix).
+ *   GET /api/deezer/tracks?id=<deezer track id>&id=…   (up to 40)
+ *        → { tracks: [{ id, p }] }   fresh preview URLs (they expire) for the Discovery mix.
  *   GET /api/deezer/releases?id=<deezer artist id>&days=<n>   (New Releases → Discover)
  *        → { found: true, id, name, picture, releases: [{ id, t, type, date, cover }], titles: [...] }
  *        The artist's albums / EPs / singles released in the last `days` (default 183, max 400),
@@ -79,6 +84,17 @@ interface DzAlbum {
   release_date?: string
   record_type?: 'album' | 'ep' | 'single' | 'compile'
   cover_medium?: string
+}
+
+interface DzTopRow {
+  id: number
+  title: string
+  duration?: number
+  preview?: string
+  readable?: boolean
+  link?: string
+  album?: { id: number; title: string; cover_medium?: string; cover_big?: string }
+  artist?: { id: number; name: string }
 }
 
 async function lookup(name: string, titles: string[]) {
@@ -339,6 +355,60 @@ export async function onRequest({ request, params }: Ctx): Promise<Response> {
         single: url.searchParams.get('type') === 'single',
       })
       return json(hit ? { found: true, ...hit } : { found: false }, 200, 'private, max-age=600')
+    } catch (e) {
+      return json({ error: 'deezer_failed', message: (e as Error).message }, 502)
+    }
+  }
+
+  if (action === 'top') {
+    try {
+      let id = Number(url.searchParams.get('id'))
+      let name = ''
+      if (!Number.isFinite(id) || id <= 0) {
+        name = (url.searchParams.get('name') ?? '').trim().slice(0, 200)
+        if (!name) return json({ error: 'missing_id' }, 400)
+        const hit = await lookup(name, url.searchParams.getAll('a').slice(0, 100).map((t) => t.slice(0, 200)))
+        if (!hit) return json({ found: false }, 200, 'private, max-age=86400')
+        id = hit.id
+      }
+      const limit = Math.min(100, Math.max(1, Number(url.searchParams.get('limit')) || 40))
+      const res = await getJson<{ data?: DzTopRow[]; error?: unknown }>(`https://api.deezer.com/artist/${id}/top?limit=${limit}`)
+      const rows = res.data ?? []
+      if (!name) name = rows[0]?.artist?.name ?? ''
+      const tracks = rows
+        .filter((t) => t.preview && t.readable !== false)
+        .map((t) => ({
+          id: t.id,
+          t: t.title,
+          d: t.duration ?? null,
+          p: t.preview || null,
+          al: { id: t.album?.id ?? 0, t: t.album?.title ?? '', c: t.album?.cover_medium ?? t.album?.cover_big ?? null },
+          ar: { id: t.artist?.id ?? id, n: t.artist?.name ?? name },
+          link: t.link ?? null,
+        }))
+      return json({ found: true, id, name, tracks }, 200, 'private, max-age=600')
+    } catch (e) {
+      return json({ error: 'deezer_failed', message: (e as Error).message }, 502)
+    }
+  }
+
+  if (action === 'tracks') {
+    const ids = [...new Set(url.searchParams.getAll('id').map(Number).filter((x) => Number.isInteger(x) && x > 0))].slice(0, 40)
+    if (!ids.length) return json({ error: 'missing_id' }, 400)
+    try {
+      const out: { id: number; p: string | null }[] = []
+      // a few at a time: Deezer allows about 50 requests per 5 s
+      for (let i = 0; i < ids.length; i += 8) {
+        const got = await Promise.all(
+          ids.slice(i, i + 8).map((id) =>
+            getJson<{ id?: number; preview?: string; error?: unknown }>(`https://api.deezer.com/track/${id}`)
+              .then((t) => ({ id, p: t && !t.error && t.preview ? t.preview : null }))
+              .catch(() => ({ id, p: null })),
+          ),
+        )
+        out.push(...got)
+      }
+      return json({ tracks: out }, 200, 'private, max-age=300')
     } catch (e) {
       return json({ error: 'deezer_failed', message: (e as Error).message }, 502)
     }

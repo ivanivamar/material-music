@@ -36,6 +36,10 @@ import { fmtTotal, plural } from '../../state/views'
 import { MixCover } from '../home/art'
 import { MixCard, cardSize, useHomeSize } from '../home/cards'
 import '../home/home.css'
+import { useMadeForYou } from '../../state/madeForYou'
+import { hideFromDayMix, nextUpdateLabel, type DayMix } from '../../state/daymix'
+import { DISC_ID, type DiscoveryMix } from '../../state/discovery'
+import { DiscoveryPending, DiscoveryView } from './DiscoveryView'
 import './mix.css'
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -67,7 +71,9 @@ export function useTodayMixes(): MixSet | null {
   const history = useHistory()
   const genres = useGenres()
   const dj = useDj()
-  return useMixSet([data, history.plays, genres.doc, dj.doc.songPenalties, mixDay(Date.now()).key])
+  const today = useMixSet([data, history.plays, genres.doc, dj.doc.songPenalties, mixDay(Date.now()).key])
+  // the Day mix and Discovery lead, as on Home
+  return useMadeForYou(today).set
 }
 
 export function MixPage({ id }: { id: string }) {
@@ -92,11 +98,13 @@ export function MixPage({ id }: { id: string }) {
       </div>
     )
   const mix = set.items.find((m) => m.id === id)
+  if (mix?.kind === 'disc') return <DiscoveryView c={data} mix={mix as DiscoveryMix} backBtn={backBtn} />
+  if (!mix && id === DISC_ID) return <DiscoveryPending backBtn={backBtn} />
   if (!mix) return <Expired c={data} id={id} set={set} backBtn={backBtn} />
   return <MixView c={data} mix={mix} backBtn={backBtn} />
 }
 
-const KIND_KICKER = { daily: 'DAILY MIX', deep: 'DEEP CUTS · NEVER PLAYED', redis: 'REDISCOVER · LOVED, NOT LATELY' } as const
+const KIND_KICKER = { daily: 'DAILY MIX', deep: 'DEEP CUTS · NEVER PLAYED', redis: 'REDISCOVER · LOVED, NOT LATELY', day: 'DAY MIX · UPDATES THROUGH THE DAY', disc: 'DISCOVERY · PREVIEWS · REFRESHES MONDAY' } as const
 
 function MixView({ c, mix, backBtn }: { c: Catalogue; mix: MixPlan; backBtn: ReactNode }) {
   const phone = useIsPhone()
@@ -113,13 +121,14 @@ function MixView({ c, mix, backBtn }: { c: Catalogue; mix: MixPlan; backBtn: Rea
   const playing = active && p.playing
   const curId = active ? p.queue[p.index] : null
   const day = mixDay(Date.now())
-  const nextRefresh = new Date(day.next).toDateString() === new Date(Date.now() + DAY).toDateString() ? 'tomorrow 06:00' : 'today 06:00'
+  const dayPlan = mix.kind === 'day' ? (mix as DayMix).day : null
+  const nextRefresh = dayPlan ? nextUpdateLabel(dayPlan.slot) : new Date(day.next).toDateString() === new Date(Date.now() + DAY).toDateString() ? 'tomorrow 06:00' : 'today 06:00'
   const compact = useCompact()
   const [saved, setSaved] = useState(false)
 
   const save = () => {
     const d = new Date()
-    const name = `${mix.title} · ${d.getDate()} ${MONTHS[d.getMonth()]}`
+    const name = dayPlan ? `Day mix · ${dayPlan.slot.weekday} ${dayPlan.slot.label} · ${d.getDate()} ${MONTHS[d.getMonth()]}` : `${mix.title} · ${d.getDate()} ${MONTHS[d.getMonth()]}`
     const pid = playlistsStore.create(name, tracks.map((t) => t.id))
     setSaved(true)
     toast.show({ icon: 'check', text: `Saved as ‘${name}’`, action: { label: 'Open', onClick: () => go(playlistHref(pid)) } })
@@ -130,6 +139,10 @@ function MixView({ c, mix, backBtn }: { c: Catalogue; mix: MixPlan; backBtn: Rea
     playMix(mix, { startId: t.id })
   }
   const playAll = () => (active ? playerStore.toggle() : playMix(mix))
+  const hideRow = (t: Track) => {
+    hideFromDayMix(t.id)
+    toast.show({ icon: 'check', text: `‘${t.title}’ won’t be in your Day mix for a month.`, action: { label: 'Undo', onClick: () => hideFromDayMix(t.id, false) } })
+  }
   const menu = (e: React.MouseEvent) => actions.menu({ kind: 'tracks', trackIds: tracks.map((t) => t.id), label: mix.title }, e)
 
   const stats = [plural(tracks.length, 'song', 'songs'), seconds ? fmtTotal(seconds).toLowerCase() : null, offline !== null ? `${offline} of ${tracks.length} offline` : mix.newCount ? `${mix.newCount} new to you` : null].filter(Boolean).join(' · ')
@@ -145,11 +158,22 @@ function MixView({ c, mix, backBtn }: { c: Catalogue; mix: MixPlan; backBtn: Rea
         </div>
         <div className="mx-hero-text">
           <div className="mx-kicker">{kicker}</div>
-          <h1 className="mx-title" title={mix.title}>
-            {mix.title}
+          <h1 className={`mx-title ${dayPlan ? 'is-phrase' : ''}`} title={dayPlan ? dayPlan.phrase : mix.title}>
+            {dayPlan ? dayPlan.phrase : mix.title}
           </h1>
           <div className="mx-why">{mix.why}</div>
           <div className="mx-stats">{stats}</div>
+          {dayPlan && dayPlan.tags.some((t) => t.genre) && (
+            <div className="mx-tags">
+              {dayPlan.tags
+                .filter((t) => t.genre)
+                .map((t) => (
+                  <span key={t.label} className="mx-tag">
+                    {t.label}
+                  </span>
+                ))}
+            </div>
+          )}
         </div>
         {!phone && <CookieButton size={80} iconSize={40} playing={playing} icon={playing ? 'pauseF' : 'playF'} label={playing ? 'Pause' : 'Play'} className="mx-play" onClick={playAll} />}
       </header>
@@ -175,8 +199,8 @@ function MixView({ c, mix, backBtn }: { c: Catalogue; mix: MixPlan; backBtn: Rea
           <IconButton icon="moreH" label="More" onClick={menu} />
           <span className="mx-flex" />
           <span className="mx-ro">
-            <Icon name="lock" />
-            Read-only · next refresh {nextRefresh}
+            <Icon name={dayPlan ? 'autorenew' : 'lock'} />
+            {dayPlan ? `Next update ${nextRefresh}` : `Read-only · next refresh ${nextRefresh}`}
           </span>
         </div>
       )}
@@ -191,7 +215,7 @@ function MixView({ c, mix, backBtn }: { c: Catalogue; mix: MixPlan; backBtn: Rea
         </div>
       )}
 
-      <div className="card card-filled card-lg mx-list" role="table">
+      <div className={`card card-filled card-lg mx-list ${dayPlan ? 'is-day' : ''}`} role="table">
         {!phone && (
           <div className="mx-head" role="row">
             <span className="mx-c-n">#</span>
@@ -200,6 +224,7 @@ function MixView({ c, mix, backBtn }: { c: Catalogue; mix: MixPlan; backBtn: Rea
             <span>Quality</span>
             <span>Last played</span>
             <span aria-hidden />
+            {dayPlan && <span aria-hidden />}
             <span className="mx-c-d">
               <Icon name="clock" />
             </span>
@@ -218,6 +243,7 @@ function MixView({ c, mix, backBtn }: { c: Catalogue; mix: MixPlan; backBtn: Rea
             lastLabel={lastPlayedLabel(last.get(t.id), Date.now())}
             unavailable={!!allowed && !allowed.has(t.id)}
             onPlay={() => playFrom(t)}
+            onHide={dayPlan ? () => hideRow(t) : undefined}
           />
         ))}
       </div>
@@ -234,7 +260,7 @@ function lastPlays(plays: readonly Play[]): Map<string, number> {
   return m
 }
 
-function Row({ c, t, i, phone, current, playing, fresh, lastLabel, unavailable, onPlay }: { c: Catalogue; t: Track; i: number; phone: boolean; current: boolean; playing: boolean; fresh: boolean; lastLabel: string; unavailable: boolean; onPlay: () => void }) {
+function Row({ c, t, i, phone, current, playing, fresh, lastLabel, unavailable, onPlay, onHide }: { c: Catalogue; t: Track; i: number; phone: boolean; current: boolean; playing: boolean; fresh: boolean; lastLabel: string; unavailable: boolean; onPlay: () => void; onHide?: () => void }) {
   const album = c.albums[t.albumId]
   const [ref, cover] = useLazyCover<HTMLDivElement>(album?.cover)
   const target = { kind: 'track', trackId: t.id } as const
@@ -290,10 +316,12 @@ function Row({ c, t, i, phone, current, playing, fresh, lastLabel, unavailable, 
           </div>
           <div className="mx-last">{fresh ? <span className="mx-new">New to you</span> : lastLabel}</div>
           <LikeButton trackId={t.id} size="sm" hover />
+          {onHide && <IconButton icon="hide" label={`Hide ${t.title} from the Day mix`} size="sm" className="mx-hide" onClick={(e) => (e.stopPropagation(), onHide())} />}
           <div className="mx-c-d">{unavailable ? <Icon name="cloud" /> : t.duration ? formatTime(t.duration) : '—'}</div>
         </>
       )}
       {phone && <LikeButton trackId={t.id} size="sm" />}
+      {phone && onHide && <IconButton icon="hide" label={`Hide ${t.title} from the Day mix`} className="mx-dots" onClick={(e) => (e.stopPropagation(), onHide())} />}
       {phone && (
         <IconButton icon={unavailable ? 'cloud' : 'more'} label="More" className="mx-dots" onClick={(e) => (e.stopPropagation(), actions.menu(target, e))} />
       )}

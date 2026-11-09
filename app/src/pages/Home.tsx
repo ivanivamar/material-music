@@ -4,7 +4,8 @@
  *   greeting header
  *   Jump back in       DJ tile + the last things played from (synced PC ↔ phone, state/recent.ts)
  *   Your <year> recap  (step 21, Dec 18 – Jan 31 only)
- *   Made for you       Daily Mixes, Deep cuts, Rediscover (state/mixes.ts, computed after first paint)
+ *   Made for you       Day mix + Discovery first (state/madeForYou.ts), then Daily Mixes, Deep cuts,
+ *                      Rediscover (state/mixes.ts, computed after first paint)
  *   Radio for you      six stations from what's been played (or the artists with the most albums)
  *   Concerts near you  up to four shows near the home city (Concerts; only once a city is set)
  *   Recently added
@@ -23,6 +24,7 @@ import { libraryStats, useLibrary } from '../state/library'
 import { historyStore, useHistory } from '../state/history'
 import { homeShelves, monthYear, yourArtists } from '../state/homeViews'
 import { prefetchRelated, radioSet, useMixSet } from '../state/mixes'
+import { useMadeForYou } from '../state/madeForYou'
 import { usePlaylists } from '../state/playlists'
 import { recentStore, useRecent } from '../state/recent'
 import { useSession } from '../state/session'
@@ -99,8 +101,11 @@ export function Home() {
   const phone = size !== 'desk'
   const relVersion = useRelatedVersion()
   const day = mixDay(now.getTime()).key
-  const mixes = useMixSet([data, history.plays, genres.doc, dj.doc.songPenalties, day])
-  const radios = mixes ? radioSet(relVersion, now.getTime()) : null
+  const today = useMixSet([data, history.plays, genres.doc, dj.doc.songPenalties, day])
+  // the Day mix and Discovery always lead Made for you
+  const made = useMadeForYou(today, now.getTime())
+  const mixes = made.set
+  const radios = today ? radioSet(relVersion, now.getTime()) : null
   const concerts = useConcertShelf()
 
   // pick up plays / recents from the other device (throttled; the stores also sync on focus / reconnect)
@@ -147,7 +152,13 @@ export function Home() {
 
         {(!mixes || mixes.items.length > 0) && (
           <Shelf label="Made for you" sub={mixSub} phone={phone}>
-            {mixes ? mixes.items.map((m) => <MixCard key={m.id} c={data} mix={m} size={cs} />) : [0, 1, 2, 3, 4, 5, 6].map((i) => <SkelCard key={i} size={cs} />)}
+            {mixes
+              ? mixes.items.flatMap((m, i) => {
+                  const card = <MixCard key={m.id} c={data} mix={m} size={cs} />
+                  // Discovery is being put together for the week: keep its place (second)
+                  return i === 0 && made.discoveryBuilding ? [card, <SkelCard key="disc-skel" size={cs} />] : [card]
+                })
+              : [0, 1, 2, 3, 4, 5, 6].map((i) => <SkelCard key={i} size={cs} />)}
           </Shelf>
         )}
 

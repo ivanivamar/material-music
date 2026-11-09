@@ -7,6 +7,7 @@
  * so rows with overflow: hidden, virtual lists and the full-screen player never clip it.
  * Reduced motion (the app's Motion setting / the system's): no fountain, no pop.
  */
+import { isPreviewId } from '../state/previews'
 import { useEffect, useRef, useState, type CSSProperties, type MouseEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { Icon } from '../design/icons'
@@ -138,5 +139,7 @@ export interface LikeButtonProps extends HeartLook {
 export function LikeButton({ trackId, ...look }: LikeButtonProps) {
   const liked = useIsLiked(trackId)
   const toast = useToast()
+  // a Discovery preview isn't in the library: no heart
+  if (isPreviewId(trackId)) return null
   return <HeartButton {...look} liked={liked} disabled={!trackId} onToggle={(next) => trackId && setLike(toast, trackId, next, { quiet: true })} />
 }

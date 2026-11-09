@@ -182,7 +182,8 @@ export function MixCard({ c, mix, size }: { c: Catalogue; mix: MixPlan; size: nu
       onOpen={() => go(mixHref(mix.id))}
       onPlay={() => playMix(mix)}
       onShuffle={() => playMix(mix, { shuffle: true })}
-      extra={{ ...trackDrag(() => mix.trackIds, ctx.label), onContextMenu: (e: MouseEvent) => actions.menu({ kind: 'tracks', trackIds: mix.trackIds, label: mix.title }, e) }}
+      // Discovery's songs aren't in the library: nothing to drag onto a playlist or queue from a menu
+      extra={mix.kind === 'disc' ? undefined : { ...trackDrag(() => mix.trackIds, ctx.label), onContextMenu: (e: MouseEvent) => actions.menu({ kind: 'tracks', trackIds: mix.trackIds, label: mix.title }, e) }}
     />
   )
 }

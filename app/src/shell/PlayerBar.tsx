@@ -25,6 +25,7 @@ import { useSettings } from '../state/settings'
 import { DevicesButton } from '../sync/DevicesButton'
 import { LikeButton } from '../components/LikeButton'
 import './playerbar.css'
+import { trackOf, albumOf } from '../state/previews'
 
 export function PlayerBar() {
   const p = usePlayer()
@@ -32,8 +33,8 @@ export function PlayerBar() {
   const toast = useToast()
   const ui = useNowPlayingUi()
   const id = p.index >= 0 ? p.queue[p.index] : null
-  const track: Track | null = (id && data?.tracks[id]) || null
-  const album = track ? data?.albums[track.albumId] : undefined
+  const track: Track | null = (id && trackOf(data, id)) || null
+  const album = track ? albumOf(data, track.albumId) : undefined
   const cover = useCover(album?.cover)
   const dj = useDjView()
   const intro = dj.on && isIntroId(id) && !!dj.session

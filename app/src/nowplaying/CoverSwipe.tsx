@@ -27,6 +27,7 @@ import { useMotion } from '../state/motion'
 import { isIntroId, playerStore } from '../state/player'
 import { LiveMark } from '../dj/DjIntro'
 import { useCurrent } from './parts'
+import { trackOf, albumOf } from '../state/previews'
 
 const NEAR = 2 // slots either side that get their cover
 const SYNC_MS = 180 // the store index must hold this long before the row follows it
@@ -296,8 +297,8 @@ function IntroSlot({ item, current }: { item: string; current: boolean }) {
 
 const CoverSlot = memo(function CoverSlot({ trackId }: { trackId: string | null; glow: string | null }) {
   const { data } = useLibrary()
-  const t = trackId ? data?.tracks[trackId] : undefined
-  const src = useCover(t ? data?.albums[t.albumId]?.cover : null)
+  const t = trackId ? trackOf(data, trackId) : undefined
+  const src = useCover(t ? albumOf(data, t.albumId)?.cover : null)
   // warm the tint cache, so the scene colour is ready the moment the song switches
   useArtTint(src)
   return (

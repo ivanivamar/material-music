@@ -16,6 +16,8 @@ import { useCover } from '../../lib/covers'
 import { useArtStats } from '../../lib/artStats'
 import { useArtTint } from '../../design/tint'
 import { nameHue, type MixKind } from '../../lib/mixing'
+import type { PartId } from '../../lib/daymix'
+import { DayCover, LeakCover } from './mixArt'
 import type { Artist, Catalogue } from '../../state/library'
 import { cookie, SHAPE_CLOVER, SHAPE_PLAYING } from '../../design/shapes'
 import { Icon } from '../../design/icons'
@@ -33,9 +35,13 @@ export interface MixArt {
   n?: number
   hue: number
   coverAlbums: string[]
+  /** Day mix: the part of the day (its cover) */
+  day?: { slot: { part: PartId } }
+  /** Discovery: the week (its colours) */
+  week?: { key: string }
 }
 
-const KIND_NAME: Record<MixKind, string> = { daily: 'Daily mix', deep: 'Deep cuts', redis: 'Rediscover' }
+const KIND_NAME: Record<MixKind, string> = { daily: 'Daily mix', deep: 'Deep cuts', redis: 'Rediscover', day: 'Day mix', disc: 'Discovery' }
 
 function MixCov({ cover, size, radius, style }: { cover: string | null | undefined; size: number; radius: number; style: CSSProperties }) {
   const url = useCover(cover)
@@ -43,8 +49,25 @@ function MixCov({ cover, size, radius, style }: { cover: string | null | undefin
 }
 
 export function MixCover({ c, mix, size, radius, className }: { c: Catalogue; mix: MixArt; size: number; radius?: number; className?: string }) {
-  const H = mix.hue
   const r = radius ?? radiusFor(size)
+  // the two mixes with drawn covers (Nov 2026 designs)
+  if (mix.kind === 'day' && mix.day)
+    return (
+      <div className={`hx-mix hx-art ${className ?? ''}`} style={{ width: size, height: size, borderRadius: r }} aria-hidden>
+        <DayCover part={mix.day.slot.part} size={size} radius={r} />
+      </div>
+    )
+  if (mix.kind === 'disc' && mix.week)
+    return (
+      <div className={`hx-mix hx-art ${className ?? ''}`} style={{ width: size, height: size, borderRadius: r }} aria-hidden>
+        <LeakCover week={mix.week.key} size={size} radius={r} />
+      </div>
+    )
+  return <MixMosaic c={c} mix={mix} size={size} r={r} className={className} />
+}
+
+function MixMosaic({ c, mix, size, r, className }: { c: Catalogue; mix: MixArt; size: number; r: number; className?: string }) {
+  const H = mix.hue
   const f = size / 168
   const big = size >= 90
   const cw = Math.round(size * (big ? 0.5 : 0.56))

@@ -25,6 +25,7 @@ import { djIntroInfo } from '../state/dj'
 import { djVoice } from '../dj/voice'
 import { onAccountReset, sessionStore } from '../state/session'
 import { settingsStore } from '../state/settings'
+import { isPreviewId, previewsStore, refreshPreviews } from '../state/previews'
 
 const DRIVE = 'https://www.googleapis.com/drive/v3/files/'
 const media = (fileId: string) => `${DRIVE}${encodeURIComponent(fileId)}?alt=media`
@@ -61,6 +62,19 @@ function toItem(id: string, dj: boolean): NativeQueueItem {
       dj: true,
       intro: true,
       volume: info?.gain ?? 0.7,
+    }
+  }
+  if (isPreviewId(id)) {
+    // Discovery: Deezer's 30 s clip (URLs refreshed before the queue is sent, see playDiscovery)
+    const pv = previewsStore.get(id)
+    return {
+      id,
+      uri: pv?.url ?? 'https://www.googleapis.com/drive/v3/files/missing?alt=media',
+      title: pv?.title ?? 'Preview',
+      artist: pv ? `${pv.artist} · preview` : '',
+      album: pv?.album ?? 'Discovery',
+      artworkUri: pv?.cover ?? undefined,
+      dj: dj || undefined,
     }
   }
   const data = libraryStore.get().data
@@ -177,6 +191,8 @@ export function createNativeEngine(): PlayerEngine {
       void ready
         .then(() => prepIntros(playerStore.get().queue))
         .then(() => prepIntros(playerStore.get().queue)) // the queue may have grown meanwhile
+        // Discovery previews: their signed URLs expire, get fresh ones before handing the queue over
+        .then(() => refreshPreviews(playerStore.get().queue.filter(isPreviewId)).catch(() => {}))
         .then(send)
     })
   }

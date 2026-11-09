@@ -219,6 +219,8 @@ export const historyStore = {
 
   /** A play was counted on this device. */
   record(trackId: string, atMs: number) {
+    // Discovery previews (pv:…) and DJ intros are never plays
+    if (trackId.startsWith('pv:') || trackId.startsWith('dj:')) return
     const play: Play = { at: Math.round(atMs / 1000), trackId, dev: DEVICE }
     if (!merge([play], true)) return
     publish()

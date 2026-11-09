@@ -30,6 +30,7 @@ import { settingsStore } from '../state/settings'
 import { djIntroInfo } from '../state/dj'
 import { djVoice } from '../dj/voice'
 import { markPng } from '../dj/mark'
+import { albumOf, freshPreviewUrl, isPreviewId, trackOf } from '../state/previews'
 
 class NeedsAuth extends Error {}
 
@@ -95,8 +96,8 @@ export function createHtmlAudioEngine(): PlayerEngine {
 
   const lookup = (id: string): { track?: Track; album?: Album } => {
     const data = libraryStore.get().data
-    const track = data?.tracks[id]
-    return { track, album: track ? data?.albums[track.albumId] : undefined }
+    const track = trackOf(data, id)
+    return { track, album: track ? albumOf(data, track.albumId) : undefined }
   }
   const gesture = () => navigator.userActivation?.isActive ?? true
 
@@ -198,6 +199,13 @@ export function createHtmlAudioEngine(): PlayerEngine {
       const { url } = await djVoice.url(info.sessionId, info.line)
       if (stale()) return null
       return { trackId: id, url, owned: false, source: 'local', triedLocal: true, gain: info.gain }
+    }
+    if (isPreviewId(id)) {
+      // Discovery: Deezer's 30 s clip (the URL is signed and expires: fetched again when old)
+      const url = await freshPreviewUrl(id)
+      if (stale()) return null
+      if (!url) throw new Error('This preview isn’t available right now.')
+      return { trackId: id, url, owned: false, source: 'drive', triedLocal: true }
     }
     const { track, album } = lookup(id)
     if (!track) return null

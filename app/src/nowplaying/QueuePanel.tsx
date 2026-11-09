@@ -41,6 +41,7 @@ import { PlaylistCover } from '../pages/playlists/PlaylistCover'
 import { contextLine } from './parts'
 import { actions } from '../actions/actions'
 import './queue.css'
+import { trackOf, albumOf } from '../state/previews'
 
 /* Row metrics (px) per layout: section rule, played row (56 + 2px gap), next-up row (58/60 + 2px gap). */
 const DESKTOP = { rule: 40, played: 58, next: 60 }
@@ -91,14 +92,14 @@ const rowRange = (y0: number, n: number, rowH: number, st: number, vh: number): 
 }
 
 function Cover({ c, albumId, className }: { c: Catalogue; albumId: string; className: string }) {
-  const url = useCover(c.albums[albumId]?.cover)
+  const url = useCover(albumOf(c, albumId)?.cover)
   return url ? <img className={className} src={url} alt="" draggable={false} /> : <span className={`${className} qp-cover-empty`} aria-hidden />
 }
 
 const sub = (c: Catalogue, id: string) => {
-  const t = c.tracks[id]
+  const t = trackOf(c, id)
   if (!t) return 'No longer in your library'
-  const album = c.albums[t.albumId]?.title
+  const album = albumOf(c, t.albumId)?.title
   return album ? `${t.artist} · ${album}` : t.artist
 }
 
@@ -157,7 +158,7 @@ function PlayedRow({
   isLast: boolean
   onKey: (abs: number) => (e: KeyboardEvent) => void
 } & RowDrag) {
-  const t = c.tracks[id]
+  const t = trackOf(c, id)
   const isDrag = drag?.from === abs
   const line = dropLine(drag, abs)
   return (
@@ -219,7 +220,7 @@ interface NextRowProps extends RowDrag {
 
 /* ── Next up row: grip · cover · title / artist · album · length · ↑ · × ── */
 function NextRow({ c, id, abs, top, base, isFirst, isLast, phone, drag, onDragStart, onDragOver, onDragEnd, onTouchDown, onKey, remove }: NextRowProps) {
-  const t = c.tracks[id]
+  const t = trackOf(c, id)
   const isDrag = drag?.from === abs
   const line = dropLine(drag, abs)
   return (
@@ -310,12 +311,12 @@ export function QueuePanel() {
   const open = ui.queue && p.index >= 0 && p.context?.kind !== 'dj' // no queue panel while the DJ plays
   const overNp = ui.open
   const currentId = p.index >= 0 ? p.queue[p.index] : null
-  const current = currentId ? data?.tracks[currentId] : undefined
+  const current = currentId ? trackOf(data, currentId) : undefined
   const base = p.index + 1
   const upcoming = useMemo(() => (p.index >= 0 ? p.queue.slice(p.index + 1) : []), [p.queue, p.index])
   const played = useMemo(() => (p.index > 0 ? p.queue.slice(0, p.index) : []), [p.queue, p.index])
-  const total = useMemo(() => upcoming.reduce((s, id) => s + (data?.tracks[id]?.duration ?? 0), 0), [upcoming, data])
-  const playedTotal = useMemo(() => played.reduce((s, id) => s + (data?.tracks[id]?.duration ?? 0), 0), [played, data])
+  const total = useMemo(() => upcoming.reduce((s, id) => s + (trackOf(data, id)?.duration ?? 0), 0), [upcoming, data])
+  const playedTotal = useMemo(() => played.reduce((s, id) => s + (trackOf(data, id)?.duration ?? 0), 0), [played, data])
   const ctx = contextLine(p.context)
   const cleared = playerStore.clearedUpcoming()
   const close = () => nowPlayingStore.closeQueue()
@@ -454,7 +455,7 @@ export function QueuePanel() {
     if (!id) return
     playerStore.remove(abs)
     if (!phone) return
-    const t = data?.tracks[id]
+    const t = trackOf(data, id)
     toast.show({
       icon: 'queue',
       text: t ? `Removed “${t.title}” from the queue.` : 'Removed from the queue.',

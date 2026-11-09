@@ -219,6 +219,49 @@ export function fetchDzPreviews(key: string, q: { artists: string[]; dz: number[
   return p
 }
 
+/* ── Discovery mix (Nov 2026) ───────────────────────── */
+
+/** A Deezer song with its preview: id, title, duration, preview URL, rank; album and artist. */
+export interface DzTopTrack {
+  id: number
+  t: string
+  d: number | null
+  p: string | null
+  al: { id: number; t: string; c: string | null }
+  ar: { id: number; n: string }
+  link: string | null
+}
+
+/**
+ * An artist's most popular songs on Deezer (up to `limit`, with previews), by Deezer id, else looked
+ * up by name + album titles (like the radio's related artists). null = artist not found.
+ */
+export async function fetchDzTop(q: { id?: number; name?: string; titles?: string[]; limit?: number }): Promise<{ id: number; name: string; tracks: DzTopTrack[] } | null> {
+  const params = new URLSearchParams()
+  if (q.id) params.set('id', String(q.id))
+  else {
+    params.set('name', q.name ?? '')
+    for (const t of (q.titles ?? []).slice(0, 40)) params.append('a', t)
+  }
+  params.set('limit', String(q.limit ?? 40))
+  const res = await fetch(`${API_BASE}api/deezer/top?${params}`, { headers: { 'X-Pelagic': '1' } })
+  if (!res.ok || !(res.headers.get('content-type') ?? '').includes('application/json')) throw new Error(`proxy ${res.status}`)
+  const j = (await res.json()) as { found?: boolean; id?: number; name?: string; tracks?: DzTopTrack[] }
+  if (!j.found || !j.id) return null
+  return { id: j.id, name: j.name ?? '', tracks: Array.isArray(j.tracks) ? j.tracks : [] }
+}
+
+/** Fresh preview URLs (they expire) for up to 40 Deezer songs. */
+export async function fetchDzTracks(ids: number[]): Promise<{ id: number; p: string | null }[]> {
+  if (!ids.length) return []
+  const params = new URLSearchParams()
+  for (const id of ids.slice(0, 40)) params.append('id', String(id))
+  const res = await fetch(`${API_BASE}api/deezer/tracks?${params}`, { headers: { 'X-Pelagic': '1' } })
+  if (!res.ok || !(res.headers.get('content-type') ?? '').includes('application/json')) throw new Error(`proxy ${res.status}`)
+  const j = (await res.json()) as { tracks?: { id: number; p: string | null }[] }
+  return Array.isArray(j.tracks) ? j.tracks : []
+}
+
 /** Re-render when related artists arrive. */
 export function useRelatedVersion(): number {
   return useSyncExternalStore(

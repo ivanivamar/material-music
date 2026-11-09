@@ -21,6 +21,7 @@ import { genreResolver, genresStore } from './genres'
 import { historyStore } from './history'
 import { libraryStore, type Catalogue } from './library'
 import { playerStore } from './player'
+import { playDiscovery, type DiscoveryMix } from './discovery'
 
 const DAY = 86_400_000
 const PENALTY_MS = 30 * DAY
@@ -123,6 +124,8 @@ export function mixContext(m: MixPlan) {
 }
 
 export function playMix(m: MixPlan, opts: { shuffle?: boolean; startId?: string } = {}) {
+  // Discovery: previews, not library songs (fresh URLs first)
+  if (m.kind === 'disc') return void playDiscovery(m as DiscoveryMix, opts)
   const c = libraryStore.get().data
   if (!c) return
   const allowed = playableSet(c)

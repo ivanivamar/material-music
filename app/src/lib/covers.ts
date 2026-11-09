@@ -27,6 +27,8 @@ async function slot<T>(fn: () => Promise<T>): Promise<T> {
 
 /** key = Drive file id, plus a version suffix for images that are replaced in place (artist photos). */
 export function loadCover(fileId: string, v?: number): Promise<string | null> {
+  // Discovery previews (state/previews.ts): a plain https image (Deezer), no Drive involved
+  if (fileId.startsWith('url:')) return Promise.resolve(fileId.slice(4))
   const key = v ? `${fileId}@${v}` : fileId
   const hit = urls.get(key)
   if (hit) return Promise.resolve(hit)
@@ -51,7 +53,7 @@ export function loadCover(fileId: string, v?: number): Promise<string | null> {
 }
 
 /** Synchronous peek so already-loaded covers render on the first frame (no flash). */
-export const peekCover = (fileId: string, v?: number) => urls.get(v ? `${fileId}@${v}` : fileId) ?? null
+export const peekCover = (fileId: string, v?: number) => (fileId.startsWith('url:') ? fileId.slice(4) : (urls.get(v ? `${fileId}@${v}` : fileId) ?? null))
 
 export function useCover(fileId: string | null | undefined, v?: number): string | null {
   const [url, setUrl] = useState<string | null>(() => (fileId ? peekCover(fileId, v) : null))

@@ -49,6 +49,7 @@ import { initCloud } from './sync/cloud'
 import { initSettingsSync } from './sync/settingsSync'
 import { useSession } from './state/session'
 import { NowPlayingHue } from './design/NowPlayingHue'
+import { initDiscovery } from './state/discovery'
 
 // The first, local-only likes (Oct 2026, dropped): clear that old store. Liked songs now live in
 // the synced Liked songs playlist (state/playlists.ts LIKED_ID).
@@ -92,6 +93,8 @@ initWidget()
 initReleaseNotifications()
 // New Releases → Discover: recent releases by related artists who aren't in the library.
 initDiscover()
+// Discovery mix (Nov 2026): this week's previews + wishlist, so a restored queue knows its songs
+initDiscovery()
 // Concerts: Ticketmaster tour dates once a day; home city + hand-added shows synced through Drive concerts.json.
 concertsStore.init()
 // Player sync (step 37): queue + playback shared between PC and phone through Firestore; remote control.

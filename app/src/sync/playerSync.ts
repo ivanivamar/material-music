@@ -39,6 +39,7 @@ import {
 import { onAccountReset, sessionStore } from '../state/session'
 import { settingsStore } from '../state/settings'
 import type { Docs, SyncBackend } from './firebase'
+import { trackOf } from '../state/previews'
 
 /* ── Firestore shapes ───────────────────────────────── */
 
@@ -202,7 +203,7 @@ const handled = new Set<string>()
 
 const fresh = (d: DeviceDoc | undefined, now = Date.now()) => !!d && d.online !== false && now - d.seenAt < STALE_MS
 const view = (id: string, d: DeviceDoc): RemoteDevice => ({ id, name: d.name || 'Device', platform: d.platform === 'android' ? 'android' : 'pc' })
-const durationOf = (id: string | null) => (id ? libraryStore.get().data?.tracks[id]?.duration : undefined)
+const durationOf = (id: string | null) => (id ? trackOf(libraryStore.get().data, id)?.duration : undefined)
 
 /** Where a device's track is now: its reported position, moved on by the time since if it plays. */
 function positionOf(d: DeviceDoc, now = Date.now()): number {
