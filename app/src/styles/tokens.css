@@ -234,6 +234,10 @@
   --album-container: oklch(0.30 calc(0.06 * var(--hc) + 0.006) var(--h));
   --album-icon: oklch(calc(0.80 + 0.08 * (1 - var(--hc))) calc(0.09 * var(--hc) + 0.008) var(--h));
   --album-eq: oklch(calc(0.86 + 0.06 * (1 - var(--hc))) calc(0.10 * var(--hc) + 0.008) var(--h));
+  /* phone mini player: the handle band (lighter) and the carousel's container (darker) — neutral tones
+     with a hint of the album */
+  --mini-band: oklch(0.31 calc(0.012 * var(--hc) + 0.004) var(--h));
+  --mini-surface: oklch(0.235 calc(0.01 * var(--hc) + 0.003) var(--h));
 }
 /* a page with its own album is colourful unless it says otherwise */
 .hue-scope { --hc: 1; }

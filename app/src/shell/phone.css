@@ -6,7 +6,9 @@
 
 /* ── Shell (Material redesign): sticky top bar on every page, 96px tab bar, 68px glass mini player ── */
 .shell.is-phone {
-  --android-tabs-h: 96px; --android-mini-h: 76px;
+  --android-tabs-h: 96px; --android-mini-h: 114px;
+  /* the mini card's bottom edge above the screen bottom (the full-screen player morphs from this card) */
+  --np-mini-b: calc(var(--android-tabs-h) + 8px + env(safe-area-inset-bottom));
   /* the sticky top bar's height (secondary sticky bars sit under it), and how much lower page content
      starts than it did without a top bar (page decorations reach up by this to stay put) */
   --bar-h: calc(64px + env(safe-area-inset-top)); --bar-lift: 54px;
@@ -86,14 +88,24 @@
 .as-item:disabled .as-ic { color: var(--ink-ghost); }
 
 .mini {
-  position: fixed; left: 0; right: 0; z-index: 21;
-  bottom: calc(var(--android-tabs-h) + env(safe-area-inset-bottom));
-  height: calc(var(--android-mini-h) + 16px); padding: 8px;
-  background: var(--panel);
+  position: fixed; z-index: 21; left: 8px; right: 8px;
+  bottom: var(--np-mini-b); height: var(--android-mini-h);
+  display: flex; flex-direction: column; overflow: hidden; isolation: isolate;
+  border-radius: 28px; background: var(--mini-band);
+  box-shadow: 0 14px 32px -12px rgba(0, 0, 0, .65), inset 0 0 0 1px rgba(255, 255, 255, .07);
 }
+/* the handle band: tap or drag up to open the full-screen player */
+.mini-band {
+  flex: none; height: 22px; width: 100%; padding: 0; border: 0; background: none; color: var(--ink-secondary);
+  display: grid; place-items: center; cursor: grab; touch-action: none;
+}
+.mini-band > span { width: 28px; height: 4px; border-radius: 2px; background: currentColor; }
+.mini-band:focus-visible { outline: 2px solid var(--ink-primary); outline-offset: -4px; border-radius: 28px 28px 0 0; }
+/* the carousel's own neutral tonal container, rounded, inset under the band */
+.mini-queue { flex: 1; min-height: 0; padding: 8px; border-radius: 22px; background: var(--mini-surface); }
 
 /* toasts: above the mini-player and tabs */
-html[data-phone]:not([data-np]) .toasts.toasts-shell { left: 0; right: 0; bottom: calc(var(--android-tabs-h) + var(--android-mini-h) + 32px + env(safe-area-inset-bottom)); }
+html[data-phone]:not([data-np]) .toasts.toasts-shell { left: 0; right: 0; bottom: calc(var(--np-mini-b) + var(--android-mini-h) + 12px); }
 
 /* ── Page header ── */
 .shell.is-phone .ph { align-items: flex-start; gap: 16px; margin-bottom: 20px; }
@@ -241,14 +253,9 @@ html[data-phone]:not([data-np]) .toasts.toasts-shell { left: 0; right: 0; bottom
 
 /* ── Full-screen player, phone (Material redesign, NowPlayingMaterial phone form) ── */
 /* Android app (edge-to-edge): the glass reaches the top of the screen; content sits below the status bar */
-/* swipe down to close (nowplaying/swipe.ts); swipe state is a data attribute (React rewrites className when closing) */
-.shell.is-phone .np[data-swipe]:not(.is-closing) { animation: none; }
-.shell.is-phone .np[data-swipe="dragging"] { transition: none; }
-.shell.is-phone .np[data-swipe="springing"] { transition: transform .3s var(--ease-std); }
-.shell.is-phone .np[data-swipe="swiped"] { animation: none !important; transition: transform .26s cubic-bezier(.4, 0, 1, 1); pointer-events: none; }
 .shell.is-phone .np-from { gap: 2px; }
 .shell.is-phone .np-from-l { max-width: 100%; }
-.shell.is-phone .np { --np-sat: env(safe-area-inset-top, 0px); padding-top: var(--np-sat); }
+.shell.is-phone .np { --np-sat: env(safe-area-inset-top, 0px); padding-top: calc(var(--np-sat) * var(--np-t)); }
 /* the rest of the phone layout lives with the player (nowplaying.css, .np.is-phone) */
 
 /* lyrics on the phone: smaller lines */

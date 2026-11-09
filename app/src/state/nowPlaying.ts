@@ -18,9 +18,14 @@ export interface NowPlayingUi {
   view: NpView
   /** the carousel is in reorder mode (drag songs by their handle, drop on Remove) */
   reorder: boolean
+  /**
+   * Phone: the player is being dragged between the mini card and full screen (0 = mini, 1 = full),
+   * by the mini player's handle or the full-screen header; null when nobody is dragging.
+   */
+  lift: number | null
 }
 
-let state: NowPlayingUi = { open: false, view: 'np', reorder: false }
+let state: NowPlayingUi = { open: false, view: 'np', reorder: false, lift: null }
 const listeners = new Set<() => void>()
 function set(patch: Partial<NowPlayingUi>) {
   state = { ...state, ...patch }
@@ -91,6 +96,11 @@ export const nowPlayingStore = {
   closeReorder() {
     if (state.reorder) set({ reorder: false })
   },
+  /** Drag progress between the mini card (0) and full screen (1); null ends the drag. */
+  setLift(lift: number | null) {
+    const v = lift === null ? null : Math.max(0, Math.min(1, lift))
+    if (v !== state.lift) set({ lift: v })
+  },
   /** Nothing to show (queue cleared, signed out): close without touching history beyond our entry. */
   reset() {
     if (state.open && hasEntry()) window.history.back()
@@ -101,7 +111,7 @@ export const nowPlayingStore = {
 onAccountReset(() => {
   if (hasEntry()) window.history.replaceState(null, '')
   pendingHref = null
-  set({ open: false, view: 'np', reorder: false })
+  set({ open: false, view: 'np', reorder: false, lift: null })
 })
 
 export function useNowPlayingUi(): NowPlayingUi {

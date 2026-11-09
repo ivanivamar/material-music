@@ -1,7 +1,8 @@
 /**
  * Reorder mode for the queue carousel (Nov 2026 carousel player).
  *
- * - Desktop: a horizontal strip of equal pills, the drag handle at the top centre of each.
+ * - Desktop: a short horizontal strip of square covers with the title under each, the drag handle at
+ *   the top centre of the cover. The mouse wheel scrolls it sideways (smoothly), no Shift needed.
  *   Phone: a vertical list of rows, the handle on the right.
  * - Songs move only by their handle (or arrive in hand from a long press on the carousel, grab.ts).
  *   The others slide apart to open a gap where the song will land (0.3s), and close it again.
@@ -27,9 +28,9 @@ import './carousel.css'
 
 export type ReorderAxis = 'x' | 'y'
 
-const GAP = 8
-/** pill width (strip) / row height (list) */
-const SIZE: Record<ReorderAxis, number> = { x: 120, y: 64 }
+/** tile width (strip) / row height (list), and the gap between them */
+const SIZE: Record<ReorderAxis, number> = { x: 144, y: 64 }
+const GAPS: Record<ReorderAxis, number> = { x: 16, y: 8 }
 /** auto-scroll: edge band (px) and top speed (px per frame) */
 const EDGE = 64
 const SPEED = 14
@@ -53,6 +54,7 @@ export function ReorderView({ axis }: { axis: ReorderAxis }) {
   const edits = useQueueEdits()
   const count = p.queue.length
   const size = SIZE[axis]
+  const GAP = GAPS[axis]
   const pitch = size + GAP
   const horizontal = axis === 'x'
 
@@ -88,6 +90,31 @@ export function ReorderView({ axis }: { axis: ReorderAxis }) {
     // once, on entering reorder mode
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  /* ── strip: the mouse wheel scrolls sideways, smoothly ──────── */
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el || !horizontal) return
+    let target = el.scrollLeft
+    let idle = 0
+    const onWheel = (e: WheelEvent) => {
+      const d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY
+      if (!d) return
+      e.preventDefault()
+      window.clearTimeout(idle)
+      // keep adding to where the last wheel tick was heading, so fast scrolling isn't slowed by restarts
+      const max = el.scrollWidth - el.clientWidth
+      target = Math.max(0, Math.min(max, target + d * (e.deltaMode === 1 ? 40 : 1)))
+      el.scrollTo({ left: target, behavior: 'smooth' })
+      idle = window.setTimeout(() => (target = el.scrollLeft), 250)
+    }
+    target = el.scrollLeft
+    el.addEventListener('wheel', onWheel, { passive: false })
+    return () => {
+      el.removeEventListener('wheel', onWheel)
+      window.clearTimeout(idle)
+    }
+  }, [horizontal])
 
   /* ── drag ──────────────────────────────────────────────────── */
   const insertionFor = (x: number, y: number, from: number, dx: number, dy: number) => {
@@ -132,7 +159,7 @@ export function ReorderView({ axis }: { axis: ReorderAxis }) {
     const g = takeGrab()
     if (!g || g.index === null) return
     const w = horizontal ? size : (scrollRef.current?.clientWidth ?? 320)
-    const h = horizontal ? (scrollRef.current?.clientHeight ?? 160) : size
+    const h = size
     begin(g.index, g.pointerId, g.x, g.y, g.x - w / 2, g.y - h / 2)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -233,9 +260,13 @@ export function ReorderView({ axis }: { axis: ReorderAxis }) {
   return (
     <div className={`rq rq-${axis} ${drag ? 'is-dragging' : ''} ${settle ? 'is-settling' : ''}`} style={{ '--rq-size': `${size}px` } as CSSProperties}>
       <div className="rq-bar">
+        <div className="rq-head">
+          <span className="rq-heading">Reorder queue</span>
+          <span className="rq-hint">{drag ? 'Drop between songs, or on Remove' : `${count} songs · drag by the handle`}</span>
+        </div>
         <div ref={removeRef} className={`rq-remove ${drag ? 'is-armed' : ''} ${drag?.overRemove ? 'is-over' : ''}`} aria-hidden={!drag}>
           <Icon name="delete" />
-          <span>{drag?.overRemove ? 'Release to remove' : drag ? 'Drop here to remove' : 'Drag a song by its handle'}</span>
+          <span>{drag?.overRemove ? 'Release to remove' : drag ? 'Drop here to remove' : 'Remove'}</span>
         </div>
         <Button variant="album" size="md" icon="done" className="rq-done" onClick={() => nowPlayingStore.closeReorder()}>
           Done
@@ -253,6 +284,7 @@ export function ReorderView({ axis }: { axis: ReorderAxis }) {
                 id={p.queue[i]}
                 axis={axis}
                 now={i === p.index}
+                played={i < p.index}
                 hidden={slot < 0}
                 offset={(slot < 0 ? i : slot) * pitch}
                 onHandleDown={onHandleDown(i)}
@@ -273,7 +305,7 @@ export function ReorderView({ axis }: { axis: ReorderAxis }) {
           style={{
             left: drag.x + drag.dx,
             top: drag.y + drag.dy,
-            [horizontal ? 'height' : 'width']: view.cross,
+            ...(horizontal ? {} : { width: view.cross }),
           }}
         />
       )}
@@ -286,6 +318,7 @@ interface ItemProps {
   id: string
   axis: ReorderAxis
   now: boolean
+  played?: boolean
   hidden?: boolean
   offset?: number
   lifted?: boolean
@@ -294,28 +327,29 @@ interface ItemProps {
   onHandleKey?: (e: KeyboardEvent<HTMLButtonElement>) => void
 }
 
-function ReorderItem({ index, id, axis, now, hidden, offset = 0, lifted, style, onHandleDown, onHandleKey }: ItemProps) {
+function ReorderItem({ index, id, axis, now, played, hidden, offset = 0, lifted, style, onHandleDown, onHandleKey }: ItemProps) {
   const item = useQueueItem(id ?? '')
   const pos = axis === 'x' ? `translateX(${offset}px)` : `translateY(${offset}px)`
   return (
     <div
       role={lifted ? undefined : 'listitem'}
-      className={`rq-item pg-anim ${now ? 'is-now' : ''} ${hidden ? 'is-hidden' : ''} ${lifted ? 'is-lifted' : ''}`}
+      className={`rq-item pg-anim ${now ? 'is-now' : ''} ${played ? 'is-played' : ''} ${hidden ? 'is-hidden' : ''} ${lifted ? 'is-lifted' : ''}`}
       data-ri={lifted ? undefined : index}
       style={lifted ? style : { transform: pos }}
       aria-hidden={lifted || undefined}
     >
       <div className="rq-art" aria-hidden>
-        <ItemArt item={item} size={axis === 'x' ? 120 : 48} active={now} />
+        <ItemArt item={item} size={axis === 'x' ? 144 : 48} active={now} />
       </div>
       <div className="rq-text">
-        {now && <span className="rq-now">Now playing</span>}
+        {now && axis === 'y' && <span className="rq-now">Now playing</span>}
         <span className="rq-title">{item.title}</span>
-        {axis === 'y' && item.sub && <span className="rq-sub">{item.sub}</span>}
+        {item.sub && <span className="rq-sub">{played && axis === 'x' ? 'Played' : item.track?.artist ?? item.sub}</span>}
       </div>
       {now ? (
         <span className="rq-pin" title="The playing song stays in place">
           <Icon name="nowPlaying" />
+          {axis === 'x' && <b>Now</b>}
         </span>
       ) : (
         <button

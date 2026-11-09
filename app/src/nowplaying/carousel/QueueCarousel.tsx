@@ -1,8 +1,11 @@
 /**
- * The queue as a Material 3 multi-browse carousel (Nov 2026 carousel player) — one component for the
- * desktop player bar, the phone mini player and the full-screen player:
- *
- *   [played pills] [ HERO: the playing song ] [medium: next] [pill] [pill]
+ * The queue as a Material 3 multi-browse carousel (Nov 2026 carousel player) — one component for every
+ * player surface:
+ *   - `bar`   desktop player bar:      [ HERO: the playing song ] [medium: next] [pill]
+ *   - `mini`  phone mini player:       the same, with the play button and a progress line on the hero
+ *   - `full`  phone full-screen player: a giant hero, one played pill before it, labels above
+ *   - `strip` desktop full-screen player: a short row under the square cover — the next song large,
+ *             the one after medium, then square tiles (the playing song is the big cover above it)
  *
  * - Every card is the cover, full bleed, with the text on a scrim (title + artist on the hero,
  *   title on the medium card, nothing on the pills). The row always fills its width exactly
@@ -10,7 +13,8 @@
  * - Browse, then confirm: wheel / arrow keys / a sideways swipe / a click on another card make that card
  *   the hero, with Play now · Play next · Remove on it; after a few idle seconds (or "Now playing")
  *   the carousel springs back to the playing song. Small cards offer Play next / Remove on hover.
- * - Clicking the playing song's card in the bar / mini player opens the full-screen player.
+ * - Bar: clicking the playing song's card opens the full-screen player. Mini: tapping a card plays it
+ *   (the playing one: play / pause), with a ripple and a small press-in pop; the handle opens full screen.
  * - Holding a card (450 ms) enters reorder mode with that song in hand (grab.ts → ReorderView).
  * - Phone: flick a card up to remove it (Undo in the toast).
  * - While the DJ plays there is no upcoming queue: only played songs and the current one show.
@@ -27,14 +31,14 @@ import { isTouch, useIsPhone } from '../../state/viewport'
 import { albumHref, artistHref } from '../../shell/routes'
 import { IntroSub } from '../../dj/DjIntro'
 import { NpLink } from '../parts'
-import { useProgress, useQueueEdits } from '../player'
+import { nowKicker, useProgress, useQueueEdits } from '../player'
 import { multiBrowse, type CarouselSizes, type Slot } from './layout'
 import { useQueueItem } from './useQueueItem'
 import { ItemArt } from './ItemArt'
 import { grabIntoReorder, LONG_PRESS_MS, LONG_PRESS_SLOP } from './grab'
 import './carousel.css'
 
-export type CarouselVariant = 'bar' | 'mini' | 'full'
+export type CarouselVariant = 'bar' | 'mini' | 'full' | 'strip'
 
 /** Browsing springs back to the playing song after this long without input (ms). */
 const SPRING_BACK = 4000
@@ -44,18 +48,23 @@ const SWIPE_STEP = 90
 const SWIPE_MIN = 36
 const FLICK_UP = 50
 
-/** Sizes per surface, from the measured width / card height (all px). */
-function sizesFor(variant: CarouselVariant, w: number, h: number, phone: boolean): CarouselSizes {
+/** Sizes per surface, from the measured width (px). `morph` (phone full screen only) blends from the
+ *  mini player's sizes (0) to the full screen's (1) while the player is being dragged open / closed. */
+function sizesFor(variant: CarouselVariant, w: number, morph: number): CarouselSizes {
   if (variant === 'bar') return { hero: Math.min(280, Math.round(w * 0.58)), med: 120, small: 48, gap: 8, prev: 0 }
-  if (variant === 'mini') return { hero: Math.max(160, w - 134), med: 82, small: 32, gap: 8, prev: 0 }
-  if (phone) return { hero: Math.min(w - 80, 360), med: 72, small: 40, gap: 8, prev: 1 }
-  return { hero: Math.max(240, Math.min(600, Math.round(h * 0.87), w - 220)), med: Math.min(300, Math.round(w * 0.22)), small: 88, gap: 8, prev: 2 }
+  if (variant === 'strip') return { hero: 300, med: 200, small: 112, gap: 8, prev: 0 }
+  const mini = { hero: Math.max(160, w - 126), med: 82, small: 32 }
+  if (variant === 'mini') return { ...mini, gap: 8, prev: 0 }
+  const full = { hero: Math.min(w - 80, 360), med: 72, small: 40 }
+  const m = Math.max(0, Math.min(1, morph))
+  const mix = (a: number, b: number) => Math.round(a + (b - a) * m)
+  return { hero: mix(mini.hero, full.hero), med: mix(mini.med, full.med), small: mix(mini.small, full.small), gap: 8, prev: m > 0.5 ? 1 : 0 }
 }
 
 type Group = 'played' | 'now' | 'next'
 const GROUP_LABEL: Record<Group, string> = { played: 'Played', now: 'Now playing', next: 'Up next' }
 
-export function QueueCarousel({ variant, className }: { variant: CarouselVariant; className?: string }) {
+export function QueueCarousel({ variant, className, morph = 1 }: { variant: CarouselVariant; className?: string; morph?: number }) {
   const p = usePlayer()
   const dj = useDjView()
   const phone = useIsPhone()
@@ -64,14 +73,16 @@ export function QueueCarousel({ variant, className }: { variant: CarouselVariant
   const count = p.index < 0 ? 0 : dj.on ? p.index + 1 : p.queue.length
 
   /* ── browse ─────────────────────────────────────────── */
+  // the card the carousel rests on: the playing song (the strip, under the big cover: the next one)
+  const anchor = variant === 'strip' ? Math.min(p.index + 1, Math.max(0, count - 1)) : p.index
   const [browse, setBrowse] = useState<number | null>(null)
-  if (browse !== null && (browse === p.index || browse >= count)) setBrowse(null)
-  const focus = browse ?? p.index
+  if (browse !== null && (browse === anchor || browse >= count)) setBrowse(null)
+  const focus = browse ?? anchor
   const hovering = useRef(false)
   const springRef = useRef(0)
   const browseTo = (i: number | null) => {
     window.clearTimeout(springRef.current)
-    const next = i === null || i === p.index ? null : Math.max(0, Math.min(count - 1, i))
+    const next = i === null || i === anchor ? null : Math.max(0, Math.min(count - 1, i))
     setBrowse(next)
   }
   useEffect(() => {
@@ -97,8 +108,9 @@ export function QueueCarousel({ variant, className }: { variant: CarouselVariant
     return () => ro.disconnect()
   }, [])
   const labels = variant === 'full'
-  const cardH = Math.max(0, box.h - (labels ? 28 : 0))
-  const slots = box.w > 0 && count > 0 ? multiBrowse(count, focus, box.w, sizesFor(variant, box.w, cardH, phone)) : []
+  const labelSpace = labels ? 28 * Math.max(0, Math.min(1, morph)) : 0
+  const cardH = Math.max(0, box.h - labelSpace)
+  const slots = box.w > 0 && count > 0 ? multiBrowse(count, focus, box.w, sizesFor(variant, box.w, morph)) : []
   const groupOf = (i: number): Group => (i < p.index ? 'played' : i === p.index ? 'now' : 'next')
 
   /* ── gestures: wheel, swipe, flick up, long press ───── */
@@ -178,6 +190,12 @@ export function QueueCarousel({ variant, className }: { variant: CarouselVariant
       swallowClick.current = false
       return
     }
+    // mini player: a tap plays that song (the playing one: play / pause)
+    if (variant === 'mini') {
+      browseTo(null)
+      playerStore.jump(i)
+      return
+    }
     if (i === focus) {
       if (i === p.index && variant !== 'full') nowPlayingStore.open('np')
       return
@@ -189,7 +207,8 @@ export function QueueCarousel({ variant, className }: { variant: CarouselVariant
   return (
     <div
       ref={vpRef}
-      className={`qc qc-${variant} ${phone ? 'is-phone' : ''} ${className ?? ''}`}
+      className={`qc qc-${variant} ${phone ? 'is-phone' : ''} ${morph < 1 ? 'is-morphing' : ''} ${className ?? ''}`}
+      style={{ '--qc-morph': morph } as CSSProperties}
       role="list"
       aria-label="Queue"
       onWheel={onWheel}
@@ -219,6 +238,7 @@ export function QueueCarousel({ variant, className }: { variant: CarouselVariant
             browsing={browse !== null}
             height={cardH}
             label={label}
+            next={s.index === p.index + 1}
             canEdit={!dj.on}
             onClick={() => onCardClick(s.index)}
             onPlayNow={() => {
@@ -237,9 +257,9 @@ export function QueueCarousel({ variant, className }: { variant: CarouselVariant
         )
       })}
       {browse !== null &&
-        (variant === 'full' ? (
-          <Button variant="album" size="md" icon="nowPlaying" className="qc-back" onClick={() => browseTo(null)}>
-            Now playing
+        (variant === 'full' || variant === 'strip' ? (
+          <Button variant="album" size="sm" icon="nowPlaying" className="qc-back" onClick={() => browseTo(null)}>
+            {variant === 'strip' ? 'Back to up next' : 'Now playing'}
           </Button>
         ) : (
           <IconButton icon="nowPlaying" label="Back to the playing song" size="sm" className="qc-back" onClick={() => browseTo(null)} />
@@ -257,6 +277,8 @@ interface CardProps {
   browsing: boolean
   height: number
   label: string | null
+  /** the song right after the playing one */
+  next: boolean
   canEdit: boolean
   onClick: () => void
   onPlayNow: () => void
@@ -264,7 +286,7 @@ interface CardProps {
   onRemove: () => void
 }
 
-function CarouselCard({ slot, variant, id, group, focused, browsing, height, label, canEdit, onClick, onPlayNow, onPlayNext, onRemove }: CardProps) {
+function CarouselCard({ slot, variant, id, group, focused, browsing, height, label, next, canEdit, onClick, onPlayNow, onPlayNext, onRemove }: CardProps) {
   const p = usePlayer()
   const dj = useDjView()
   const item = useQueueItem(id)
@@ -273,40 +295,47 @@ function CarouselCard({ slot, variant, id, group, focused, browsing, height, lab
   const hero = slot.kind === 'hero'
   const showText = hero || (slot.kind === 'med' && slot.w >= 90)
   const full = variant === 'full'
-  const actions = hero && !now && canEdit
-  const quick = !hero && group !== 'now' && canEdit && variant !== 'mini' && !isTouch() && slot.w >= 44
+  const strip = variant === 'strip'
+  const mini = variant === 'mini'
+  // the mini player plays on tap, so no browse actions there
+  const actions = hero && !now && canEdit && !mini
+  const quick = !hero && group !== 'now' && canEdit && !mini && !isTouch() && slot.w >= 44
+  // mini: a press-in pop on the card that was tapped to play (the ripple itself is the global one, design/ripple.ts)
+  const [pop, setPop] = useState(false)
+  const click = () => {
+    if (mini && !now) setPop(true)
+    onClick()
+  }
 
   const kicker = now
-    ? p.remote
-      ? `On ${p.remote.name}`
-      : dj.on
-        ? dj.intro
-          ? 'DJ · intro'
-          : dj.addedByUser
-            ? 'DJ · added by you'
-            : 'DJ'
-        : p.context?.kind === 'radio'
-          ? 'Radio'
-          : p.playing
-            ? 'Now playing'
-            : 'Paused'
-    : GROUP_LABEL[group]
+    ? nowKicker(p, dj)
+    : strip && group === 'next' && !next
+      ? 'Later'
+      : GROUP_LABEL[group]
 
-  const aria = now
-    ? `${p.playing ? 'Playing' : 'Paused'}: ${title}${track ? ` by ${track.artist}` : ''}${variant === 'full' ? '' : '. Open the player.'}`
-    : `${title}${track ? ` by ${track.artist}` : ''} · ${GROUP_LABEL[group]}`
+  const by = track ? ` by ${track.artist}` : ''
+  const aria = mini
+    ? `${now ? (p.playing ? 'Pause' : 'Play') : 'Play'} ${title}${by}`
+    : now
+      ? `${p.playing ? 'Playing' : 'Paused'}: ${title}${by}${variant === 'bar' ? '. Open the player.' : ''}`
+      : `${title}${by} · ${GROUP_LABEL[group]}`
 
   const style = { '--qc-x': `${slot.x}px`, '--qc-w': `${slot.w}px`, '--qc-h': `${height}px` } as CSSProperties
 
   return (
-    <div role="listitem" className={`qc-card pg-anim is-${slot.kind} is-${group} ${focused ? 'is-focus' : ''} ${hero && now && p.playing ? 'is-playing' : ''}`} style={style} data-qi={slot.index}>
+    <div
+      role="listitem"
+      className={`qc-card pg-anim is-${slot.kind} is-${group} ${focused ? 'is-focus' : ''} ${hero && now && p.playing ? 'is-playing' : ''} ${browsing && hero ? 'is-browsed' : ''}`}
+      style={style}
+      data-qi={slot.index}
+    >
       {label && <span className={`qc-label is-${group}`}>{label}</span>}
-      <div className="qc-face">
+      <div className={`qc-face ${pop ? 'is-pop' : ''}`} onAnimationEnd={(e) => e.target === e.currentTarget && setPop(false)}>
         <div className="qc-art" aria-hidden>
           <ItemArt item={item} size={Math.min(slot.w, height)} active={now} />
         </div>
         {showText && <span className="qc-scrim" aria-hidden />}
-        <button type="button" className="qc-hit" aria-label={aria} aria-current={now ? 'true' : undefined} onClick={onClick} />
+        <button type="button" className="qc-hit" aria-label={aria} aria-current={now ? 'true' : undefined} onClick={click} />
 
         {showText && (
           <div className="qc-text">
@@ -336,10 +365,11 @@ function CarouselCard({ slot, variant, id, group, focused, browsing, height, lab
           </div>
         )}
 
-        {hero && now && !intro && track && variant !== 'mini' && !browsing && <LikeButton trackId={track.id} size="md" ink className="qc-like" />}
+        {hero && now && !intro && track && (full || variant === 'bar') && !browsing && <LikeButton trackId={track.id} size="md" ink className="qc-like" />}
 
-        {hero && now && variant === 'mini' && (
-          <>
+        {/* mini player controls; the phone full screen keeps them while it morphs from / into the mini player */}
+        {hero && now && (mini || full) && (
+          <span className="qc-mini-ctl">
             <CookieButton
               size={48}
               iconSize={24}
@@ -351,7 +381,7 @@ function CarouselCard({ slot, variant, id, group, focused, browsing, height, lab
               onClick={() => playerStore.toggle()}
             />
             <MiniProgress />
-          </>
+          </span>
         )}
 
         {actions && (

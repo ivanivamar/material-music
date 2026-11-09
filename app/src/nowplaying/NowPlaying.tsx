@@ -1,38 +1,42 @@
 /**
- * Full-screen player (Nov 2026 carousel player): the queue *is* the full-screen player.
+ * Full-screen player (Nov 2026 carousel player).
  *
- * Desktop:                                         Phone:
- *   close · PLAYING FROM … · quality devices more    close · PLAYING FROM … · devices more
- *   [ played · HERO · next · pills ][ lyrics ]       [ played · HERO · next ]
- *   prev play next ~~~~ seek ~~~~ shuffle repeat      ~~~~ seek ~~~~
- *   DJ lyrics reorder volume                         shuffle · prev play next · repeat
- *                                                    [ lyrics, when on ]
- *                                                    Lyrics · DJ · Reorder
+ * Desktop — square hero + info, the queue as a strip underneath:
+ *   close · PLAYING FROM … · quality devices more
+ *   [ square cover ]  NOW PLAYING / title ♥ / artist · album / ~~~ seek ~~~        [ lyrics ]
+ *                     shuffle ⏮ ▶ ⏭ repeat | lyrics reorder DJ
+ *   Up next ─ [ next, large ][ after, medium ][■][■][■]…   (scroll back for the played songs)
+ *   Reorder: the hero row gets smaller and the strip becomes the drag strip (ReorderView, axis x).
  *
- * - Background: the cover, hugely blurred (.np-bg), violet during the DJ's own scenes.
- * - Lyrics slide in beside the carousel (desktop, 520px; the carousel narrows) or under the controls
- *   (phone; the carousel shrinks). While the DJ speaks an intro the same slot shows the intro (the
- *   spoken line, word by word); the lyrics toggle switches it to the line as lyric lines.
- * - Reorder swaps the carousel for the reorder strip (desktop) / list (phone): ReorderView.
- * - The DJ's start view (DJ off → DJ button) takes the whole body.
- * Opened from the player bar / mini player; Esc, Back or (phone) a swipe down closes it.
+ * Phone — the queue carousel is the hero:
+ *   close · PLAYING FROM … · devices more / [ carousel ] / seek / shuffle ⏮ ▶ ⏭ repeat / [ lyrics ]
+ *   / Lyrics · DJ · Reorder. It morphs out of the mini card: while the mini player's handle (or this
+ *   header) is dragged, --np-t runs 0 → 1 and the layout blends between the two (lift.ts).
+ *
+ * Background: the cover, hugely blurred (.np-bg), violet during the DJ's own scenes. While the DJ speaks
+ * an intro the lyrics slot shows the intro; the DJ's start view takes the whole body.
+ * Opened from the player bar / mini player; Esc, Back or (phone) dragging the header down closes it.
  */
-import { useEffect, useRef, useState } from 'react'
-import { IconButton, WaveSeek } from '../components/ui'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import { AlbumEq, IconButton, WaveSeek } from '../components/ui'
+import { LikeButton } from '../components/LikeButton'
 import { useMotion } from '../state/motion'
 import { nowPlayingStore, useNowPlayingUi } from '../state/nowPlaying'
-import { isIntroId, playerStore } from '../state/player'
+import { playerStore, isIntroId } from '../state/player'
 import { isTouch, useIsPhone } from '../state/viewport'
+import { albumHref, artistHref } from '../shell/routes'
 import { Lyrics } from './Lyrics'
-import { useSwipeDown } from './swipe'
-import { LyricsToggle, NpLink, QualityPill, RepeatToggle, ReorderToggle, ShuffleToggle, Transport, VolumeControl } from './parts'
-import { contextLine, useCurrent, useDuration } from './player'
+import { useLiftDrag } from './lift'
+import { LyricsToggle, NpLink, QualityPill, RepeatToggle, ReorderToggle, ShuffleToggle, Transport } from './parts'
+import { contextLine, nowKicker, useCurrent, useDuration } from './player'
 import { QueueCarousel } from './carousel/QueueCarousel'
 import { ReorderView } from './carousel/ReorderView'
+import { useQueueItem } from './carousel/useQueueItem'
+import { ItemArt } from './carousel/ItemArt'
 import { actions } from '../actions/actions'
 import { useDjUi, useDjView, djUi } from '../state/djUi'
 import { DjIcon } from '../dj/DjMark'
-import { DjIntroInfo, DjIntroLyrics } from '../dj/DjIntro'
+import { DjIntroInfo, DjIntroLyrics, IntroSub } from '../dj/DjIntro'
 import { DjButton } from '../dj/DjButton'
 import { DjStart } from '../dj/DjStart'
 import { registerBack } from '../native/backButton'
@@ -43,28 +47,30 @@ import { trackOf, albumOf } from '../state/previews'
 import '../dj/dj.css'
 import './nowplaying.css'
 
-const closeNp = () => nowPlayingStore.close()
+/** how long the open / close (and the phone morph's settle) takes; matches nowplaying.css */
+const SETTLE_MS = 460
 
 export function NowPlaying() {
   const ui = useNowPlayingUi()
   const motion = useMotion()
-  // keep mounted through the exit animation
-  const [mounted, setMounted] = useState(ui.open)
-  if (ui.open && !mounted) setMounted(true)
-  if (!ui.open && mounted && !motion) setMounted(false)
+  // mounted while open, while being dragged open, and through the closing animation
+  const want = ui.open || ui.lift !== null
+  const [mounted, setMounted] = useState(want)
+  if (want && !mounted) setMounted(true)
+  if (!want && mounted && !motion) setMounted(false)
   useEffect(() => {
-    if (ui.open || !mounted || !motion) return
-    const t = window.setTimeout(() => setMounted(false), 420)
+    if (want || !mounted || !motion) return
+    const t = window.setTimeout(() => setMounted(false), SETTLE_MS)
     return () => window.clearTimeout(t)
-  }, [ui.open, mounted, motion])
+  }, [want, mounted, motion])
 
   if (!mounted) return null
-  return <NowPlayingScreen closing={!ui.open} />
+  return <NowPlayingScreen closing={!want} />
 }
 
 function NowPlayingScreen({ closing }: { closing: boolean }) {
   const ui = useNowPlayingUi()
-  const { p, id, track } = useCurrent()
+  const { p, id, track, album } = useCurrent()
   const { data } = useLibrary()
   const dj = useDjView()
   const djui = useDjUi()
@@ -73,10 +79,21 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
   const intro = isIntroId(id)
   const startView = djui.start
   const hasSomething = !!track || intro
+  const item = useQueueItem(id ?? '')
   // the background follows the playing song; during an intro, the song it hands over to
   const bgTrack = intro ? (p.queue[p.index + 1] && trackOf(data, p.queue[p.index + 1])) || null : track
   const cover = useCover(bgTrack ? albumOf(data, bgTrack.albumId)?.cover : undefined)
   const closeRef = useRef<HTMLButtonElement>(null)
+  const headDrag = useLiftDrag('full')
+
+  // phone morph: 0 = the mini card, 1 = full screen. Opening animates 0 → 1 from the first frame.
+  const [entered, setEntered] = useState(false)
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => setEntered(true))
+    return () => cancelAnimationFrame(raf)
+  }, [])
+  const dragging = ui.lift !== null
+  const t = ui.lift ?? (closing || !entered ? 0 : 1)
 
   // focus in on open, back to whatever opened it on close
   useEffect(() => {
@@ -108,18 +125,14 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
 
   const reorder = ui.reorder && !startView && !dj.on
   const ly = ui.view === 'lyrics' && !startView && !reorder
-  // the side slot: lyrics, or the intro while the DJ speaks
-  const side = !reorder && !startView && (ly || intro)
-
-  // phone: swipe down anywhere (outside sliders, lyrics, the reorder list) to close
-  const rootRef = useRef<HTMLDivElement>(null)
-  useSwipeDown(rootRef, phone && !closing && !startView && !reorder, closeNp)
+  // the lyrics slot: lyrics, or the intro while the DJ speaks
+  const side = !reorder && !startView && (ly || intro) && !(phone && dragging)
 
   const ctx = contextLine(p.context)
   const backToNp = startView && hasSomething
   const djScene = startView || intro
 
-  const seek = <WaveSeek className="np-seek" below={phone} position={p.position} duration={duration} playing={p.playing} height={phone ? 16 : 14} onSeek={(s) => playerStore.seek(s)} />
+  const seek = <WaveSeek className="np-seek" below position={p.position} duration={duration} playing={p.playing} height={phone ? 16 : 14} onSeek={(s) => playerStore.seek(s)} />
 
   const sidePanel = side && (
     <aside className="np-side" aria-label={ly ? 'Lyrics' : 'DJ intro'}>
@@ -146,20 +159,47 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
     </aside>
   )
 
+  const cls = [
+    'np pg-anim',
+    closing && 'is-closing',
+    phone && 'is-phone',
+    phone && dragging && 'is-dragging',
+    side && 'has-side',
+    reorder && 'is-reorder',
+    djScene && 'is-dj-scene',
+    startView && 'is-dj-start',
+  ]
+    .filter(Boolean)
+    .join(' ')
+
   return (
-    <div
-      ref={rootRef}
-      className={`np pg-anim ${closing ? 'is-closing' : ''} ${phone ? 'is-phone' : ''} ${side ? 'has-side' : ''} ${reorder ? 'is-reorder' : ''} ${djScene ? 'is-dj-scene' : ''} ${startView ? 'is-dj-start' : ''}`}
-      role="dialog"
-      aria-modal="true"
-      aria-label={startView ? 'DJ' : 'Now playing'}
-    >
+    <div className={cls} style={phone ? ({ '--np-t': t } as CSSProperties) : undefined} role="dialog" aria-modal="true" aria-label={startView ? 'DJ' : 'Now playing'}>
       <div className="np-bg" aria-hidden>
         {cover && <img key={cover} className="np-bg-img mm-anim" src={cover} alt="" />}
         <span className="np-bg-tone" />
       </div>
 
-      <header className="np-head">
+      {/* phone: the mini card's handle band, fading out as the player grows */}
+      {phone && (
+        <div
+          className="np-band"
+          aria-hidden
+          onPointerDown={headDrag.onPointerDown}
+          onPointerMove={headDrag.onPointerMove}
+          onPointerUp={headDrag.onPointerUp}
+          onPointerCancel={headDrag.onPointerCancel}
+        >
+          <span />
+        </div>
+      )}
+
+      <header
+        className="np-head"
+        onPointerDown={phone ? headDrag.onPointerDown : undefined}
+        onPointerMove={phone ? headDrag.onPointerMove : undefined}
+        onPointerUp={phone ? headDrag.onPointerUp : undefined}
+        onPointerCancel={phone ? headDrag.onPointerCancel : undefined}
+      >
         <IconButton
           ref={closeRef}
           icon={backToNp ? 'back' : 'chevD'}
@@ -193,47 +233,96 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
 
       {startView && <DjStart phone={phone} onBack={() => (hasSomething ? djUi.closeStart() : nowPlayingStore.close())} />}
 
-      {hasSomething && !startView && (
+      {hasSomething && !startView && phone && (
         <>
           <div className="np-body">
             <section className="np-stage" aria-label="Queue">
-              {reorder ? <ReorderView axis={phone ? 'y' : 'x'} /> : <QueueCarousel variant="full" />}
+              {reorder ? <ReorderView axis="y" /> : <QueueCarousel variant="full" morph={t} />}
             </section>
-            {!phone && sidePanel}
           </div>
+          {!reorder && (
+            <div className="np-phone-controls">
+              {seek}
+              <div className="np-transport-row">
+                <ShuffleToggle size="lg" />
+                <Transport play={72} skip={56} />
+                <RepeatToggle size="lg" />
+              </div>
+            </div>
+          )}
+          {sidePanel}
+          <div className="np-bottom">
+            <LyricsToggle text />
+            <DjButton variant="phone" />
+            <ReorderToggle text />
+          </div>
+        </>
+      )}
 
-          {phone ? (
-            <>
-              {!reorder && (
-                <div className="np-phone-controls">
-                  {seek}
-                  <div className="np-transport-row">
-                    <ShuffleToggle size="lg" />
-                    <Transport play={72} skip={56} />
-                    <RepeatToggle size="lg" />
+      {hasSomething && !startView && !phone && (
+        <>
+          <div className="np-main">
+            <section className="np-hero" aria-label="Now playing">
+              <div className="np-cover">
+                <ItemArt item={item} size={440} active />
+              </div>
+              <div className="np-info">
+                <div className="np-text">
+                  <span className={`np-kicker ${dj.on ? 'is-dj' : ''}`}>
+                    {!intro && <AlbumEq height={12} on={p.playing} />}
+                    {nowKicker(p, dj)}
+                  </span>
+                  <div className="np-title-row">
+                    <h1 className="np-title" title={item.title}>
+                      {item.title}
+                    </h1>
+                    {track && <LikeButton trackId={track.id} size="lg" ink className="np-like" />}
+                  </div>
+                  <div className="np-by">
+                    {intro && id ? (
+                      <IntroSub item={id} />
+                    ) : (
+                      track && (
+                        <>
+                          <NpLink href={artistHref(track.artistId)}>{track.artist}</NpLink>
+                          {album && (
+                            <>
+                              {' · '}
+                              <NpLink href={albumHref(album.id)}>{album.title}</NpLink>
+                            </>
+                          )}
+                        </>
+                      )
+                    )}
                   </div>
                 </div>
-              )}
-              {sidePanel}
-              <div className="np-bottom">
-                <LyricsToggle text />
-                <DjButton variant="phone" />
-                <ReorderToggle text />
+                {seek}
+                <div className="np-row">
+                  <ShuffleToggle />
+                  <Transport play={64} skip={48} />
+                  <RepeatToggle />
+                  <span className="np-sep" aria-hidden />
+                  <LyricsToggle />
+                  <ReorderToggle />
+                  <DjButton variant="np" />
+                </div>
               </div>
-            </>
+            </section>
+            {sidePanel}
+          </div>
+
+          {reorder ? (
+            <section className="np-queue is-reorder" aria-label="Reorder queue">
+              <ReorderView axis="x" />
+            </section>
           ) : (
-            <div className="np-controls">
-              <Transport play={64} skip={48} />
-              {seek}
-              <ShuffleToggle />
-              <RepeatToggle />
-              <span className="np-sep" aria-hidden />
-              <DjButton variant="np" />
-              <LyricsToggle />
-              <ReorderToggle />
-              <span className="np-sep" aria-hidden />
-              <VolumeControl width={96} />
-            </div>
+            <section className="np-queue" aria-label="Queue">
+              <div className="np-queue-head">
+                <span className="np-queue-title">{dj.on ? 'The DJ picks what plays next' : 'Up next'}</span>
+                <span className="np-queue-hint">{dj.on ? 'Played songs and the current one' : 'Scroll or click to browse · hold a song to reorder'}</span>
+              </div>
+              <QueueCarousel variant="strip" className="np-strip" />
+            </section>
           )}
         </>
       )}

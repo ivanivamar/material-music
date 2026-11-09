@@ -8,7 +8,7 @@ import { useLibrary, type Album, type Track } from '../state/library'
 import { isIntroId, playerStore, usePlayer, type PlayContext, type PlayerState } from '../state/player'
 import { albumHref, artistHref, mixHref, playlistHref } from '../shell/routes'
 import { parseRadioId } from '../lib/mixing'
-import { djIntroInfo } from '../state/dj'
+import { djIntroInfo, type DjView } from '../state/dj'
 import { useIntroAudio } from '../dj/voice'
 import { useIntroProgress } from '../dj/live'
 import { trackOf, albumOf } from '../state/previews'
@@ -26,6 +26,14 @@ export function useCurrent(): Current {
   const id = p.index >= 0 ? (p.queue[p.index] ?? null) : null
   const track = (id && trackOf(data, id)) || null
   return { p, id, track, album: track ? albumOf(data, track.albumId) : undefined }
+}
+
+/** The playing song's state line: "On Kitchen speaker", "DJ · intro", "Radio", "Now playing", "Paused". */
+export function nowKicker(p: PlayerState, dj: DjView): string {
+  if (p.remote) return `On ${p.remote.name}`
+  if (dj.on) return dj.intro ? 'DJ · intro' : dj.addedByUser ? 'DJ · added by you' : 'DJ'
+  if (p.context?.kind === 'radio') return 'Radio'
+  return p.playing ? 'Now playing' : 'Paused'
 }
 
 /** Length of what's playing (s): the song, or the DJ's spoken intro. */
