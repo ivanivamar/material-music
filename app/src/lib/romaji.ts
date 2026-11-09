@@ -7,11 +7,15 @@
  * works offline. Offline with nothing cached: no romaji line, the lyrics show as before.
  *
  * Only lyrics with kana count as Japanese (kanji-only lines could be Chinese).
+ *
+ * Korean (Hangul) is romanised right here in the app (lib/hangul.ts, Revised Romanization): no
+ * server, no cache needed, works offline. Lyrics mixing both get each line in its own system.
  */
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { idbGet, idbSet } from './idb'
 import { hash } from './mixing'
 import { isNative } from '../native/bridge'
+import { HANGUL, romanizeKorean } from './hangul'
 
 const API_BASE: string = isNative ? ((import.meta.env.VITE_PELAGIC_API as string | undefined) ?? 'https://material-music-app.web.app/') : import.meta.env.BASE_URL
 
@@ -20,6 +24,16 @@ const JA = /[぀-ヿ㐀-䶿一-鿿々]/
 
 /** Lyrics are Japanese when some line has kana in it. */
 export const isJapanese = (lines: readonly string[]) => lines.some((l) => KANA.test(l))
+/** Which script the lyrics need romanising from (null: neither Japanese nor Korean). */
+export function lyricsScript(lines: readonly string[]): 'ja' | 'ko' | null {
+  if (isJapanese(lines)) return 'ja'
+  return lines.some((l) => HANGUL.test(l)) ? 'ko' : null
+}
+/** Korean lines romanised in the app ("" for lines without Hangul). */
+const koreanLines = (lines: readonly string[]) => lines.map((l) => romanizeKorean(l))
+/** Fill in Korean lines the Japanese pass left empty (lyrics with both). */
+const withKorean = (lines: readonly string[], ja: string[]) => ja.map((r, i) => r || romanizeKorean(lines[i]))
+
 /** This line has something to romanise. */
 export const hasJapanese = (line: string) => JA.test(line)
 
@@ -55,7 +69,9 @@ export type RomajiState = { status: 'off' } | { status: 'loading' } | { status: 
  * turned off or the lyrics aren't Japanese.
  */
 export function useRomaji(lines: readonly string[] | null, on: boolean): RomajiState {
-  const japanese = !!lines && on && isJapanese(lines)
+  const script = lines && on ? lyricsScript(lines) : null
+  const korean = useMemo(() => (script === 'ko' && lines ? koreanLines(lines) : null), [script, lines])
+  const japanese = script === 'ja'
   const key = japanese ? keyOf(lines!) : null
   const [state, setState] = useState<{ key: string | null; value: RomajiState }>({ key: null, value: { status: 'off' } })
   useEffect(() => {
@@ -71,7 +87,7 @@ export function useRomaji(lines: readonly string[] | null, on: boolean): RomajiS
     }
     setState((s) => (s.key === key && s.value.status === 'ready' ? s : { key, value: { status: 'loading' } }))
     p.then(
-      (r) => live && setState({ key, value: r ? { status: 'ready', lines: r } : { status: 'unavailable' } }),
+      (r) => live && setState({ key, value: r ? { status: 'ready', lines: withKorean(lines, r) } : { status: 'unavailable' } }),
       () => live && setState({ key, value: { status: 'unavailable' } }),
     )
     return () => {
@@ -80,6 +96,7 @@ export function useRomaji(lines: readonly string[] | null, on: boolean): RomajiS
     // lines are identified by `key`
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key])
+  if (korean) return { status: 'ready', lines: korean }
   if (!japanese) return { status: 'off' }
   return state.key === key ? state.value : { status: 'loading' }
 }

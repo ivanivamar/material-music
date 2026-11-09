@@ -7,13 +7,13 @@
  * empty void at the start or end of a song. Click/tap a line to seek to it. Wheel or touch-scroll
  * browses freely (with a quick "Sync" pill to jump back), settling back on the sung line after idle.
  * Plain lyrics: an expressive, scrollable stanza column. None: empty state.
- * Japanese lyrics: an optional romaji line under each line (lib/romaji.ts; Romaji toggle in the footer).
+ * Japanese / Korean lyrics: an optional romanised line under each line (lib/romaji.ts; toggle in the footer).
  */
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type TouchEvent, type WheelEvent } from 'react'
 import { EmptyState, Eq, formatTime } from '../components/ui'
 import { Icon } from '../design/icons'
 import { lineAt, parseLyrics, type LyricLine } from '../lib/lrc'
-import { isJapanese, useRomaji, type RomajiState } from '../lib/romaji'
+import { lyricsScript, useRomaji, type RomajiState } from '../lib/romaji'
 import { settingsStore, useSettings } from '../state/settings'
 import type { Track } from '../state/library'
 import { playerStore } from '../state/player'
@@ -56,15 +56,20 @@ const lineOpacity = (i: number, cur: number, browsing: boolean) => {
 
 const IDLE_MS = 3800
 
-/** Romaji on/off in the lyrics footer (only for Japanese lyrics); the setting is shared PC ↔ phone. */
+/**
+ * Romanisation on/off in the lyrics footer (Japanese: romaji, Korean: Revised Romanization); the
+ * setting is shared PC ↔ phone.
+ */
 function RomajiToggle({ lines, romaji }: { lines: LyricLine[]; romaji: RomajiState }) {
   const { romaji: on } = useSettings()
-  if (!isJapanese(lines.map((l) => l.text))) return null
-  const label = on ? (romaji.status === 'loading' ? 'Romaji…' : romaji.status === 'unavailable' ? 'Romaji · offline' : 'Romaji') : 'Romaji'
+  const script = lyricsScript(lines.map((l) => l.text))
+  if (!script) return null
+  const name = script === 'ko' ? 'Romanized' : 'Romaji'
+  const label = on ? (romaji.status === 'loading' ? `${name}…` : romaji.status === 'unavailable' ? `${name} · offline` : name) : name
   return (
     <button type="button" className={`ly-romaji ${on ? 'is-on' : ''}`} aria-pressed={on} onClick={() => settingsStore.set('romaji', !on)} title={romaji.status === 'unavailable' ? 'Needs the internet the first time for this song' : undefined}>
       <span className="ly-romaji-a" aria-hidden>
-        あ→a
+        {script === 'ko' ? '가→ga' : 'あ→a'}
       </span>
       {label}
     </button>
@@ -216,7 +221,7 @@ function SyncedLyrics({ lines, position, playing, trackId, romaji }: { lines: Ly
                     <>
                       <span className="ly-text">{l.text}</span>
                       {roma?.[i] && (
-                        <span className="ly-roma" lang="ja-Latn">
+                        <span className="ly-roma" lang="und-Latn">
                           {roma[i]}
                         </span>
                       )}
@@ -277,7 +282,7 @@ function PlainLyrics({ lines, romaji }: { lines: LyricLine[]; romaji: RomajiStat
               <p key={i}>
                 {l.text}
                 {roma?.[i] && (
-                  <span className="ly-roma" lang="ja-Latn">
+                  <span className="ly-roma" lang="und-Latn">
                     {roma[i]}
                   </span>
                 )}

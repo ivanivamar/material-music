@@ -447,9 +447,9 @@ function LibrarySection() {
       />
       <Row
         tile={<span className="set-romaji-tile">あ</span>}
-        label="Romaji for Japanese lyrics"
-        hint={s.romaji ? 'A romaji line under each Japanese line · also in the lyrics panel' : 'Lyrics show as written'}
-        control={<Toggle label="Romaji for Japanese lyrics" checked={s.romaji} onChange={(v) => settingsStore.set('romaji', v)} />}
+        label="Romanize Japanese and Korean lyrics"
+        hint={s.romaji ? 'Romaji / Revised Romanization under each line · also in the lyrics panel' : 'Lyrics show as written'}
+        control={<Toggle label="Romanize Japanese and Korean lyrics" checked={s.romaji} onChange={(v) => settingsStore.set('romaji', v)} />}
       />
     </SectionGroup>
   )
