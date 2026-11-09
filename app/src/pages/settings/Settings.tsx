@@ -8,7 +8,7 @@
  * full width under their row.
  *
  * Only rows that do something real are here. Unbuilt features (Opus 320, normalisation, crossfade,
- * output device, release notifications, lyric romaji / translation, lock-screen toggle, "Stop the DJ
+ * output device, release notifications, lyric translation, lock-screen toggle, "Stop the DJ
  * when I play an album") remain hidden.
  */
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
@@ -444,6 +444,12 @@ function LibrarySection() {
         label="Look up lyrics for new uploads"
         hint={s.fetchLyrics ? 'Songs without lyrics get them from LRCLIB after upload' : 'Only lyrics from the file tags'}
         control={<Toggle label="Look up lyrics for new uploads" checked={s.fetchLyrics} onChange={(v) => settingsStore.set('fetchLyrics', v)} />}
+      />
+      <Row
+        tile={<span className="set-romaji-tile">あ</span>}
+        label="Romaji for Japanese lyrics"
+        hint={s.romaji ? 'A romaji line under each Japanese line · also in the lyrics panel' : 'Lyrics show as written'}
+        control={<Toggle label="Romaji for Japanese lyrics" checked={s.romaji} onChange={(v) => settingsStore.set('romaji', v)} />}
       />
     </SectionGroup>
   )

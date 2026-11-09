@@ -7,11 +7,14 @@
  * empty void at the start or end of a song. Click/tap a line to seek to it. Wheel or touch-scroll
  * browses freely (with a quick "Sync" pill to jump back), settling back on the sung line after idle.
  * Plain lyrics: an expressive, scrollable stanza column. None: empty state.
+ * Japanese lyrics: an optional romaji line under each line (lib/romaji.ts; Romaji toggle in the footer).
  */
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type TouchEvent, type WheelEvent } from 'react'
 import { EmptyState, Eq, formatTime } from '../components/ui'
 import { Icon } from '../design/icons'
 import { lineAt, parseLyrics, type LyricLine } from '../lib/lrc'
+import { isJapanese, useRomaji, type RomajiState } from '../lib/romaji'
+import { settingsStore, useSettings } from '../state/settings'
 import type { Track } from '../state/library'
 import { playerStore } from '../state/player'
 
@@ -53,7 +56,23 @@ const lineOpacity = (i: number, cur: number, browsing: boolean) => {
 
 const IDLE_MS = 3800
 
-function SyncedLyrics({ lines, position, playing, trackId }: { lines: LyricLine[]; position: number; playing: boolean; trackId: string }) {
+/** Romaji on/off in the lyrics footer (only for Japanese lyrics); the setting is shared PC ↔ phone. */
+function RomajiToggle({ lines, romaji }: { lines: LyricLine[]; romaji: RomajiState }) {
+  const { romaji: on } = useSettings()
+  if (!isJapanese(lines.map((l) => l.text))) return null
+  const label = on ? (romaji.status === 'loading' ? 'Romaji…' : romaji.status === 'unavailable' ? 'Romaji · offline' : 'Romaji') : 'Romaji'
+  return (
+    <button type="button" className={`ly-romaji ${on ? 'is-on' : ''}`} aria-pressed={on} onClick={() => settingsStore.set('romaji', !on)} title={romaji.status === 'unavailable' ? 'Needs the internet the first time for this song' : undefined}>
+      <span className="ly-romaji-a" aria-hidden>
+        あ→a
+      </span>
+      {label}
+    </button>
+  )
+}
+
+function SyncedLyrics({ lines, position, playing, trackId, romaji }: { lines: LyricLine[]; position: number; playing: boolean; trackId: string; romaji: RomajiState }) {
+  const roma = romaji.status === 'ready' ? romaji.lines : null
   const cur = useLineIndex(lines, position, playing)
   const focus = Math.max(cur, 0)
   const vpRef = useRef<HTMLDivElement>(null)
@@ -88,7 +107,7 @@ function SyncedLyrics({ lines, position, playing, trackId }: { lines: LyricLine[
     if (vpRef.current) ro.observe(vpRef.current)
     if (listRef.current) ro.observe(listRef.current)
     return () => ro.disconnect()
-  }, [focus, lines])
+  }, [focus, lines, roma])
 
   // new track: jump, don't glide from the old song's position
   const [shownTrack, setShownTrack] = useState(trackId)
@@ -194,7 +213,14 @@ function SyncedLyrics({ lines, position, playing, trackId }: { lines: LyricLine[
                 <span className="ly-bar" aria-hidden />
                 <span className="ly-body">
                   {l.text ? (
-                    <span className="ly-text">{l.text}</span>
+                    <>
+                      <span className="ly-text">{l.text}</span>
+                      {roma?.[i] && (
+                        <span className="ly-roma" lang="ja-Latn">
+                          {roma[i]}
+                        </span>
+                      )}
+                    </>
                   ) : (
                     <span className={`ly-dots ${isOn && playing ? 'is-playing' : ''}`} aria-label="Instrumental break">
                       <i />
@@ -230,6 +256,7 @@ function SyncedLyrics({ lines, position, playing, trackId }: { lines: LyricLine[
           <span className="ly-badge-dot" />
           SYNCED · LRC
         </span>
+        <RomajiToggle lines={lines} romaji={romaji} />
         <span className="ly-hint">TAP LINE TO SEEK</span>
       </div>
       <span className="sr-only" aria-live="polite">
@@ -239,14 +266,31 @@ function SyncedLyrics({ lines, position, playing, trackId }: { lines: LyricLine[
   )
 }
 
-function PlainLyrics({ lines }: { lines: LyricLine[] }) {
+function PlainLyrics({ lines, romaji }: { lines: LyricLine[]; romaji: RomajiState }) {
+  const roma = romaji.status === 'ready' ? romaji.lines : null
   return (
     <>
       <div className="ly-viewport has-bot-fade">
-        <div className="ly-plain">{lines.map((l, i) => (l.text ? <p key={i}>{l.text}</p> : <p key={i} className="is-gap" aria-hidden />))}</div>
+        <div className="ly-plain">
+          {lines.map((l, i) =>
+            l.text ? (
+              <p key={i}>
+                {l.text}
+                {roma?.[i] && (
+                  <span className="ly-roma" lang="ja-Latn">
+                    {roma[i]}
+                  </span>
+                )}
+              </p>
+            ) : (
+              <p key={i} className="is-gap" aria-hidden />
+            ),
+          )}
+        </div>
       </div>
       <div className="ly-foot">
         <span className="ly-badge is-plain">UNSYNCED · FROM TAGS</span>
+        <RomajiToggle lines={lines} romaji={romaji} />
       </div>
     </>
   )
@@ -254,6 +298,9 @@ function PlainLyrics({ lines }: { lines: LyricLine[] }) {
 
 export function Lyrics({ track, position, playing }: { track: Track; position: number; playing: boolean }) {
   const lyrics = useMemo(() => parseLyrics(track.lyrics), [track.lyrics])
+  const texts = useMemo(() => lyrics?.lines.map((l) => l.text) ?? null, [lyrics])
+  const { romaji: romajiOn } = useSettings()
+  const romaji = useRomaji(texts, romajiOn)
   if (!lyrics) {
     return (
       <div className="ly-empty">
@@ -261,5 +308,5 @@ export function Lyrics({ track, position, playing }: { track: Track; position: n
       </div>
     )
   }
-  return lyrics.synced ? <SyncedLyrics lines={lyrics.lines} position={position} playing={playing} trackId={track.id} /> : <PlainLyrics lines={lyrics.lines} />
+  return lyrics.synced ? <SyncedLyrics lines={lyrics.lines} position={position} playing={playing} trackId={track.id} romaji={romaji} /> : <PlainLyrics lines={lyrics.lines} romaji={romaji} />
 }

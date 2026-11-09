@@ -28,6 +28,9 @@ import * as voice from './api/voice.ts'
 import * as concerts from './api/concerts.ts'
 import * as sync from './api/sync.ts'
 
+// Lyrics romaji: its own function (needs ~1 GB for the Japanese dictionary), /api/romaji/** in firebase.json
+export { romaji } from './romaji.ts'
+
 const GOOGLE_CLIENT_ID = defineSecret('GOOGLE_CLIENT_ID')
 const GOOGLE_CLIENT_SECRET = defineSecret('GOOGLE_CLIENT_SECRET')
 /** DJ voice (step 22c): Google Cloud Text-to-Speech API key */

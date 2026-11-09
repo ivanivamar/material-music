@@ -9,6 +9,7 @@ await build({
   platform: 'node',
   target: 'node22',
   format: 'cjs',
-  external: ['firebase-functions', 'firebase-admin'],
+  // kuromoji reads its dictionary files from node_modules at run time: installed on deploy, not bundled
+  external: ['firebase-functions', 'firebase-admin', 'kuromoji'],
   logLevel: 'info',
 })

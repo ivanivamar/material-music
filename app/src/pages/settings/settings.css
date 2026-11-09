@@ -115,3 +115,6 @@
 /* Concerts: home city search under its row, Ticketmaster note under the card */
 .st-city { width: 100%; max-width: 420px; }
 .st-foot-note { font-size: 12px; color: oklch(0.62 0.014 40); padding: 10px 6px 0; }
+
+/* Romaji row tile (Nov 2026): a kana glyph instead of an icon */
+.set-romaji-tile { font-size: 18px; font-weight: 600; line-height: 1; font-family: 'Noto Sans JP', var(--font-sans, sans-serif); }

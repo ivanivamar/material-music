@@ -346,3 +346,17 @@ a.np-from-l:hover { color: var(--np-on); text-decoration: underline; text-underl
 
 /* toasts over the full-screen player: centred on the screen */
 html[data-np] .toasts.toasts-shell { left: 0; bottom: 40px; }
+
+/* Lyrics romaji (Nov 2026): a smaller Latin line under each Japanese line */
+.ly-roma { display: block; margin-top: 2px; font-size: .62em; font-weight: 500; letter-spacing: 0; line-height: 1.3; color: var(--np-on-var); opacity: .85; text-wrap: pretty; }
+.ly-line.is-on .ly-roma { opacity: 1; }
+.ly-plain p .ly-roma { font-size: 15px; margin-top: 1px; }
+.ly-romaji {
+  display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 12px 0 8px; margin-right: auto;
+  border: 0; border-radius: 999px; cursor: pointer; font: inherit; font-size: 12px; font-weight: 700;
+  background: rgba(255, 255, 255, .06); box-shadow: inset 0 0 0 1px var(--np-edge); color: var(--np-on-var);
+  transition: background-color 150ms var(--ease-std), color 150ms var(--ease-std);
+}
+.ly-romaji-a { font-size: 11px; font-weight: 600; padding: 2px 6px; border-radius: 8px; background: rgba(255, 255, 255, .08); }
+.ly-romaji.is-on { background: var(--album-hi); color: var(--on-album); box-shadow: none; }
+.ly-romaji.is-on .ly-romaji-a { background: rgba(0, 0, 0, .14); }
