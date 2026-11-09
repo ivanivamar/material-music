@@ -21,6 +21,7 @@ import { go, statsHref } from '../../shell/routes'
 import { AlbumCardHome, cardSize, useHomeSize } from '../home/cards'
 import { CookiePlay } from '../home/art'
 import { playList } from '../library/playback'
+import { ShareRecapButton } from './ShareRecap'
 import './recap.css'
 
 export function RecapShelf({ c, plays, now }: { c: Catalogue; plays: readonly Play[]; now: Date; playing?: string | null }) {
@@ -104,6 +105,7 @@ function RecapCard({ stats, year }: { stats: PeriodStats; year: number }) {
         <span className="recap-counts">
           {plural(stats.artists, 'artist', 'artists')} · {plural(stats.albums, 'album', 'albums')}
         </span>
+        <ShareRecapButton year={year} compact className="recap-share" />
       </div>
 
       <div className="recap-main">

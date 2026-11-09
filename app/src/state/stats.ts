@@ -220,3 +220,73 @@ export function fmtPlayedAt(sec: number): string {
   const day = d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }).replace(',', '')
   return `${day} · ${d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`
 }
+
+/* ── Top genres (Nov 2026) ──────────────────────────── */
+
+export interface GenreShare {
+  name: string
+  plays: number
+  seconds: number
+  /** share of the period's listening time, 0–1 (a song with two genres counts half for each) */
+  share: number
+}
+
+const genreCache = new Map<string, GenreShare[]>()
+let genreCacheFor: { c: Catalogue; plays: readonly Play[]; genreOf: unknown } | null = null
+
+/**
+ * The period's genres by listening time. `genreOf` = album id → its genres (state/genres.ts
+ * genreResolver: the album's own genre tags or what was set in Genres). Albums without one are left
+ * out of the shares.
+ */
+export function periodGenres(c: Catalogue, plays: readonly Play[], period: Period, genreOf: (albumId: string) => string[], n = 10): GenreShare[] {
+  if (!genreCacheFor || genreCacheFor.c !== c || genreCacheFor.plays !== plays || genreCacheFor.genreOf !== genreOf) {
+    genreCache.clear()
+    genreCacheFor = { c, plays, genreOf }
+  }
+  const key = periodKey(period)
+  const hit = genreCache.get(key)
+  if (hit) return hit.slice(0, n)
+  const [from, to] = bounds(period)
+  const by = new Map<string, { name: string; plays: number; seconds: number }>()
+  let total = 0
+  for (const p of plays) {
+    if (p.at < from) continue
+    if (p.at >= to) break
+    const t = c.tracks[p.trackId]
+    if (!t) continue
+    const gs = [...new Set(genreOf(t.albumId).map((g) => g.trim()).filter(Boolean))]
+    if (!gs.length) continue
+    const secs = t.duration ?? 0
+    total += secs
+    for (const g of gs) {
+      const k = g.toLowerCase()
+      const e = by.get(k) ?? { name: g, plays: 0, seconds: 0 }
+      e.plays++
+      e.seconds += secs / gs.length
+      by.set(k, e)
+    }
+  }
+  const out = [...by.values()].map((e) => ({ ...e, share: total ? e.seconds / total : 0 })).sort((a, b) => b.seconds - a.seconds || b.plays - a.plays)
+  genreCache.set(key, out)
+  return out.slice(0, n)
+}
+
+/* ── The year month by month (Nov 2026) ─────────────── */
+
+export interface MonthRecap {
+  month: number
+  plays: number
+  seconds: number
+  topArtist: Ranked<Artist> | null
+  topTrack: Ranked<Track> | null
+  topAlbum: Ranked<Album> | null
+}
+
+/** Each month of `year` with its top artist / song / album (months without plays: plays 0). */
+export function yearByMonth(c: Catalogue, plays: readonly Play[], year: number): MonthRecap[] {
+  return Array.from({ length: 12 }, (_, m) => {
+    const s = periodStats(c, plays, { year, month: m })
+    return { month: m, plays: s.plays, seconds: s.seconds, topArtist: s.topArtists[0] ?? null, topTrack: s.topTracks[0] ?? null, topAlbum: s.topAlbums[0] ?? null }
+  })
+}

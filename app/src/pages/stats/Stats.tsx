@@ -32,6 +32,9 @@ import {
   periodIndex,
   periodKey,
   periodStats,
+  periodGenres,
+  yearByMonth,
+  type MonthRecap,
   type Period,
   type PeriodStats,
 } from '../../state/stats'
@@ -42,6 +45,9 @@ import { AlbumCardHome, cardSize, useHomeSize } from '../home/cards'
 import { ActBtn, DtList, DtRow } from '../library/detail'
 import { playList, useNowPlaying } from '../library/playback'
 import '../home/home.css'
+import { genreResolver, useGenres } from '../../state/genres'
+import { genreHue } from '../../lib/mixing'
+import { ShareRecapButton } from './ShareRecap'
 import './stats.css'
 
 /* M3 Expressive shapes for the counter tiles and the artist photo (same point count as the others) */
@@ -97,6 +103,7 @@ export function Stats({ period: raw }: { period: string | null }) {
         </div>
         <h1 className="stats-title">Your {label}</h1>
         {since && <div className="stats-since">Counting since {since}</div>}
+        {isYear && stats.plays > 0 && <ShareRecapButton year={period.year} className="stats-share" />}
       </header>
 
       <div className="stats-periods">
@@ -183,7 +190,10 @@ function StatsBody({ c, stats, label, now, onPick }: { c: Catalogue; stats: Peri
         {stats.firstPlay && <FirstPlay c={c} stats={stats} label={label} />}
       </div>
 
+      {isYear && <MonthByMonth c={c} year={stats.period.year} now={now} onPick={onPick} />}
+
       <TopArtists stats={stats} />
+      <TopGenres c={c} stats={stats} />
       <TopAlbums c={c} stats={stats} />
       <TopSongs c={c} stats={stats} label={label} />
 
@@ -378,6 +388,83 @@ function MoreToggle({ all, total, onToggle }: { all: boolean; total: number; onT
       {all ? 'Show top 10' : `Show all ${Math.min(50, total)}`}
       <Icon name={all ? 'chevU' : 'chevD'} />
     </Button>
+  )
+}
+
+/* ── The year month by month (Nov 2026) ───────────── */
+
+function MonthByMonth({ c, year, now, onPick }: { c: Catalogue; year: number; now: Date; onPick: (month: number) => void }) {
+  const history = useHistory()
+  const months = yearByMonth(c, history.plays, year)
+  const shown = months.filter((m) => m.plays > 0)
+  if (shown.length < 2) return null
+  return (
+    <section className="stats-section">
+      <SecHead title="Month by month" sub="Your top artist and song each month" />
+      <div className="stats-months-grid">
+        {months.map((m) => {
+          const future = year === now.getFullYear() && m.month > now.getMonth()
+          if (future) return null
+          return <MonthCard key={m.month} m={m} onPick={() => onPick(m.month)} />
+        })}
+      </div>
+    </section>
+  )
+}
+
+function MonthCard({ m, onPick }: { m: MonthRecap; onPick: () => void }) {
+  const [ref, url] = useLazyCover<HTMLButtonElement>(m.topAlbum?.item.cover)
+  if (!m.plays)
+    return (
+      <div className="card stats-mcard is-empty">
+        <span className="stats-mcard-month">{MONTHS[m.month]}</span>
+        <span className="stats-mcard-none">No plays</span>
+      </div>
+    )
+  return (
+    <button ref={ref} type="button" className="card card-interactive stats-mcard" onClick={onPick} aria-label={`${MONTHS[m.month]}: open that month`}>
+      <span className="stats-mcard-art">{url && <img src={url} alt="" draggable={false} />}</span>
+      <span className="stats-mcard-text">
+        <span className="stats-mcard-head">
+          <span className="stats-mcard-month">{MONTHS[m.month]}</span>
+          <span className="stats-mcard-h">{fmtListen(m.seconds)}</span>
+        </span>
+        {m.topArtist && <span className="stats-mcard-artist">{m.topArtist.item.name}</span>}
+        {m.topTrack && <span className="stats-mcard-song">{m.topTrack.item.title}</span>}
+      </span>
+    </button>
+  )
+}
+
+/* ── Top genres (Nov 2026) ────────────────────────── */
+
+function TopGenres({ c, stats }: { c: Catalogue; stats: PeriodStats }) {
+  const history = useHistory()
+  const genres = useGenres()
+  const list = periodGenres(c, history.plays, stats.period, genreResolver(genres.doc, c), 8)
+  if (!list.length) return null
+  const top = list[0].share || 1
+  return (
+    <section className="stats-section">
+      <SecHead title="Top genres" sub="By time listened" />
+      <ol className="card card-lg stats-genres">
+        {list.map((g, i) => (
+          <li key={g.name} className="stats-genre" style={{ '--gh': genreHue(g.name) } as CSSProperties}>
+            <span className={`stats-arank ${i < 3 ? 'is-podium' : ''}`}>{i + 1}</span>
+            <span className="stats-genre-main">
+              <span className="stats-genre-row">
+                <span className="stats-genre-name">{g.name}</span>
+                <span className="stats-genre-pct">{Math.max(1, Math.round(g.share * 100))}%</span>
+              </span>
+              <span className="stats-genre-track">
+                <span className="stats-genre-bar" style={{ width: `${Math.max(3, (g.share / top) * 100)}%` }} />
+              </span>
+            </span>
+            <span className="stats-genre-meta">{fmtListen(g.seconds)}</span>
+          </li>
+        ))}
+      </ol>
+    </section>
   )
 }
 

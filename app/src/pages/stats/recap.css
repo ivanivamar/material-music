@@ -208,3 +208,7 @@
 .shell.is-phone .recap-hours-num {
   font-size: 38px;
 }
+
+/* share (Nov 2026) */
+.recap-head .recap-counts { margin-left: auto; }
+.recap-share { flex: none; margin: -8px -8px -8px 0; }

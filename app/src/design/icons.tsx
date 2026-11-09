@@ -110,6 +110,7 @@ export const ICON_SYMBOLS = {
   imageOff: 'image_not_supported',
   block: 'block',
   hide: 'visibility_off',
+  share: 'share',
   thumbDown: 'thumb_down',
   wish: 'bookmark_add',
   wished: 'bookmark_added',
