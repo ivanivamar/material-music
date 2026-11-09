@@ -150,19 +150,24 @@ a.np-from-l:hover { color: var(--np-on); text-decoration: underline; text-underl
 
 /* Phone morph: the full-screen player grows out of the mini card. --np-t (0 = the mini card's rect,
    1 = full screen) is set every frame from JS (lift.ts: the finger while dragging, then an eased
-   glide); every size below is a blend of the two layouts, so nothing jumps. */
+   glide); every size below is a blend of the two layouts, so nothing jumps.
+   The player's own box never changes size: it always covers the screen, and the card shape is a
+   clip-path with the content padded into it. Resizing the layer every frame made the Android WebView
+   re-rasterise it, and the page underneath flashed through. */
 .np.is-phone {
   --np-t: 1;
   --np-u: calc(1 - var(--np-t));
   --np-mini-top: calc(100dvh - var(--np-mini-b) - var(--android-mini-h));
-  inset: calc(var(--np-u) * var(--np-mini-top)) calc(var(--np-u) * 8px) calc(var(--np-u) * var(--np-mini-b));
-  border-radius: calc(var(--np-u) * 28px);
+  --np-sat: env(safe-area-inset-top, 0px);
+  inset: 0;
+  padding: calc(var(--np-u) * var(--np-mini-top) + var(--np-t) * var(--np-sat)) calc(var(--np-u) * 8px) calc(var(--np-u) * var(--np-mini-b));
+  clip-path: inset(calc(var(--np-u) * var(--np-mini-top)) calc(var(--np-u) * 8px) calc(var(--np-u) * var(--np-mini-b)) round calc(var(--np-u) * 28px));
   /* opaque, and no backdrop blur: re-blurring the page under a box that changes size every frame is
      what made the morph flicker on Android */
   background: color-mix(in oklch, var(--mini-band), oklch(0.15 0.02 var(--h)) calc(var(--np-t) * 100%));
   -webkit-backdrop-filter: none; backdrop-filter: none;
   contain: layout paint;
-  box-shadow: 0 14px 32px -12px rgb(0 0 0 / calc(var(--np-u) * .65));
+  box-shadow: none; /* the mini card underneath keeps its own shadow */
   animation: none;
 }
 .np.is-phone.is-closing { animation: none; pointer-events: none; }

@@ -255,7 +255,7 @@ html[data-phone]:not([data-np]) .toasts.toasts-shell { left: 0; right: 0; bottom
 /* Android app (edge-to-edge): the glass reaches the top of the screen; content sits below the status bar */
 .shell.is-phone .np-from { gap: 2px; }
 .shell.is-phone .np-from-l { max-width: 100%; }
-.shell.is-phone .np { --np-sat: env(safe-area-inset-top, 0px); padding-top: calc(var(--np-sat) * var(--np-t)); }
+/* the phone player's padding (status bar included) lives with its morph in nowplaying.css */
 /* the rest of the phone layout lives with the player (nowplaying.css, .np.is-phone) */
 
 /* lyrics on the phone: smaller lines */
