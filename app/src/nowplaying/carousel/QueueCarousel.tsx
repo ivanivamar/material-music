@@ -25,6 +25,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent, type WheelEvent } from 'react'
 import { AlbumEq, Button, CookieButton, IconButton } from '../../components/ui'
 import { LikeButton } from '../../components/LikeButton'
+import { Marquee } from '../../components/Marquee'
 import { nowPlayingStore } from '../../state/nowPlaying'
 import { playerStore, usePlayer } from '../../state/player'
 import { useDjView } from '../../state/djUi'
@@ -294,7 +295,8 @@ function CarouselCard({ slot, variant, id, group, focused, browsing, height, lab
   const { intro, track, album, title } = item
   const now = group === 'now'
   const hero = slot.kind === 'hero'
-  const showText = hero || (slot.kind === 'med' && slot.w >= 90)
+  // the strip's square tiles carry their title too, revealed on hover (carousel.css)
+  const showText = hero || (slot.kind === 'med' && slot.w >= 90) || (variant === 'strip' && slot.kind === 'small')
   const full = variant === 'full'
   const strip = variant === 'strip'
   const mini = variant === 'mini'
@@ -336,7 +338,7 @@ function CarouselCard({ slot, variant, id, group, focused, browsing, height, lab
           <ItemArt item={item} size={Math.min(slot.w, height)} active={now} />
         </div>
         {showText && <span className="qc-scrim" aria-hidden />}
-        <button type="button" className="qc-hit" aria-label={aria} aria-current={now ? 'true' : undefined} onClick={click} />
+        <button type="button" className="qc-hit" aria-label={aria} title={strip ? `${title}${track ? ` · ${track.artist}` : ''}` : undefined} aria-current={now ? 'true' : undefined} onClick={click} />
 
         {showText && (
           <div className="qc-text">
@@ -346,7 +348,9 @@ function CarouselCard({ slot, variant, id, group, focused, browsing, height, lab
                 {kicker}
               </span>
             )}
-            <span className="qc-title">{title}</span>
+            {/* strip: a long title scrolls by instead of being cut */}
+            {strip ? <Marquee className="qc-title" text={title} /> : <span className="qc-title">{title}</span>}
+            {strip && !hero && track && <span className="qc-sub">{track.artist}</span>}
             {hero &&
               (intro ? (
                 now && <span className="qc-sub"><IntroSub item={id} /></span>
