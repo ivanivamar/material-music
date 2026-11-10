@@ -16,6 +16,7 @@ import { idbGet, idbSet } from './idb'
 import { hash } from './mixing'
 import { isNative } from '../native/bridge'
 import { HANGUL, romanizeKorean } from './hangul'
+import { apiHeaders } from '../sync/apiAuth'
 
 const API_BASE: string = isNative ? ((import.meta.env.VITE_PELAGIC_API as string | undefined) ?? 'https://material-music-app.web.app/') : import.meta.env.BASE_URL
 
@@ -51,7 +52,7 @@ async function fetchRomaji(lines: readonly string[]): Promise<string[] | null> {
   if (typeof navigator !== 'undefined' && !navigator.onLine) return null
   const res = await fetch(`${API_BASE}api/romaji/lines`, {
     method: 'POST',
-    headers: { 'X-Pelagic': '1', 'Content-Type': 'application/json' },
+    headers: await apiHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify({ lines }),
   })
   if (!res.ok || !(res.headers.get('content-type') ?? '').includes('application/json')) throw new Error(`romaji ${res.status}`)

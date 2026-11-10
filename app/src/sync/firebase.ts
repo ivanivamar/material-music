@@ -168,6 +168,11 @@ async function connectOnce(email: string, accessToken: () => Promise<string | nu
   }
 }
 
+/** The Firebase session's ID token (renewed by the SDK when it is about to run out); null when signed out. */
+export async function idToken(): Promise<string | null> {
+  return (await auth?.currentUser?.getIdToken()) ?? null
+}
+
 /** Account reset (sign-out / switch): drop the Firebase session too. */
 export async function disconnect() {
   connecting = null

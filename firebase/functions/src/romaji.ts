@@ -17,6 +17,7 @@ import kuromoji from 'kuromoji'
 import { toRomaji } from 'wanakana'
 import path from 'node:path'
 import { createRequire } from 'node:module'
+import { caller } from './api/guard.ts'
 
 type Token = kuromoji.IpadicFeatures
 let tokenizerP: Promise<kuromoji.Tokenizer<Token>> | null = null
@@ -126,7 +127,7 @@ function cors(origin: string | undefined): Record<string, string> {
   return {
     'access-control-allow-origin': origin,
     'access-control-allow-methods': 'POST, OPTIONS',
-    'access-control-allow-headers': 'x-pelagic, content-type',
+    'access-control-allow-headers': 'x-pelagic, content-type, authorization',
     'access-control-max-age': '86400',
     vary: 'Origin',
   }
@@ -139,6 +140,7 @@ export const romaji = onRequest({ region: 'europe-west1', memory: '1GiB', maxIns
   if (req.method === 'OPTIONS') return void res.status(204).send('')
   if (req.method !== 'POST') return void res.status(405).json({ error: 'method_not_allowed' })
   if (req.headers['x-pelagic'] !== '1') return void res.status(403).json({ error: 'forbidden' })
+  if (!(await caller(req.headers.authorization))) return void res.status(401).json({ error: 'unauthorized' })
   const body = (typeof req.body === 'object' && req.body) || {}
   const lines: unknown = (body as { lines?: unknown }).lines
   if (!Array.isArray(lines) || lines.length > 400 || !lines.every((l) => typeof l === 'string' && l.length <= 500)) return void res.status(400).json({ error: 'bad_lines' })

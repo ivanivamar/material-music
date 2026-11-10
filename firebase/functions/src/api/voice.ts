@@ -22,6 +22,7 @@
  * restricted to that API → `firebase functions:secrets:set GOOGLE_TTS_API_KEY` → deploy the function
  * (the Firebase workflow does it on push). Default voice en-US-Chirp3-HD-Charon.
  */
+import { caller } from './guard.ts'
 
 interface Kv {
   get(key: string): Promise<string | null>
@@ -69,7 +70,7 @@ function cors(request: Request): Record<string, string> {
   return {
     'access-control-allow-origin': origin,
     'access-control-allow-methods': 'GET, POST, OPTIONS',
-    'access-control-allow-headers': 'content-type, x-pelagic',
+    'access-control-allow-headers': 'content-type, x-pelagic, authorization',
     'access-control-max-age': '86400',
     vary: 'Origin',
   }
@@ -133,6 +134,7 @@ export async function onRequest({ request, env, params }: Ctx): Promise<Response
   const action = Array.isArray(params.action) ? params.action[0] : params.action
   if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors(request) })
   if (request.headers.get('x-pelagic') !== '1') return json(request, { error: 'forbidden' }, 403)
+  if (!(await caller(request.headers.get('authorization')))) return json(request, { error: 'unauthorized' }, 401)
   const key = env.GOOGLE_TTS_API_KEY?.trim()
   const fallbackVoice = env.TTS_VOICE?.trim() && VOICES.has(env.TTS_VOICE.trim()) ? env.TTS_VOICE.trim() : DEFAULT_VOICE
 

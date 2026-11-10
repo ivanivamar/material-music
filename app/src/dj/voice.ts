@@ -22,6 +22,7 @@ import { useSyncExternalStore } from 'react'
 import { idbGet, idbSet } from '../lib/idb'
 import { isNative, PelagicPlayer } from '../native/bridge'
 import { markPng } from './mark'
+import { apiHeaders } from '../sync/apiAuth'
 
 export type IntroKind = 'voice' | 'system' | 'silent'
 export type SilentReason = 'off' | 'unavailable' | 'offline' | 'cap'
@@ -215,7 +216,7 @@ async function speak(line: string): Promise<{ blob: Blob; timepoints: { i: numbe
   try {
     const res = await fetch(`${API_BASE}api/voice/speak`, {
       method: 'POST',
-      headers: { 'content-type': 'application/json', 'x-pelagic': '1' },
+      headers: await apiHeaders({ 'content-type': 'application/json' }),
       body: JSON.stringify({ text: line }),
     })
     if (res.status === 503 || res.status === 404) {

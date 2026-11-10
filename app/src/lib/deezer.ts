@@ -13,6 +13,7 @@ import { isNative } from '../native/bridge'
 import { foldKey } from '../dj/engine'
 import type { Catalogue } from '../state/library'
 import { onAccountReset } from '../state/session'
+import { apiHeaders } from '../sync/apiAuth'
 
 const API_BASE: string = isNative ? ((import.meta.env.VITE_PELAGIC_API as string | undefined) ?? 'https://material-music-app.web.app/') : import.meta.env.BASE_URL
 const KEY = 'related'
@@ -74,7 +75,7 @@ async function pump() {
           q.set('name', job.name)
           for (const t of job.titles.slice(0, 40)) q.append('a', t)
         }
-        const res = await fetch(`${API_BASE}api/deezer/related?${q}`, { headers: { 'X-Pelagic': '1' } })
+        const res = await fetch(`${API_BASE}api/deezer/related?${q}`, { headers: await apiHeaders() })
         if (res.ok && (res.headers.get('content-type') ?? '').includes('application/json')) {
           const j = (await res.json()) as { found?: boolean; artists?: { id: number; name: string }[] }
           cache[job.artistId] = { at: Date.now(), artists: j.found && Array.isArray(j.artists) ? j.artists.slice(0, 60) : [] }
@@ -172,7 +173,7 @@ export interface DzReleases {
   titles: string[]
 }
 export async function fetchDzReleases(id: number, days = 183): Promise<DzReleases | null> {
-  const res = await fetch(`${API_BASE}api/deezer/releases?id=${id}&days=${days}`, { headers: { 'X-Pelagic': '1' } })
+  const res = await fetch(`${API_BASE}api/deezer/releases?id=${id}&days=${days}`, { headers: await apiHeaders() })
   if (!res.ok || !(res.headers.get('content-type') ?? '').includes('application/json')) throw new Error(`proxy ${res.status}`)
   const j = (await res.json()) as { found?: boolean } & Partial<DzReleases>
   if (!j.found || !j.id) return null
@@ -205,12 +206,14 @@ export function fetchDzPreviews(key: string, q: { artists: string[]; dz: number[
   if (q.date) params.set('date', q.date)
   if (q.n) params.set('n', String(q.n))
   params.set('type', q.type)
-  const p = fetch(`${API_BASE}api/deezer/previews?${params}`, { headers: { 'X-Pelagic': '1' } }).then(async (res) => {
-    if (!res.ok || !(res.headers.get('content-type') ?? '').includes('application/json')) throw new Error(`proxy ${res.status}`)
-    const j = (await res.json()) as { found?: boolean } & Partial<DzPreviews>
-    if (!j.found || !j.id || !Array.isArray(j.tracks)) return null
-    return { id: j.id, link: j.link ?? null, tracks: j.tracks }
-  })
+  const p = apiHeaders()
+    .then((headers) => fetch(`${API_BASE}api/deezer/previews?${params}`, { headers }))
+    .then(async (res) => {
+      if (!res.ok || !(res.headers.get('content-type') ?? '').includes('application/json')) throw new Error(`proxy ${res.status}`)
+      const j = (await res.json()) as { found?: boolean } & Partial<DzPreviews>
+      if (!j.found || !j.id || !Array.isArray(j.tracks)) return null
+      return { id: j.id, link: j.link ?? null, tracks: j.tracks }
+    })
   previewMemo.set(key, { at: Date.now(), p })
   // a failure (offline, proxy down) is not remembered: the next ask tries again
   p.catch(() => {
@@ -244,7 +247,7 @@ export async function fetchDzTop(q: { id?: number; name?: string; titles?: strin
     for (const t of (q.titles ?? []).slice(0, 40)) params.append('a', t)
   }
   params.set('limit', String(q.limit ?? 40))
-  const res = await fetch(`${API_BASE}api/deezer/top?${params}`, { headers: { 'X-Pelagic': '1' } })
+  const res = await fetch(`${API_BASE}api/deezer/top?${params}`, { headers: await apiHeaders() })
   if (!res.ok || !(res.headers.get('content-type') ?? '').includes('application/json')) throw new Error(`proxy ${res.status}`)
   const j = (await res.json()) as { found?: boolean; id?: number; name?: string; tracks?: DzTopTrack[] }
   if (!j.found || !j.id) return null
@@ -256,7 +259,7 @@ export async function fetchDzTracks(ids: number[]): Promise<{ id: number; p: str
   if (!ids.length) return []
   const params = new URLSearchParams()
   for (const id of ids.slice(0, 40)) params.append('id', String(id))
-  const res = await fetch(`${API_BASE}api/deezer/tracks?${params}`, { headers: { 'X-Pelagic': '1' } })
+  const res = await fetch(`${API_BASE}api/deezer/tracks?${params}`, { headers: await apiHeaders() })
   if (!res.ok || !(res.headers.get('content-type') ?? '').includes('application/json')) throw new Error(`proxy ${res.status}`)
   const j = (await res.json()) as { tracks?: { id: number; p: string | null }[] }
   return Array.isArray(j.tracks) ? j.tracks : []

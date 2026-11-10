@@ -13,9 +13,9 @@ import { idbSet } from '../lib/idb'
 import { isNative } from '../native/bridge'
 import type { Artist, ArtistImage } from '../state/library'
 import { putFile } from './driveWrite'
+import { apiHeaders } from '../sync/apiAuth'
 
 const API = `${import.meta.env.BASE_URL}api/deezer/`
-const HEADERS = { 'X-Pelagic': '1' }
 
 export interface ArtistSources {
   photo?: File | null
@@ -61,11 +61,12 @@ async function deezerPhoto(name: string, albumTitles: string[]): Promise<{ id: n
   if (isNative) return null
   const q = new URLSearchParams({ name })
   for (const t of albumTitles.slice(0, 60)) q.append('a', t)
-  const res = await fetch(`${API}artist?${q}`, { headers: HEADERS, cache: 'no-store' })
+  const headers = await apiHeaders()
+  const res = await fetch(`${API}artist?${q}`, { headers, cache: 'no-store' })
   if (!res.ok || !(res.headers.get('content-type') ?? '').includes('application/json')) return null
   const j = (await res.json()) as { found?: boolean; id?: number; pictureUrl?: string }
   if (!j.found || !j.pictureUrl || typeof j.id !== 'number') return null
-  const img = await fetch(`${API}image?url=${encodeURIComponent(j.pictureUrl)}`, { headers: HEADERS })
+  const img = await fetch(`${API}image?url=${encodeURIComponent(j.pictureUrl)}`, { headers })
   if (!img.ok) return null
   return { id: j.id, blob: await img.blob() }
 }

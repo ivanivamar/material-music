@@ -31,6 +31,7 @@
  * Needs the `X-Pelagic: 1` header (same as the sign-in helper), so other sites can't borrow it.
  * Nothing is stored.
  */
+import { caller } from './guard.ts'
 
 interface Ctx {
   request: Request
@@ -45,7 +46,7 @@ function cors(origin: string | null): Record<string, string> {
   return {
     'access-control-allow-origin': origin,
     'access-control-allow-methods': 'GET, OPTIONS',
-    'access-control-allow-headers': 'x-pelagic',
+    'access-control-allow-headers': 'x-pelagic, authorization',
     'access-control-max-age': '86400',
     vary: 'Origin',
   }
@@ -284,6 +285,7 @@ export async function onRequest({ request, params }: Ctx): Promise<Response> {
   if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors(origin) })
   if (request.method !== 'GET') return json({ error: 'method_not_allowed' }, 405)
   if (request.headers.get('x-pelagic') !== '1') return json({ error: 'forbidden' }, 403)
+  if (!(await caller(request.headers.get('authorization')))) return json({ error: 'unauthorized' }, 401)
   const url = new URL(request.url)
 
   if (action === 'artist') {

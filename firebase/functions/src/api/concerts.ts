@@ -22,6 +22,7 @@
  * Setup: developer.ticketmaster.com → My Apps → the Consumer Key →
  * `firebase functions:secrets:set TICKETMASTER_API_KEY` → deploy the function from the PC once.
  */
+import { caller } from './guard.ts'
 
 interface Env {
   TICKETMASTER_API_KEY?: string
@@ -41,7 +42,7 @@ function cors(origin: string | null): Record<string, string> {
   return {
     'access-control-allow-origin': origin,
     'access-control-allow-methods': 'GET, OPTIONS',
-    'access-control-allow-headers': 'x-pelagic',
+    'access-control-allow-headers': 'x-pelagic, authorization',
     'access-control-max-age': '86400',
     vary: 'Origin',
   }
@@ -261,6 +262,7 @@ export async function onRequest({ request, env, params }: Ctx): Promise<Response
   if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors(origin) })
   if (request.method !== 'GET') return json({ error: 'method_not_allowed' }, 405)
   if (request.headers.get('x-pelagic') !== '1') return json({ error: 'forbidden' }, 403)
+  if (!(await caller(request.headers.get('authorization')))) return json({ error: 'unauthorized' }, 401)
   const key = env.TICKETMASTER_API_KEY
   const url = new URL(request.url)
 

@@ -28,6 +28,7 @@ import { libraryStore, type Catalogue } from './library'
 import { cycleStart } from './releases'
 import { onAccountReset, sessionStore } from './session'
 import { artistsByName } from './views'
+import { apiHeaders } from '../sync/apiAuth'
 
 /* ── Types ──────────────────────────────────────────── */
 
@@ -264,7 +265,7 @@ async function fetchArtist(name: string, mbid: string | undefined, tmId: string 
   if (tmId) q.set('id', tmId)
   let res: Response
   try {
-    res = await fetch(`${API_BASE}api/concerts/artist?${q}`, { headers: { 'X-Pelagic': '1' } })
+    res = await fetch(`${API_BASE}api/concerts/artist?${q}`, { headers: await apiHeaders() })
   } catch {
     throw new ApiDown('offline')
   }
