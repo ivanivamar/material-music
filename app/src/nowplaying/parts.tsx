@@ -3,12 +3,12 @@
  * full-screen player (Nov 2026 carousel player). Every control is defined once here; the surfaces
  * only arrange them. The state they read comes from player.ts.
  */
-import type { MouseEvent, ReactNode } from 'react'
-import { CookieButton, ModeToggle, ThinSlider, useToast } from '../components/ui'
+import type { ComponentProps, MouseEvent, ReactNode } from 'react'
+import { CookieButton, ModeToggle, ThinSlider, useToast, WaveSeek } from '../components/ui'
 import { Icon } from '../design/icons'
 import type { Track } from '../state/library'
 import { nowPlayingStore, useNowPlayingUi } from '../state/nowPlaying'
-import { playerStore, usePlayer } from '../state/player'
+import { playerStore, usePlayer, usePlayerPosition } from '../state/player'
 import { useDjView } from '../state/djUi'
 import { useSettings } from '../state/settings'
 import { isNative } from '../native/bridge'
@@ -114,6 +114,15 @@ export function ReorderToggle({ size, text }: { size?: ToggleSize; text?: boolea
       onClick={() => nowPlayingStore.toggleReorder()}
     />
   )
+}
+
+/**
+ * The wavy seek bar, following the player's position. Its own component so that only this bar
+ * re-renders as the song moves on, not the player surface around it. `idle` pins it at 0.
+ */
+export function PlayerSeek({ idle, ...rest }: Omit<ComponentProps<typeof WaveSeek>, 'position' | 'onSeek'> & { idle?: boolean }) {
+  const position = usePlayerPosition()
+  return <WaveSeek {...rest} position={idle ? 0 : position} onSeek={(s) => playerStore.seek(s)} />
 }
 
 /** Mute + thin volume slider. */

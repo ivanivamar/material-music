@@ -16,7 +16,7 @@ import { lineAt, parseLyrics, type LyricLine } from '../lib/lrc'
 import { lyricsScript, useRomaji, type RomajiState } from '../lib/romaji'
 import { settingsStore, useSettings } from '../state/settings'
 import type { Track } from '../state/library'
-import { playerStore } from '../state/player'
+import { playerStore, usePlayerPosition } from '../state/player'
 import './lyrics.css'
 
 /**
@@ -300,6 +300,12 @@ function PlainLyrics({ lines, romaji }: { lines: LyricLine[]; romaji: RomajiStat
       </div>
     </>
   )
+}
+
+/** Lyrics that follow the player's position (the only part of the player screen that re-renders with it). */
+export function LiveLyrics({ track, playing }: { track: Track; playing: boolean }) {
+  const position = usePlayerPosition()
+  return <Lyrics track={track} position={position} playing={playing} />
 }
 
 export function Lyrics({ track, position, playing }: { track: Track; position: number; playing: boolean }) {

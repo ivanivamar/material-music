@@ -56,6 +56,9 @@ export interface RemoteDevice {
 }
 
 /** What another device sends / shows (step 37): the shareable part of the state. */
+/** The state without the fast-moving `position` (what usePlayer() returns). */
+export type PlayerView = Omit<PlayerState, 'position'>
+
 export type SharedPlayerState = Pick<PlayerState, 'queue' | 'index' | 'context' | 'position' | 'shuffle' | 'unshuffled' | 'repeat'>
 
 /** Calls a follower sends to the device it follows instead of running them (step 37). */
@@ -139,6 +142,12 @@ function load(): PlayerState {
 }
 
 let state = load()
+/**
+ * What React reads through usePlayer(): the state as of the last change to anything but `position`.
+ * The engine reports position several times a second; keeping it out of this snapshot means only
+ * the components that show progress (usePlayerPosition) re-render at that rate.
+ */
+let view: PlayerView = state
 let engine: PlayerEngine | null = null
 const listeners = new Set<() => void>()
 const noticeListeners = new Set<(n: PlayerNotice) => void>()
@@ -180,7 +189,14 @@ function persist() {
 }
 
 function set(patch: Partial<PlayerState>) {
+  const before = state
   state = { ...state, ...patch }
+  for (const k of Object.keys(patch) as (keyof PlayerState)[]) {
+    if (k !== 'position' && !Object.is(before[k], state[k])) {
+      view = state
+      break
+    }
+  }
   listeners.forEach((l) => l())
   // throttle, not debounce: the engine reports position several times a second while playing
   if (!persistTimer) persistTimer = window.setTimeout(persist, 1000)
@@ -691,6 +707,15 @@ export function onEngineMoved(l: (from: number, to: number) => void) {
   }
 }
 
-export function usePlayer(): PlayerState {
-  return useSyncExternalStore(playerStore.subscribe, playerStore.get, playerStore.get)
+const getView = () => view
+const getPosition = () => state.position
+
+/** Player state for components — everything except `position` (see usePlayerPosition). */
+export function usePlayer(): PlayerView {
+  return useSyncExternalStore(playerStore.subscribe, getView, getView)
+}
+
+/** Playback position in seconds. Re-renders several times a second while playing: keep it in small components. */
+export function usePlayerPosition(): number {
+  return useSyncExternalStore(playerStore.subscribe, getPosition, getPosition)
 }

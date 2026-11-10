@@ -5,7 +5,7 @@
  */
 import { useToast } from '../components/ui'
 import { useLibrary, type Album, type Track } from '../state/library'
-import { isIntroId, playerStore, usePlayer, type PlayContext, type PlayerState } from '../state/player'
+import { isIntroId, playerStore, usePlayer, usePlayerPosition, type PlayContext, type PlayerView } from '../state/player'
 import { albumHref, artistHref, mixHref, playlistHref } from '../shell/routes'
 import { parseRadioId } from '../lib/mixing'
 import { djIntroInfo, type DjView } from '../state/dj'
@@ -14,7 +14,7 @@ import { useIntroProgress } from '../dj/live'
 import { trackOf, albumOf } from '../state/previews'
 
 export interface Current {
-  p: PlayerState
+  p: PlayerView
   id: string | null
   track: Track | null
   album: Album | undefined
@@ -29,7 +29,7 @@ export function useCurrent(): Current {
 }
 
 /** The playing song's state line: "On Kitchen speaker", "DJ · intro", "Radio", "Now playing", "Paused". */
-export function nowKicker(p: PlayerState, dj: DjView): string {
+export function nowKicker(p: PlayerView, dj: DjView): string {
   if (p.remote) return `On ${p.remote.name}`
   if (dj.on) return dj.intro ? 'DJ · intro' : dj.addedByUser ? 'DJ · added by you' : 'DJ'
   if (p.context?.kind === 'radio') return 'Radio'
@@ -46,11 +46,12 @@ export function useDuration(): number {
 
 /** How far through it we are (0..1); an intro follows the live voice. */
 export function useProgress(): number {
-  const { p, id } = useCurrent()
+  const { id } = useCurrent()
+  const position = usePlayerPosition()
   const duration = useDuration()
   const intro = useIntroProgress(isIntroId(id) ? id : null)
   if (isIntroId(id)) return intro.frac
-  return duration > 0 ? Math.min(1, p.position / duration) : 0
+  return duration > 0 ? Math.min(1, position / duration) : 0
 }
 
 const KICKER: Record<PlayContext['kind'], string> = {

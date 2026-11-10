@@ -21,16 +21,16 @@
  * Opened from the player bar / mini player; Esc, Back or (phone) dragging the header down closes it.
  */
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
-import { AlbumEq, IconButton, Sheet, WaveSeek } from '../components/ui'
+import { AlbumEq, IconButton, Sheet } from '../components/ui'
 import { LikeButton } from '../components/LikeButton'
 import { useMotion } from '../state/motion'
 import { nowPlayingStore, useNowPlayingUi } from '../state/nowPlaying'
 import { playerStore, isIntroId } from '../state/player'
 import { isTouch, useIsPhone } from '../state/viewport'
 import { albumHref, artistHref } from '../shell/routes'
-import { Lyrics } from './Lyrics'
+import { LiveLyrics } from './Lyrics'
 import { SETTLE_MS, useLiftDrag, useMorph } from './lift'
-import { LyricsToggle, NpLink, QualityPill, RepeatToggle, ReorderToggle, ShuffleToggle, Transport } from './parts'
+import { LyricsToggle, NpLink, PlayerSeek, QualityPill, RepeatToggle, ReorderToggle, ShuffleToggle, Transport } from './parts'
 import { contextLine, nowKicker, useCurrent, useDuration } from './player'
 import { QueueCarousel } from './carousel/QueueCarousel'
 import { ReorderView } from './carousel/ReorderView'
@@ -133,7 +133,7 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
   const backToNp = startView && hasSomething
   const djScene = startView || intro
 
-  const seek = <WaveSeek className="np-seek" below position={p.position} duration={duration} playing={p.playing} height={phone ? 16 : 14} onSeek={(s) => playerStore.seek(s)} />
+  const seek = <PlayerSeek className="np-seek" below duration={duration} playing={p.playing} height={phone ? 16 : 14} />
 
   const sideSub = intro ? (dj.session?.title ?? 'DJ') : track ? `${track.title} · ${track.artist}` : ''
   const sideBody = (lyrics: boolean) =>
@@ -146,7 +146,7 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
         </div>
       )
     ) : (
-      track && <Lyrics track={track} position={p.position} playing={p.playing && ly} />
+      track && <LiveLyrics track={track} playing={p.playing && ly} />
     )
 
   const sidePanel = inline && (

@@ -7,15 +7,14 @@
  * A click on the playing song's card (or on the bar itself) opens the full-screen player.
  * Every control comes from nowplaying/parts.tsx; the carousel from nowplaying/carousel.
  */
-import { WaveSeek } from '../components/ui'
 import { Icon } from '../design/icons'
 import { nowPlayingStore } from '../state/nowPlaying'
-import { isIntroId, playerStore } from '../state/player'
+import { isIntroId } from '../state/player'
 import { useDjView } from '../state/djUi'
 import { DjButton } from '../dj/DjButton'
 import { DevicesButton } from '../sync/DevicesButton'
 import { QueueCarousel } from '../nowplaying/carousel/QueueCarousel'
-import { LyricsToggle, QualityPill, RepeatToggle, ReorderToggle, ShuffleToggle, Transport, VolumeControl } from '../nowplaying/parts'
+import { LyricsToggle, PlayerSeek, QualityPill, RepeatToggle, ReorderToggle, ShuffleToggle, Transport, VolumeControl } from '../nowplaying/parts'
 import { useCurrent, useDuration } from '../nowplaying/player'
 import './playerbar.css'
 
@@ -64,7 +63,7 @@ export function PlayerBar() {
           {track && !intro && <QualityPill track={track} />}
           <VolumeControl width={72} />
         </div>
-        <WaveSeek className="pb-seek" position={empty ? 0 : p.position} duration={duration} playing={p.playing && !empty} onSeek={(s) => playerStore.seek(s)} />
+        <PlayerSeek className="pb-seek" idle={empty} duration={duration} playing={p.playing && !empty} />
       </div>
 
       <span className="sr-only" aria-live="polite">
