@@ -39,7 +39,7 @@ import java.util.concurrent.Executors;
 @CapacitorPlugin(name = "PelagicNative")
 public class PelagicNativePlugin extends Plugin {
 
-    private static final String DRIVE_SCOPE = "https://www.googleapis.com/auth/drive";
+    private static final String DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.file"; // same as app/src/config.ts
 
     private final ExecutorService io = Executors.newSingleThreadExecutor();
     private ActivityResultLauncher<IntentSenderRequest> consentLauncher;

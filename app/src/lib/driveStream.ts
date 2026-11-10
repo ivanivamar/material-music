@@ -16,7 +16,14 @@ function listen() {
   const sw = navigator.serviceWorker
   sw.addEventListener('message', (e: MessageEvent) => {
     const type = (e.data as { type?: string } | null)?.type
-    if (type === 'pelagic:token') e.ports[0]?.postMessage({ token: sessionStore.token() })
+    if (type === 'pelagic:token') {
+      // after a reload the token is not in storage any more (state/session.ts): wait for the renewal
+      const port = e.ports[0]
+      void sessionStore.ensureToken().then(
+        (token) => port?.postMessage({ token }),
+        () => port?.postMessage({ token: null }),
+      )
+    }
     else if (type === 'pelagic:drive-401') sessionStore.expire()
   })
   sw.startMessages()

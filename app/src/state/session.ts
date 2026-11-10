@@ -9,7 +9,10 @@
  * `npm run dev`, or the Firebase secret not set) it falls back to the token model: a ~1 hour
  * token and no refresh, so the session becomes `expired` and one click on "Sign in again" renews it.
  *
- * Persisted in localStorage `pelagic.session.v1` so a reload inside the hour stays signed in.
+ * Persisted in localStorage `pelagic.session.v1`. With the token helper only the account is saved:
+ * the access token stays in memory and a reload gets a new one from `/api/auth/refresh` (the refresh
+ * token is in the HttpOnly cookie), so a script that reads localStorage finds no Drive token. Without
+ * the helper (token model) the token is saved too, so a reload inside the hour stays signed in.
  *
  * Android app (step 7): Google blocks this web flow inside a WebView, so the APK signs in natively
  * (Play services AuthorizationClient via PelagicNative). Play services can hand out a fresh token
@@ -70,7 +73,8 @@ function readStored(): Stored | null {
 }
 function writeStored(s: Stored | null) {
   try {
-    if (s) localStorage.setItem(KEY, JSON.stringify(s))
+    // web + token helper: never write the access token (see the header comment)
+    if (s) localStorage.setItem(KEY, JSON.stringify(s.renew === 'server' ? { ...s, token: '', expiresAt: 0 } : s))
     else localStorage.removeItem(KEY)
   } catch {
     /* private mode: session lasts until reload */
@@ -83,6 +87,9 @@ function isLive(s: Stored) {
 function canRenew(s: Stored | null): boolean {
   return isNative || s?.renew === 'server'
 }
+
+// A token saved by an older build: take it out of localStorage now (it stays usable in memory).
+if (stored?.renew === 'server' && stored.token) writeStored(stored)
 
 function set(patch: Partial<Session>) {
   state = { ...state, ...patch }
@@ -195,7 +202,7 @@ function tokenClient() {
   client ??= google.accounts.oauth2.initTokenClient({
     client_id: GOOGLE_CLIENT_ID,
     scope: DRIVE_SCOPE,
-    include_granted_scopes: true,
+    include_granted_scopes: false, // only DRIVE_SCOPE: an older, wider grant must not ride along
     callback: (resp) => {
       if (resp.error) pendingReject?.(new Error(resp.error_description || resp.error))
       else pendingResolve?.(resp)
@@ -357,7 +364,7 @@ export const sessionStore = {
               client_id: GOOGLE_CLIENT_ID,
               scope: DRIVE_SCOPE,
               ux_mode: 'popup',
-              include_granted_scopes: true,
+              include_granted_scopes: false, // only DRIVE_SCOPE: an older, wider grant must not ride along
               select_account: !!opts.switchAccount,
               ...(hint ? { login_hint: hint } : {}),
               callback: (r) => (r.error || !r.code ? reject(new Error(r.error_description || r.error || 'Sign-in failed.')) : resolve(r.code)),
