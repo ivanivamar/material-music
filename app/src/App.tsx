@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { ToastProvider } from './components/ui'
+import { ErrorBoundary, PageError } from './components/ErrorBoundary'
 import { Components } from './dev/Components'
 import { Foundations } from './dev/Foundations'
 import { initDriveStream } from './lib/driveStream'
@@ -154,7 +155,14 @@ export default function App() {
   if (route.kind === 'dev') screen = route.key === 'dev/foundations' ? <Foundations /> : <Components />
   else if (session.status === 'signed-out') screen = <SignIn />
   else if (!lib.cacheChecked) screen = <div className="scr" />
-  else if (lib.data && !charting) screen = <AppShell route={route}><Page route={route} /></AppShell>
+  else if (lib.data && !charting) screen = (
+    <AppShell route={route}>
+      {/* a page that throws shows PageError in its place; the player and navigation stay up */}
+      <ErrorBoundary resetKey={JSON.stringify(route)} fallback={(error, reset) => <PageError error={error} reset={reset} />}>
+        <Page route={route} />
+      </ErrorBoundary>
+    </AppShell>
+  )
   else if (session.status === 'expired') screen = <SignIn expired />
   else if (lib.status === 'missing') screen = <NoLibrary />
   else if (lib.status === 'error') screen = <LibraryError />

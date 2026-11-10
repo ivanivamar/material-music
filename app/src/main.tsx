@@ -14,12 +14,15 @@ import './styles/base.css'
 import './components/ui/card.css'
 
 import App from './App.tsx'
+import { AppError, ErrorBoundary } from './components/ErrorBoundary'
 import { installRipple } from './design/ripple'
 
 installRipple()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <ErrorBoundary fallback={(error) => <AppError error={error} />}>
+      <App />
+    </ErrorBoundary>
   </StrictMode>,
 )
