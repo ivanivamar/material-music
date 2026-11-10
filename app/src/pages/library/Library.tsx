@@ -41,7 +41,6 @@ import { firstResult, openTopResult, shownCount, useSearchResults } from '../sea
 import { LibrarySearchField, RecentSearches } from './LibrarySearch'
 import { forgetScrollBeforeFocus, noteScrollBeforeFocus, restoreBrowseScroll, setLibraryQuery } from './browseContext'
 import { CardGroups, NewTile, Scrubber, SongGroups, albumItem, artistItem, groupItems, playlistItem, sortItems, type GroupBy, type LibItem } from './libgrid'
-import './lib2.css'
 
 const TAB_LABEL: Record<LibraryTab, string> = { all: 'All', artists: 'Artists', albums: 'Albums', playlists: 'Playlists', songs: 'Songs' }
 

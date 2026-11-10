@@ -3,7 +3,6 @@ import { useState } from 'react'
 import { useCover, useLazyCover } from '../../lib/covers'
 import { type Artist } from '../../state/library'
 import { monogram } from '../../state/views'
-import './avatar.css'
 
 /* ── Artist avatar: photo (grey until hover) or mono monogram ── */
 

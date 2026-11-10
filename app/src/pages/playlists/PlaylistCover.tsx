@@ -11,7 +11,6 @@ import { useCover, useLazyCover } from '../../lib/covers'
 import { useLibrary } from '../../state/library'
 import { playlistInfo } from '../../state/playlistViews'
 import { LIKED_ID, type Playlist } from '../../state/playlists'
-import './playlists.css'
 
 function Tile({ id, lazy }: { id: string | undefined; lazy: boolean }) {
   const [ref, lazyUrl] = useLazyCover<HTMLDivElement>(lazy ? id : null)

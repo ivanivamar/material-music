@@ -35,12 +35,10 @@ import { isTouch, useIsPhone } from '../../state/viewport'
 import { fmtTotal, plural } from '../../state/views'
 import { MixCover } from '../home/art'
 import { MixCard, cardSize, useHomeSize } from '../home/cards'
-import '../home/home.css'
 import { useMadeForYou } from '../../state/madeForYou'
 import { hideFromDayMix, nextUpdateLabel, type DayMix } from '../../state/daymix'
 import { DISC_ID, type DiscoveryMix } from '../../state/discovery'
 import { DiscoveryPending, DiscoveryView } from './DiscoveryView'
-import './mix.css'
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const DAY = 86_400_000

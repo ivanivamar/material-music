@@ -22,7 +22,6 @@ import { previewId, previewsStore, usePreviewsVersion, type PreviewInfo } from '
 import { useIsPhone } from '../../state/viewport'
 import { plural } from '../../state/views'
 import { MixCover } from '../home/art'
-import './mix.css'
 
 type Filter = 'all' | 'gap' | 'new'
 

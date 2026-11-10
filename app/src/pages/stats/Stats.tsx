@@ -44,11 +44,9 @@ import { ArtistDisc, CookiePlay, useArtistHue } from '../home/art'
 import { AlbumCardHome, cardSize, useHomeSize } from '../home/cards'
 import { ActBtn, DtList, DtRow } from '../library/detail'
 import { playList, useNowPlaying } from '../library/playback'
-import '../home/home.css'
 import { genreResolver, useGenres } from '../../state/genres'
 import { genreHue } from '../../lib/mixing'
 import { ShareRecapButton } from './ShareRecap'
-import './stats.css'
 
 /* M3 Expressive shapes for the counter tiles and the artist photo (same point count as the others) */
 const SHAPE_SUNNY = cookie(8, 0.05)

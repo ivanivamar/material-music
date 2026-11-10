@@ -21,7 +21,6 @@ function sampleCover(a: string, b: string, c: string): string {
 const underBlue = sampleCover('#1d4a7a', '#06121f', '#6fb3ff')
 const rotoscope = sampleCover('#5a2a3a', '#120609', '#ff8aa8')
 const tsunami = sampleCover('#1f6f6a', '#04100f', '#8af0e0')
-import './components.css'
 import { OverlayPanels } from './Overlays'
 import { HeartButton } from '../components/LikeButton'
 import { LikedCover } from '../pages/playlists/PlaylistCover'

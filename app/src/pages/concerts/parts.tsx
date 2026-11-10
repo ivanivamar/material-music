@@ -15,7 +15,6 @@ import { dateParts, statusLook, type Show } from '../../state/concertViews'
 import type { Artist } from '../../state/library'
 import { artistHref, go } from '../../shell/routes'
 import { initials, useArtistHue } from '../home/art'
-import './concerts.css'
 import { openExternal } from '../releases/parts'
 
 /* ── Artist look ────────────────────────────────────── */

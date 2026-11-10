@@ -24,7 +24,6 @@ import { insertionAt, reorderSlot, visibleRange } from './layout'
 import { takeGrab } from './grab'
 import { useQueueItem } from './useQueueItem'
 import { ItemArt } from './ItemArt'
-import './carousel.css'
 
 export type ReorderAxis = 'x' | 'y'
 

@@ -40,7 +40,6 @@ import { cloudAvailable, isMigratedHere, useCloud, whenCloud, type CloudStoreNam
 import { listLegacyFiles, trashLegacyFiles, type LegacyFile } from '../../sync/legacyDrive'
 import { useHistory } from '../../state/history'
 import { usePlaylists } from '../../state/playlists'
-import './settings.css'
 
 /* ── Page ───────────────────────────────────────────── */
 

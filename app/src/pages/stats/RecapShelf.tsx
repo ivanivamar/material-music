@@ -22,7 +22,6 @@ import { AlbumCardHome, cardSize, useHomeSize } from '../home/cards'
 import { CookiePlay } from '../home/art'
 import { playList } from '../library/playback'
 import { ShareRecapButton } from './ShareRecap'
-import './recap.css'
 
 export function RecapShelf({ c, plays, now }: { c: Catalogue; plays: readonly Play[]; now: Date; playing?: string | null }) {
   // hooks first: the early returns below must not change how many hooks run between renders

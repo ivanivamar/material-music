@@ -50,8 +50,6 @@ import { playerStore } from '../../state/player'
 import { playList, useNowPlaying } from '../library/playback'
 import { fmtBytes, fmtN, monogram, plural } from '../../state/views'
 import { PageHeader } from '../PageHeader'
-import '../library/detail.css'
-import './health.css'
 
 interface TabDef {
   label: string

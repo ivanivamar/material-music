@@ -22,7 +22,6 @@ import { useLibrary } from '../../state/library'
 import { useReleases } from '../../state/releases'
 import { go } from '../../shell/routes'
 import { DateBlock, StatusChip, TicketsIcon, TicketsPill, hueVars } from './parts'
-import './concerts.css'
 
 export const ON_TOUR_ID = 'on-tour'
 

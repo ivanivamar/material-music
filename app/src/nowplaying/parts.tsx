@@ -12,7 +12,6 @@ import { playerStore, usePlayer, usePlayerPosition } from '../state/player'
 import { useDjView } from '../state/djUi'
 import { useSettings } from '../state/settings'
 import { isNative } from '../native/bridge'
-import './player.css'
 
 /** In-app link from inside the full-screen player: closes it first (and pops its history entry). */
 export function NpLink({ href, className, title, children }: { href: string; className?: string; title?: string; children: ReactNode }) {

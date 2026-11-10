@@ -13,7 +13,6 @@
  */
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { useMotion } from '../state/motion'
-import './marquee.css'
 
 const SPEED = 34 // px per second at 15px text
 const HOLD = 2600 // ms at rest between loops

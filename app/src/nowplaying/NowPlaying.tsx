@@ -47,8 +47,6 @@ import { DevicesButton } from '../sync/DevicesButton'
 import { useCover } from '../lib/covers'
 import { useLibrary } from '../state/library'
 import { trackOf, albumOf } from '../state/previews'
-import '../dj/dj.css'
-import './nowplaying.css'
 
 
 export function NowPlaying() {

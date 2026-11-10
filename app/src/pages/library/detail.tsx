@@ -12,7 +12,6 @@ import { useLazyCover } from '../../lib/covers'
 import { back as goBack } from '../../shell/routes'
 import { isTouch } from '../../state/viewport'
 import { playerStore } from '../../state/player'
-import './detail.css'
 
 /* ── Back row ───────────────────────────────────────── */
 

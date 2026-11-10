@@ -18,7 +18,6 @@ import { fmtBytes, plural } from '../../state/views'
 import { albumHref, go, libraryHref } from '../../shell/routes'
 import { waitingReason } from '../library/DownloadButton'
 import { PageHeader } from '../PageHeader'
-import './downloads.css'
 
 const QUALITY: { value: DownloadQuality; label: string }[] = [
   { value: 'opus', label: 'Opus 160' },

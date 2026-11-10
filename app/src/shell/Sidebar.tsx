@@ -19,7 +19,6 @@ import { LIKED_ID, playlistsStore, sidebarOrder, usePlaylists, type Playlist } f
 import { usePlayer } from '../state/player'
 import { plural } from '../state/views'
 import { NAV, href, playlistHref, type NavItem, type RouteKey } from './routes'
-import './sidebar.css'
 
 export function Sidebar({ active, activePlaylist, badges }: { active: RouteKey; activePlaylist?: string | null; badges?: Partial<Record<RouteKey, string>> }) {
   const local = useLocalFolder()

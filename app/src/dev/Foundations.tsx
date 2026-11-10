@@ -8,7 +8,6 @@ import { Icon, ICON_NAMES } from '../design/icons'
 import { CONTOUR_SMOOTH, GRAIN, STONE } from '../design/textures'
 import { quality } from '../design/tokens'
 import { AppMark, Lockup } from '../components/Logo'
-import './foundations.css'
 
 const SWATCHES: [string, string, string][] = [
   ['bg-0', '#050505', 'deepest canvas'],

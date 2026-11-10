@@ -1,8 +1,6 @@
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { ToastProvider } from './components/ui'
 import { ErrorBoundary, PageError } from './components/ErrorBoundary'
-import { Components } from './dev/Components'
-import { Foundations } from './dev/Foundations'
 import { initDriveStream } from './lib/driveStream'
 import { initPwa } from './lib/pwa'
 import { initNativeUpdates } from './native/updates'
@@ -17,18 +15,6 @@ import { isNative } from './native/bridge'
 import { SignIn } from './screens/SignIn'
 import { AppShell } from './shell/AppShell'
 import { useRoute, type Route } from './shell/routes'
-import { AlbumPage } from './pages/library/AlbumPage'
-import { ArtistPage } from './pages/library/ArtistPage'
-import { Library } from './pages/library/Library'
-import { Downloads } from './pages/downloads/Downloads'
-import { Upload } from './pages/upload/Upload'
-import { Stats } from './pages/stats/Stats'
-import { Settings } from './pages/settings/Settings'
-import { Health } from './pages/health/Health'
-import { NewReleases } from './pages/releases/NewReleases'
-import { PlaylistPage } from './pages/playlists/PlaylistPage'
-import { MixPage } from './pages/mix/MixPage'
-import { Concerts } from './pages/concerts/Concerts'
 import { concertsStore } from './state/concerts'
 import { recentStore } from './state/recent'
 import { initRadio } from './state/radio'
@@ -51,6 +37,47 @@ import { initSettingsSync } from './sync/settingsSync'
 import { useSession } from './state/session'
 import { NowPlayingHue } from './design/NowPlayingHue'
 import { initDiscovery } from './state/discovery'
+
+/*
+ * Pages other than Home are separate chunks, loaded the first time they are opened (and warmed up
+ * in the background a few seconds after boot, so a first visit doesn't wait on the network). The
+ * service worker precaches every chunk, so they open offline as before. All CSS stays in the one
+ * main stylesheet (styles/all.css).
+ */
+const load = {
+  Library: () => import('./pages/library/Library'),
+  AlbumPage: () => import('./pages/library/AlbumPage'),
+  ArtistPage: () => import('./pages/library/ArtistPage'),
+  PlaylistPage: () => import('./pages/playlists/PlaylistPage'),
+  MixPage: () => import('./pages/mix/MixPage'),
+  NewReleases: () => import('./pages/releases/NewReleases'),
+  Concerts: () => import('./pages/concerts/Concerts'),
+  Upload: () => import('./pages/upload/Upload'),
+  Downloads: () => import('./pages/downloads/Downloads'),
+  Stats: () => import('./pages/stats/Stats'),
+  Settings: () => import('./pages/settings/Settings'),
+  Health: () => import('./pages/health/Health'),
+}
+const Library = lazy(() => load.Library().then((m) => ({ default: m.Library })))
+const AlbumPage = lazy(() => load.AlbumPage().then((m) => ({ default: m.AlbumPage })))
+const ArtistPage = lazy(() => load.ArtistPage().then((m) => ({ default: m.ArtistPage })))
+const PlaylistPage = lazy(() => load.PlaylistPage().then((m) => ({ default: m.PlaylistPage })))
+const MixPage = lazy(() => load.MixPage().then((m) => ({ default: m.MixPage })))
+const NewReleases = lazy(() => load.NewReleases().then((m) => ({ default: m.NewReleases })))
+const Concerts = lazy(() => load.Concerts().then((m) => ({ default: m.Concerts })))
+const Upload = lazy(() => load.Upload().then((m) => ({ default: m.Upload })))
+const Downloads = lazy(() => load.Downloads().then((m) => ({ default: m.Downloads })))
+const Stats = lazy(() => load.Stats().then((m) => ({ default: m.Stats })))
+const Settings = lazy(() => load.Settings().then((m) => ({ default: m.Settings })))
+const Health = lazy(() => load.Health().then((m) => ({ default: m.Health })))
+// dev reference pages (#/dev/…): never warmed up, only fetched when opened
+const Components = lazy(() => import('./dev/Components').then((m) => ({ default: m.Components })))
+const Foundations = lazy(() => import('./dev/Foundations').then((m) => ({ default: m.Foundations })))
+
+// warm the page chunks once the app has settled (a failure here is retried when the page is opened)
+window.setTimeout(() => {
+  for (const fn of Object.values(load)) void fn().catch(() => {})
+}, 4000)
 
 // The first, local-only likes (Oct 2026, dropped): clear that old store. Liked songs now live in
 // the synced Liked songs playlist (state/playlists.ts LIKED_ID).
@@ -152,14 +179,16 @@ export default function App() {
   const inShell = route.kind === 'app' && lib.status === 'ready' && !charting && session.status !== 'signed-out'
 
   let screen
-  if (route.kind === 'dev') screen = route.key === 'dev/foundations' ? <Foundations /> : <Components />
+  if (route.kind === 'dev') screen = <Suspense fallback={null}>{route.key === 'dev/foundations' ? <Foundations /> : <Components />}</Suspense>
   else if (session.status === 'signed-out') screen = <SignIn />
   else if (!lib.cacheChecked) screen = <div className="scr" />
   else if (lib.data && !charting) screen = (
     <AppShell route={route}>
       {/* a page that throws shows PageError in its place; the player and navigation stay up */}
       <ErrorBoundary resetKey={JSON.stringify(route)} fallback={(error, reset) => <PageError error={error} reset={reset} />}>
-        <Page route={route} />
+        <Suspense fallback={null}>
+          <Page route={route} />
+        </Suspense>
       </ErrorBoundary>
     </AppShell>
   )

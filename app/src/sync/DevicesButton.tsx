@@ -14,7 +14,6 @@ import { useLibrary } from '../state/library'
 import { usePlayer, type RemoteDevice } from '../state/player'
 import { useIsPhone } from '../state/viewport'
 import { syncStore, useSync, type DeviceView } from './playerSync'
-import './devices.css'
 
 const iconOf = (d: Pick<RemoteDevice, 'platform'>): IconName => (d.platform === 'android' ? 'smartphone' : 'computer')
 

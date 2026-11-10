@@ -23,7 +23,6 @@ import { QueueCarousel } from '../nowplaying/carousel/QueueCarousel'
 import { ReorderView } from '../nowplaying/carousel/ReorderView'
 import { LyricsToggle, PlayerSeek, QualityPill, RepeatToggle, ReorderToggle, ShuffleToggle, Transport, VolumeControl } from '../nowplaying/parts'
 import { useCurrent, useDuration } from '../nowplaying/player'
-import './playerbar.css'
 
 /** How long the tray takes to close (playerbar.css): its content stays mounted that long. */
 const TRAY_MS = 420

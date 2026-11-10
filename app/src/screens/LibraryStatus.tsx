@@ -12,7 +12,6 @@ import { libraryStats, libraryStore, useLibrary, type Catalogue } from '../state
 import { useMotion } from '../state/motion'
 import { sessionStore, useSession } from '../state/session'
 import { useIsPhone } from '../state/viewport'
-import './screens.css'
 
 const fmtN = (n: number) => n.toLocaleString('en-US')
 const fmtMB = (b: number) => (b / 1024 / 1024).toFixed(1)

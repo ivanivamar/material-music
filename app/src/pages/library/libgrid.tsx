@@ -29,7 +29,6 @@ import { PlaylistCover } from '../playlists/PlaylistCover'
 import { LikeButton } from '../../components/LikeButton'
 import { albumTrackIds, artistTrackIds, playList, useNowPlaying } from './playback'
 import { useWindow } from './useWindow'
-import '../home/home.css'
 
 /* ── Items ──────────────────────────────────────────── */
 

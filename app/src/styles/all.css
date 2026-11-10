@@ -1,0 +1,50 @@
+/*
+ * Every stylesheet of the app, in cascade order. This file is the only place CSS is loaded from
+ * (main.tsx imports it once); components do not import their own .css files.
+ *
+ * Why: the pages are lazy chunks (App.tsx). If each component imported its CSS, the bundler would
+ * spread the styles over those chunks and decide their order itself, changing which rule wins.
+ * Listing them here keeps one stylesheet in one fixed order, the same as before the split.
+ *
+ * NEW stylesheet: add an @import line here (normally at the end, or next to the files of the same
+ * feature). A .css file that is not listed here is not loaded.
+ */
+@import './fonts.css';
+@import './tokens.css';
+@import './base.css';
+@import '../components/ui/card.css';
+@import '../components/ui/ui.css';
+@import '../components/ui/material.css';
+@import '../components/ui/overlay.css';
+@import '../components/ui/tabs-badge.css';
+@import '../components/atmosphere.css';
+@import '../dev/components.css';
+@import '../components/like.css';
+@import '../pages/playlists/playlists.css';
+@import '../dev/foundations.css';
+@import '../pages/stats/recap.css';
+@import '../pages/concerts/concerts.css';
+@import '../pages/home/home.css';
+@import '../screens/screens.css';
+@import '../nowplaying/lyrics.css';
+@import '../nowplaying/player.css';
+@import '../components/marquee.css';
+@import '../nowplaying/carousel/carousel.css';
+@import '../sync/devices.css';
+@import '../dj/dj.css';
+@import '../nowplaying/nowplaying.css';
+@import '../shell/playerbar.css';
+@import '../shell/sidebar.css';
+@import '../actions/actions.css';
+@import '../shell/shell.css';
+@import '../shell/phone.css';
+@import '../pages/library/detail.css';
+@import '../pages/library/lib2.css';
+@import '../pages/downloads/downloads.css';
+@import '../pages/upload/upload.css';
+@import '../pages/stats/stats.css';
+@import '../pages/settings/settings.css';
+@import '../pages/health/health.css';
+@import '../pages/library/avatar.css';
+@import '../pages/releases/releases.css';
+@import '../pages/mix/mix.css';

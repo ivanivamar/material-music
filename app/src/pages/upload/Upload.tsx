@@ -18,7 +18,6 @@ import { plural } from '../../state/views'
 import { PageHeader } from '../PageHeader'
 import { Inspector } from './Inspector'
 import { ReleaseList } from './ReleaseList'
-import './upload.css'
 
 export function Upload() {
   const s = useUpload()

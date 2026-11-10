@@ -41,7 +41,6 @@ import {
   useReleaseActions,
   type ReleaseActions,
 } from './parts'
-import './releases.css'
 
 type Tab = 'up' | 'out' | 'disc'
 const TABS: [Tab, string, Parameters<typeof Icon>[0]['name']][] = [

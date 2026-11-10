@@ -40,8 +40,6 @@ import { playRelease } from '../pages/releases/parts'
 import { useConcerts } from '../state/concerts'
 import { buildShows, nearbyShows } from '../state/concertViews'
 import { syncStore } from '../sync/playerSync'
-import './shell.css'
-import './phone.css'
 
 export function AppShell({ route, children }: { route: Route; children: ReactNode }) {
   const toast = useToast()

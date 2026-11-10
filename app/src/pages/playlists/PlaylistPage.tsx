@@ -35,7 +35,6 @@ import { PinOfflineToggle } from '../library/OfflineToggle'
 import { ActBtn, DetailBack, DtList, DtRow, MoreBtn, softDate, titleSize } from '../library/detail'
 import { useContextState, useNowPlaying } from '../library/playback'
 import { PlaylistCover } from './PlaylistCover'
-import './playlists.css'
 
 const RULE_ICON: Record<Rule['field'], IconName> = { added: 'calendar', lastPlayed: 'history', plays: 'history', playsIn: 'stats', genre: 'label', artist: 'artist', album: 'album', title: 'song', decade: 'calendar', year: 'calendar' }
 const ENTRY_MIME = 'application/x-pelagic-entry'

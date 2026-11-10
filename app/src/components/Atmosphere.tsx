@@ -18,7 +18,6 @@ import { particleCounts, type ParticleSetting } from '../design/tokens'
 import { useSettings } from '../state/settings'
 import { useMotion } from '../state/motion'
 import { useIsPhone } from '../state/viewport'
-import './atmosphere.css'
 
 interface AtmosphereProps {
   /** override the user's particle setting (e.g. a small preview tile) */

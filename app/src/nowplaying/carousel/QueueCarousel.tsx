@@ -46,7 +46,6 @@ import { lastFullFocus, multiBrowse, withGhosts, type CarouselSizes, type Slot }
 import { useQueueItem } from './useQueueItem'
 import { ItemArt } from './ItemArt'
 import { grabIntoReorder, LONG_PRESS_MS, LONG_PRESS_SLOP } from './grab'
-import './carousel.css'
 
 export type CarouselVariant = 'bar' | 'mini' | 'full' | 'strip'
 

@@ -32,7 +32,6 @@ import { addToPlaylist, createPlaylist, deletePlaylist, downloadTrack, goTo, pla
 import { playList } from '../pages/library/playback'
 import { radioStore } from '../state/radio'
 import type { RadioSeed } from '../lib/mixing'
-import './actions.css'
 
 type Toast = ReturnType<typeof useToast>
 

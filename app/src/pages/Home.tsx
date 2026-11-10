@@ -37,7 +37,6 @@ import { RecapShelf } from './stats/RecapShelf'
 import { AlbumCardHome, ArtistCard, avatarSize, cardSize, MixCard, NewSmartCard, RadioCardView, SkelCard, SmartCard, SmartInvite, useHomeSize } from './home/cards'
 import { JumpBackIn, jumpTiles } from './home/JumpBackIn'
 import { ShelfCard, useConcertShelf } from './concerts/cards'
-import './home/home.css'
 
 function useMinuteClock() {
   const [now, setNow] = useState(() => new Date())

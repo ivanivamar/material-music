@@ -25,7 +25,6 @@ import { back, href, replace } from '../../shell/routes'
 import { PosterCard, ShowCard } from './cards'
 import { Attribution, CitySearch, Clover, LocationPicker, RadiusSeg } from './parts'
 import { ShowDialog, type DialogState } from './ShowDialog'
-import './concerts.css'
 
 const query = () => new URLSearchParams(window.location.hash.split('?')[1] ?? '')
 

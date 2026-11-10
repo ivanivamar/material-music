@@ -6,7 +6,6 @@ import { AppMark } from '../components/Logo'
 import { Icon } from '../design/icons'
 import { preloadGoogle, sessionStore, useSession } from '../state/session'
 import { useIsPhone } from '../state/viewport'
-import './screens.css'
 import { Button } from '../components/ui'
 
 export function SignIn({ expired = false }: { expired?: boolean }) {

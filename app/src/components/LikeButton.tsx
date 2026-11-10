@@ -15,7 +15,6 @@ import { setLike } from '../actions/ops'
 import { useToast } from './ui'
 import { useIsLiked } from '../state/likes'
 import { useMotion } from '../state/motion'
-import './like.css'
 
 export type LikeSize = 'xs' | 'sm' | 'md' | 'lg'
 

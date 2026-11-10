@@ -17,7 +17,6 @@ import { LIKED_ID, usePlaylists, type Playlist } from '../../state/playlists'
 import { useIsPhone } from '../../state/viewport'
 import { plural } from '../../state/views'
 import { PlaylistCover } from './PlaylistCover'
-import './playlists.css'
 
 export function PlaylistsView({ c }: { c: Catalogue }) {
   const { list, loaded } = usePlaylists()
