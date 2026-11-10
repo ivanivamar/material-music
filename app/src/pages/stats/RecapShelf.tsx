@@ -25,12 +25,13 @@ import { ShareRecapButton } from './ShareRecap'
 import './recap.css'
 
 export function RecapShelf({ c, plays, now }: { c: Catalogue; plays: readonly Play[]; now: Date; playing?: string | null }) {
+  // hooks first: the early returns below must not change how many hooks run between renders
+  const size = useHomeSize()
   const year = recapYear(now)
   if (year == null) return null
   const stats = periodStats(c, plays, { year, month: null })
   if (!stats.plays) return null
   const done = year < now.getFullYear()
-  const size = useHomeSize()
   const cs = cardSize(size)
   const phone = size !== 'desk'
 
