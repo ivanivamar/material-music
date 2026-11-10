@@ -9,21 +9,27 @@
 .pb {
   --pb-tray-h: 306px; /* 18 + ReorderView's strip (56 bar + 16 gap + 200 tiles) + 16 */
   position: absolute; left: 18px; right: 28px; bottom: 28px; z-index: 5;
-  border-radius: 32px; display: flex; flex-direction: column; overflow: hidden; isolation: isolate;
+  /* no overflow: hidden here. A rounded clip around the tray makes the browser mask the reorder strip
+     while it scrolls and while its tiles slide (janky wheel scrolling, flicker as a gap opens), which the
+     full-screen player doesn't have. The player row rounds its own corners instead. */
+  border-radius: 32px; display: flex; flex-direction: column; isolation: isolate;
   background: var(--panel); color: var(--ink-primary);
-  box-shadow: inset 0 0 0 1px var(--border), 0 12px 32px -12px rgba(0, 0, 0, .55);
+  box-shadow: 0 12px 32px -12px rgba(0, 0, 0, .55);
   cursor: pointer; transition: background 300ms var(--ease-std);
 }
+/* the hairline border, drawn over the player row (which now reaches the bar's edges) */
+.pb::after { content: ''; position: absolute; inset: 0; z-index: 1; border-radius: inherit; box-shadow: inset 0 0 0 1px var(--border); pointer-events: none; }
 .pb.is-empty { cursor: default; }
 .pb.is-reorder { background: var(--surface-1); }
 .pb-surface {
-  flex: none; height: 100px; padding: 10px 20px 10px 10px; border-radius: 26px;
+  flex: none; height: 100px; padding: 10px 20px 10px 10px; border-radius: 26px 26px 32px 32px;
   display: flex; align-items: center; gap: 20px; background: var(--panel);
 }
 .pb.is-reorder .pb-surface { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .06); }
 .pb-surface button { font: inherit; }
 
-/* the reorder tray: closed it has no height; its content keeps its size, so nothing reflows as it opens */
+/* the reorder tray: closed it has no height; its content keeps its size, so nothing reflows as it opens.
+   Its clip is a plain rectangle (the content's padding keeps it clear of the bar's top corners). */
 .pb-tray { flex: none; height: 0; overflow: hidden; opacity: 0; cursor: default; transition: height 420ms var(--ease-shape), opacity 220ms var(--ease-std); }
 .pb.is-reorder .pb-tray { height: var(--pb-tray-h); opacity: 1; }
 .pb-tray-in { height: var(--pb-tray-h); padding: 18px 20px 16px; }
