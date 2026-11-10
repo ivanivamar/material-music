@@ -1,5 +1,6 @@
 /* Lyrics (Lyrics.tsx, and the DJ intro's spoken line): lines, the active card, plain text, romaji.
-   Shown only inside the full-screen player (.np), whose --np-* inks they use. */
+   Shown inside the full-screen player (.np) or, on phone, in the lyrics sheet (.np-ink), whose
+   --np-* inks they use. */
 /* lyric lines (Lyrics.tsx): Material 3 Expressive active card, typography & motion */
 .ly-viewport {
   position: relative; flex: 1; min-height: 0; overflow: hidden;
@@ -25,7 +26,7 @@
 }
 .ly-list.is-snap, .ly-list.is-touching { transition: none; }
 .ly-list.is-manual:not(.is-touching) { transition: transform .25s var(--ease-std); }
-.np .ly-line {
+:is(.np, .np-ink) .ly-line {
   position: relative; display: flex; align-items: center; gap: 12px;
   width: 100%; text-align: left; padding: 12px 14px 12px 16px; margin: 0;
   border: 0; border-radius: 16px; background: transparent; cursor: pointer;
@@ -41,14 +42,14 @@
     transform 380ms cubic-bezier(0.42, 1.67, 0.21, 0.9),
     box-shadow 350ms var(--ease-std);
 }
-.np .ly-line.is-past { font-weight: 500; color: var(--np-on-var); }
-.np .ly-line:hover:not(.is-on) {
+:is(.np, .np-ink) .ly-line.is-past { font-weight: 500; color: var(--np-on-var); }
+:is(.np, .np-ink) .ly-line:hover:not(.is-on) {
   opacity: .95 !important;
   background: rgba(255, 255, 255, .055);
   border-radius: 18px;
 }
-.np .ly-line:active { transform: scale(.985); }
-.np .ly-line.is-on {
+:is(.np, .np-ink) .ly-line:active { transform: scale(.985); }
+:is(.np, .np-ink) .ly-line.is-on {
   padding: 16px 16px 16px 18px;
   margin: 4px 0;
   border-radius: 22px;
@@ -63,7 +64,7 @@
     inset 0 0 0 1px color-mix(in oklch, var(--album-hi) 36%, rgba(255, 255, 255, .1)),
     0 16px 34px -18px rgba(0, 0, 0, .8);
 }
-.np .ly-line.is-on:hover { opacity: 1 !important; }
+:is(.np, .np-ink) .ly-line.is-on:hover { opacity: 1 !important; }
 .ly-bar {
   width: 4px; align-self: stretch; min-height: 22px; border-radius: 999px; flex: none;
   background: var(--album-hi);
@@ -111,7 +112,7 @@
   50% { transform: scale(1.28); opacity: 1; }
 }
 
-.np .ly-sync-btn {
+:is(.np, .np-ink) .ly-sync-btn {
   position: absolute; right: 18px; bottom: 14px; z-index: 3;
   height: 36px; padding: 0 14px 0 11px; border: 0; border-radius: 999px; cursor: pointer;
   display: inline-flex; align-items: center; gap: 6px;
@@ -121,9 +122,9 @@
   animation: ly-sync-in 280ms var(--ease-shape) both;
   transition: transform 250ms var(--ease-shape);
 }
-.np .ly-sync-btn .ms { font-size: 18px; color: inherit; }
-.np .ly-sync-btn:hover { transform: translateY(-2px); }
-.np .ly-sync-btn:active { transform: scale(.94); }
+:is(.np, .np-ink) .ly-sync-btn .ms { font-size: 18px; color: inherit; }
+:is(.np, .np-ink) .ly-sync-btn:hover { transform: translateY(-2px); }
+:is(.np, .np-ink) .ly-sync-btn:active { transform: scale(.94); }
 @keyframes ly-sync-in { from { opacity: 0; transform: translateY(10px) scale(.9); } to { opacity: 1; transform: none; } }
 
 .ly-foot {

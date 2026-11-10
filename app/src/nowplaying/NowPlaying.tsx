@@ -9,16 +9,19 @@
  *   Reorder: the hero row gets smaller and the strip becomes the drag strip (ReorderView, axis x).
  *
  * Phone — the queue carousel is the hero:
- *   close · PLAYING FROM … · devices more / [ carousel ] / seek / shuffle ⏮ ▶ ⏭ repeat / [ lyrics ]
+ *   close · PLAYING FROM … · devices more / [ carousel ] / seek / shuffle ⏮ ▶ ⏭ repeat
  *   / Lyrics · DJ · Reorder. It morphs out of the mini card: while the mini player's handle (or this
  *   header) is dragged, --np-t runs 0 → 1 and the layout blends between the two (lift.ts).
+ *   Lyrics open in the shared bottom sheet (components/ui Sheet) from just under the header to the
+ *   bottom of the screen, with play / pause in its head. A DJ intro on its own still shows inline
+ *   under the controls.
  *
  * Background: the cover, hugely blurred (.np-bg), violet during the DJ's own scenes. While the DJ speaks
  * an intro the lyrics slot shows the intro; the DJ's start view takes the whole body.
  * Opened from the player bar / mini player; Esc, Back or (phone) dragging the header down closes it.
  */
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
-import { AlbumEq, IconButton, WaveSeek } from '../components/ui'
+import { AlbumEq, IconButton, Sheet, WaveSeek } from '../components/ui'
 import { LikeButton } from '../components/LikeButton'
 import { useMotion } from '../state/motion'
 import { nowPlayingStore, useNowPlayingUi } from '../state/nowPlaying'
@@ -122,34 +125,40 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
   // the lyrics slot: lyrics, or the intro while the DJ speaks
   const side = !reorder && !startView && (ly || intro) && !(phone && dragging)
 
+  // phone: the lyrics open in the shared bottom sheet; only a DJ intro on its own stays inline
+  const sheetOn = phone && !!side && ly
+  const inline = side && !sheetOn
+
   const ctx = contextLine(p.context)
   const backToNp = startView && hasSomething
   const djScene = startView || intro
 
   const seek = <WaveSeek className="np-seek" below position={p.position} duration={duration} playing={p.playing} height={phone ? 16 : 14} onSeek={(s) => playerStore.seek(s)} />
 
-  const sidePanel = side && (
+  const sideSub = intro ? (dj.session?.title ?? 'DJ') : track ? `${track.title} · ${track.artist}` : ''
+  const sideBody = (lyrics: boolean) =>
+    intro && id ? (
+      lyrics ? (
+        <DjIntroLyrics item={id} line={dj.session?.line ?? ''} />
+      ) : (
+        <div className="np-side-intro">
+          <DjIntroInfo item={id} view={dj} playing={p.playing} phone={phone} />
+        </div>
+      )
+    ) : (
+      track && <Lyrics track={track} position={p.position} playing={p.playing && ly} />
+    )
+
+  const sidePanel = inline && (
     <aside className="np-side" aria-label={ly ? 'Lyrics' : 'DJ intro'}>
       <div className="np-side-head">
         <div className="np-side-titles">
           <div className="np-side-title">{ly ? 'Lyrics' : 'DJ intro'}</div>
-          <div className="np-side-sub">{intro ? (dj.session?.title ?? 'DJ') : track ? `${track.title} · ${track.artist}` : ''}</div>
+          <div className="np-side-sub">{sideSub}</div>
         </div>
         {ly && !phone && <IconButton icon="x" label="Close lyrics" title="Close" onClick={() => nowPlayingStore.setView('np')} />}
       </div>
-      <div className="np-side-body">
-        {intro && id ? (
-          ly ? (
-            <DjIntroLyrics item={id} line={dj.session?.line ?? ''} />
-          ) : (
-            <div className="np-side-intro">
-              <DjIntroInfo item={id} view={dj} playing={p.playing} phone={phone} />
-            </div>
-          )
-        ) : (
-          track && <Lyrics track={track} position={p.position} playing={p.playing && ly} />
-        )}
-      </div>
+      <div className="np-side-body">{sideBody(ly)}</div>
     </aside>
   )
 
@@ -158,7 +167,7 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
     closing && 'is-closing',
     phone && 'is-phone',
     phone && (dragging || (t > 0 && t < 1)) && 'is-morphing',
-    side && 'has-side',
+    inline && 'has-side',
     reorder && 'is-reorder',
     djScene && 'is-dj-scene',
     startView && 'is-dj-start',
@@ -246,6 +255,24 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
             <DjButton variant="phone" />
             <ReorderToggle text />
           </div>
+          {/* lyrics: the shared bottom sheet, from under the header down (nowplaying.css .np-ly-sheet) */}
+          <Sheet
+            open={sheetOn}
+            onClose={() => nowPlayingStore.setView('np')}
+            label="Lyrics"
+            title="Lyrics"
+            meta={sideSub}
+            headerActions={<IconButton icon={p.playing ? 'pauseF' : 'playF'} label={p.playing ? 'Pause' : 'Play'} size="sm" variant="soft" onClick={() => playerStore.toggle()} />}
+            tone="glass"
+            lightScrim
+            className="np-ink np-ly-sheet"
+            bodyClassName="np-ly-body"
+          >
+            {/* the lyrics scroll by touch themselves: only the sheet's head drags it */}
+            <div className="np-ly-fill" data-no-sheet-drag>
+              {sideBody(true)}
+            </div>
+          </Sheet>
         </>
       )}
 

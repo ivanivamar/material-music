@@ -1,13 +1,16 @@
 /* Full-screen player (Nov 2026 carousel player): blurred-cover background, header; desktop: square cover +
    info with the lyrics slot beside it and the queue strip underneath; phone: the queue carousel as the
-   hero, the lyrics under the controls, morphing out of the mini card.
+   hero, the lyrics in the shared bottom sheet, morphing out of the mini card.
    The controls themselves are styled once in player.css; lyric lines in lyrics.css. */
-.np {
+/* the player's inks; .np-ink lends them to player content shown outside .np (the phone lyrics sheet) */
+.np, .np-ink {
   --np-on: oklch(0.95 0.006 40);
   --np-on-var: oklch(0.80 0.014 40);
   --np-dim: oklch(0.62 0.012 40);
   --np-edge: oklch(0.40 0.01 40 / 0.4);
   --np-hair: rgba(255, 255, 255, .07);
+}
+.np {
   position: fixed; inset: 0; z-index: 40;
   overflow: hidden; isolation: isolate; color: var(--np-on);
   background: var(--glass-np);
@@ -131,6 +134,7 @@ a.np-from-l:hover { color: var(--np-on); text-decoration: underline; text-underl
 .np.is-phone .np-body { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 4px 16px 0; }
 .np.is-phone .np-stage { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; }
 .np-stage > .qc, .np-stage > .rq { flex: 1; min-height: 0; }
+/* a DJ intro shown inline under the controls: the carousel makes room */
 .np.is-phone.has-side .np-stage { flex: none; height: clamp(150px, 26vh, 240px); }
 .np.is-phone.is-reorder .np-stage { padding-bottom: 8px; }
 .np-phone-controls { flex: none; display: flex; flex-direction: column; gap: 8px; padding: 16px 20px 4px; }
@@ -141,6 +145,11 @@ a.np-from-l:hover { color: var(--np-on); text-decoration: underline; text-underl
 .np.is-phone .np-side-head { padding: 12px 14px 8px 18px; }
 .np.is-phone .np-side-title { font-size: 16px; }
 .np.is-phone .np-side-intro { padding: 16px 18px; }
+/* phone lyrics: the shared bottom sheet (components/ui Sheet), a fixed-height card from just under the
+   player's header to the bottom, so the lyrics get the whole height. The lyric list scrolls itself. */
+.sh.np-ly-sheet .sh-card { top: 56px; color: var(--np-on); }
+.np-ly-body.sh-body { display: flex; flex-direction: column; padding: 0; overflow: hidden; }
+.np-ly-fill { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .np-bottom {
   flex: none; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px;
   padding: 12px 16px calc(16px + env(safe-area-inset-bottom));
