@@ -5,7 +5,7 @@
  */
 import { test, describe } from 'node:test'
 import assert from 'node:assert/strict'
-import { multiBrowse, lastFullFocus, reorderSlot, insertionAt, visibleRange, type CarouselSizes } from '../src/nowplaying/carousel/layout.ts'
+import { multiBrowse, withGhosts, lastFullFocus, reorderSlot, insertionAt, visibleRange, type CarouselSizes } from '../src/nowplaying/carousel/layout.ts'
 
 const BAR: CarouselSizes = { hero: 280, med: 136, small: 48, gap: 8, prev: 0 }
 const FULL: CarouselSizes = { hero: 600, med: 300, small: 88, gap: 8, prev: 2 }
@@ -105,5 +105,28 @@ describe('strip end of queue', () => {
   })
   test('without medMax any item can be the focus', () => {
     assert.equal(lastFullFocus(20, 1312, { ...STRIP, medMax: undefined }), 19)
+  })
+})
+
+describe('withGhosts', () => {
+  const PHONE: CarouselSizes = { hero: 248, med: 72, small: 40, gap: 8, prev: 1 }
+  const row = (focus: number, count = 20) => withGhosts(multiBrowse(count, focus, 328, PHONE), count, PHONE)
+
+  test('parks invisible neighbours outside the row on both sides', () => {
+    const s = row(5)
+    assert.deepEqual(s.map((x) => [x.index, !!x.ghost]), [[3, true], [4, true], [5, false], [6, false], [7, true], [8, true]])
+    for (const g of s.filter((x) => x.ghost)) assert.ok(g.x + g.w <= 0 || g.x >= 328, `ghost ${g.index} is off the row`)
+  })
+
+  test('a one-step browse, either way, mounts no visible card that was not already there', () => {
+    for (const [from, to] of [[5, 6], [5, 4], [5, 7], [5, 3]]) {
+      const before = new Set(row(from).map((x) => x.index))
+      for (const x of row(to).filter((x) => !x.ghost)) assert.ok(before.has(x.index), `${from} → ${to}: card ${x.index}`)
+    }
+  })
+
+  test('stops at the ends of the queue', () => {
+    assert.deepEqual(row(0).map((x) => x.index), [0, 1, 2, 3])
+    assert.deepEqual(row(19).map((x) => x.index), [17, 18, 19])
   })
 })

@@ -29,6 +29,8 @@ export interface Slot {
   /** left edge and width inside the carousel (px) */
   x: number
   w: number
+  /** an off-screen neighbour (withGhosts): mounted but invisible, so a browse step can slide it in */
+  ghost?: boolean
 }
 
 /**
@@ -70,6 +72,25 @@ export function multiBrowse(count: number, focus: number, width: number, s: Caro
     for (let i = 0; i < after; i++) push(focus + 2 + i, 'small', s.small)
   }
   return slots
+}
+
+/**
+ * The visible slots plus up to `n` invisible neighbours on each side, parked as pills just outside the
+ * row (before its first card, after its last). They are already mounted when a browse step brings
+ * them in — and the cards a step pushes out become ghosts instead of unmounting — so every card
+ * slides to its new place whichever way the carousel moves, instead of popping in or out.
+ */
+export function withGhosts(slots: Slot[], count: number, s: CarouselSizes, n = 2): Slot[] {
+  if (slots.length === 0 || n <= 0) return slots
+  const pitch = s.small + s.gap
+  const first = slots[0]
+  const last = slots[slots.length - 1]
+  const out: Slot[] = []
+  for (let k = Math.min(n, first.index); k >= 1; k--) out.push({ index: first.index - k, kind: 'small', x: first.x - k * pitch, w: s.small, ghost: true })
+  out.push(...slots)
+  const right = last.x + last.w + s.gap
+  for (let k = 0; k < n && last.index + 1 + k < count; k++) out.push({ index: last.index + 1 + k, kind: 'small', x: right + k * pitch, w: s.small, ghost: true })
+  return out
 }
 
 /* ── Reorder mode: equal slots along one axis ─────────────────────────────── */

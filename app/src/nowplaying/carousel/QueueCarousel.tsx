@@ -20,7 +20,8 @@
  * - Phone: flick a card up to remove it (Undo in the toast).
  * - While the DJ plays there is no upcoming queue: only played songs and the current one show.
  *
- * Only the visible cards mount, so a whole library in the queue costs nothing.
+ * Only the visible cards mount (plus two invisible neighbours on each side, so a browse step always
+ * slides cards in and out instead of popping them), so a whole library in the queue costs nothing.
  */
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent, type WheelEvent } from 'react'
 import { AlbumEq, Button, CookieButton, IconButton } from '../../components/ui'
@@ -34,7 +35,7 @@ import { albumHref, artistHref } from '../../shell/routes'
 import { IntroSub } from '../../dj/DjIntro'
 import { NpLink } from '../parts'
 import { nowKicker, useProgress, useQueueEdits } from '../player'
-import { lastFullFocus, multiBrowse, type CarouselSizes, type Slot } from './layout'
+import { lastFullFocus, multiBrowse, withGhosts, type CarouselSizes, type Slot } from './layout'
 import { useQueueItem } from './useQueueItem'
 import { ItemArt } from './ItemArt'
 import { grabIntoReorder, LONG_PRESS_MS, LONG_PRESS_SLOP } from './grab'
@@ -44,7 +45,9 @@ export type CarouselVariant = 'bar' | 'mini' | 'full' | 'strip'
 
 /** Browsing springs back to the playing song after this long without input (ms). */
 const SPRING_BACK = 4000
-/** Wheel distance per browse step (px), swipe distance per step (px), swipe-up distance to remove. */
+/** Wheel distance per browse step (px), shortest swipe distance per step (px; a step is never shorter
+ *  than 60% of the hero, so a swipe moves the row about as far as the finger went), the shortest swipe
+ *  that counts, swipe-up distance to remove. */
 const WHEEL_STEP = 70
 const SWIPE_STEP = 90
 const SWIPE_MIN = 36
@@ -115,7 +118,11 @@ export function QueueCarousel({ variant, className, morph = 1 }: { variant: Caro
   const labels = variant === 'full'
   const labelSpace = labels ? 28 * Math.max(0, Math.min(1, morph)) : 0
   const cardH = Math.max(0, box.h - labelSpace)
-  const slots = box.w > 0 && count > 0 ? multiBrowse(count, focus, box.w, sizes) : []
+  const slots = box.w > 0 && count > 0 ? withGhosts(multiBrowse(count, focus, box.w, sizes), count, sizes) : []
+  // which way the row last moved: cards that weren't around (a jump past the neighbours) slide in from there
+  const [moved, setMoved] = useState({ focus, dir: 0 })
+  const dir = moved.focus === focus ? moved.dir : focus > moved.focus ? 1 : -1
+  if (moved.focus !== focus) setMoved({ focus, dir })
   const groupOf = (i: number): Group => (i < p.index ? 'played' : i === p.index ? 'now' : 'next')
 
   /* ── gestures: wheel, swipe, flick up, long press ───── */
@@ -176,7 +183,7 @@ export function QueueCarousel({ variant, className, morph = 1 }: { variant: Caro
     }
     if (Math.abs(dx) > SWIPE_MIN && Math.abs(dx) > Math.abs(dy) && count > 1) {
       swallowClick.current = true
-      const steps = Math.max(1, Math.round(Math.abs(dx) / SWIPE_STEP))
+      const steps = Math.max(1, Math.round(Math.abs(dx) / Math.max(SWIPE_STEP, (sizes.hero + sizes.gap) * 0.6)))
       browseTo(focus + (dx < 0 ? steps : -steps))
     }
   }
@@ -231,11 +238,13 @@ export function QueueCarousel({ variant, className, morph = 1 }: { variant: Caro
       {slots.map((s, k) => {
         const g = groupOf(s.index)
         // a label above the first visible card of each group (full screen)
-        const label = labels && (k === 0 || groupOf(slots[k - 1].index) !== g) ? GROUP_LABEL[g] : null
+        const before = slots[k - 1]
+        const label = labels && !s.ghost && (!before || before.ghost || groupOf(before.index) !== g) ? GROUP_LABEL[g] : null
         return (
           <CarouselCard
             key={s.index}
             slot={s}
+            enterDir={dir}
             variant={variant}
             id={p.queue[s.index]}
             group={g}
@@ -275,6 +284,8 @@ export function QueueCarousel({ variant, className, morph = 1 }: { variant: Caro
 
 interface CardProps {
   slot: Slot
+  /** which way the row is moving (-1 / 0 / 1): a card mounting in view slides in from that side */
+  enterDir: number
   variant: CarouselVariant
   id: string
   group: Group
@@ -291,13 +302,17 @@ interface CardProps {
   onRemove: () => void
 }
 
-function CarouselCard({ slot, variant, id, group, focused, browsing, height, label, next, canEdit, onClick, onPlayNow, onPlayNext, onRemove }: CardProps) {
+function CarouselCard({ slot, enterDir, variant, id, group, focused, browsing, height, label, next, canEdit, onClick, onPlayNow, onPlayNext, onRemove }: CardProps) {
   const p = usePlayer()
   const dj = useDjView()
   const item = useQueueItem(id)
   const { intro, track, album, title } = item
   const now = group === 'now'
   const hero = slot.kind === 'hero'
+  const ghost = !!slot.ghost
+  // fade / slide in only when mounting in view; a ghost coming into view just transitions there
+  const [enter, setEnter] = useState(!ghost)
+  if (enter && ghost) setEnter(false)
   // the strip's square tiles carry their title too, revealed on hover (carousel.css)
   const showText = hero || (slot.kind === 'med' && slot.w >= 90) || (variant === 'strip' && slot.kind === 'small')
   const full = variant === 'full'
@@ -326,14 +341,16 @@ function CarouselCard({ slot, variant, id, group, focused, browsing, height, lab
       ? `${p.playing ? 'Playing' : 'Paused'}: ${title}${by}${variant === 'bar' ? '. Open the player.' : ''}`
       : `${title}${by} · ${GROUP_LABEL[group]}`
 
-  const style = { '--qc-x': `${slot.x}px`, '--qc-w': `${slot.w}px` } as CSSProperties
+  const style = { '--qc-x': `${slot.x}px`, '--qc-w': `${slot.w}px`, '--qc-enter': `${enterDir * 48}px` } as CSSProperties
 
   return (
     <div
       role="listitem"
-      className={`qc-card pg-anim is-${slot.kind} is-${group} ${focused ? 'is-focus' : ''} ${hero && now && p.playing ? 'is-playing' : ''} ${browsing && hero ? 'is-browsed' : ''}`}
+      className={`qc-card pg-anim is-${slot.kind} is-${group} ${ghost ? 'is-ghost' : ''} ${enter && !ghost ? 'is-enter' : ''} ${focused ? 'is-focus' : ''} ${hero && now && p.playing ? 'is-playing' : ''} ${browsing && hero ? 'is-browsed' : ''}`}
       style={style}
       data-qi={slot.index}
+      aria-hidden={ghost || undefined}
+      onAnimationEnd={(e) => e.target === e.currentTarget && setEnter(false)}
     >
       {label && <span className={`qc-label is-${group}`}>{label}</span>}
       <div className={`qc-face ${pop ? 'is-pop' : ''}`} onAnimationEnd={(e) => e.target === e.currentTarget && setPop(false)}>
@@ -341,7 +358,7 @@ function CarouselCard({ slot, variant, id, group, focused, browsing, height, lab
           <ItemArt item={item} size={Math.min(slot.w, height)} active={now} />
         </div>
         {showText && <span className="qc-scrim" aria-hidden />}
-        <button type="button" className="qc-hit" aria-label={aria} aria-current={now ? 'true' : undefined} onClick={click} />
+        <button type="button" className="qc-hit" aria-label={aria} aria-current={now ? 'true' : undefined} tabIndex={ghost ? -1 : undefined} onClick={click} />
 
         {showText && (
           <div className="qc-text">

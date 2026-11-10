@@ -23,10 +23,14 @@
   /* height from CSS, not JS: during the phone morph it tracks the container in the same frame */
   width: var(--qc-w); height: calc(100% - var(--qc-top));
   translate: var(--qc-x) 0;
-  transition: translate var(--qc-move), width var(--qc-move);
-  animation: qc-in 320ms var(--ease-std) both;
+  transition: translate var(--qc-move), width var(--qc-move), opacity 260ms var(--ease-std);
 }
-@keyframes qc-in { from { opacity: 0; } to { opacity: 1; } }
+/* a card mounting in view fades in, sliding from the side the row is moving from (--qc-enter).
+   Only while .is-enter: a lasting animation on `translate` would override the move transition. */
+.qc-card.is-enter { animation: qc-in 320ms var(--ease-std) backwards; }
+@keyframes qc-in { from { opacity: 0; translate: calc(var(--qc-x) + var(--qc-enter, 0px)) 0; } }
+/* off-screen neighbours (layout.ts withGhosts): mounted so a browse step slides them in / out */
+.qc-card.is-ghost { opacity: 0; pointer-events: none; }
 /* reduced motion: cards and rows carry .pg-anim (styles/base.css) */
 
 .qc-face {
