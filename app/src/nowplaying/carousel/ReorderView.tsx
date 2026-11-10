@@ -11,13 +11,15 @@
  * - The one drop zone is Remove (Undo in the toast). Done leaves reorder mode.
  * - Near either end the list scrolls by itself while a song is held.
  * - Keyboard: arrows on a handle move the song by one, Delete / Backspace removes it.
+ * - Desktop strip: a right click on a tile opens the song's context menu (actions/actions.ts).
  *
  * Only the rows in view (plus a few) mount, so long queues stay cheap.
  */
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent as ReactPointerEvent } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react'
 import { Button } from '../../components/ui'
 import { Icon } from '../../design/icons'
 import { nowPlayingStore } from '../../state/nowPlaying'
+import { actions } from '../../actions/actions'
 import { playerStore, usePlayer } from '../../state/player'
 import { useQueueEdits } from '../player'
 import { insertionAt, reorderSlot, visibleRange } from './layout'
@@ -352,6 +354,16 @@ interface ItemProps {
 function ReorderItem({ index, id, axis, now, played, hidden, offset = 0, lifted, style, onHandleDown, onHandleKey }: ItemProps) {
   const item = useQueueItem(id ?? '')
   const pos = axis === 'x' ? `translateX(${offset}px)` : `translateY(${offset}px)`
+  // strip tiles: right click = the song's context menu. Not for a finger (Android fires `contextmenu`
+  // on a long press, which here is a held handle), and not for a DJ intro or a missing song.
+  const trackId = !item.intro && item.track ? item.track.id : null
+  const onContextMenu =
+    axis === 'x' && !lifted && trackId
+      ? (e: ReactMouseEvent) => {
+          e.preventDefault()
+          if ((e.nativeEvent as PointerEvent).pointerType !== 'touch') actions.menu({ kind: 'track', trackId }, { x: e.clientX, y: e.clientY })
+        }
+      : undefined
   return (
     <div
       role={lifted ? undefined : 'listitem'}
@@ -359,6 +371,7 @@ function ReorderItem({ index, id, axis, now, played, hidden, offset = 0, lifted,
       data-ri={lifted ? undefined : index}
       style={lifted ? style : { transform: pos }}
       aria-hidden={lifted || undefined}
+      onContextMenu={onContextMenu}
     >
       <div className="rq-art" aria-hidden>
         <ItemArt item={item} size={axis === 'x' ? 144 : 48} active={now} />
