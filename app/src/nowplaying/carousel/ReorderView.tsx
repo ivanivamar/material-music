@@ -33,6 +33,8 @@ const GAPS: Record<ReorderAxis, number> = { x: 16, y: 8 }
 /** auto-scroll: edge band (px) and top speed (px per frame) */
 const EDGE = 64
 const SPEED = 14
+/** strip wheel scrolling: how fast the strip closes in on where the wheel sent it (ms; smaller = snappier) */
+const WHEEL_EASE_MS = 90
 /** after a drop, rows jump to their new places without sliding (the "settle") */
 const SETTLE_MS = 80
 
@@ -70,9 +72,12 @@ export function ReorderView({ axis }: { axis: ReorderAxis }) {
   const measure = () => {
     const el = scrollRef.current
     if (!el) return
+    // the offset only picks which rows mount (with a few rows of overscan), so it is kept in whole rows:
+    // scrolling re-renders once per row passed instead of on every frame
+    const whole = (px: number) => Math.floor(px / pitch) * pitch
     const next = horizontal
-      ? { offset: el.scrollLeft, extent: el.clientWidth, cross: el.clientHeight }
-      : { offset: el.scrollTop, extent: el.clientHeight, cross: el.clientWidth }
+      ? { offset: whole(el.scrollLeft), extent: el.clientWidth, cross: el.clientHeight }
+      : { offset: whole(el.scrollTop), extent: el.clientHeight, cross: el.clientWidth }
     setView((v) => (v.offset === next.offset && v.extent === next.extent && v.cross === next.cross ? v : next))
   }
   useLayoutEffect(() => {
@@ -94,24 +99,42 @@ export function ReorderView({ axis }: { axis: ReorderAxis }) {
   useEffect(() => {
     const el = scrollRef.current
     if (!el || !horizontal) return
-    let target = el.scrollLeft
-    let idle = 0
+    // One continuous glide: each wheel tick only moves the target, and every frame the strip closes part
+    // of the distance to it. (scrollTo({ behavior: 'smooth' }) restarts its own animation on every tick,
+    // which stutters.)
+    let target = 0
+    let pos = 0
+    let raf = 0
+    let last = 0
+    const step = (now: number) => {
+      const dt = Math.max(0, Math.min(64, now - last))
+      last = now
+      pos += (target - pos) * (1 - Math.exp(-dt / WHEEL_EASE_MS))
+      if (Math.abs(target - pos) < 0.5) pos = target
+      el.scrollLeft = pos
+      raf = pos === target ? 0 : requestAnimationFrame(step)
+    }
     const onWheel = (e: WheelEvent) => {
       const d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY
       if (!d) return
       e.preventDefault()
-      window.clearTimeout(idle)
-      // keep adding to where the last wheel tick was heading, so fast scrolling isn't slowed by restarts
+      // at rest the strip may have moved by other means (dragging near an edge, keyboard focus)
+      if (!raf) target = pos = el.scrollLeft
       const max = el.scrollWidth - el.clientWidth
       target = Math.max(0, Math.min(max, target + d * (e.deltaMode === 1 ? 40 : 1)))
-      el.scrollTo({ left: target, behavior: 'smooth' })
-      idle = window.setTimeout(() => (target = el.scrollLeft), 250)
+      const root = document.documentElement
+      const still = root.dataset.motion === 'reduced' || (root.dataset.motion !== 'full' && window.matchMedia('(prefers-reduced-motion: reduce)').matches)
+      if (still) {
+        el.scrollLeft = pos = target
+      } else if (!raf) {
+        last = performance.now()
+        raf = requestAnimationFrame(step)
+      }
     }
-    target = el.scrollLeft
     el.addEventListener('wheel', onWheel, { passive: false })
     return () => {
       el.removeEventListener('wheel', onWheel)
-      window.clearTimeout(idle)
+      cancelAnimationFrame(raf)
     }
   }, [horizontal])
 
