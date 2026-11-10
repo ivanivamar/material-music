@@ -113,6 +113,13 @@ export type PlayerSnapshot = Pick<PlayerState, 'queue' | 'index' | 'context' | '
 export const isIntroId = (id: string | null | undefined): id is string => !!id && id.startsWith('dj:intro:')
 
 const KEY = 'pelagic.player.v1'
+/**
+ * The position on its own (`{ id, p }`: the track it belongs to + seconds). It moves all the time
+ * while playing, so it is saved here every few seconds instead of rewriting the whole queue under KEY.
+ */
+const POS_KEY = 'pelagic.player.pos.v1'
+/** the fields saved under KEY besides the position: a change to one of them rewrites KEY */
+const SAVED: readonly (keyof PlayerState)[] = ['queue', 'index', 'context', 'volume', 'muted', 'shuffle', 'unshuffled', 'repeat']
 type Persisted = Pick<PlayerState, 'queue' | 'index' | 'context' | 'position' | 'volume' | 'muted' | 'shuffle' | 'unshuffled' | 'repeat'>
 
 const DEFAULTS: PlayerState = {
@@ -134,7 +141,13 @@ const DEFAULTS: PlayerState = {
 function load(): PlayerState {
   try {
     const raw = localStorage.getItem(KEY)
-    if (raw) return { ...DEFAULTS, ...(JSON.parse(raw) as Partial<Persisted>), playing: false, buffering: false, source: null, remote: null }
+    if (raw) {
+      const s: PlayerState = { ...DEFAULTS, ...(JSON.parse(raw) as Partial<Persisted>), playing: false, buffering: false, source: null, remote: null }
+      // the position saved since the queue was last written, if it is still for the same track
+      const pos = JSON.parse(localStorage.getItem(POS_KEY) ?? 'null') as { id?: string; p?: number } | null
+      if (pos && typeof pos.p === 'number' && pos.id !== undefined && pos.id === s.queue[s.index]) s.position = pos.p
+      return s
+    }
   } catch {
     /* ignore */
   }
@@ -153,6 +166,9 @@ const listeners = new Set<() => void>()
 const noticeListeners = new Set<(n: PlayerNotice) => void>()
 const movedListeners = new Set<(from: number, to: number) => void>()
 let persistTimer = 0
+let positionTimer = 0
+/** a field saved under KEY changed since it was last written */
+let dirty = false
 /** set by suspendForReload(): the page is about to reload, keep the saved position as it is */
 let frozen = false
 /** set by holdForUpdate(): an app update is finishing at boot, don't open a Drive stream yet */
@@ -176,30 +192,51 @@ function routed(op: RemoteOp, args: unknown[]): boolean {
 /** Engine events are stale while nothing of ours is loaded (mirroring / taken-over queue). */
 const engineQuiet = () => detached || state.remote !== null
 
-function persist() {
-  window.clearTimeout(persistTimer)
-  persistTimer = 0
+/** Save the position alone (a few bytes). */
+function persistPosition() {
+  window.clearTimeout(positionTimer)
+  positionTimer = 0
   if (frozen) return
-  const { queue, index, context, position, volume, muted, shuffle, unshuffled, repeat } = state
   try {
-    localStorage.setItem(KEY, JSON.stringify({ queue, index, context, position, volume, muted, shuffle, unshuffled, repeat } satisfies Persisted))
+    localStorage.setItem(POS_KEY, JSON.stringify({ id: state.queue[state.index] ?? null, p: state.position }))
   } catch {
     /* ignore */
   }
 }
 
+/** Save what changed: the queue and settings only when one of them did, the position always. */
+function persist() {
+  window.clearTimeout(persistTimer)
+  persistTimer = 0
+  if (frozen) return
+  if (dirty) {
+    const { queue, index, context, position, volume, muted, shuffle, unshuffled, repeat } = state
+    try {
+      localStorage.setItem(KEY, JSON.stringify({ queue, index, context, position, volume, muted, shuffle, unshuffled, repeat } satisfies Persisted))
+      dirty = false
+    } catch {
+      /* ignore: stays dirty, the next change tries again */
+    }
+  }
+  persistPosition()
+}
+
 function set(patch: Partial<PlayerState>) {
   const before = state
   state = { ...state, ...patch }
+  let moved = false
   for (const k of Object.keys(patch) as (keyof PlayerState)[]) {
-    if (k !== 'position' && !Object.is(before[k], state[k])) {
-      view = state
-      break
-    }
+    if (Object.is(before[k], state[k])) continue
+    if (k === 'position') moved = true
+    else view = state
+    if (SAVED.includes(k)) dirty = true
   }
   listeners.forEach((l) => l())
-  // throttle, not debounce: the engine reports position several times a second while playing
-  if (!persistTimer) persistTimer = window.setTimeout(persist, 1000)
+  // throttle, not debounce. The queue is written (at most once a second) only when it or a setting
+  // changed; the position, which the engine reports several times a second, every 5 s on its own.
+  if (dirty) {
+    if (!persistTimer) persistTimer = window.setTimeout(persist, 1000)
+  } else if (moved && !persistTimer && !positionTimer) positionTimer = window.setTimeout(persistPosition, 5000)
   if (!holdPreload) syncPreload()
 }
 
