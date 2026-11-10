@@ -4,19 +4,24 @@
  * full-screen player, so there is no separate queue panel any more). Lyrics and reorder exclude
  * each other.
  *
+ * Reorder is one flag with two hosts: the full-screen player while it is open, and on desktop the
+ * player bar's tray while it is closed (shell/PlayerBar.tsx). Both render the same ReorderView.
+ *
  * Opening the full-screen player pushes a history entry (same hash, `history.state.pelagicNp`)
  * so the browser / mouse Back button closes it instead of leaving the page.
  */
 import { useSyncExternalStore } from 'react'
 import { go } from '../shell/routes'
 import { onAccountReset } from './session'
+import { PHONE_QUERY } from './viewport'
 
 export type NpView = 'np' | 'lyrics'
 
 export interface NowPlayingUi {
   open: boolean
   view: NpView
-  /** the carousel is in reorder mode (drag songs by their handle, drop on Remove) */
+  /** the queue is in reorder mode (drag songs by their handle, drop on Remove); on desktop this can be
+   *  on with the full-screen player closed: the player bar then shows the reorder tray */
   reorder: boolean
   /**
    * Phone: the player is being dragged between the mini card and full screen (0 = mini, 1 = full),
@@ -84,13 +89,14 @@ export const nowPlayingStore = {
     else set({ view: state.view === 'lyrics' ? 'np' : 'lyrics' })
     if (state.reorder) set({ reorder: false })
   },
-  /** Reorder mode (opens the full-screen player first when it's closed). */
+  /** Reorder mode. Phone: in the full-screen player (opened first when it's closed). Desktop: wherever
+   *  the player is, the bar's tray when the full-screen player is closed. */
   openReorder() {
-    if (!state.open) nowPlayingStore.open('np')
+    if (!state.open && window.matchMedia(PHONE_QUERY).matches) nowPlayingStore.open('np')
     set({ reorder: true, view: 'np' })
   },
   toggleReorder() {
-    if (state.open && state.reorder) set({ reorder: false })
+    if (state.reorder) set({ reorder: false })
     else nowPlayingStore.openReorder()
   },
   closeReorder() {

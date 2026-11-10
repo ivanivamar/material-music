@@ -144,6 +144,9 @@
 .qc-card:hover .qc-quick, .qc-quick:focus-within { opacity: 1; }
 .qc-act { background: rgba(0, 0, 0, .45); color: var(--ink-primary); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
 .qc-act:hover { background: rgba(0, 0, 0, .6); }
+/* the heart on a card: the same dark chip as the other card buttons (wins over like.css whatever the load order) */
+.qc .like.qc-act { background: rgba(0, 0, 0, .45); }
+.qc .like.qc-act:hover:not(:disabled) { background: rgba(0, 0, 0, .6); }
 .qc-act.is-primary { background: var(--album); color: var(--on-album); }
 .qc-act.is-primary:hover { background: var(--album-hi); }
 

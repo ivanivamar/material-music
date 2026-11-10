@@ -102,7 +102,7 @@ export function ReorderToggle({ size, text }: { size?: ToggleSize; text?: boolea
   const ui = useNowPlayingUi()
   const dj = useDjView().on
   const empty = usePlayer().index < 0
-  const on = ui.open && ui.reorder
+  const on = ui.reorder
   return (
     <ModeToggle
       size={size}

@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reorder tray mock</title>
+<style>
+  :root {
+    --bg-1: oklch(0.125 0.005 40); --panel: oklch(0.17 0.006 40);
+    --surface-1: oklch(0.20 0.007 40); --surface-2: oklch(0.235 0.008 40);
+    --ink-primary: oklch(0.94 0.006 40); --ink-secondary: oklch(0.79 0.014 40); --ink-tertiary: oklch(0.62 0.012 40);
+    --border: rgba(255,255,255,.12); --border-dash: rgba(255,255,255,.22);
+    --album: oklch(0.82 0.11 250); --on-album: oklch(0.26 0.06 250);
+    --ease-std: cubic-bezier(0.31, 0.94, 0.34, 1); --ease-shape: cubic-bezier(0.38, 1.21, 0.22, 1);
+    --tray-h: 262px;
+    /* the phone mini player's handle-band tone (tokens.css --mini-band, album hue 250) */
+    --mini-band: oklch(0.215 0.0075 40); /* set by the Band switch at the top */
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body { background: var(--bg-1); color: var(--ink-primary); font: 14px/1.4 'Google Sans Flex', 'Google Sans', system-ui, sans-serif; overflow: hidden; }
+  button { font: inherit; color: inherit; border: 0; background: none; padding: 0; cursor: pointer; }
+  svg { width: 22px; height: 22px; fill: currentColor; display: block; }
+
+  /* a stand-in for the page behind the bar */
+  .main { position: absolute; inset: 0; min-width: 980px; }
+  .page { padding: 28px 36px; }
+  .note { display: inline-block; font-size: 12px; color: var(--ink-tertiary); margin-bottom: 18px; }
+  .page h1 { margin: 0 0 20px; font-size: 30px; font-weight: 600; letter-spacing: -0.01em; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 20px; }
+  .alb { display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: var(--ink-secondary); }
+  .alb i { display: block; aspect-ratio: 1; border-radius: 20px; }
+  .alb b { color: var(--ink-primary); font-weight: 600; }
+  .dim { position: absolute; inset: 0; background: rgba(0,0,0,.35); opacity: 0; pointer-events: none; transition: opacity 300ms var(--ease-std); }
+  .is-open ~ .dim, .main.is-open .dim { opacity: 1; pointer-events: auto; }
+
+  /* the bar, built like the phone mini player: an outer card in the band tone that holds the reorder
+     section, and the player itself as a darker rounded surface sitting flush inside it */
+  .pb {
+    position: absolute; left: 18px; right: 28px; bottom: 28px; z-index: 5;
+    border-radius: 32px; overflow: hidden; isolation: isolate; background: var(--panel);
+    box-shadow: inset 0 0 0 1px var(--border), 0 12px 32px -12px rgba(0,0,0,.55);
+    display: flex; flex-direction: column; transition: background 300ms var(--ease-std);
+  }
+  .main.is-open .pb { background: var(--mini-band); }
+  .tray { height: 0; overflow: hidden; opacity: 0; transition: height 420ms var(--ease-shape), opacity 220ms var(--ease-std); }
+  .main.is-open .tray { height: var(--tray-h); opacity: 1; }
+  .tray-in { height: var(--tray-h); padding: 18px 20px 16px; display: flex; flex-direction: column; gap: 14px; }
+  .pb-surface { padding: 10px 20px 10px 10px; border-radius: 26px; background: var(--panel); box-shadow: inset 0 0 0 1px rgba(255,255,255,.06); }
+
+  .tones { display: inline-flex; align-items: center; gap: 6px; margin-left: 12px; font-size: 12px; color: var(--ink-tertiary); position: relative; z-index: 6; /* stays clickable above the dim */ }
+  .tones button { font-size: 12px; padding: 4px 12px 4px 6px; border-radius: 999px; color: var(--ink-secondary); box-shadow: inset 0 0 0 1px var(--border); display: inline-flex; align-items: center; gap: 6px; }
+  .tones button i { width: 14px; height: 14px; border-radius: 50%; box-shadow: inset 0 0 0 1px var(--border-dash); }
+  .tones button.on { background: var(--ink-primary); color: var(--bg-1); box-shadow: none; }
+  .rq-bar { display: flex; align-items: center; gap: 16px; flex: none; }
+  .rq-head { width: 220px; flex: none; display: flex; flex-direction: column; gap: 2px; }
+  .rq-heading { font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
+  .rq-hint { font-size: 13px; color: var(--ink-secondary); }
+  .rq-remove { flex: 1; height: 52px; border-radius: 28px; display: flex; align-items: center; justify-content: center; gap: 10px; font-weight: 600; color: var(--ink-tertiary); box-shadow: inset 0 0 0 1.5px var(--border-dash); }
+  .rq-done { height: 44px; padding: 0 22px 0 16px; border-radius: 22px; background: var(--album); color: var(--on-album); font-weight: 600; display: inline-flex; align-items: center; gap: 8px; }
+
+  .rq-strip { flex: 1; min-height: 0; display: flex; gap: 14px; overflow: hidden; padding: 3px; -webkit-mask-image: linear-gradient(90deg, #000 92%, transparent); mask-image: linear-gradient(90deg, #000 92%, transparent); }
+  .tile { flex: none; width: 124px; display: flex; flex-direction: column; gap: 6px; }
+  .tile .art { position: relative; width: 124px; height: 124px; border-radius: 20px; }
+  .tile.is-played .art { filter: brightness(.72) saturate(.8); }
+  .tile.is-now .art { box-shadow: 0 0 0 3px var(--album); }
+  .tile .handle, .tile .pin { position: absolute; top: 8px; left: 50%; translate: -50% 0; height: 28px; border-radius: 14px; display: flex; align-items: center; justify-content: center; }
+  .tile .handle { width: 44px; background: rgba(0,0,0,.45); backdrop-filter: blur(8px); cursor: grab; }
+  .tile .handle svg { width: 18px; height: 18px; }
+  .tile .pin { padding: 0 10px; background: var(--album); color: var(--on-album); font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+  .tile b { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tile span.sub { font-size: 12px; color: var(--ink-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: -5px; }
+
+  /* the normal bar row, unchanged */
+  .pb-main { height: 80px; display: flex; align-items: center; gap: 20px; }
+  .qc { flex: 0 1 480px; min-width: 300px; height: 80px; display: flex; gap: 8px; }
+  .qc > i { display: block; height: 100%; border-radius: 24px; position: relative; overflow: hidden; }
+  .qc .hero { flex: 1; }
+  .qc .hero::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.1), rgba(0,0,0,.65)); }
+  .qc .txt { position: absolute; left: 14px; bottom: 9px; z-index: 1; font-style: normal; display: flex; flex-direction: column; }
+  .qc .txt small { font-size: 11px; font-weight: 700; letter-spacing: .06em; color: var(--album); }
+  .qc .txt b { font-size: 15px; }
+  .qc .txt span { font-size: 11px; color: var(--ink-secondary); }
+  .qc .med { width: 120px; } .qc .pill { width: 48px; border-radius: 20px; }
+  .ctl { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; justify-content: center; }
+  .row { display: flex; align-items: center; gap: 4px; color: var(--ink-secondary); }
+  .ib { width: 40px; height: 40px; border-radius: 20px; display: inline-flex; align-items: center; justify-content: center; }
+  .ib:hover { background: rgba(255,255,255,.08); color: var(--ink-primary); }
+  .ib.play { width: 48px; height: 48px; border-radius: 16px; background: var(--album); color: var(--on-album); margin: 0 4px; }
+  .ib.on { background: var(--album); color: var(--on-album); }
+  .sep { width: 1px; height: 24px; margin: 0 6px; background: var(--border); }
+  .flex { flex: 1; }
+  .vol { width: 72px; height: 4px; border-radius: 2px; background: linear-gradient(90deg, var(--ink-secondary) 70%, var(--surface-2) 70%); margin-left: 6px; }
+  .seek { display: flex; align-items: center; gap: 10px; font-size: 11px; color: var(--ink-tertiary); font-variant-numeric: tabular-nums; }
+  .seek i { flex: 1; height: 4px; border-radius: 2px; background: linear-gradient(90deg, var(--album) 38%, var(--surface-2) 38%); }
+</style>
+</head>
+<body>
+<div class="main" id="main">
+  <div class="page">
+    <span class="note">Mock, option 1 in the phone mini player's style: click the Reorder button in the bar (lit when open). Done, Esc or a click on the page closes it. Dragging is not wired up here.</span>
+    <span class="tones" id="tones">Band:</span>
+    <h1>Library</h1>
+    <div class="grid" id="grid"></div>
+  </div>
+  <div class="dim" id="dim"></div>
+
+  <footer class="pb" aria-label="Player">
+    <div class="tray" id="tray">
+      <div class="tray-in">
+        <div class="rq-bar">
+          <div class="rq-head"><span class="rq-heading">Reorder queue</span><span class="rq-hint">Drag a song by its handle</span></div>
+          <div class="rq-remove"><svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>Drop here to remove</div>
+          <button class="rq-done" id="done"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.41 1.41L9 19 21 7l-1.41-1.41z"/></svg>Done</button>
+        </div>
+        <div class="rq-strip" id="strip"></div>
+      </div>
+    </div>
+
+    <div class="pb-surface"><div class="pb-main">
+      <div class="qc">
+        <i class="hero" style="background:linear-gradient(135deg, oklch(.55 .13 250), oklch(.35 .1 300))"><em class="txt"><small>NOW PLAYING</small><b>Paper Lanterns</b><span>Sample Artist · Sample Album</span></em></i>
+        <i class="med" style="background:linear-gradient(135deg, oklch(.6 .12 30), oklch(.4 .1 350))"></i>
+        <i class="pill" style="background:linear-gradient(135deg, oklch(.6 .12 150), oklch(.4 .08 200))"></i>
+      </div>
+      <div class="ctl">
+        <div class="row">
+          <button class="ib" aria-label="Previous"><svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg></button>
+          <button class="ib play" aria-label="Pause"><svg viewBox="0 0 24 24"><path d="M6 19h4V5H6zm8-14v14h4V5z"/></svg></button>
+          <button class="ib" aria-label="Next"><svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6z"/></svg></button>
+          <button class="ib" aria-label="Shuffle"><svg viewBox="0 0 24 24"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg></button>
+          <button class="ib" aria-label="Repeat"><svg viewBox="0 0 24 24"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg></button>
+          <span class="sep"></span>
+          <button class="ib" aria-label="Lyrics"><svg viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h12v2H3zm0 5h18v2H3z"/></svg></button>
+          <button class="ib" id="reorder" aria-label="Reorder queue" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M16 17.01V10h-2v7.01h-3L15 21l4-3.99h-3zM9 3L5 6.99h3V14h2V6.99h3L9 3z"/></svg></button>
+          <button class="ib" aria-label="DJ"><svg viewBox="0 0 24 24"><path d="M12 2l2.4 7.6L22 12l-7.6 2.4L12 22l-2.4-7.6L2 12l7.6-2.4z"/></svg></button>
+          <span class="flex"></span>
+          <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>
+          <span class="vol"></span>
+        </div>
+        <div class="seek">1:24<i></i>3:41</div>
+      </div>
+    </div></div>
+  </footer>
+</div>
+
+<script>
+  const hue = (i) => (i * 47 + 20) % 360
+  const art = (i) => `linear-gradient(135deg, oklch(.6 .12 ${hue(i)}), oklch(.36 .09 ${(hue(i) + 60) % 360}))`
+  const songs = ['Low Tide', 'Glass Stairs', 'Paper Lanterns', 'Night Bus Home', 'Salt and Static', 'Second Summer', 'Hollow Bells', 'Quiet Engine', 'Tangerine Sky', 'Small Hours', 'Far Shore']
+  const NOW = 2
+  document.getElementById('strip').innerHTML = songs.map((t, i) => `
+    <div class="tile ${i < NOW ? 'is-played' : i === NOW ? 'is-now' : ''}">
+      <div class="art" style="background:${art(i)}">${i === NOW ? '<span class="pin">Now</span>' : '<span class="handle"><svg viewBox="0 0 24 24"><path d="M20 9H4v2h16V9zM4 15h16v-2H4v2z"/></svg></span>'}</div>
+      <b>${t}</b><span class="sub">Sample Artist</span>
+    </div>`).join('')
+  document.getElementById('grid').innerHTML = Array.from({ length: 18 }, (_, i) => `<div class="alb"><i style="background:${art(i + 11)}"></i><b>Album ${i + 1}</b>Sample Artist</div>`).join('')
+
+  const main = document.getElementById('main'), btn = document.getElementById('reorder')
+  const set = (open) => { main.classList.toggle('is-open', open); btn.classList.toggle('on', open); btn.setAttribute('aria-pressed', open) }
+  btn.onclick = () => set(!main.classList.contains('is-open'))
+  document.getElementById('done').onclick = () => set(false)
+  document.getElementById('dim').onclick = () => set(false)
+  // band tones to compare, lightest to darkest (the player row is --panel, lightness 0.17)
+  const TONES = [['surface-2 (0.235)', 'oklch(0.235 0.008 40)'], ['Between (0.215)', 'oklch(0.215 0.0075 40)'], ['surface-1 (0.20)', 'oklch(0.20 0.007 40)']]
+  const tones = document.getElementById('tones')
+  TONES.forEach(([name, c], i) => {
+    const b = document.createElement('button')
+    b.innerHTML = `<i style="background:${c}"></i>${name}`
+    b.className = i === 1 ? 'on' : ''
+    b.onclick = () => { main.style.setProperty('--mini-band', c); tones.querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b)) }
+    tones.append(b)
+  })
+  addEventListener('keydown', (e) => e.key === 'Escape' && set(false))
+</script>
+</body>
+</html>

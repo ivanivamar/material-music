@@ -8,25 +8,32 @@
  *             the one after medium, then square tiles (the playing song is the big cover above it).
  *             Like the mini player, a click plays the song; the wheel browses.
  *
+ * Full-screen cards (`full` and `strip`, Nov 2026): a click / tap plays the song; the cards carry the
+ * heart and Remove (on the large card, and on hover on the small ones); holding a card with a finger
+ * opens the song's actions (the bottom sheet on phone), a right click opens the context menu.
+ *
  * - Every card is the cover, full bleed, with the text on a scrim (title + artist on the hero,
  *   title on the medium card, nothing on the pills). The row always fills its width exactly
  *   (layout.ts), so the last pill is never cut.
  * - Browse, then confirm: wheel / arrow keys / a sideways swipe / a click on another card make that card
- *   the hero, with Play now · Play next · Remove on it; after a few idle seconds (or "Now playing")
- *   the carousel springs back to the playing song. Small cards offer Play next / Remove on hover.
+ *   the hero, with Play now · Play next · Remove on it (bar; full screen: heart · Remove); after a few
+ *   idle seconds (or "Now playing") the carousel springs back to the playing song. Small cards offer
+ *   Play next / Remove on hover (bar; full screen: heart / Remove).
  * - Bar: clicking the playing song's card opens the full-screen player. Mini: tapping a card plays it
  *   (the playing one: play / pause), with a ripple and a small press-in pop; the handle opens full screen.
- * - Holding a card (450 ms) enters reorder mode with that song in hand (grab.ts → ReorderView).
+ * - Holding a card with a finger (450 ms) enters reorder mode with that song in hand (grab.ts → ReorderView);
+ *   on the full-screen cards a finger hold opens the song's actions instead. A mouse hold does nothing on any surface.
  * - Phone: flick a card up to remove it (Undo in the toast).
  * - While the DJ plays there is no upcoming queue: only played songs and the current one show.
  *
  * Only the visible cards mount (plus two invisible neighbours on each side, so a browse step always
  * slides cards in and out instead of popping them), so a whole library in the queue costs nothing.
  */
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent, type WheelEvent } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type MouseEvent, type PointerEvent, type WheelEvent } from 'react'
 import { AlbumEq, Button, CookieButton, IconButton } from '../../components/ui'
 import { LikeButton } from '../../components/LikeButton'
 import { Marquee } from '../../components/Marquee'
+import { actions as songActions } from '../../actions/actions'
 import { nowPlayingStore } from '../../state/nowPlaying'
 import { playerStore, usePlayer } from '../../state/player'
 import { useDjView } from '../../state/djUi'
@@ -138,18 +145,26 @@ export function QueueCarousel({ variant, className, morph = 1 }: { variant: Caro
   }
   const press = useRef<{ x: number; y: number; type: string; index: number | null; timer: number } | null>(null)
   const swallowClick = useRef(false)
+  // the full-screen cards: click plays, a finger hold / a right click opens the song's actions
+  const menus = variant === 'full' || variant === 'strip'
+  const lastPointer = useRef('mouse')
   const cancelHold = () => {
     if (press.current) window.clearTimeout(press.current.timer)
   }
   const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
+    lastPointer.current = e.pointerType
     if (!e.isPrimary || e.button !== 0) return
     const card = (e.target as HTMLElement).closest<HTMLElement>('[data-qi]')
     const index = card ? Number(card.dataset.qi) : null
     swallowClick.current = false
     cancelHold()
     const start = { x: e.clientX, y: e.clientY, type: e.pointerType, index, timer: 0 }
-    // hold a card to lift it into reorder mode (not on its buttons, not while the DJ plays)
-    if (index !== null && !dj.on && !(e.target as HTMLElement).closest('button:not(.qc-hit), a')) {
+    // hold a card (not its buttons). Full-screen cards under a finger: the song's actions (the bottom
+    // sheet on phone). Bar / mini under a finger: lift it into reorder mode (not while the DJ plays).
+    // A mouse hold does nothing anywhere: desktop reorders from the Reorder button.
+    const trackId = card?.dataset.tid
+    const holdMenu = menus && e.pointerType !== 'mouse'
+    if (index !== null && (holdMenu ? !!trackId : !dj.on && e.pointerType !== 'mouse') && !(e.target as HTMLElement).closest('button:not(.qc-hit), a')) {
       const pointerId = e.pointerId
       start.timer = window.setTimeout(() => {
         swallowClick.current = true
@@ -159,7 +174,8 @@ export function QueueCarousel({ variant, className, morph = 1 }: { variant: Caro
         } catch {
           /* not supported */
         }
-        grabIntoReorder({ index: index === p.index ? null : index, pointerId, x: start.x, y: start.y })
+        if (holdMenu && trackId) songActions.menu({ kind: 'track', trackId }, { x: start.x, y: start.y })
+        else grabIntoReorder({ index: index === p.index ? null : index, pointerId, x: start.x, y: start.y })
       }, LONG_PRESS_MS)
     }
     press.current = start
@@ -187,6 +203,16 @@ export function QueueCarousel({ variant, className, morph = 1 }: { variant: Caro
       browseTo(focus + (dx < 0 ? steps : -steps))
     }
   }
+  // right click on a full-screen card: the song's context menu. A finger hold also fires `contextmenu`
+  // on Android; the hold timer above has that case, so it is only swallowed here.
+  const onContextMenu = (e: MouseEvent<HTMLDivElement>) => {
+    if (!menus) return
+    const trackId = (e.target as HTMLElement).closest<HTMLElement>('[data-qi]')?.dataset.tid
+    if (!trackId) return
+    e.preventDefault()
+    cancelHold()
+    if (lastPointer.current === 'mouse') songActions.menu({ kind: 'track', trackId }, { x: e.clientX, y: e.clientY })
+  }
   const onKeyDown = (e: KeyboardEvent) => {
     if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
       e.preventDefault()
@@ -208,8 +234,16 @@ export function QueueCarousel({ variant, className, morph = 1 }: { variant: Caro
       playerStore.jump(i)
       return
     }
+    // phone full screen: a tap plays that song too (the playing one stays as it is; swipe to browse)
+    if (variant === 'full') {
+      if (i === p.index) return
+      browseTo(null)
+      playerStore.jump(i)
+      return
+    }
+    // bar: the playing song's card opens the full-screen player, another card is browsed to
     if (i === focus) {
-      if (i === p.index && variant !== 'full') nowPlayingStore.open('np')
+      if (i === p.index) nowPlayingStore.open('np')
       return
     }
     browseTo(i)
@@ -232,6 +266,7 @@ export function QueueCarousel({ variant, className, morph = 1 }: { variant: Caro
         press.current = null
       }}
       onKeyDown={onKeyDown}
+      onContextMenu={onContextMenu}
       onMouseEnter={() => (hovering.current = true)}
       onMouseLeave={() => (hovering.current = false)}
     >
@@ -318,13 +353,17 @@ function CarouselCard({ slot, enterDir, variant, id, group, focused, browsing, h
   const full = variant === 'full'
   const strip = variant === 'strip'
   const mini = variant === 'mini'
-  // the mini player plays on tap, so no browse actions there
-  const actions = hero && !now && canEdit && !mini
-  const quick = !hero && group !== 'now' && canEdit && !mini && !isTouch() && slot.w >= 44
-  // mini / strip: a press-in pop on the card that was clicked to play (the ripple itself is the global one, design/ripple.ts)
+  // full-screen cards carry the heart + Remove (the heart stays while the DJ plays, Remove doesn't);
+  // the bar keeps Play now · Play next · Remove; the mini player plays on tap, so nothing there
+  const fs = full || strip
+  const heart = fs && !intro && !!track
+  const buttons = fs ? heart || canEdit : canEdit
+  const actions = hero && !now && buttons && !mini
+  const quick = !hero && group !== 'now' && buttons && !mini && !isTouch() && slot.w >= 44
+  // a press-in pop on the card that was clicked to play (the ripple itself is the global one, design/ripple.ts)
   const [pop, setPop] = useState(false)
   const click = () => {
-    if ((mini || strip) && !now) setPop(true)
+    if (variant !== 'bar' && !now) setPop(true)
     onClick()
   }
 
@@ -335,7 +374,7 @@ function CarouselCard({ slot, enterDir, variant, id, group, focused, browsing, h
       : GROUP_LABEL[group]
 
   const by = track ? ` by ${track.artist}` : ''
-  const aria = mini || strip
+  const aria = mini || strip || (full && !now)
     ? `${now ? (p.playing ? 'Pause' : 'Play') : 'Play'} ${title}${by}`
     : now
       ? `${p.playing ? 'Playing' : 'Paused'}: ${title}${by}${variant === 'bar' ? '. Open the player.' : ''}`
@@ -349,6 +388,7 @@ function CarouselCard({ slot, enterDir, variant, id, group, focused, browsing, h
       className={`qc-card pg-anim is-${slot.kind} is-${group} ${ghost ? 'is-ghost' : ''} ${enter && !ghost ? 'is-enter' : ''} ${focused ? 'is-focus' : ''} ${hero && now && p.playing ? 'is-playing' : ''} ${browsing && hero ? 'is-browsed' : ''}`}
       style={style}
       data-qi={slot.index}
+      data-tid={!intro && track ? track.id : undefined}
       aria-hidden={ghost || undefined}
       onAnimationEnd={(e) => e.target === e.currentTarget && setEnter(false)}
     >
@@ -411,16 +451,26 @@ function CarouselCard({ slot, enterDir, variant, id, group, focused, browsing, h
 
         {actions && (
           <div className="qc-actions">
-            {/* the strip plays on click already */}
-            {!strip && <IconButton icon="playF" label="Play now" size={full ? 'md' : 'sm'} className="qc-act is-primary" onClick={onPlayNow} />}
-            <IconButton icon="playNext" label="Play next" size={full ? 'md' : 'sm'} className="qc-act" onClick={onPlayNext} />
-            <IconButton icon="x" label="Remove from the queue" size={full ? 'md' : 'sm'} className="qc-act" onClick={onRemove} />
+            {/* full screen: a click plays the card, so only the heart and Remove sit on it */}
+            {fs ? (
+              heart && track && <LikeButton trackId={track.id} size={full ? 'md' : 'sm'} ink className="qc-act" />
+            ) : (
+              <>
+                <IconButton icon="playF" label="Play now" size="sm" className="qc-act is-primary" onClick={onPlayNow} />
+                <IconButton icon="playNext" label="Play next" size="sm" className="qc-act" onClick={onPlayNext} />
+              </>
+            )}
+            {canEdit && <IconButton icon="x" label="Remove from the queue" size={full ? 'md' : 'sm'} className="qc-act" onClick={onRemove} />}
           </div>
         )}
         {quick && (
           <div className="qc-quick">
-            <IconButton icon="playNext" label="Play next" size="sm" className="qc-act" onClick={onPlayNext} />
-            <IconButton icon="x" label="Remove from the queue" size="sm" className="qc-act" onClick={onRemove} />
+            {fs ? (
+              heart && track && <LikeButton trackId={track.id} size="sm" ink className="qc-act" />
+            ) : (
+              <IconButton icon="playNext" label="Play next" size="sm" className="qc-act" onClick={onPlayNext} />
+            )}
+            {canEdit && <IconButton icon="x" label="Remove from the queue" size="sm" className="qc-act" onClick={onRemove} />}
           </div>
         )}
       </div>

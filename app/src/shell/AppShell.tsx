@@ -369,12 +369,12 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
-  // Esc leaves reorder mode first, then closes the full-screen player
+  // Esc leaves reorder mode first (the full-screen player's, or the player bar's tray), then closes the full-screen player
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape' || e.defaultPrevented) return
       const ui = nowPlayingStore.get()
-      if (!ui.open) return
+      if (!ui.open && !ui.reorder) return
       const el = e.target as HTMLElement | null
       if (!ui.open && el?.closest('input, textarea, select, [contenteditable="true"]')) return
       e.preventDefault()
