@@ -53,7 +53,7 @@ function ShareRecapDialog({ year, onClose }: { year: number; onClose: () => void
   const [img, setImg] = useState<{ blob: Blob; url: string } | null>(null)
   const [failed, setFailed] = useState(false)
   const [busy, setBusy] = useState(false)
-  const name = `material-music-${year}.png`
+  const name = `pelagic-${year}.png`
 
   useEffect(() => {
     if (!data) return

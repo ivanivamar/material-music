@@ -36,7 +36,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: unknown, info: ErrorInfo) {
-    console.error('[material-music] render error', error, info.componentStack)
+    console.error('[pelagic] render error', error, info.componentStack)
   }
 
   reset = () => this.setState({ error: null })

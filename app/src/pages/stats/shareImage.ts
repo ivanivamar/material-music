@@ -144,7 +144,7 @@ export async function renderRecapImage({ c, stats, genres, year, partial, since 
   ctx.fillStyle = accent
   ctx.font = font(700, 30)
   ctx.letterSpacing = '4px'
-  ctx.fillText('MATERIAL MUSIC', PAD, 150)
+  ctx.fillText('PELAGIC', PAD, 150)
   ctx.letterSpacing = '0px'
   ctx.fillStyle = INK
   ctx.font = font(750, 150)
