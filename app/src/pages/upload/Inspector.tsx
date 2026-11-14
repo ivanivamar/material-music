@@ -1,15 +1,16 @@
 /**
- * Batch Upload — right column / phone bottom sheet: the inspector card (Material 3 Expressive redesign, UploadMaterial.dc.html).
+ * Batch Upload — right column: the inspector card.
  *
  * Single mode (0 or 1 ticked: the focused release): kicker + quality badge, cover / title / artist, the
- * issue card (missing tracks · already in your library · failed tracks) with its actions, the Files grid
- * (uploaded / pending / missing), Album artist · Size · Uploaded, then Edit tags and Skip this release.
- * Multi mode (2+ ticked): N releases selected · Clear, a cover stack, "N releases", the "n of these need
- * you" strip (Review focuses the first), Album artist · Format ("Mixed" when they differ), then Edit
+ * issue card (missing tracks · already in your library · failed tracks) with its actions, the FILES grid
+ * (uploaded / pending / missing), ALBUM ARTIST · SIZE · UPLOADED, then Edit tags and Skip this release.
+ * Multi mode (2+ ticked): N RELEASES SELECTED · CLEAR, a cover stack, "N releases", the "n of these need
+ * you" strip (REVIEW focuses the first), ALBUM ARTIST · FORMAT ("Mixed" when they differ), then Edit
  * shared tags and Skip selected.
  */
 import { useState, type FormEvent } from 'react'
-import { Button, TextField, QualityBadge, Alert } from '../../components/ui'
+import { Button, QualityBadge } from '../../components/ui'
+import { Icon } from '../../design/icons'
 import type { Catalogue } from '../../state/library'
 import {
   addWithoutFailed,
@@ -35,14 +36,13 @@ interface Props {
   s: UploadState
   cat: Catalogue | null
   onPickMissing: (key: string) => void
-  onClose?: () => void
 }
 
 export function Inspector({ s, cat, onPickMissing }: Props) {
   const multi = s.checked.length >= 2
   const a = s.albums.find((x) => x.key === s.focus) ?? s.albums[0]
   return (
-    <aside className="card card-filled card-lg ub-insp" aria-label={multi ? 'Selected releases' : 'Release'}>
+    <aside className="ub-insp" aria-label={multi ? 'Selected releases' : 'Release'}>
       {multi ? <Multi s={s} cat={cat} /> : a ? <Single key={a.key} a={a} s={s} cat={cat} onPickMissing={onPickMissing} /> : null}
     </aside>
   )
@@ -65,7 +65,7 @@ function Single({ a, s, cat, onPickMissing }: { a: UploadAlbum; s: UploadState; 
     <>
       <div className="ub-insp-top">
         <span className="ub-kicker">
-          {a.inLibrary && a.phase !== 'added' ? 'Matched album' : 'New album'} · {st.word}
+          {a.inLibrary && a.phase !== 'added' ? 'MATCHED ALBUM' : 'NEW ALBUM'} · {st.word}
         </span>
         <QualityBadge kind={q.kind}>{q.label}</QualityBadge>
       </div>
@@ -85,38 +85,33 @@ function Single({ a, s, cat, onPickMissing }: { a: UploadAlbum; s: UploadState; 
         <>
           <div className="ub-sec">
             <div className="ub-sec-head">
-              <span>Files</span>
+              <span>FILES</span>
               <span className={m.found < total ? 'is-warn' : ''}>
-                {m.found} of {total} found
+                {m.found} OF {total} FOUND
               </span>
             </div>
             <FileGrid a={a} s={s} />
           </div>
 
           <div className="ub-tags">
-            <TagRow k="Album artist" v={a.artist} />
-            <TagRow k="Size" v={fmtBytes(bytesOf(a, s))} />
-            <TagRow k="Uploaded" v={`${Math.floor(releasePct(a, s))}%`} />
+            <TagRow k="ALBUM ARTIST" v={a.artist} />
+            <TagRow k="SIZE" v={fmtBytes(bytesOf(a, s))} />
+            <TagRow k="UPLOADED" v={`${Math.floor(releasePct(a, s))}%`} />
           </div>
 
           <div className="ub-insp-btns">
             {a.phase === 'added' ? (
-              <Button variant="outlined" onClick={() => go(albumHref(a.albumId))}>
+              <Button variant="secondary" className="ub-btn-42" onClick={() => go(albumHref(a.albumId))}>
                 View album
               </Button>
             ) : (
               <>
-                <Button
-                  variant="outlined"
-                  disabled={!canEdit}
-                  title={canEdit ? undefined : 'Tags can’t change once the release has started uploading'}
-                  onClick={() => setEditing(true)}
-                >
+                <Button variant="secondary" className="ub-btn-42" disabled={!canEdit} title={canEdit ? undefined : 'Tags can’t change once the release has started uploading'} onClick={() => setEditing(true)}>
                   Edit tags
                 </Button>
-                <Button variant="plain" className="ub-textbtn" disabled={a.phase !== 'pending'} onClick={() => setSkipped([a.key], !a.skipped)}>
+                <button type="button" className="ub-textbtn" disabled={a.phase !== 'pending'} onClick={() => setSkipped([a.key], !a.skipped)}>
                   {a.skipped ? 'Include again' : 'Skip this release'}
-                </Button>
+                </button>
               </>
             )}
           </div>
@@ -145,23 +140,30 @@ function IssueCard({ issue, a, onPickMissing }: { issue: Issue; a: UploadAlbum; 
     if (issue.anyUp) acts.push(['Add without them', () => addWithoutFailed(a.key)])
   }
   return (
-    <Alert
-      layout="stack"
-      role="alert"
-      title={copy.title}
-      actions={acts.map(([label, fn], i) => (
-        <Button variant={i === 0 ? 'warn' : 'warn-outlined'} size="sm" key={label} onClick={fn}>
-          {label}
-        </Button>
-      ))}
-    >
-      {copy.text}
-    </Alert>
+    <div className="ub-issue" role="alert">
+      <div className="ub-issue-msg">
+        <span className="ub-issue-ic" aria-hidden>
+          <Icon name="alert" />
+        </span>
+        <div className="ub-issue-text">
+          <div className="ub-issue-title">{copy.title}</div>
+          <div className="ub-issue-sub">{copy.text}</div>
+        </div>
+      </div>
+      <div className="ub-issue-acts">
+        {acts.map(([label, fn], i) => (
+          <Button key={label} size="sm" variant={i === 0 ? 'primary' : 'secondary'} className="ub-act" onClick={fn}>
+            {label}
+          </Button>
+        ))}
+      </div>
+    </div>
   )
 }
 
 type CellKind = 'up' | 'pending' | 'missing' | 'failed'
 
+/** 01…N per disc: uploaded, pending, failed, or missing (dashed). */
 function FileGrid({ a, s }: { a: UploadAlbum; s: UploadState }) {
   const its = uploadable(a, s)
   const m = missingOf(a, s)
@@ -220,24 +222,36 @@ function EditTags({ a, s, onDone }: { a: UploadAlbum; s: UploadState; onDone: ()
   }
   return (
     <form className="ub-edit" onSubmit={save}>
-      <TextField className="ub-tf" label="Album artist" value={artist} onChange={setArtist} inputProps={{ autoFocus: true, spellCheck: false }} />
-      <TextField className="ub-tf" label="Album" value={album} onChange={setAlbum} inputProps={{ spellCheck: false }} />
+      <label className="ub-field">
+        <span>ALBUM ARTIST</span>
+        <input value={artist} onChange={(e) => setArtist(e.target.value)} autoFocus spellCheck={false} />
+      </label>
+      <label className="ub-field">
+        <span>ALBUM</span>
+        <input value={album} onChange={(e) => setAlbum(e.target.value)} spellCheck={false} />
+      </label>
       <div className="ub-field-pair">
-        <TextField className="ub-tf" label="Year" value={year} onChange={setYear} error={!yearOk} inputProps={{ inputMode: 'numeric', maxLength: 4, placeholder: '—' }} />
-        <TextField className="ub-tf" label="Genre" value={genre} onChange={setGenre} inputProps={{ placeholder: '—' }} />
+        <label className={`ub-field ${yearOk ? '' : 'is-bad'}`}>
+          <span>YEAR</span>
+          <input value={year} onChange={(e) => setYear(e.target.value)} inputMode="numeric" maxLength={4} placeholder="—" />
+        </label>
+        <label className="ub-field">
+          <span>GENRE</span>
+          <input value={genre} onChange={(e) => setGenre(e.target.value)} placeholder="—" />
+        </label>
       </div>
       <p className="ub-note">Changes go into your library and the Opus copies. The FLAC files keep the tags they have.</p>
       <div className="ub-insp-btns">
-        <Button type="submit" variant="brand" disabled={!yearOk || !artist.trim() || !album.trim()}>
+        <Button type="submit" className="ub-btn-42" disabled={!yearOk || !artist.trim() || !album.trim()}>
           Save
         </Button>
-        <Button variant="outlined" onClick={onDone}>
+        <Button variant="secondary" className="ub-btn-42" onClick={onDone}>
           Cancel
         </Button>
         {Object.keys(a.edits).length > 0 && (
-          <Button variant="plain" className="ub-textbtn" onClick={() => void reset()}>
-            Use file tags
-          </Button>
+          <button type="button" className="ub-textbtn ub-mono-btn" onClick={() => void reset()}>
+            USE FILE TAGS
+          </button>
         )}
       </div>
     </form>
@@ -259,10 +273,10 @@ function Multi({ s, cat }: { s: UploadState; cat: Catalogue | null }) {
   return (
     <>
       <div className="ub-insp-top">
-        <span className="ub-kicker">{sel.length} releases selected</span>
-        <Button variant="outlined-ink" size="sm" className="ub-clear" onClick={() => setChecked([])}>
-          Clear
-        </Button>
+        <span className="ub-kicker">{sel.length} RELEASES SELECTED</span>
+        <button type="button" className="ub-clear" onClick={() => setChecked([])}>
+          CLEAR
+        </button>
       </div>
       <div className="ub-insp-head">
         <div className="ub-stack" aria-hidden>
@@ -281,9 +295,13 @@ function Multi({ s, cat }: { s: UploadState; cat: Catalogue | null }) {
       </div>
 
       {needs.length > 0 && (
-        <Alert as="button" onClick={() => setFocus(needs[0].key)} actions={<span className="ub-needstrip-k">Review</span>}>
-          {needs.length === 1 ? '1 of these needs you' : `${needs.length} of these need you`}
-        </Alert>
+        <button type="button" className="ub-needstrip" onClick={() => setFocus(needs[0].key)}>
+          <span className="ub-issue-ic" aria-hidden>
+            <Icon name="alert" />
+          </span>
+          <span className="ub-grow">{needs.length === 1 ? '1 of these needs you' : `${needs.length} of these need you`}</span>
+          <span className="ub-needstrip-k">REVIEW</span>
+        </button>
       )}
 
       {editing ? (
@@ -291,15 +309,16 @@ function Multi({ s, cat }: { s: UploadState; cat: Catalogue | null }) {
       ) : (
         <>
           <div className="ub-tags">
-            <TagRow k="Album artist" v={artists.size === 1 ? [...artists][0] : 'Mixed'} mixed={artists.size !== 1} />
-            <TagRow k="Format" v={formats.size === 1 ? [...formats][0] : 'Mixed'} mixed={formats.size !== 1} />
+            <TagRow k="ALBUM ARTIST" v={artists.size === 1 ? [...artists][0] : 'Mixed'} mixed={artists.size !== 1} />
+            <TagRow k="FORMAT" v={formats.size === 1 ? [...formats][0] : 'Mixed'} mixed={formats.size !== 1} />
           </div>
           <div className="ub-insp-btns">
-            <Button variant="outlined" disabled={!sel.some((a) => editable(a, s))} onClick={() => setEditing(true)}>
+            <Button variant="secondary" className="ub-btn-42" disabled={!sel.some((a) => editable(a, s))} onClick={() => setEditing(true)}>
               Edit shared tags
             </Button>
-            <Button
-              variant="plain" className="ub-textbtn"
+            <button
+              type="button"
+              className="ub-textbtn"
               disabled={!sel.some((a) => a.phase === 'pending' && !a.skipped)}
               onClick={() => {
                 setSkipped(
@@ -310,7 +329,7 @@ function Multi({ s, cat }: { s: UploadState; cat: Catalogue | null }) {
               }}
             >
               Skip selected
-            </Button>
+            </button>
           </div>
         </>
       )}
@@ -318,6 +337,7 @@ function Multi({ s, cat }: { s: UploadState; cat: Catalogue | null }) {
   )
 }
 
+/** Album artist / year / genre for every selected release that hasn't started uploading; blank = leave as is. */
 function EditShared({ sel, s, onDone }: { sel: UploadAlbum[]; s: UploadState; onDone: () => void }) {
   const one = <T,>(vals: T[]) => (new Set(vals).size === 1 ? vals[0] : undefined)
   const artist0 = one(sel.map((a) => a.artist))
@@ -343,20 +363,29 @@ function EditShared({ sel, s, onDone }: { sel: UploadAlbum[]; s: UploadState; on
   }
   return (
     <form className="ub-edit" onSubmit={save}>
-      <TextField className="ub-tf" label="Album artist" value={artist} onChange={setArtist} inputProps={{ placeholder: artist0 === undefined ? 'Mixed' : '—', autoFocus: true, spellCheck: false }} />
+      <label className="ub-field">
+        <span>ALBUM ARTIST</span>
+        <input value={artist} onChange={(e) => setArtist(e.target.value)} placeholder={artist0 === undefined ? 'Mixed' : '—'} autoFocus spellCheck={false} />
+      </label>
       <div className="ub-field-pair">
-        <TextField className="ub-tf" label="Year" value={year} onChange={setYear} error={!yearOk} inputProps={{ inputMode: 'numeric', maxLength: 4, placeholder: year0 === undefined ? 'Mixed' : '—' }} />
-        <TextField className="ub-tf" label="Genre" value={genre} onChange={setGenre} inputProps={{ placeholder: genre0 === undefined ? 'Mixed' : '—' }} />
+        <label className={`ub-field ${yearOk ? '' : 'is-bad'}`}>
+          <span>YEAR</span>
+          <input value={year} onChange={(e) => setYear(e.target.value)} inputMode="numeric" maxLength={4} placeholder={year0 === undefined ? 'Mixed' : '—'} />
+        </label>
+        <label className="ub-field">
+          <span>GENRE</span>
+          <input value={genre} onChange={(e) => setGenre(e.target.value)} placeholder={genre0 === undefined ? 'Mixed' : '—'} />
+        </label>
       </div>
       <p className="ub-note">
         Empty fields stay as they are. Album titles stay per release.
         {locked > 0 && ` ${plural(locked, 'release', 'releases')} already uploading ${locked === 1 ? 'keeps its' : 'keep their'} tags.`}
       </p>
       <div className="ub-insp-btns">
-        <Button type="submit" variant="brand" disabled={!yearOk}>
+        <Button type="submit" className="ub-btn-42" disabled={!yearOk}>
           Save
         </Button>
-        <Button variant="outlined" onClick={onDone}>
+        <Button variant="secondary" className="ub-btn-42" onClick={onDone}>
           Cancel
         </Button>
       </div>

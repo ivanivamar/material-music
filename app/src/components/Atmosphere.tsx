@@ -62,7 +62,7 @@ function makeFlakes(n: number, seed: number): Flake[] {
   return out
 }
 
-/** Pelagic textures + particles (retired with the Material redesign; kept for reference). */
+/** Pelagic textures and particles, controlled by the user's Atmosphere settings. */
 export const AtmosphereLegacy = memo(function AtmosphereLegacy({
   particles,
   texture,
@@ -127,7 +127,4 @@ export const AtmosphereLegacy = memo(function AtmosphereLegacy({
   )
 })
 
-/** Material redesign: no textures, particles or pools behind content. Callers keep compiling; renders nothing. */
-export const Atmosphere = memo(function Atmosphere(_props: AtmosphereProps) {
-  return null
-})
+export const Atmosphere = AtmosphereLegacy

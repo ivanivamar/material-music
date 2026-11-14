@@ -1,11 +1,7 @@
 /**
- * Now Playing UI state: is the full-screen player open, does it show the lyrics beside / under the
- * queue carousel, and is the carousel in reorder mode (Nov 2026 carousel player: the queue *is* the
- * full-screen player, so there is no separate queue panel any more). Lyrics and reorder exclude
- * each other.
- *
- * Reorder is one flag with two hosts: the full-screen player while it is open, and on desktop the
- * player bar's tray while it is closed (shell/PlayerBar.tsx). Both render the same ReorderView.
+ * Now Playing UI state (step 6): is the full-screen player open, which view it shows
+ * (now playing ⇄ lyrics), and whether the queue panel is open. Handoff 08: Queue and Lyrics
+ * toggle independently, so both panels can be open together.
  *
  * Opening the full-screen player pushes a history entry (same hash, `history.state.pelagicNp`)
  * so the browser / mouse Back button closes it instead of leaving the page.
@@ -13,24 +9,16 @@
 import { useSyncExternalStore } from 'react'
 import { go } from '../shell/routes'
 import { onAccountReset } from './session'
-import { PHONE_QUERY } from './viewport'
 
 export type NpView = 'np' | 'lyrics'
 
 export interface NowPlayingUi {
   open: boolean
   view: NpView
-  /** the queue is in reorder mode (drag songs by their handle, drop on Remove); on desktop this can be
-   *  on with the full-screen player closed: the player bar then shows the reorder tray */
-  reorder: boolean
-  /**
-   * Phone: the player is being dragged between the mini card and full screen (0 = mini, 1 = full),
-   * by the mini player's handle or the full-screen header; null when nobody is dragging.
-   */
-  lift: number | null
+  queue: boolean
 }
 
-let state: NowPlayingUi = { open: false, view: 'np', reorder: false, lift: null }
+let state: NowPlayingUi = { open: false, view: 'np', queue: false }
 const listeners = new Set<() => void>()
 function set(patch: Partial<NowPlayingUi>) {
   state = { ...state, ...patch }
@@ -46,7 +34,7 @@ let pendingHref: string | null = null
 if (hasEntry()) window.history.replaceState(null, '')
 
 window.addEventListener('popstate', () => {
-  if (state.open && !hasEntry()) set({ open: false, reorder: false })
+  if (state.open && !hasEntry()) set({ open: false, queue: false })
   if (pendingHref) {
     const to = pendingHref
     pendingHref = null
@@ -68,7 +56,7 @@ export const nowPlayingStore = {
     if (!state.open) return
     if (hasEntry())
       window.history.back() // popstate closes
-    else set({ open: false, reorder: false })
+    else set({ open: false, queue: false })
   },
   /** Close the player and go to an in-app href (album / artist links inside it). */
   closeAndGo(href: string) {
@@ -76,7 +64,7 @@ export const nowPlayingStore = {
       pendingHref = href
       window.history.back()
     } else {
-      set({ open: false, reorder: false })
+      set({ open: false, queue: false })
       go(href)
     }
   },
@@ -87,37 +75,24 @@ export const nowPlayingStore = {
   toggleLyrics() {
     if (!state.open) nowPlayingStore.open('lyrics')
     else set({ view: state.view === 'lyrics' ? 'np' : 'lyrics' })
-    if (state.reorder) set({ reorder: false })
   },
-  /** Reorder mode. Phone: in the full-screen player (opened first when it's closed). Desktop: wherever
-   *  the player is, the bar's tray when the full-screen player is closed. */
-  openReorder() {
-    if (!state.open && window.matchMedia(PHONE_QUERY).matches) nowPlayingStore.open('np')
-    set({ reorder: true, view: 'np' })
+  toggleQueue() {
+    set({ queue: !state.queue })
   },
-  toggleReorder() {
-    if (state.reorder) set({ reorder: false })
-    else nowPlayingStore.openReorder()
-  },
-  closeReorder() {
-    if (state.reorder) set({ reorder: false })
-  },
-  /** Drag progress between the mini card (0) and full screen (1); null ends the drag. */
-  setLift(lift: number | null) {
-    const v = lift === null ? null : Math.max(0, Math.min(1, lift))
-    if (v !== state.lift) set({ lift: v })
+  closeQueue() {
+    if (state.queue) set({ queue: false })
   },
   /** Nothing to show (queue cleared, signed out): close without touching history beyond our entry. */
   reset() {
     if (state.open && hasEntry()) window.history.back()
-    set({ open: false, reorder: false })
+    set({ open: false, queue: false })
   },
 }
 
 onAccountReset(() => {
   if (hasEntry()) window.history.replaceState(null, '')
   pendingHref = null
-  set({ open: false, view: 'np', reorder: false, lift: null })
+  set({ open: false, view: 'np', queue: false })
 })
 
 export function useNowPlayingUi(): NowPlayingUi {

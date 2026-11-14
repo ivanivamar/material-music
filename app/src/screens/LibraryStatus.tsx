@@ -1,11 +1,11 @@
 /**
- * Full-screen library states before the shell can show (Material 3 Expressive redesign, FirstRunMaterial.dc.html):
+ * Full-screen library states before the shell can show:
  *   LoadingLibrary — first download of library.json ("Charting your library" / "All charted.")
  *   NoLibrary      — Drive has no Pelagic/library.json ("No library found")
  *   LibraryError   — the download or parse failed
  */
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
-import { AppMark } from '../components/Logo'
+import { Atmosphere } from '../components/Atmosphere'
 import { Button, LinearProgress } from '../components/ui'
 import { Icon } from '../design/icons'
 import { libraryStats, libraryStore, useLibrary, type Catalogue } from '../state/library'
@@ -59,30 +59,16 @@ function AccountPill() {
 function ScreenShell({ tag, topAccount, progress, children }: { tag: string; topAccount?: boolean; progress?: number; children: ReactNode }) {
   const phone = useIsPhone()
   return (
-    <main className={`scr ${phone ? 'is-phone' : ''}`}>
+    <main className={`scr scr-deep ${phone ? 'is-phone' : ''}`}>
+      <Atmosphere fixed seed={9} />
       <div className="scr-panel">
-        <div className="scr-glow" aria-hidden />
-        <div className="shell-deco" aria-hidden>
-          <i className="sd-dots" />
-          <i className="sd-ring sd-r1" />
-          <i className="sd-ring sd-r2" />
-          <i className="sd-ring sd-r3" />
-        </div>
         {progress != null && (
           <LinearProgress className="scr-prog" value={progress / 100} />
         )}
         <div className="scr-top">
-          {!phone ? (
-            <div className="scr-brand">
-              <AppMark size={32} />
-              <span>Material Music</span>
-            </div>
-          ) : (
-            <span />
-          )}
+          <span className="scr-tag">{tag}</span>
           <div className="scr-top-r">
             {topAccount && <AccountPill />}
-            <span className="scr-pill">{tag}</span>
           </div>
         </div>
         {children}
@@ -93,7 +79,6 @@ function ScreenShell({ tag, topAccount, progress, children }: { tag: string; top
 
 export function LoadingLibrary({ onDone }: { onDone: () => void }) {
   const lib = useLibrary()
-  const phone = useIsPhone()
   const data: Catalogue | null = lib.status === 'ready' ? lib.data : null
   const stats = data ? libraryStats(data) : null
   const [[artists, albums, tracks], counted] = useCountUp(stats ? [stats.artists, stats.albums, stats.tracks] : [0, 0, 0])
@@ -125,8 +110,8 @@ export function LoadingLibrary({ onDone }: { onDone: () => void }) {
           <span className="ls-ring ls-r2" />
           <span className="ls-ring ls-r3" />
           <svg viewBox="0 0 140 140" className="ls-svg">
-            <circle cx="70" cy="70" r="10" fill="none" stroke="oklch(0.80 0.115 38)" strokeWidth="1.5" style={{ animation: 'scr-ping 3.2s cubic-bezier(.15,.6,.35,1) infinite' }} />
-            <circle cx="70" cy="70" r="10" fill="none" stroke="oklch(0.80 0.115 38)" strokeWidth="1.5" style={{ animation: 'scr-ping 3.2s cubic-bezier(.15,.6,.35,1) 1.6s infinite' }} />
+            <circle className="pg-anim" cx="70" cy="70" r="10" fill="none" stroke="rgba(255,255,255,.55)" strokeWidth="1.5" style={{ animation: 'scr-ping 3.2s cubic-bezier(.15,.6,.35,1) infinite' }} />
+            <circle className="pg-anim" cx="70" cy="70" r="10" fill="none" stroke="rgba(255,255,255,.55)" strokeWidth="1.5" style={{ animation: 'scr-ping 3.2s cubic-bezier(.15,.6,.35,1) 1.6s infinite' }} />
           </svg>
           <span className="ls-dot" />
         </div>
@@ -134,20 +119,13 @@ export function LoadingLibrary({ onDone }: { onDone: () => void }) {
           <h1 className="loading-title">{done ? 'All charted.' : 'Charting your library'}</h1>
           <p className="scr-body">{done ? `${fmtN(stats!.tracks)} tracks, ready when you are.` : 'Reading the catalogue from Google Drive. Only happens once.'}</p>
         </div>
-        <div className={`counters ${phone ? 'is-phone' : ''}`} role="status" aria-live="off">
-          {counters.map(([k, v]) =>
-            phone ? (
-              <div key={k} className="counter-row">
-                <span className="counter-k">{k}</span>
-                <span className="counter-v">{fmtN(v)}</span>
-              </div>
-            ) : (
-              <div key={k} className="card card-filled card-lg counter">
-                <div className="counter-v">{fmtN(v)}</div>
-                <div className="counter-k">{k}</div>
-              </div>
-            ),
-          )}
+        <div className="counters" role="status" aria-live="off">
+          {counters.map(([k, v]) => (
+            <div key={k} className="counter">
+              <div className="counter-v">{fmtN(v)}</div>
+              <div className="counter-k">{k}</div>
+            </div>
+          ))}
         </div>
         <div className="loading-foot">
           {done ? (
@@ -214,7 +192,7 @@ export function LibraryError() {
         </div>
         <div className="scr-copy">
           <h1 className="scr-title">Couldn’t reach your library</h1>
-          <p className="scr-body">Material Music couldn’t read library.json from Google Drive.</p>
+          <p className="scr-body">PELAGIC couldn’t read library.json from Google Drive.</p>
         </div>
         <AccountPill />
         <div className="scr-btns">

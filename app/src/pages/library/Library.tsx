@@ -1,5 +1,5 @@
 /**
- * Library (Material redesign, LibraryMaterial.dc.html):
+ * Library:
  *
  *   [🔍 Search your library]                                         (the shell's sticky top bar)
  *   Library · "21 albums · 15 artists · 3,912 songs"                                [Shuffle library]
@@ -22,7 +22,7 @@
  */
 import { useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Chip, IconButton, Button, EmptyState, Menu, MenuItem, MenuLabel, MenuSeparator, OfflineBanner, Toggle, useToast, Segmented } from '../../components/ui'
+import { IconButton, Button, EmptyState, Menu, MenuItem, MenuLabel, MenuSeparator, OfflineBanner, Toggle, useToast, Segmented } from '../../components/ui'
 import { offlineIndex, useDownloads, useOnline, type OfflineIndex } from '../../state/downloads'
 import { Icon, type IconName } from '../../design/icons'
 import { actions } from '../../actions/actions'
@@ -97,6 +97,25 @@ export function Library({ tab: routeTab }: { tab: LibraryTab | null }) {
     document.documentElement.setAttribute('data-lib-search', '')
     return () => document.documentElement.removeAttribute('data-lib-search')
   }, [phoneSearching])
+
+  useEffect(() => {
+    if (!phone) return
+    const main = document.getElementById('main')
+    const bar = main?.querySelector<HTMLElement>('.lb-bar')
+    if (!main || !bar) return
+    const updateStickyState = () => {
+      const top = Number.parseFloat(getComputedStyle(bar).top) || 0
+      bar.classList.toggle('is-stuck', bar.getBoundingClientRect().top <= main.getBoundingClientRect().top + top + 1)
+    }
+    main.addEventListener('scroll', updateStickyState, { passive: true })
+    window.addEventListener('resize', updateStickyState)
+    updateStickyState()
+    return () => {
+      main.removeEventListener('scroll', updateStickyState)
+      window.removeEventListener('resize', updateStickyState)
+      bar.classList.remove('is-stuck')
+    }
+  }, [phone, data])
 
   // Clearing the query (✕, Esc, deleting the text) puts back the tab where it was scrolled
   const wasTyping = useRef(typing)
@@ -204,9 +223,10 @@ export function Library({ tab: routeTab }: { tab: LibraryTab | null }) {
             {LIBRARY_TABS.map((t) => {
               const on = t === chip
               return (
-                <Chip key={t} role="tab" selected={on} size={phone ? 'sm' : 'md'} count={phone ? undefined : fmtN(counts[t])} onClick={() => pick(t)}>
+                <button key={t} type="button" className={`lb-tab ${on ? 'is-on' : ''}`} role="tab" aria-selected={on} onClick={() => pick(t)}>
                   {TAB_LABEL[t]}
-                </Chip>
+                  {!phone && <span className="lb-tab-n">{fmtN(counts[t])}</span>}
+                </button>
               )
             })}
           </div>
@@ -509,4 +529,3 @@ function SongsView({ c, filter, phone }: { c: Catalogue; filter: OfflineIndex | 
     </div>
   )
 }
-

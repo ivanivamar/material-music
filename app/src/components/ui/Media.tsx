@@ -22,14 +22,16 @@ interface TrackRowProps {
   className?: string
   /** extra props on the row (drag to a playlist) */
   rowProps?: HTMLAttributes<HTMLDivElement>
+  /** the heart (components/LikeButton), shown before ⋯ */
+  like?: ReactNode
 }
 
 /** `download` omitted → empty status cell (PC: nothing is stored offline). */
-export function TrackRow({ n, title, subtitle, duration, label, playing, download, onPlay, onMore, className, rowProps }: TrackRowProps) {
+export function TrackRow({ n, title, subtitle, duration, label, playing, download, onPlay, onMore, className, rowProps, like }: TrackRowProps) {
   return (
     <div
       {...rowProps}
-      className={['trow', playing && 'is-playing', className].filter(Boolean).join(' ')}
+      className={['trow', 'like-host', playing && 'is-playing', className].filter(Boolean).join(' ')}
       onDoubleClick={onPlay}
       onClick={(e) => {
         if (isTouch() && !(e.target as HTMLElement).closest('a, button')) onPlay?.()
@@ -52,6 +54,7 @@ export function TrackRow({ n, title, subtitle, duration, label, playing, downloa
           <div className="trow-title">{title}</div>
           {subtitle && <div className="trow-sub">{subtitle}</div>}
         </div>
+        {like}
         {onMore && (
           <button type="button" className="ibtn ibtn-sm ibtn-bare trow-more" aria-label="More" onClick={onMore}>
             <Icon name="more" />

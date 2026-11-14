@@ -86,7 +86,7 @@ export function Components() {
       <Atmosphere fixed seed={17} />
       <div className="cg-inner">
         <header className="cg-head">
-          <div className="t-mono">Material Music / core components</div>
+          <div className="t-mono">PELAGIC / core components</div>
           <div className="t-page">Components and states</div>
           <div className="cg-nav">
             <a href="#/dev/foundations">Foundations</a>

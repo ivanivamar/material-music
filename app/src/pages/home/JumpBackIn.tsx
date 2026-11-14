@@ -1,11 +1,7 @@
 /**
- * Jump back in (Material redesign, HomeMaterial.dc.html): the DJ tile first, then the last things
- * played *from* (synced PC ↔ phone through Firestore, state/recent.ts), newest first.
- * Desktop 4 columns (3 under 1300px) × 2 rows (DJ + 7), phone 2 × 3 (DJ + 5).
- *
- * Tiles are flat warm neutrals (rest / hover / playing); the tile's own album hue only colours the kind
- * icon, the equaliser and the cookie play button (shown on hover; always on phone). Art sits tilted
- * −4° and straightens on hover.
+ * Jump back in: the DJ tile first, then the last things played *from* (synced PC ↔ phone through
+ * Firestore, state/recent.ts), newest first. Desktop 4 columns (3 under 1300px) × 2 rows (DJ + 7),
+ * phone 2 × 3 (DJ + 5).
  *
  * Click plays that context (again: pause / resume when it's the one playing). The DJ tile opens the
  * DJ start view (or the player while on air); right-click / long-press opens the DJ panel.

@@ -145,14 +145,15 @@ function MixView({ c, mix, backBtn }: { c: Catalogue; mix: MixPlan; backBtn: Rea
 
   const stats = [plural(tracks.length, 'song', 'songs'), seconds ? fmtTotal(seconds).toLowerCase() : null, offline !== null ? `${offline} of ${tracks.length} offline` : mix.newCount ? `${mix.newCount} new to you` : null].filter(Boolean).join(' · ')
   const kicker = mix.kind === 'daily' ? `DAILY MIX ${mix.n ?? ''} · REFRESHES DAILY` : KIND_KICKER[mix.kind]
-  const coverSize = phone ? 200 : compact ? 176 : 208
+  const legacy = mix.kind === 'daily' || mix.kind === 'deep' || mix.kind === 'redis'
+  const coverSize = legacy ? (phone ? 228 : compact ? 168 : 200) : phone ? 200 : compact ? 176 : 208
 
   return (
-    <div className={`mx-page hue-scope ${phone ? 'is-phone' : ''}`} style={{ '--h': mix.hue, '--hc': 1 } as CSSProperties}>
+    <div className={`mx-page hue-scope ${phone ? 'is-phone' : ''} ${legacy ? 'is-legacy' : ''}`} style={{ '--h': mix.hue, '--hc': 1 } as CSSProperties}>
       {backBtn}
       <header className="card card-raised card-lg mx-hero">
         <div className="mx-cover">
-          <MixCover c={c} mix={mix} size={coverSize} />
+          <MixCover c={c} mix={mix} size={coverSize} radius={legacy ? 14 : undefined} />
         </div>
         <div className="mx-hero-text">
           <div className="mx-kicker">{kicker}</div>
@@ -182,7 +183,7 @@ function MixView({ c, mix, backBtn }: { c: Catalogue; mix: MixPlan; backBtn: Rea
           <IconButton icon={saved ? 'bookmarked' : 'bookmark'} label={saved ? 'Saved as playlist' : 'Save as playlist'} size="lg" variant="strong" className="mx-ib" filled={saved} onClick={save} />
           <IconButton icon="more" label="More" size="lg" variant="strong" className="mx-ib" onClick={menu} />
           <span className="mx-flex" />
-          <CookieButton size={64} iconSize={32} playing={playing} icon={playing ? 'pauseF' : 'playF'} label={playing ? 'Pause' : 'Play'} onClick={playAll} />
+          <CookieButton size={legacy ? 56 : 64} iconSize={legacy ? 28 : 32} playing={playing} icon={playing ? 'pauseF' : 'playF'} label={playing ? 'Pause' : 'Play'} onClick={playAll} />
         </div>
       ) : (
         <div className="mx-buttons">

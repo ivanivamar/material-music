@@ -6,12 +6,14 @@
  * Keeps the library in sync and surfaces session / sync events as toasts.
  */
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { Atmosphere } from '../components/Atmosphere'
 import { Icon } from '../design/icons'
 import { SHAPE_PLAYING } from '../design/shapes'
 import { playList } from '../pages/library/playback'
 import { Button, useToast } from '../components/ui'
 import { libraryStore, onLibraryUpdated, useLibrary } from '../state/library'
 import { NowPlaying } from '../nowplaying/NowPlaying'
+import { QueuePanel } from '../nowplaying/QueuePanel'
 import { nowPlayingStore, useNowPlayingUi } from '../state/nowPlaying'
 import { onPlayerNotice, playerStore, usePlayer } from '../state/player'
 import { focusLibrarySearch } from '../state/search'
@@ -201,7 +203,7 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
     if (!updateReady) return
     const id = toast.show({
       icon: 'refresh',
-      text: 'A new version of Material Music is ready.',
+      text: 'A new version of PELAGIC is ready.',
       meta: 'UPDATE',
       action: { label: 'Reload', onClick: () => appUpdate.apply() },
       duration: 0,
@@ -215,7 +217,7 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
     if (!apk) return
     const id = toast.show({
       icon: 'download',
-      text: `Material Music ${apk.versionName} is available.`,
+      text: `PELAGIC ${apk.versionName} is available.`,
       meta: 'ANDROID UPDATE',
       action: { label: 'Install', onClick: () => nativeUpdates.install() },
       duration: 0,
@@ -367,29 +369,30 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
-  // Esc leaves reorder mode first (the full-screen player's, or the player bar's tray), then closes the full-screen player
+  // Esc closes the queue panel first, then the full-screen player
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape' || e.defaultPrevented) return
       const ui = nowPlayingStore.get()
-      if (!ui.open && !ui.reorder) return
+      if (!ui.queue && !ui.open) return
       const el = e.target as HTMLElement | null
       if (!ui.open && el?.closest('input, textarea, select, [contenteditable="true"]')) return
       e.preventDefault()
-      if (ui.reorder) nowPlayingStore.closeReorder()
+      if (ui.queue) nowPlayingStore.closeQueue()
       else nowPlayingStore.close()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
-  // Any navigation (e.g. "/" to Library search) takes the full-screen player down with it
+  // Any navigation (e.g. "/" to Library search) takes the full-screen player and queue panel down with it
   const npPath = useRef(route.path)
   useEffect(() => {
     if (npPath.current === route.path) return
     npPath.current = route.path
     const ui = nowPlayingStore.get()
     if (ui.open) nowPlayingStore.close()
+    else if (ui.queue) nowPlayingStore.closeQueue()
   }, [route.path])
 
   // Background sync failure (first-load failures have their own screen)
@@ -446,6 +449,7 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
   return (
     <TopbarSlot.Provider value={phone ? null : slot}>
     <div className={`shell ${phone ? 'is-phone has-ptb' : ''} ${phone && hasTrack ? 'has-mini' : ''} ${scrolled ? 'is-scrolled' : ''}`}>
+      {phone && <Atmosphere fixed seed={17} paused={np.open} />}
       {/* the full-screen player is modal: everything behind it is inert */}
       <div className="shell-layer" inert={np.open}>
         {phone ? (
@@ -476,6 +480,7 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
               }}
             />
             <div className="shell-panel">
+              <Atmosphere seed={17} paused={np.open} />
               <div className="shell-deco" aria-hidden>
                 <i className="sd-dots" />
                 <i className="sd-ring sd-r1" />
@@ -510,6 +515,7 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
         )}
       </div>
       <NowPlaying />
+      <QueuePanel />
       <ActionHost />
       <DjPanelHost />
     </div>

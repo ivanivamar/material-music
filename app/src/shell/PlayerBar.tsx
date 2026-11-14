@@ -1,107 +1,185 @@
 /**
- * Desktop player bar (Nov 2026 carousel player): a 100px floating pane inside the main panel
- * (the pane surface + a hairline border, 32px corners).
- *   [ queue carousel: played · HERO (the playing song) · next · pills ]
- *   [ prev · play · next · shuffle · repeat · lyrics · reorder · DJ · devices · quality · volume ]
- *   [ ─────────────── wavy progress with times ─────────────── ]
- * A click on the playing song's card (or on the bar itself) opens the full-screen player.
- *
- * Reorder (the full-screen player closed): the bar grows upward into a tray, in the phone mini
- * player's band style — the outer card turns a lighter neutral and holds the same ReorderView the
- * full-screen player uses; the player row stays as the darker rounded surface under it. Done, Esc,
- * the Reorder button or a click on the dimmed page closes it.
- * Every control comes from nowplaying/parts.tsx; the carousel from nowplaying/carousel.
+ * Desktop player bar, 84px (handoff 04 Desktop), the footer of the content panel:
+ * grid  [now playing ♥ | 560px transport + seek | quality · devices · lyrics · queue · DJ · volume · open]
  */
-import { useEffect, useState } from 'react'
-import { Icon } from '../design/icons'
+import { IconButton, PlayButton, QualityBadge, qualityKind, qualityLabel } from '../components/ui'
+import { useCover } from '../lib/covers'
+import { useLibrary, type Track } from '../state/library'
 import { nowPlayingStore, useNowPlayingUi } from '../state/nowPlaying'
-import { isIntroId } from '../state/player'
-import { useDjView } from '../state/djUi'
-import { DjButton } from '../dj/DjButton'
+import { playerStore, usePlayer } from '../state/player'
+import { LikeButton } from '../components/LikeButton'
 import { DevicesButton } from '../sync/DevicesButton'
-import { QueueCarousel } from '../nowplaying/carousel/QueueCarousel'
-import { ReorderView } from '../nowplaying/carousel/ReorderView'
-import { LyricsToggle, PlayerSeek, QualityPill, RepeatToggle, ReorderToggle, ShuffleToggle, Transport, VolumeControl } from '../nowplaying/parts'
-import { useCurrent, useDuration } from '../nowplaying/player'
-
-/** How long the tray takes to close (playerbar.css): its content stays mounted that long. */
-const TRAY_MS = 420
+import { trackOf, albumOf } from '../state/previews'
+import { TimeSeek, Volume, useFixedOrder, usePlayPause } from '../nowplaying/parts'
+import { Icon } from '../design/icons'
+import { Marquee } from '../components/Marquee'
+import { isNative } from '../native/bridge'
+import { albumHref, artistHref } from './routes'
+import { isIntroId } from '../state/player'
+import { djIntroInfo } from '../state/dj'
+import { useDjView } from '../state/djUi'
+import { useIntroAudio } from '../dj/voice'
+import { DjButton } from '../dj/DjButton'
+import { IntroSub, LiveMark } from '../dj/DjIntro'
+import { useSettings } from '../state/settings'
 
 export function PlayerBar() {
-  const { p, id, track } = useCurrent()
-  const dj = useDjView()
-  const duration = useDuration()
-  const intro = isIntroId(id)
-  const empty = !track && !intro
+  const p = usePlayer()
+  const { data } = useLibrary()
   const ui = useNowPlayingUi()
-  // reorder mode with the full-screen player closed: the tray (the DJ keeps no upcoming queue)
-  const tray = ui.reorder && !ui.open && !dj.on && !empty
-  const [mounted, setMounted] = useState(tray)
-  if (tray && !mounted) setMounted(true)
-  useEffect(() => {
-    if (tray) return
-    const id = window.setTimeout(() => setMounted(false), TRAY_MS)
-    return () => window.clearTimeout(id)
-  }, [tray])
+  const id = p.index >= 0 ? p.queue[p.index] : null
+  const track: Track | null = (id && trackOf(data, id)) || null
+  const album = track ? albumOf(data, track.albumId) : undefined
+  const cover = useCover(album?.cover)
+  const dj = useDjView()
+  const intro = dj.on && isIntroId(id) && !!dj.session
+  const introAudio = useIntroAudio(intro && id ? djIntroInfo(id)?.sessionId : null)
+  const duration = intro ? (introAudio?.duration ?? 0) : (track?.duration ?? 0)
+  const empty = !track && !intro
+  const radio = p.context?.kind === 'radio'
+  const djChip = p.remote ? (
+    <span className="pb-remote-chip t-mono" title={`Playing on ${p.remote.name}. The controls here drive it.`}>
+      ON {p.remote.name.toUpperCase()}
+    </span>
+  ) : dj.on ? (
+    <span className="dj-chip">{intro ? 'DJ · INTRO' : 'DJ'}</span>
+  ) : radio ? (
+    <span className="radio-chip">RADIO</span>
+  ) : null
+  // shuffle / repeat: not used by the DJ or a radio
+  const offLabel = useFixedOrder()
+  const fixed = !!offLabel
+  const onPlay = usePlayPause()
+  const streamQuality = useSettings().streamQuality
+  // streaming the Opus copy (Settings → Playback); a local / stored file is whatever the engine found
+  const opusStream = p.source === 'drive' && streamQuality === 'opus' && !!track?.mobile?.id
+  const sourceLabel = p.source === 'local' ? (isNative ? 'Stored on this phone' : 'Playing from your local folder') : p.source === 'drive' ? 'Streaming from Google Drive' : undefined
 
   return (
-    <>
-      {tray && <div className="pb-scrim pg-anim" aria-hidden onClick={() => nowPlayingStore.closeReorder()} />}
-      <footer
-        className={`pb pg-anim ${empty ? 'is-empty' : ''} ${tray ? 'is-reorder' : ''}`}
-        aria-label="Player"
-        onClick={(e) => {
-          // a click on the bar itself (not a card, control, link, slider or the tray) opens the full-screen player
-          if (empty || (e.target as HTMLElement).closest('button, a, input, [role="slider"], .qc, .pb-tray')) return
-          nowPlayingStore.open('np')
-        }}
-      >
-        <div className="pb-tray pg-anim" aria-hidden={!tray}>
-          {/* the full-screen player has its own ReorderView while it is open */}
-          {mounted && !ui.open && (
-            <div className="pb-tray-in">
-              <ReorderView axis="x" />
+    <footer
+      className={`pb ${empty ? 'is-empty' : ''}`}
+      aria-label="Player"
+      onClick={(e) => {
+        // a click on the bar itself (not on a control, link or slider) opens the full-screen player
+        if (empty || (e.target as HTMLElement).closest('button, a, input, [role="slider"]')) return
+        nowPlayingStore.open('np')
+      }}
+    >
+      <div className="pb-now">
+        {empty ? (
+          <>
+            <span className="pb-cover pb-cover-empty" aria-hidden />
+            <div className="pb-text">
+              <div className="pb-title pb-title-empty">Nothing playing</div>
+              <div className="pb-sub t-mono">PICK AN ALBUM TO START</div>
             </div>
-          )}
-        </div>
-
-        <div className="pb-surface">
-          {empty ? (
-            <div className="pb-empty">
-              <span className="pb-empty-ic" aria-hidden>
-                <Icon name="song" />
+          </>
+        ) : intro && id && dj.session ? (
+          <>
+            <button type="button" className="pb-expand" onClick={() => nowPlayingStore.open('np')} aria-label="Open Now Playing" title="Now Playing">
+              <LiveMark item={id} size={52} />
+              <span className="pb-expand-ic" aria-hidden>
+                <Icon name="chevU" />
               </span>
-              <span className="pb-empty-t">
-                <b>Nothing playing</b>
-                Pick an album to start
+            </button>
+            <div className="pb-text">
+              <div className="pb-title pb-dj-title" title={dj.session.title}>
+                <Marquee text={dj.session.title} />
+                {djChip}
+              </div>
+              <div className="pb-sub">
+                <IntroSub item={id} />
+              </div>
+            </div>
+          </>
+        ) : (
+          track && <>
+            <button type="button" className="pb-expand" onClick={() => nowPlayingStore.open('np')} aria-label="Open Now Playing" title="Now Playing">
+              {cover ? <img className="pb-cover" src={cover} alt="" /> : <span className="pb-cover pb-cover-empty" aria-hidden />}
+              <span className="pb-expand-ic" aria-hidden>
+                <Icon name="chevU" />
               </span>
+            </button>
+            <div className="pb-text">
+              <div className="pb-dj-title">
+                <a className="pb-title pb-link" href={albumHref(track.albumId)} title={album ? `${track.title} — ${album.title}` : track.title}>
+                  <Marquee text={track.title} />
+                </a>
+                {djChip}
+              </div>
+              <a className="pb-sub pb-link" href={artistHref(track.artistId)} title={track.artist}>
+                <Marquee text={track.artist} />
+              </a>
             </div>
-          ) : (
-            <QueueCarousel variant="bar" className="pb-carousel" />
-          )}
+            <LikeButton trackId={track.id} size="sm" className="pb-like" />
+          </>
+        )}
+      </div>
 
-          <div className="pb-controls">
-            <div className="pb-row">
-              <Transport play={48} skip={40} />
-              <ShuffleToggle />
-              <RepeatToggle />
-              <span className="pb-sep" aria-hidden />
-              <LyricsToggle />
-              <ReorderToggle />
-              <DjButton variant="bar" />
-              <DevicesButton className="pb-devices" />
-              <span className="pb-flex" />
-              {track && !intro && <QualityPill track={track} />}
-              <VolumeControl width={72} />
-            </div>
-            <PlayerSeek className="pb-seek" idle={empty} duration={duration} playing={p.playing && !empty} />
-          </div>
+      <div className="pb-center">
+        <div className="pb-transport">
+          <IconButton
+            icon="shuffle"
+            label={offLabel ?? (p.shuffle ? 'Shuffle on' : 'Shuffle')}
+            bare
+            size="sm"
+            pressed={!fixed && p.shuffle}
+            className={`pb-mode ${!fixed && p.shuffle ? 'is-on' : ''} ${fixed ? 'is-dj-off' : ''}`}
+            onClick={() => !fixed && playerStore.toggleShuffle()}
+          />
+          <IconButton icon="prev" label="Previous" bare filled size="sm" className="pb-skip" disabled={empty} onClick={() => playerStore.prev()} />
+          <PlayButton size={38} state={p.buffering ? 'buffering' : p.playing ? 'playing' : 'paused'} onClick={empty ? undefined : onPlay} />
+          <IconButton icon="next" label="Next" bare filled size="sm" className="pb-skip" disabled={empty} onClick={() => playerStore.next()} />
+          <span className="pb-repeat-wrap">
+            <IconButton
+              icon="repeat"
+              label={offLabel ?? (p.repeat === 'off' ? 'Repeat' : p.repeat === 'all' ? 'Repeat all' : 'Repeat one')}
+              bare
+              size="sm"
+              pressed={!fixed && p.repeat !== 'off'}
+              className={`pb-mode ${!fixed && p.repeat !== 'off' ? 'is-on' : ''} ${fixed ? 'is-dj-off' : ''}`}
+              onClick={() => !fixed && playerStore.cycleRepeat()}
+            />
+            {!fixed && p.repeat === 'one' && <span className="pb-repeat-one" aria-hidden>1</span>}
+          </span>
         </div>
+        <TimeSeek compact idle={empty} duration={duration} />
+      </div>
 
-        <span className="sr-only" aria-live="polite">
-          {intro ? `DJ intro: ${dj.session?.title ?? ''}` : track ? `${p.playing ? 'Playing' : 'Paused'}${p.remote ? ` on ${p.remote.name}` : ''}: ${track.title} by ${track.artist}` : ''}
+      <div className="pb-right">
+        {track && !intro && (
+          <span className="pb-quality" title={sourceLabel}>
+            {p.source && <span className="pb-source t-mono">{p.source === 'local' ? (isNative ? 'OFFLINE' : 'LOCAL') : 'DRIVE'}</span>}
+            {opusStream ? (
+              <QualityBadge kind="opus">{qualityLabel('opus', { bitrate: Number.parseInt(track.mobile?.bitrate ?? '', 10) * 1000 || undefined })}</QualityBadge>
+            ) : (
+              <QualityBadge kind={qualityKind('flac', track.flac?.bitDepth, track.flac?.sampleRate)}>
+                {qualityLabel('flac', { bitDepth: track.flac?.bitDepth, sampleRate: track.flac?.sampleRate })}
+              </QualityBadge>
+            )}
+          </span>
+        )}
+        <DevicesButton className="pb-devices" />
+        <IconButton icon="lyrics" label="Lyrics" bare size="sm" disabled={empty} className={`pb-panel ${ui.open && ui.view === 'lyrics' ? 'is-on' : ''}`} onClick={() => nowPlayingStore.toggleLyrics()} />
+        {dj.on ? (
+          <span className="dj-off-wrap">
+            <IconButton icon="queue" label="Queue: not available while the DJ plays" bare size="sm" className="pb-panel is-dj-off" onClick={() => {}} />
+            <span className="dj-off-tip" role="tooltip">
+              Not available while the DJ plays
+            </span>
+          </span>
+        ) : (
+          <IconButton icon="queue" label="Queue" bare size="sm" disabled={empty} pressed={ui.queue} className={`pb-panel ${ui.queue ? 'is-on' : ''}`} onClick={() => nowPlayingStore.toggleQueue()} />
+        )}
+        <DjButton variant="bar" />
+        <span className="pb-volume">
+          <Volume size="sm" sliderClass="pb-vol-slider" />
         </span>
-      </footer>
-    </>
+        <IconButton icon="chevU" label="Open Now Playing" bare size="sm" disabled={empty} className="pb-open" onClick={() => nowPlayingStore.open('np')} />
+      </div>
+      <span className="sr-only" aria-live="polite">
+        {intro ? `DJ intro: ${dj.session?.title ?? ''}` : track ? `${p.playing ? 'Playing' : 'Paused'}${p.remote ? ` on ${p.remote.name}` : ''}: ${track.title} by ${track.artist}` : ''}
+      </span>
+    </footer>
   )
 }

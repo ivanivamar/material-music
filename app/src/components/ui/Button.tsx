@@ -1,7 +1,7 @@
 import { useState, type ButtonHTMLAttributes, type ReactNode, type Ref } from 'react'
 import { Icon, type IconName } from '../../design/icons'
 
-/** See material.css (Buttons). `primary` = `filled` (kept for older call sites). */
+/** See material.css and ui.css (shared legacy visual overrides). `primary` = `filled`. */
 export type ButtonVariant =
   | 'filled'
   | 'primary'
@@ -53,7 +53,7 @@ interface IconButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 
   label: string
   /** sm 32 · md 40 · lg 48 (back / top-bar) · xl 56 (next to the xl actions) */
   size?: 'sm' | 'md' | 'lg' | 'xl'
-  /** standard = grey icon · strong = light icon (back arrows, top bars) · soft = faint fill · tonal = coral tint */
+  /** standard = grey icon · strong = light icon (back arrows, top bars) · soft / tonal = neutral surface */
   variant?: 'standard' | 'strong' | 'soft' | 'tonal'
   shape?: 'round' | 'square'
   /** no hover fill — for dense bars (player bar) */

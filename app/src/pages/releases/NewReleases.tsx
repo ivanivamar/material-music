@@ -157,7 +157,7 @@ function Page({ c }: { c: Catalogue }) {
   const empty = showTabs && !rs.sweeping && ((tab === 'up' && !feed.weeks.length) || (tab === 'out' && !feed.outShown))
 
   return (
-    <div className={`nr ${phone ? 'is-phone' : ''}`}>
+    <div className={`nr is-legacy ${phone ? 'is-phone' : ''}`}>
       <Header rs={rs} artistsN={artistsN} phone={phone} online={online} onArtists={() => setPanel({ kind: 'artists' })} />
 
       {!online && (
@@ -867,7 +867,7 @@ function Card({
             <>
               <button
                 type="button"
-                className="nr-card-btn is-primary"
+                className="nr-card-btn"
                 onClick={stop(() => act.got(item))}
                 title={item.status === 'acq' ? 'Stop matching' : undefined}
               >

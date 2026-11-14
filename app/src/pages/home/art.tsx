@@ -1,17 +1,14 @@
 /**
- * Generated art for Home (Material redesign, HomeMaterial.dc.html — mixCover / radioArt / avatar /
- * mosaic / newSmart / djMark):
+ * Generated art for Home cards and tiles:
  *
- *   MixCover    genre-hue gradient tile, a soft 10-lobe burst in the corner, two tilted album covers,
- *               the kind ("Daily mix") and a big numeral (Deep cuts: explore, Rediscover: history)
- *   RadioArt    radial hue ground, three rings, the seed photo / cover clipped to the 9-sided cookie
- *               over a lighter cookie (turns while that station plays), "Artist radio" chip, sensors mark
+ *   MixCover    grayscale album mosaic with genre tint and a mark for the mix type
+ *   RadioArt    textured dark ground, sonar rings, an orbiting signal, and the station's seed art
  *   ArtistDisc  round artist photo, or a hue disc with initials
  *   SmartArt    playlist mosaic + the yellow clover ✦ badge
  *   DjKnobMark  the DJ: violet tile with the dial (knob swings while on air)
- * Small sizes (< 90px, Jump back in tiles) drop the labels and chips.
+ * Small sizes drop the artwork labels.
  */
-import type { CSSProperties, MouseEvent } from 'react'
+import { useId, type CSSProperties, type MouseEvent, type ReactNode } from 'react'
 import { useCover } from '../../lib/covers'
 import { useArtStats } from '../../lib/artStats'
 import { useArtTint } from '../../design/tint'
@@ -19,14 +16,35 @@ import { nameHue, type MixKind } from '../../lib/mixing'
 import type { PartId } from '../../lib/daymix'
 import { DayCover, LeakCover } from './mixArt'
 import type { Artist, Catalogue } from '../../state/library'
-import { cookie, SHAPE_CLOVER, SHAPE_PLAYING } from '../../design/shapes'
+import { useMotion } from '../../state/motion'
+import { CONTOUR_SMOOTH, GRAIN, STONE } from '../../design/textures'
+import { SHAPE_CLOVER } from '../../design/shapes'
 import { Icon } from '../../design/icons'
 import { PlaylistCover } from '../playlists/PlaylistCover'
 import type { Playlist } from '../../state/playlists'
-import { Badge } from '../../components/ui'
 
-/** Card radius: 20px at 168, scaled, never under 8. */
-export const radiusFor = (size: number) => Math.max(8, Math.round((20 * size) / 168))
+/** Card radius: 10px at 168, scaled to match the original album-card shape. */
+export const radiusFor = (size: number) => Math.max(6, Math.round((10 * size) / 168))
+const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v))
+
+function Tex({ size, stone, contour, grain }: { size: number; stone?: number; contour?: number; grain?: number }) {
+  return (
+    <>
+      {!!stone && <span className="hx-tex" style={{ backgroundImage: STONE, backgroundSize: '900px 900px', opacity: stone }} />}
+      {!!contour && <span className="hx-tex" style={{ backgroundImage: CONTOUR_SMOOTH, backgroundSize: `${size * 3.2}px ${size * 2}px`, backgroundPosition: '70% 30%', opacity: contour }} />}
+      {!!grain && <span className="hx-tex" style={{ backgroundImage: GRAIN, backgroundSize: '220px 220px', opacity: grain, mixBlendMode: 'screen' }} />}
+    </>
+  )
+}
+
+function Label({ size, children }: { size: number; children: ReactNode }) {
+  const pad = Math.round(size * 0.075)
+  return (
+    <span className="hx-label" style={{ left: pad, top: pad, fontSize: Math.max(9, Math.round(size * 0.055)) }}>
+      {children}
+    </span>
+  )
+}
 
 /* ── Mix cover ──────────────────────────────────────── */
 
@@ -41,11 +59,13 @@ export interface MixArt {
   week?: { key: string }
 }
 
-const KIND_NAME: Record<MixKind, string> = { daily: 'Daily mix', deep: 'Deep cuts', redis: 'Rediscover', day: 'Day mix', disc: 'Discovery' }
-
-function MixCov({ cover, size, radius, style }: { cover: string | null | undefined; size: number; radius: number; style: CSSProperties }) {
+function MixTile({ cover, kind }: { cover: string | null | undefined; kind: MixKind }) {
   const url = useCover(cover)
-  return <span className="hx-mixcov" style={{ width: size, height: size, borderRadius: radius, ...style }}>{url && <img src={url} alt="" draggable={false} />}</span>
+  const stats = useArtStats(cover, url)
+  const target = kind === 'redis' ? 0.36 : kind === 'deep' ? 0.22 : 0.27
+  const luminance = stats?.lum ?? 0.2
+  const filter = `grayscale(1) brightness(${clamp(target / Math.max(0.02, luminance), 0.4, 2.4).toFixed(2)}) contrast(${kind === 'redis' ? 0.82 : 1.08})`
+  return <span className="hx-mix-tile">{url && <img src={url} alt="" draggable={false} style={{ filter }} />}</span>
 }
 
 export function MixCover({ c, mix, size, radius, className }: { c: Catalogue; mix: MixArt; size: number; radius?: number; className?: string }) {
@@ -68,36 +88,55 @@ export function MixCover({ c, mix, size, radius, className }: { c: Catalogue; mi
 
 function MixMosaic({ c, mix, size, r, className }: { c: Catalogue; mix: MixArt; size: number; r: number; className?: string }) {
   const H = mix.hue
-  const f = size / 168
-  const big = size >= 90
-  const cw = Math.round(size * (big ? 0.5 : 0.56))
-  const cr = Math.max(6, Math.round(r * 0.6))
+  const big = size >= 100
   const covers = mix.coverAlbums.map((id) => c.albums[id]?.cover ?? null)
-  const c1 = covers[0] ?? null
-  const c2 = covers[1] ?? covers[0] ?? null
-  const ink = `oklch(0.97 0.02 ${H})`
-  const markPos = { left: Math.round(14 * f), bottom: Math.round(10 * f) }
+  const tiles = covers.length >= 4 ? covers.slice(0, 4) : covers.length === 3 ? [covers[0], covers[1], covers[2], covers[0]] : covers.length === 2 ? [covers[0], covers[1], covers[1], covers[0]] : [covers[0], covers[0], covers[0], covers[0]]
+  const overlay = mix.kind === 'deep'
+    ? `linear-gradient(180deg, oklch(0.07 0.02 ${H} / .97), oklch(0.09 0.025 ${H} / .84) 50%, oklch(0.13 0.035 ${H} / .42))`
+    : mix.kind === 'redis'
+      ? `radial-gradient(85% 62% at 84% -6%, oklch(0.93 0.035 ${H} / .48), transparent 64%), linear-gradient(180deg, oklch(0.5 0.03 ${H} / .12), oklch(0.14 0.03 ${H} / .86))`
+      : `linear-gradient(170deg, oklch(0.15 0.035 ${H} / .72), oklch(0.18 0.04 ${H} / .12) 40%, oklch(0.10 0.03 ${H} / .92))`
+  const pad = Math.max(5, Math.round(size * 0.075))
+  let marks: ReactNode
+  if (mix.kind === 'daily') {
+    marks = (
+      <>
+        {big && <Label size={size}>DAILY MIX</Label>}
+        <span className="hx-num" style={{ left: big ? pad - Math.round(size * 0.01) : pad, bottom: big ? pad - Math.round(size * 0.02) : pad - 2, fontSize: Math.round(size * (big ? 0.4 : 0.44)) }}>{mix.n ?? ''}</span>
+      </>
+    )
+  } else if (mix.kind === 'deep') {
+    const lx = pad + 2
+    const top = big ? size * 0.3 : size * 0.18
+    const bottom = size - pad - (big ? 4 : 3)
+    const dot = big ? 6 : 5
+    marks = (
+      <>
+        {big && <Label size={size}>DEEP CUTS</Label>}
+        <span className="hx-deep-line" style={{ left: lx, top, height: bottom - top }} />
+        <span className="hx-deep-dot" style={{ left: lx - dot / 2 + 0.5, top: bottom - dot / 2, width: dot, height: dot }} />
+        {big && <span className="hx-mark-t" style={{ left: lx + 12, bottom: pad - 2, fontSize: Math.max(9, Math.round(size * 0.05)), color: 'rgba(255,255,255,.72)' }}>NEVER PLAYED</span>}
+      </>
+    )
+  } else {
+    marks = (
+      <>
+        {big && <Label size={size}>REDISCOVER</Label>}
+        <span className="hx-surface" style={{ left: pad, right: pad, bottom: big ? pad + Math.round(size * 0.1) : pad + 2 }} />
+        {big && <span className="hx-mark-t" style={{ left: pad, bottom: pad - 2, fontSize: Math.max(9, Math.round(size * 0.05)), color: 'rgba(255,255,255,.78)' }}>LOVED · NOT LATELY</span>}
+      </>
+    )
+  }
   return (
-    <div
-      className={`hx-mix ${className ?? ''}`}
-      style={{ width: size, height: size, borderRadius: r, background: `linear-gradient(150deg, oklch(0.64 0.14 ${H}) 0%, oklch(0.46 0.13 ${H}) 55%, oklch(0.34 0.10 ${H}) 100%)` }}
-      aria-hidden
-    >
-      <span className="hx-burst" style={{ right: -size * 0.22, bottom: -size * 0.22, width: size * 0.7, height: size * 0.7, background: `oklch(0.78 0.12 ${(H + 30) % 360} / 0.35)`, clipPath: SHAPE_CLOVER }} />
-      {big && <MixCov cover={c2} size={cw} radius={cr} style={{ right: Math.round(10 * f), top: Math.round(18 * f), transform: 'rotate(10deg)', opacity: 0.9 }} />}
-      <MixCov cover={c1} size={cw} radius={cr} style={big ? { right: Math.round(30 * f), top: Math.round(12 * f), transform: 'rotate(-6deg)' } : { right: Math.round(6 * f), top: Math.round(6 * f), transform: 'rotate(-6deg)' }} />
-      {big && (
-        <span className="hx-kind" style={{ left: Math.round(14 * f), bottom: Math.round(58 * f), fontSize: Math.round(12 * f), color: `oklch(0.95 0.03 ${H})` }}>
-          {KIND_NAME[mix.kind]}
-        </span>
-      )}
-      {mix.kind === 'daily' ? (
-        <span className="hx-num" style={{ ...markPos, fontSize: Math.round(48 * f), color: ink }}>
-          {mix.n ?? ''}
-        </span>
-      ) : (
-        <Icon name={mix.kind === 'deep' ? 'explore' : 'history'} filled className="hx-mark-ic" style={{ position: 'absolute', ...markPos, bottom: Math.round(12 * f), fontSize: Math.round(44 * f), color: ink }} />
-      )}
+    <div className={`hx-mix ${className ?? ''}`} style={{ width: size, height: size, borderRadius: r }} aria-hidden>
+      <div className="hx-mosaic" style={{ gap: big ? 1 : 0, background: `oklch(0.12 0.03 ${H})` }}>
+        {tiles.map((cover, i) => <MixTile key={i} cover={cover} kind={mix.kind} />)}
+      </div>
+      <span className="hx-fill" style={{ background: `oklch(0.62 ${mix.kind === 'redis' ? 0.045 : 0.07} ${H})`, mixBlendMode: 'color' }} />
+      <span className="hx-fill" style={{ background: overlay }} />
+      <Tex size={size} contour={mix.kind === 'deep' ? 0.16 : 0} grain={0.09} />
+      {marks}
+      <span className="hx-edge" style={{ borderRadius: r }} />
     </div>
   )
 }
@@ -156,8 +195,6 @@ export interface RadioArtSeed {
   name: string
 }
 
-const COOKIE = cookie(9, 0.06)
-
 /** Hue of a station (its seed image, else the seed name). */
 export function useRadioHue(seed: RadioArtSeed): number {
   const isArtist = seed.type === 'artist'
@@ -167,44 +204,51 @@ export function useRadioHue(seed: RadioArtSeed): number {
   return stats?.hue ?? nameHue(seed.name)
 }
 
-export function RadioArt({ seed, size, radius, playing }: { seed: RadioArtSeed; size: number; radius?: number; playing?: boolean }) {
+export function RadioArt({ seed, size, radius, round }: { seed: RadioArtSeed; size: number; radius?: number; round?: boolean; playing?: boolean }) {
+  const motion = useMotion()
+  const id = useId().replace(/[^a-zA-Z0-9]/g, '')
   const isArtist = seed.type === 'artist'
   const imgId = isArtist ? seed.artist?.image?.id : seed.cover
   const url = useCover(imgId, isArtist ? seed.artist?.image?.v : undefined)
-  const H = useRadioHue(seed)
+  const stats = useArtStats(imgId, url)
+  const H = stats?.hue ?? nameHue(seed.name)
   const r = radius ?? radiusFor(size)
   const big = size >= 90
-  const inner = Math.round(size * (big ? 0.56 : 0.74))
-  const cy = big ? '44%' : '50%'
-  const ring = (pct: number, a: number) => (
-    <span key={pct} className="hx-ring" style={{ top: cy, width: pct + '%', boxShadow: `inset 0 0 0 1.5px oklch(0.80 0.10 ${H} / ${a})` }} />
-  )
-  const center = (d: number): CSSProperties => ({ left: '50%', top: cy, width: d, height: d, marginLeft: -d / 2, marginTop: -d / 2 })
+  const tiny = size < 70
+  const c = size / 2
+  const D = size * (isArtist ? (tiny ? 0.6 : 0.54) : tiny ? 0.52 : 0.46)
+  const rings = tiny ? [D / 2 + size * 0.11] : [D / 2 + size * 0.085, D / 2 + size * 0.17, D / 2 + size * 0.255]
+  const ops = [0.3, 0.14, 0.07]
+  const R = rings[0]
+  const a0 = (-52 * Math.PI) / 180
+  const dx = c + R * Math.cos(a0)
+  const dy = c + R * Math.sin(a0)
+  const dr = big ? 2.4 : 1.7
+  const seedR = isArtist ? '50%' : Math.max(4, Math.round(D * 0.06))
   return (
     <div
       className="hx-radio"
-      style={{ width: size, height: size, borderRadius: r, background: `radial-gradient(circle at 50% ${cy}, oklch(0.46 0.10 ${H}) 0%, oklch(0.30 0.06 ${H}) 45%, oklch(0.20 0.04 ${H}) 100%)` }}
+      style={{ width: size, height: size, borderRadius: round ? '50%' : r, background: `radial-gradient(75% 75% at 50% 50%, oklch(0.27 0.035 ${H}) 0%, oklch(0.14 0.02 ${H}) 55%, #0A0A0B 100%)` }}
       aria-hidden
     >
-      {big && [ring(78, 0.42), ring(104, 0.26), ring(132, 0.14)]}
-      <span className={`hx-radio-back ${playing ? 'is-on mm-anim' : ''}`} style={{ ...center(inner + 10), background: `oklch(0.82 0.11 ${H})`, clipPath: COOKIE }} />
-      {url ? (
-        <img className="hx-radio-img" src={url} alt="" draggable={false} style={{ ...center(inner), clipPath: COOKIE }} />
-      ) : (
-        <span className="hx-radio-ini" style={{ ...center(inner), clipPath: COOKIE, background: `oklch(0.62 0.12 ${H})`, color: `oklch(0.20 0.05 ${H})`, fontSize: Math.round(inner * 0.32) }}>
-          {initials(seed.name)}
-        </span>
-      )}
-      {big && (
-        <Badge tone="album" size="lg" icon={isArtist ? 'artist' : seed.type === 'album' ? 'album' : 'song'} className="hx-radio-chip" style={{ '--h': H, '--hc': 1 } as CSSProperties}>
-          {isArtist ? 'Artist radio' : seed.type === 'album' ? 'Album radio' : 'Song radio'}
-        </Badge>
-      )}
-      {big && (
-        <span className="hx-radio-mark" style={{ background: `oklch(0.20 0.04 ${H} / 0.55)`, color: `oklch(0.92 0.05 ${H})` }}>
-          <Icon name="sensors" size={16} />
-        </span>
-      )}
+      <Tex size={size} stone={0.1} grain={0.08} />
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="hx-radio-svg">
+        <defs>
+          <filter id={`${id}b`} x="-200%" y="-200%" width="500%" height="500%">
+            <feGaussianBlur stdDeviation={big ? 2.2 : 1.2} />
+          </filter>
+        </defs>
+        {rings.map((rr, i) => <circle key={i} cx={c} cy={c} r={rr} fill="none" stroke="#FFFFFF" strokeOpacity={ops[i]} strokeWidth={1} />)}
+        <g>
+          <circle cx={dx} cy={dy} r={dr * 2.6} fill="#FFFFFF" opacity={0.45} filter={`url(#${id}b)`} />
+          <circle cx={dx} cy={dy} r={dr} fill="#FFFFFF" />
+          {motion && <animateTransform attributeName="transform" type="rotate" from={`0 ${c} ${c}`} to={`360 ${c} ${c}`} dur="36s" repeatCount="indefinite" />}
+        </g>
+      </svg>
+      <div className="hx-radio-seed" style={{ left: c - D / 2, top: c - D / 2, width: D, height: D, borderRadius: seedR }}>
+        {url ? <img src={url} alt="" draggable={false} style={{ borderRadius: seedR }} /> : <InitialsDisc name={seed.name} size={D} />}
+      </div>
+      {big && <Label size={size}>RADIO</Label>}
     </div>
   )
 }
@@ -262,10 +306,10 @@ export function DjKnobMark({ size, on }: { size: number; on: boolean }) {
   )
 }
 
-/** Cookie-shaped play button (cards, tiles): album colour unless `tone` says otherwise. */
+/** Circular play button for Home cards and tiles. */
 export function CookiePlay({ size, playing, label, onClick, tone = 'album', className }: { size: number; playing: boolean; label: string; onClick: (e: MouseEvent) => void; tone?: 'album' | 'brand' | 'dj'; className?: string }) {
   return (
-    <button type="button" className={`hx-cplay is-${tone} ${className ?? ''}`} style={{ width: size, height: size, clipPath: SHAPE_PLAYING }} aria-label={label} onClick={onClick}>
+    <button type="button" className={`hx-cplay is-${tone} ${className ?? ''}`} style={{ width: size, height: size }} aria-label={label} onClick={onClick}>
       <Icon name={playing ? 'pauseF' : 'playF'} size={Math.round(size * 0.6)} />
     </button>
   )

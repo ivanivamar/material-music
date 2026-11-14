@@ -12,7 +12,7 @@ def keystoreFile = System.getenv('PELAGIC_KEYSTORE_FILE') ? new File(System.gete
     : signingProps.getProperty('storeFile') ? new File(signingFile.parentFile, signingProps.getProperty('storeFile')) : null
 
 android {
-    // Java package (namespace) stays com.ivan.pelagic; the installed app id is the new one (Material Music move, Oct 2026)
+    // Keep the installed app id stable so existing Android installs update in place.
     namespace = "com.ivan.pelagic"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {

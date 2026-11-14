@@ -2,7 +2,7 @@
  * Downloads (Material 3 Expressive redesign, DownloadsMaterial.dc.html).
  *
  * Header: what's on the phone; Wi-Fi only + quality (Opus 160 / Original FLAC) — desktop-style tools on
- * a wide screen, a settings card on the phone layout. Storage bar (Material Music / Other / Free).
+ * a wide screen, a settings card on the phone layout. Storage bar (PELAGIC / Other / Free).
  * In progress: albums still downloading, with a 4px progress bar, "Track 7 of 12 · 58% · 2.4 MB/s" or why
  * it waits (Wi-Fi, connection, paused, storage), pause / resume and cancel.
  * On this device: complete albums with track count, tonal quality pill and size, plus a menu to remove.
@@ -36,7 +36,7 @@ export function Downloads() {
 
   if (!dl.available) {
     return (
-      <div className="downloads">
+      <div className="downloads is-legacy">
         <PageHeader meta="Offline · Android app" title="Downloads" />
         <div className="card card-empty card-lg dl-empty-card">
           <div className="dl-empty-ic" aria-hidden>
@@ -85,7 +85,7 @@ export function Downloads() {
   const meta = rows.length ? `${plural(rows.length, 'item', 'items')} · ${plural(tracksStored, 'track', 'tracks')} · ${fmtBytes(n?.used ?? 0)} on this device` : 'Nothing stored offline'
 
   return (
-    <div className="downloads">
+    <div className="downloads is-legacy">
       <PageHeader
         meta={meta}
         title="Downloads"
@@ -128,7 +128,7 @@ export function Downloads() {
           {n.error === 'storage'
             ? 'The phone is out of space. Free some up or remove downloads.'
             : n.error === 'auth'
-              ? 'Downloads need your Google sign-in. Open Material Music signed in to continue.'
+              ? 'Downloads need your Google sign-in. Open PELAGIC signed in to continue.'
               : `${plural(n.failed.length, 'file', 'files')} couldn’t be downloaded from Drive.`}
         </Alert>
       )}
@@ -204,7 +204,7 @@ function StorageSummary({ s, phone }: { s: DownloadsState; phone: boolean }) {
         <div className="dl-legend dl-legend-phone">
           <span>
             <i className="dl-dot dl-dot-me" />
-            Material Music {n.used ? fmtBytes(n.used) : '0 MB'}
+            PELAGIC {n.used ? fmtBytes(n.used) : '0 MB'}
           </span>
           <span>{fmtBytes(n.free)} free</span>
         </div>
@@ -212,7 +212,7 @@ function StorageSummary({ s, phone }: { s: DownloadsState; phone: boolean }) {
         <div className="dl-legend">
           <span>
             <i className="dl-dot dl-dot-me" />
-            Material Music <b>{n.used ? fmtBytes(n.used) : '0 MB'}</b>
+            PELAGIC <b>{n.used ? fmtBytes(n.used) : '0 MB'}</b>
           </span>
           <span>
             <i className="dl-dot dl-dot-other" />

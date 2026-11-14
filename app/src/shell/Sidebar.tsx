@@ -1,6 +1,6 @@
 /**
  * Desktop sidebar (Material redesign, HomeMaterial.dc.html): brand row (Ink-on-coral mark,
- * Material Music, library source), Browse nav (38px rows, active = coral container + filled icon,
+ * PELAGIC, library source), Browse nav (38px rows, active = coral container + filled icon,
  * coral count badge), Playlists (44px rows, 28px covers, drop targets, drag to reorder) and the
  * account chip at the bottom (avatar, name, last sync; opens the account menu).
  */
@@ -18,17 +18,28 @@ import { playlistInfo } from '../state/playlistViews'
 import { LIKED_ID, playlistsStore, sidebarOrder, usePlaylists, type Playlist } from '../state/playlists'
 import { usePlayer } from '../state/player'
 import { plural } from '../state/views'
+import { useMotion } from '../state/motion'
 import { NAV, href, playlistHref, type NavItem, type RouteKey } from './routes'
+
+interface NavEvent {
+  on: RouteKey
+  off: RouteKey | null
+  n: number
+}
 
 export function Sidebar({ active, activePlaylist, badges }: { active: RouteKey; activePlaylist?: string | null; badges?: Partial<Record<RouteKey, string>> }) {
   const local = useLocalFolder()
   const linked = local.status !== 'none' && local.status !== 'unsupported' && local.status !== 'loading'
+  const motion = useMotion()
+  const [ev, setEv] = useState<NavEvent>({ on: active, off: null, n: 0 })
+  if (ev.on !== active) setEv({ on: active, off: ev.on, n: ev.n + 1 })
+
   return (
     <aside className="sb">
-      <a className="sb-brand" href={href('home')} aria-label="Material Music home">
+      <a className="sb-brand" href={href('home')} aria-label="PELAGIC home">
         <AppMark size={36} className="sb-mark" />
         <span className="sb-brand-text">
-          <span className="sb-word">Material Music</span>
+          <span className="sb-word">PELAGIC</span>
           <span className="sb-src">{linked ? 'Local library' : 'Google Drive'}</span>
         </span>
       </a>
@@ -36,7 +47,15 @@ export function Sidebar({ active, activePlaylist, badges }: { active: RouteKey; 
       <div className="sb-section-label sb-browse">Browse</div>
       <nav className="sb-nav" aria-label="Main">
         {NAV.map((item) => (
-          <SidebarItem key={item.key} item={item} on={item.key === active} badge={badges?.[item.key]} />
+          <SidebarItem
+            key={item.key}
+            item={item}
+            on={item.key === active}
+            badge={badges?.[item.key]}
+            motion={motion}
+            ping={motion && ev.n > 0 ? (ev.on === item.key ? 'on' : ev.off === item.key ? 'off' : null) : null}
+            pingKey={ev.n}
+          />
         ))}
       </nav>
 
@@ -189,10 +208,37 @@ function SidebarPlaylist({
   )
 }
 
-function SidebarItem({ item, on, badge }: { item: NavItem; on: boolean; badge?: string }) {
+interface SidebarItemProps {
+  item: NavItem
+  on: boolean
+  badge?: string
+  motion: boolean
+  ping: 'on' | 'off' | null
+  pingKey: number
+}
+
+function SidebarItem({ item, on, badge, motion, ping, pingKey }: SidebarItemProps) {
   return (
-    <a href={href(item.key)} className={`sb-item ${on ? 'is-on' : ''}`} aria-current={on ? 'page' : undefined}>
-      <Icon name={item.icon} filled={on} className="sb-ic" />
+    <a
+      href={href(item.key)}
+      className={`sb-item ${on ? 'is-on' : ''} ${motion ? '' : 'no-motion'}`}
+      aria-current={on ? 'page' : undefined}
+    >
+      <span className="sb-fill" aria-hidden />
+      {ping === 'on' && (
+        <span className="sb-pings" key={`on${pingKey}`} aria-hidden>
+          <span className="sb-ring sb-ring-on pg-anim" />
+          <span className="sb-ring sb-ring-on2 pg-anim" />
+        </span>
+      )}
+      {ping === 'off' && (
+        <span className="sb-pings" key={`off${pingKey}`} aria-hidden>
+          <span className="sb-ring sb-ring-off pg-anim" />
+        </span>
+      )}
+      <span className="sb-ic">
+        <Icon name={item.icon} filled={on} />
+      </span>
       <span className="sb-label">{item.label}</span>
       {badge && <span className="sb-badge">{badge}</span>}
     </a>

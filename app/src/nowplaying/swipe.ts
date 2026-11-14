@@ -4,7 +4,7 @@
  * Touch events (not pointer events) because the player's content scrolls on short screens: a
  * non-passive touchmove lets us take the gesture over only when it is a downward drag that starts
  * with the content scrolled to the top, and leave every other touch to the browser.
- * Seek / volume sliders, the lyrics and the reorder list keep their own gestures.
+ * Seek / volume sliders and the lyrics list keep their own gestures.
  *
  * The overlay follows the finger; on release it closes past CLOSE_PX or on a downward flick,
  * otherwise it springs back. A drag swallows the click that would follow it.
@@ -17,8 +17,8 @@ import { useEffect, type RefObject } from 'react'
 
 const CLOSE_PX = 140
 const FLICK = 0.6 // px per ms
-const EXCLUDE = '.np-seek, .pl-volume, .slider, .seekrow, .ly-viewport, .ly-plain, .np-side, .rq, input, textarea'
-const SCROLLERS = '.np-side-intro'
+const EXCLUDE = '.np-seek, .np-ly-seek, .np-vol, .slider, .seekrow, .ly-viewport, .ly-plain, .np-panel, .np-scrim, input, textarea'
+const SCROLLERS = '.np-main, .np-ly'
 
 export function useSwipeDown(ref: RefObject<HTMLElement | null>, enabled: boolean, onClose: () => void) {
   useEffect(() => {

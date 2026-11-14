@@ -2,7 +2,7 @@
  * Fonts (Material redesign), all self-hosted so the Android app works offline:
  * - Google Sans Flex (variable, wght 1–1000): UI      → @fontsource-variable/google-sans-flex
  * - JetBrains Mono 400/500: technical labels           → @fontsource/jetbrains-mono
- * - Material Symbols Rounded (variable, FILL axis)     → @fontsource-variable/material-symbols-rounded/fill.css
+ * - Icons are inline SVG (design/icons.tsx), no icon font
  * - Noto Sans JP stays as the fallback for Japanese titles.
  * Imported in main.tsx.
  */

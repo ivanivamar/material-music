@@ -133,7 +133,7 @@ export function Concerts() {
         <Clover size={120} tone="surface" icon="eventBusy" iconSize={45} />
         <div className="cx-empty-title">No shows near you right now</div>
         <div className="cx-empty-body">
-          None of your {artistsN} artists have dates within {radius} km of {home.name}. Material Music checks again tomorrow morning.
+          None of your {artistsN} artists have dates within {radius} km of {home.name}. PELAGIC checks again tomorrow morning.
         </div>
         <div className="cx-empty-acts">
           {radius < 250 && (
@@ -246,7 +246,7 @@ function SetupCard({ phone, artists }: { phone: boolean; artists: number }) {
       <Clover size={72} tone="tonal" icon="location" iconSize={34} filled />
       <div className="cx-setup-text">
         <div className="cx-setup-title">Where's home?</div>
-        <div className="cx-setup-body">Pick a city and a radius. Once a day Material Music checks tour dates for {artists > 0 ? `all ${artists} artists` : 'every artist'} in your library and lists the ones inside that circle.</div>
+        <div className="cx-setup-body">Pick a city and a radius. Once a day PELAGIC checks tour dates for {artists > 0 ? `all ${artists} artists` : 'every artist'} in your library and lists the ones inside that circle.</div>
       </div>
       <div className="cx-loc-group">
         <div className="cx-label">Home city</div>

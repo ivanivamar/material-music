@@ -37,7 +37,7 @@
     <string name="wg_start_dj">Start the DJ</string>
     <string name="wg_resume">Resume</string>
     <string name="wg_search">Search</string>
-    <string name="wg_brand">Material Music</string>
+    <string name="wg_brand">PELAGIC</string>
 
     <!-- idle layouts: one line, fixed line box (the handoff's line heights), warm text -->
     <style name="WgI">

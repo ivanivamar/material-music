@@ -1,10 +1,6 @@
 /**
- * Home cards (Material redesign, HomeMaterial.dc.html shelves): album / mix / radio / smart playlist
- * squares (168 desktop, 132 phone), artist circles (136 / 104), the "New smart playlist" card and invite,
- * and their loading placeholders.
- *
- * Hover (desktop): the art tilts −3° and lifts, Shuffle (tonal) + a coral cookie Play slide in.
- * Playing context: a coral pill with the equaliser on the art, the title in coral.
+ * Home cards: album / mix / radio / smart playlist squares, artist circles, and loading placeholders.
+ * The existing feature-specific artwork and play actions are shared across desktop and phone layouts.
  */
 import { useSyncExternalStore, type MouseEvent, type ReactNode } from 'react'
 import { Button, AlbumEq, Skeleton, IconButton } from '../../components/ui'

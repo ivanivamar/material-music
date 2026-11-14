@@ -8,6 +8,13 @@ npm run dev      # http://localhost:5173
 npm run build
 ```
 
+## Pelagic visual refresh
+
+The app is being returned to its pre-Material visual language in place: the existing React app,
+routes, playback, sync, PWA, Capacitor integrations, and newer features (including Day Mix and
+Discovery) remain intact. Shared tokens, desktop and phone shells, Home, Library/Search, and core
+controls are the first pass; feature screens are updated incrementally.
+
 ## Design system (from `design_handoff_pelagic/`)
 
 | File | What |

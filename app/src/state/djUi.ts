@@ -30,7 +30,7 @@ export const djUi = {
   },
   /** DJ off → the DJ button opens the full-screen player in its start view. */
   openStart() {
-    nowPlayingStore.closeReorder()
+    nowPlayingStore.closeQueue()
     nowPlayingStore.open('np')
     set({ start: true, panel: null })
   },
@@ -56,8 +56,8 @@ nowPlayingStore.subscribe(() => {
   if (!nowPlayingStore.get().open && state.start) set({ start: false })
 })
 djStore.subscribe(() => {
-  // reorder mode isn't available while the DJ plays (no upcoming queue)
-  if (djStore.get().run) nowPlayingStore.closeReorder()
+  // the queue panel isn't available while the DJ plays
+  if (djStore.get().run && nowPlayingStore.get().queue) nowPlayingStore.closeQueue()
   if (djStore.get().run && state.start) set({ start: false })
   if (!djStore.get().run && state.panel) set({ panel: null })
 })

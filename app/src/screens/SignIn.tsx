@@ -1,8 +1,9 @@
 /**
- * Sign-in and its "Session expired" variant (Material 3 Expressive redesign, FirstRunMaterial.dc.html).
+ * Sign-in and its "Session expired" variant.
  */
 import { useEffect } from 'react'
 import { AppMark } from '../components/Logo'
+import { Atmosphere } from '../components/Atmosphere'
 import { Icon } from '../design/icons'
 import { preloadGoogle, sessionStore, useSession } from '../state/session'
 import { useIsPhone } from '../state/viewport'
@@ -14,28 +15,14 @@ export function SignIn({ expired = false }: { expired?: boolean }) {
   useEffect(preloadGoogle, [])
 
   return (
-    <main className={`scr ${phone ? 'is-phone' : ''}`}>
+    <main className={`scr scr-deep ${phone ? 'is-phone' : ''}`}>
+      <Atmosphere fixed seed={5} />
       <div className="scr-panel">
-        <div className="scr-glow" aria-hidden />
-        <div className="shell-deco" aria-hidden>
-          <i className="sd-dots" />
-          <i className="sd-ring sd-r1" />
-          <i className="sd-ring sd-r2" />
-          <i className="sd-ring sd-r3" />
-        </div>
-
         {expired && (
           <div className="scr-top">
-            {!phone ? (
-              <div className="scr-brand">
-                <AppMark size={32} />
-                <span>Material Music</span>
-              </div>
-            ) : (
-              <span />
-            )}
+            <span className="scr-tag">SESSION EXPIRED</span>
             <div className="scr-top-r">
-              <span className="scr-pill">Session expired</span>
+              {s.account?.email && <span className="scr-meta">{s.account.email}</span>}
             </div>
           </div>
         )}
@@ -53,9 +40,9 @@ export function SignIn({ expired = false }: { expired?: boolean }) {
             </>
           ) : (
             <div className="signin-lockup">
-              <AppMark size={96} />
+              <AppMark size={112} />
               <div className="signin-titles">
-                <h1 className="signin-word">Material Music</h1>
+                <h1 className="signin-word">PELAGIC</h1>
                 <p className="signin-tagline">Your own library, from far below the surface.</p>
               </div>
             </div>
@@ -73,7 +60,6 @@ export function SignIn({ expired = false }: { expired?: boolean }) {
                 <Button variant="ghost" size="sm" className="scr-link" onClick={() => sessionStore.signIn({ switchAccount: true })} disabled={s.pending}>
                   Use another account
                 </Button>
-                {s.account?.email && <div className="signin-sub">{s.account.email}</div>}
               </>
             ) : (
               <div className="signin-sub">One listener. Nothing to set up on a server.</div>

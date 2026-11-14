@@ -7,7 +7,7 @@ import type { CapacitorConfig } from '@capacitor/cli'
  */
 const config: CapacitorConfig = {
   appId: 'com.ivan.materialmusic',
-  appName: 'Material Music',
+  appName: 'PELAGIC',
   webDir: 'dist',
   backgroundColor: '#141110',
   plugins: {
@@ -17,7 +17,7 @@ const config: CapacitorConfig = {
       initialViewportFitValueHint: 'cover',
       style: 'DARK', // light status-bar icons on the dark UI
     },
-    // New Releases reminders (native/releaseNotify.ts): the Material Music mark in the status bar
+    // New Releases reminders (native/releaseNotify.ts): the PELAGIC mark in the status bar
     LocalNotifications: {
       smallIcon: 'ic_wg_mark',
       iconColor: '#E55745', // icon 8a play red

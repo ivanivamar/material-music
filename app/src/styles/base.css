@@ -77,31 +77,19 @@ button { font: inherit; color: inherit; }
 html[data-motion='reduced'] .pg-anim { animation: none !important; transition: none !important; }
 html[data-motion='reduced'] .pg-snow { display: none !important; }
 
-/* ── Material redesign foundation ─────────────────────── */
+/* ── Pelagic visual foundation ───────────────────────── */
 @property --h { syntax: '<number>'; inherits: true; initial-value: 38; }
 @property --hc { syntax: '<number>'; inherits: true; initial-value: 1; }
-:root { transition: --h 600ms var(--ease-std), --hc 600ms var(--ease-std); }
 
-body { background: var(--bg-1); font-feature-settings: 'ss01'; }
-a { color: var(--brand); text-decoration: none; }
-a:hover { color: var(--brand-hi); }
-:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
-::selection { background: oklch(0.80 0.115 38 / 0.35); color: var(--ink-primary); }
+body { background: var(--bg-1); }
+a { color: var(--ink-primary); text-decoration: underline; text-underline-offset: 3px; }
+a:hover { color: var(--line); }
+:focus-visible { outline: 1.5px solid rgba(255, 255, 255, .7); outline-offset: 2px; }
+::selection { background: rgba(255, 255, 255, .22); color: #fff; }
 
-/* Material Symbols Rounded (opsz 24, wght 400; .ms-fill = FILL 1).
-   The glyph is centred with flex, not text-align: on Android WebView the ligature can render a touch
-   larger than its 1em box, and text-align then pins it to the left so it spilled down-right. */
-.ms {
-  font-family: 'Material Symbols Rounded Variable', 'Material Symbols Rounded';
-  font-weight: normal; font-style: normal; font-size: 1.25em; line-height: 1;
-  letter-spacing: normal; text-transform: none; white-space: nowrap; direction: ltr;
-  display: inline-flex; align-items: center; justify-content: center;
-  flex: none; overflow: hidden; width: 1em; height: 1em; text-align: center;
-  font-feature-settings: 'liga'; -webkit-font-feature-settings: 'liga'; -webkit-font-smoothing: antialiased;
-  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-  user-select: none; -webkit-user-select: none;
-}
-.ms-fill { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+/* Icons (design/icons.tsx): the Pelagic 24-grid line set as inline SVG, 1em square, so they follow the
+   font-size of their context; `.x .ms { font-size }` rules set the size where it differs. */
+.ms { display: inline-block; flex: none; width: 1em; height: 1em; vertical-align: middle; overflow: visible; }
 
 /* ripple (design/ripple.ts) */
 .mm-ripple { position: absolute; inset: 0; border-radius: inherit; overflow: hidden; pointer-events: none; z-index: 1; color: inherit; }

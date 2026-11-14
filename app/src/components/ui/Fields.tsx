@@ -1,14 +1,11 @@
 /**
- * Material 3 text fields and dropdowns.
+ * Shared text fields and dropdowns.
  *
- * TextField: the outlined field — 56px, 4px corners, a 1px outline that turns 2px coral on focus, and a
- * label that sits inside the field until it has a value or focus, then floats into a notch in the top
- * edge. Optional supporting text below; `error` turns outline, label and text red. `multiline` gives a
- * textarea.
+ * TextField: a compact dark field with a persistent label above it. Optional supporting text below;
+ * `error` highlights the label, field, and supporting text. `multiline` gives a textarea.
  *
- * Dropdown: the exposed dropdown menu — the same outlined field (or a compact 40px one inside rows) with
- * the value and an arrow that turns; the menu is a 0.26 surface, radius 16, 48px items, the picked one
- * tonal coral with a check. Keyboard: ↑/↓, Home/End, Enter / Space, Esc, type-ahead.
+ * Dropdown: the same field treatment (or a compact trigger inside rows), with an exposed menu.
+ * Keyboard: ↑/↓, Home/End, Enter / Space, Esc, type-ahead.
  */
 import { useEffect, useId, useLayoutEffect, useRef, useState, type InputHTMLAttributes, type KeyboardEvent, type ReactNode, type TextareaHTMLAttributes } from 'react'
 import { createPortal } from 'react-dom'
@@ -44,23 +41,15 @@ export function TextField({
   areaProps?: AreaProps
 }) {
   const id = useId()
-  const filled = value !== '' || !!inputProps?.placeholder || !!areaProps?.placeholder
   return (
-    <div className={['tf', filled && 'is-filled', error && 'is-error', multiline && 'is-multi', trailing && 'has-trailing', className].filter(Boolean).join(' ')}>
+    <div className={['tf', error && 'is-error', multiline && 'is-multi', trailing && 'has-trailing', className].filter(Boolean).join(' ')}>
+      <label className="tf-label" htmlFor={id}>{label}</label>
       <div className="tf-box">
         {multiline ? (
           <textarea id={id} className="tf-input" value={value} rows={rows} onChange={(e) => onChange(e.target.value)} {...areaProps} />
         ) : (
           <input id={id} className="tf-input" value={value} onChange={(e) => onChange(e.target.value)} {...inputProps} />
         )}
-        <label className="tf-label" htmlFor={id}>
-          {label}
-        </label>
-        <fieldset className="tf-outline" aria-hidden>
-          <legend>
-            <span>{label}</span>
-          </legend>
-        </fieldset>
         {trailing && <span className="tf-trailing">{trailing}</span>}
       </div>
       {supporting != null && <div className="tf-support">{supporting}</div>}
@@ -184,7 +173,8 @@ export function Dropdown<T extends string | number>({
   }
 
   return (
-    <div className={['dd', compact ? 'is-compact' : 'tf is-filled', open && 'is-open', disabled && 'is-disabled', className].filter(Boolean).join(' ')}>
+    <div className={['dd', compact ? 'is-compact' : 'tf', open && 'is-open', disabled && 'is-disabled', className].filter(Boolean).join(' ')}>
+      {!compact && <span className="tf-label" id={`${id}-label`}>{label}</span>}
       <button
         ref={btn}
         type="button"
@@ -194,22 +184,13 @@ export function Dropdown<T extends string | number>({
         aria-expanded={open}
         aria-controls={`${id}-list`}
         aria-label={compact ? label : undefined}
+        aria-labelledby={compact ? undefined : `${id}-label`}
         disabled={disabled}
         onClick={() => (open ? setOpen(false) : show())}
         onKeyDown={onKey}
       >
         <span className="dd-value">{curOpt?.label ?? ''}</span>
         <Icon name="arrowDrop" className="dd-arrow" />
-        {!compact && (
-          <>
-            <span className="tf-label">{label}</span>
-            <fieldset className="tf-outline" aria-hidden>
-              <legend>
-                <span>{label}</span>
-              </legend>
-            </fieldset>
-          </>
-        )}
       </button>
       {open &&
         pos &&

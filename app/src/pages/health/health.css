@@ -450,29 +450,6 @@
   gap: 10px;
 }
 
-.hl-input {
-  height: 40px;
-  padding: 0 14px;
-  border-radius: 10px;
-  border: 0;
-  background: oklch(0.24 0.008 40);
-  color: var(--ink-primary);
-  font: inherit;
-  font-size: 14px;
-  font-weight: 500;
-  box-shadow: inset 0 0 0 1px oklch(0.4 0.012 40);
-  outline: none;
-  transition: box-shadow 150ms var(--ease-std);
-}
-
-.hl-input:hover {
-  box-shadow: inset 0 0 0 1px var(--ink-primary);
-}
-
-.hl-input:focus {
-  box-shadow: inset 0 0 0 2px var(--brand);
-}
-
 .hl-input-wide {
   width: 260px;
 }

@@ -39,7 +39,7 @@ import java.util.concurrent.Executors;
 @CapacitorPlugin(name = "PelagicNative")
 public class PelagicNativePlugin extends Plugin {
 
-    private static final String DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.file"; // same as app/src/config.ts
+    private static final String DRIVE_SCOPE = "https://www.googleapis.com/auth/drive"; // same as app/src/config.ts
 
     private final ExecutorService io = Executors.newSingleThreadExecutor();
     private ActivityResultLauncher<IntentSenderRequest> consentLauncher;
@@ -153,7 +153,7 @@ public class PelagicNativePlugin extends Plugin {
             return;
         }
         if (!result.getGrantedScopes().contains(DRIVE_SCOPE)) {
-            call.reject("Material Music needs access to Google Drive to read your library. Allow Drive when Google asks.", "no_drive");
+            call.reject("PELAGIC needs access to Google Drive to read your library. Allow Drive when Google asks.", "no_drive");
             return;
         }
         JSObject out = new JSObject();

@@ -1,5 +1,5 @@
 /**
- * Material Music app mark: icon 8a "Play & disc, dark" (design_handoff_app_icon_8a, final).
+ * PELAGIC app mark: icon 8a "Play & disc, dark" (design_handoff_app_icon_8a, final).
  * 100-unit grid: dark tile gradient #231b18 → #110c0a, play triangle #e55745 (corners rounded r 9),
  * amber ring #ffc65a r 21 and coral disc #fc8b5d r 15 at (43, 50), cream eighth note #fcf8f3.
  * Every layer but the tile has a soft drop shadow (0, 1.4) blur 1.3, black 55 %.
@@ -44,7 +44,7 @@ export function AppMark({ size = 36, tile = true, className }: MarkProps) {
 export function Wordmark({ size = 18, className }: { size?: number; className?: string }) {
   return (
     <span className={className} style={{ fontSize: size, lineHeight: 1.1, fontWeight: 600, letterSpacing: '-0.01em' }}>
-      Material Music
+      PELAGIC
     </span>
   )
 }

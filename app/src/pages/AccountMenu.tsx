@@ -60,13 +60,13 @@ function useAccountMenu() {
   rows.push({ icon: 'stats', label: 'Listening stats', run: () => go(statsHref()) })
   rows.push({ icon: 'gear', label: 'Settings', run: () => go(href('settings')) })
   if (isNative) rows.push({ icon: 'download', label: 'Downloads', run: () => go(href('downloads')) })
-  if (pwa.canInstall && !pwa.installed) rows.push({ icon: 'install', label: 'Install Material Music', run: () => void appUpdate.install() })
+  if (pwa.canInstall && !pwa.installed) rows.push({ icon: 'install', label: 'Install PELAGIC', run: () => void appUpdate.install() })
   if (pwa.updateReady) rows.push({ icon: 'update', label: 'Reload to update', run: () => appUpdate.apply() })
   if (apk.available) rows.push({ icon: 'download', label: `Install version ${apk.available.versionName}`, run: () => nativeUpdates.install() })
   rows.push({ icon: 'account', label: 'Switch account', run: () => void sessionStore.signIn({ switchAccount: true }) })
   rows.push({ icon: 'logout', label: 'Sign out', danger: true, run: () => sessionStore.signOut() })
 
-  const foot = isNative ? `Material Music for Android ${apk.current?.versionName ?? ''} · ${APP_VERSION}` : `Material Music ${APP_VERSION}${pwa.installed ? ' · app' : ''}`
+  const foot = isNative ? `PELAGIC for Android ${apk.current?.versionName ?? ''} · ${APP_VERSION}` : `PELAGIC ${APP_VERSION}${pwa.installed ? ' · app' : ''}`
 
   const synced = status === 'expired' ? 'Session expired' : lib.refreshing ? 'Checking Drive…' : `Synced ${ago(lib.syncedAt)}`
   return { account, initial, metas, rows, foot, synced }

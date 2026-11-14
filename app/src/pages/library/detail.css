@@ -199,3 +199,78 @@
 .shell.is-phone .dt-disco-grid { gap: 12px; }
 .shell.is-phone .dt-artist-actions .dt-btn.btn-outlined-ink { flex: none; width: 56px; padding: 0; justify-content: center; }
 .shell.is-phone .dt-artist-actions .dt-btn.btn-outlined-ink .dt-btn-l { display: none; }
+
+/* Playlist pages return to the flat monochrome layout; album and artist pages keep the newer detail design. */
+.dt-page.is-legacy-playlist { gap: 24px; }
+.dt-page.is-legacy-playlist .dt-wash { display: none; }
+.dt-page.is-legacy-playlist .dt-back { margin-bottom: 0; }
+.dt-page.is-legacy-playlist .dt-hero { align-items: flex-end; gap: 40px; }
+.dt-page.is-legacy-playlist .dt-art,
+.dt-page.is-legacy-playlist .dt-art-btn { border-radius: 14px; }
+.dt-page.is-legacy-playlist .dt-hero-cover,
+.dt-page.is-legacy-playlist .dt-hero-cover.plc { width: 200px; height: 200px; border-radius: 14px; box-shadow: none; }
+.dt-page.is-legacy-playlist .dt-art-btn:hover .dt-hero-cover { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .05), 0 0 0 1.5px rgba(255, 255, 255, .3); }
+.dt-page.is-legacy-playlist .dt-hero-text { gap: 14px; padding-bottom: 0; }
+.dt-page.is-legacy-playlist .dt-kicker { font-family: var(--font-mono); font-size: var(--fs-mono-sm); font-weight: 400; letter-spacing: .12em; color: var(--ink-secondary); text-transform: uppercase; }
+.dt-page.is-legacy-playlist .dt-kicker.is-smart { color: oklch(0.86 0.08 95); }
+.dt-page.is-legacy-playlist .dt-kicker.is-liked { color: var(--like-hi); }
+.dt-page.is-legacy-playlist .dt-title { font-weight: 400; letter-spacing: -.035em; line-height: .98; }
+.dt-page.is-legacy-playlist .dt-desc { font-size: 15px; line-height: 1.45; }
+.dt-page.is-legacy-playlist .dt-line { font-family: var(--font-mono); font-size: var(--fs-mono-sm); letter-spacing: .12em; text-transform: uppercase; }
+.dt-page.is-legacy-playlist .dt-actions { gap: 10px; }
+.dt-page.is-legacy-playlist .dt-actions > .dt-btn { height: 46px; }
+.dt-page.is-legacy-playlist .dt-rules { padding: 10px 12px; border-radius: 10px; background: rgba(255, 255, 255, .025); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .08); }
+.dt-page.is-legacy-playlist .dt-rule { border-radius: 8px; background: rgba(255, 255, 255, .045); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .08); }
+.dt-page.is-legacy-playlist .dt-rules-k .ms,
+.dt-page.is-legacy-playlist .dt-rule .ms { color: oklch(0.86 0.08 95); }
+.dt-page.is-legacy-playlist .dt-empty { min-height: 360px; border-radius: 12px; background: rgba(255, 255, 255, .025); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .07); }
+.dt-page.is-legacy-playlist .dt-list { gap: 0; }
+.dt-page.is-legacy-playlist .dt-row,
+.dt-page.is-legacy-playlist .dt-row:first-child,
+.dt-page.is-legacy-playlist .dt-row:last-child,
+.dt-page.is-legacy-playlist .dt-row.is-current { height: 58px; padding: 0 12px; border-radius: 0; background: transparent; }
+.dt-page.is-legacy-playlist .dt-row { border-bottom: 1px solid rgba(255, 255, 255, .045); }
+.dt-page.is-legacy-playlist .dt-row:hover,
+.dt-page.is-legacy-playlist .dt-row.is-current,
+.dt-page.is-legacy-playlist .dt-row.is-current:hover { background: rgba(255, 255, 255, .035); }
+.dt-page.is-legacy-playlist .dt-row.is-current .dt-t { color: var(--ink-primary); text-shadow: 0 0 18px rgba(255, 255, 255, .35); }
+.dt-page.is-legacy-playlist .dt-row.is-current .dt-play { color: var(--ink-primary); }
+.dt-page.is-legacy-playlist .dt-t { font-size: 14px; font-weight: 500; }
+.dt-page.is-legacy-playlist .dt-list.has-cover .dt-t { font-size: 14px; }
+.dt-page.is-legacy-playlist .dt-s { font-size: 12px; }
+.dt-page.is-legacy-playlist .dt-cover { width: 40px; height: 40px; border-radius: 6px; }
+.dt-page.is-legacy-playlist .dt-stat,
+.dt-page.is-legacy-playlist .dt-dur { font-family: var(--font-mono); font-size: var(--fs-mono-sm); letter-spacing: .08em; }
+.dt-page.is-legacy-playlist .dt-end .dt-dots { border-radius: 8px; }
+.dt-page.is-legacy-playlist .dt-row.drop-before::before,
+.dt-page.is-legacy-playlist .dt-row.drop-after::after { height: 1px; border-radius: 0; background: #fff; box-shadow: var(--glow-line); }
+.dt-page.is-legacy-playlist .dt-list.is-dragging .dt-row:hover { background: transparent; }
+
+@media (max-width: 1240px) {
+  .dt-page.is-legacy-playlist .dt-hero { flex-wrap: wrap; row-gap: 28px; }
+  .dt-page.is-legacy-playlist .dt-hero-text { flex-basis: 0; }
+  .dt-page.is-legacy-playlist .dt-actions { flex-basis: 100%; }
+}
+@media (max-width: 1040px) {
+  .dt-page.is-legacy-playlist .dt-hero-cover,
+  .dt-page.is-legacy-playlist .dt-hero-cover.plc { width: 168px; height: 168px; }
+}
+.shell.is-phone .dt-page.is-legacy-playlist { gap: 18px; }
+.shell.is-phone .dt-page.is-legacy-playlist .dt-hero { flex-direction: column; align-items: stretch; gap: 18px; }
+.shell.is-phone .dt-page.is-legacy-playlist .dt-art { align-self: center; }
+.shell.is-phone .dt-page.is-legacy-playlist .dt-hero-cover,
+.shell.is-phone .dt-page.is-legacy-playlist .dt-hero-cover.plc { width: min(200px, 58vw); height: min(200px, 58vw); border-radius: 14px; }
+.shell.is-phone .dt-page.is-legacy-playlist .dt-hero-text { gap: 8px; }
+.shell.is-phone .dt-page.is-legacy-playlist .dt-title { font-size: min(var(--ts, 57px), 9vw); line-height: 1.02; }
+.shell.is-phone .dt-page.is-legacy-playlist .dt-line { font-size: 10px; }
+.shell.is-phone .dt-page.is-legacy-playlist .dt-actions { gap: 8px; }
+.shell.is-phone .dt-page.is-legacy-playlist .dt-actions > .dt-btn { height: 48px; }
+.shell.is-phone .dt-page.is-legacy-playlist .dt-row,
+.shell.is-phone .dt-page.is-legacy-playlist .dt-row:first-child,
+.shell.is-phone .dt-page.is-legacy-playlist .dt-row:last-child,
+.shell.is-phone .dt-page.is-legacy-playlist .dt-row.is-current { height: 60px; padding: 0 4px 0 8px; }
+.shell.is-phone .dt-page.is-legacy-playlist .dt-row:hover,
+.shell.is-phone .dt-page.is-legacy-playlist .dt-row.is-current:hover { background: transparent; }
+.shell.is-phone .dt-page.is-legacy-playlist .dt-t { font-size: 14px; }
+.shell.is-phone .dt-page.is-legacy-playlist .dt-cover { width: 40px; height: 40px; }
+.shell.is-phone .dt-page.is-legacy-playlist .dt-grip { width: 32px; }

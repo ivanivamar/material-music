@@ -19,7 +19,7 @@ import com.google.android.gms.auth.GoogleAuthUtil;
  * getToken() blocks: call it from a loader / background thread only.
  */
 final class DriveAuth {
-    static final String DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.file"; // same as app/src/config.ts
+    static final String DRIVE_SCOPE = "https://www.googleapis.com/auth/drive"; // same as app/src/config.ts
     private static final String PREFS = "pelagic.auth";
     private static final long MARGIN_MS = 2 * 60_000;
 

@@ -1,19 +1,19 @@
 /**
- * Upload — Batch (Material 3 Expressive redesign, UploadMaterial.dc.html).
+ * Upload — Batch (design_handoff_upload_batch, step 24).
  *
- * Header: "Upload" + live summary subtitle, and a compact pill "drop more" strip on the right (phone: Add button).
- * Left: the release list (filter chips, Upload / Pause all / Resume), rows, and a footer with
+ * Header: live summary kicker + "Upload", and a compact "drop more" strip on the right.
+ * Left: the release list (select-all, filter pills, Upload / Pause all / Resume), rows, and a footer with
  * the overall progress and a status line. Right: the inspector (one release, or several when 2+ are
- * ticked; on phone, opens as a bottom sheet when a release is tapped).
+ * ticked). Dragging files anywhere over the page shows a full drop overlay. Nothing in the batch →
+ * empty state with one big drop zone.
+ * Below 980px (and on the phone) everything stacks in one column and the page scrolls.
  */
 import { useEffect, useRef, useState, type DragEvent, type FormEvent } from 'react'
-import { Button, Sheet, useToast, Alert } from '../../components/ui'
+import { Button, useToast } from '../../components/ui'
 import { Icon } from '../../design/icons'
-import { registerBack } from '../../native/backButton'
 import { useLibrary } from '../../state/library'
 import { addFiles, useUpload, type DroppedFile } from '../../state/upload'
 import { batchView } from '../../state/uploadViews'
-import { useIsPhone } from '../../state/viewport'
 import { plural } from '../../state/views'
 import { PageHeader } from '../PageHeader'
 import { Inspector } from './Inspector'
@@ -22,23 +22,13 @@ import { ReleaseList } from './ReleaseList'
 export function Upload() {
   const s = useUpload()
   const cat = useLibrary().data
-  const phone = useIsPhone()
   const pick = usePickers()
   const drag = useDropTarget(pick.add)
   const empty = s.albums.length === 0
   const view = batchView(s, cat)
-  const [sheetOpen, setSheetOpen] = useState(false)
-
-  useEffect(() => {
-    if (!phone || !sheetOpen) return
-    return registerBack(() => {
-      setSheetOpen(false)
-      return true
-    }, 'top')
-  }, [phone, sheetOpen])
 
   return (
-    <div className={`ub ${empty ? 'is-empty' : ''} ${phone ? 'is-phone' : ''}`} {...drag.handlers}>
+    <div className={`ub ${empty ? 'is-empty' : ''}`} {...drag.handlers}>
       {empty ? (
         <EmptyState reading={s.reading} onFolders={pick.folders} onFiles={pick.files} />
       ) : (
@@ -47,36 +37,27 @@ export function Upload() {
             meta={view.head}
             title="Upload"
             tools={
-              phone ? (
-                <Button variant="brand" onClick={pick.files}>
-                  <Icon name="plus" />
-                  Add
+              <div className="ub-strip">
+                <span className="ub-strip-ic" aria-hidden>
+                  <Icon name="upload" />
+                </span>
+                <span className="ub-strip-text">Drop more folders or files. They join this batch.</span>
+                <Button variant="secondary" size="sm" className="ub-strip-btn" onClick={pick.folders}>
+                  Choose folders
                 </Button>
-              ) : (
-                <div className="ub-strip">
-                  <span className="ub-strip-ic" aria-hidden>
-                    <Icon name="uploadFile" />
-                  </span>
-                  <span className="ub-strip-text">Drop more folders or files. They join this batch.</span>
-                  <Button variant="brand" className="ub-strip-btn" onClick={pick.folders}>
-                    Choose folders
-                  </Button>
-                </div>
-              )
+              </div>
             }
           />
           {s.opus === false && (
-            <Alert>This browser can’t encode Opus, so tracks go up as FLAC only and the phone streams the FLAC. Chrome or Edge make the Opus copies.</Alert>
+            <div className="ub-alert" role="status">
+              <Icon name="alert" />
+              <span>This browser can’t encode Opus, so tracks go up as FLAC only and the phone streams the FLAC. Chrome or Edge make the Opus copies.</span>
+            </div>
           )}
           <div className="ub-body">
-            <ReleaseList s={s} cat={cat} view={view} phone={phone} onInspect={() => phone && setSheetOpen(true)} />
-            {!phone && <Inspector s={s} cat={cat} onPickMissing={pick.missing} />}
+            <ReleaseList s={s} cat={cat} view={view} />
+            <Inspector s={s} cat={cat} onPickMissing={pick.missing} />
           </div>
-          {phone && (
-            <Sheet open={sheetOpen} onClose={() => setSheetOpen(false)} label="Release details" bodyClassName="ub-sheet">
-              <Inspector s={s} cat={cat} onPickMissing={pick.missing} onClose={() => setSheetOpen(false)} />
-            </Sheet>
-          )}
         </>
       )}
       {drag.info && <DropOverlay info={drag.info} />}
@@ -90,25 +71,24 @@ export function Upload() {
 function EmptyState({ reading, onFolders, onFiles }: { reading: number; onFolders: () => void; onFiles: () => void }) {
   return (
     <>
-      <PageHeader meta="FLAC · tags and cover art read from the files" title="Upload" />
-      <div className="card card-empty card-lg ub-zone">
+      <PageHeader meta="FLAC · TAGS AND COVER ART READ FROM THE FILES" title="Upload" />
+      <div className="ub-zone">
         <div className="ub-tile" aria-hidden>
-          <Icon name="uploadFile" />
+          <Icon name="upload" />
         </div>
         <div className="ub-zone-text">
           <h2 className="ub-zone-title">Drop albums, EPs and singles</h2>
           <p className="ub-zone-sub">Drop as many folders or files as you like. They’re sorted into releases using their tags, and releases with no problems are added to your library automatically.</p>
         </div>
         <div className="ub-zone-btns">
-          <Button variant="brand" size="lg" className="ub-zone-btn" onClick={onFolders}>
-            <Icon name="folder" />
+          <Button className="ub-btn-44" onClick={onFolders}>
             Choose folders
           </Button>
-          <Button variant="outlined" size="lg" className="ub-zone-btn" onClick={onFiles}>
+          <Button variant="secondary" className="ub-btn-44" onClick={onFiles}>
             Choose files
           </Button>
         </div>
-        <div className="ub-zone-hint">{reading > 0 ? `Reading ${plural(reading, 'file', 'files')}…` : 'One folder per release works best · loose files are grouped by tags'}</div>
+        <div className="ub-zone-hint">{reading > 0 ? `READING ${plural(reading, 'FILE')}…` : 'ONE FOLDER PER RELEASE WORKS BEST · LOOSE FILES ARE GROUPED BY TAGS'}</div>
       </div>
     </>
   )
@@ -134,7 +114,7 @@ function DropOverlay({ info }: { info: DragInfo }) {
     <div className="ub-overlay" aria-hidden>
       <div className="ub-overlay-box">
         <div className="ub-tile ub-tile-lit">
-          <Icon name="uploadFile" />
+          <Icon name="upload" />
         </div>
         <div className="ub-overlay-title">{dropText(info)}</div>
         <div className="ub-overlay-sub">They’ll be sorted into releases and added to the batch below.</div>
@@ -158,10 +138,15 @@ async function walk(entry: FileSystemEntry, out: DroppedFile[]): Promise<void> {
   }
 }
 
+/**
+ * Files dragged over the page → overlay; dropped → walked and added. While dragging, browsers only tell
+ * an item's MIME type, not whether it's a folder: an item without a type is counted as a folder.
+ */
 function useDropTarget(add: (files: DroppedFile[]) => void) {
   const [info, setInfo] = useState<DragInfo | null>(null)
   const depth = useRef(0)
 
+  // a file dropped outside the page must not navigate the app away
   useEffect(() => {
     const stop = (e: globalThis.DragEvent) => {
       if (e.dataTransfer?.types.includes('Files')) e.preventDefault()
@@ -203,6 +188,7 @@ function useDropTarget(add: (files: DroppedFile[]) => void) {
       e.preventDefault()
       depth.current = 0
       setInfo(null)
+      // entries must be taken synchronously, inside the event
       const entries = [...e.dataTransfer.items].map((i) => (i.kind === 'file' ? i.webkitGetAsEntry?.() : null))
       const plain = [...e.dataTransfer.files]
       void (async () => {
@@ -228,7 +214,7 @@ function usePickers() {
 
   const add = (files: DroppedFile[], into?: string) => {
     void addFiles(files, into).then((r) => {
-      if (!r.added && files.length) toast.show({ icon: 'alert', mutedIcon: true, text: into ? 'That file couldn’t be added.' : 'Nothing to add from that drop.', meta: 'FLAC files only' })
+      if (!r.added && files.length) toast.show({ icon: 'alert', mutedIcon: true, text: into ? 'That file couldn’t be added.' : 'Nothing to add from that drop.', meta: 'FLAC FILES ONLY' })
     })
   }
   const onPick = (e: FormEvent<HTMLInputElement>, into?: string) => {
@@ -244,6 +230,7 @@ function usePickers() {
     add: (files: DroppedFile[]) => add(files),
     folders: () => folderInput.current?.click(),
     files: () => fileInput.current?.click(),
+    /** "Add missing file": the picked FLACs join this release */
     missing: (key: string) => {
       target.current = key
       missingInput.current?.click()

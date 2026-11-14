@@ -95,7 +95,7 @@ function PlaylistView({ c, p }: { c: Catalogue; p: Playlist }) {
   const tint = useArtTint(coverUrl) ?? (p.id === LIKED_ID ? { hue: 12, chroma: 0.9 } : null)
 
   return (
-    <div className="dt-page hue-scope" style={{ '--h': tint?.hue ?? 40, '--hc': tint?.chroma ?? 0 } as CSSProperties}>
+    <div className="dt-page hue-scope is-legacy-playlist" style={{ '--h': tint?.hue ?? 40, '--hc': tint?.chroma ?? 0 } as CSSProperties}>
       <div className="dt-wash" aria-hidden />
       <DetailBack fallback={libraryHref('playlists')} parts={[{ label: 'Library', href: libraryHref('all') }, { label: 'Playlists', href: libraryHref('playlists') }]} />
 

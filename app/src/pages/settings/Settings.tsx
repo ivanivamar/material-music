@@ -335,7 +335,7 @@ function AccountSection() {
             </Act>
           </>
         }
-        below={c.box('Sign out? Material Music forgets this library on this device until you sign in again.', 'Sign out', () => {
+        below={c.box('Sign out? PELAGIC forgets this library on this device until you sign in again.', 'Sign out', () => {
           sessionStore.signOut()
           toast.show({ icon: 'check', text: 'Signed out.' })
         })}
@@ -701,7 +701,7 @@ function DownloadsSection() {
                 <div className="st-store-line">
                   <span>
                     <i className="st-sdot st-sdot-me" />
-                    Material Music {used ? fmtBytes(used) : '0 MB'}
+                    PELAGIC {used ? fmtBytes(used) : '0 MB'}
                   </span>
                   <span>{fmtBytes(n.free)} free</span>
                 </div>
@@ -969,7 +969,7 @@ function AboutSection() {
       <Row
         tile={<Icon name="info" size={22} />}
         label="Version"
-        hint={pwa.updateReady ? 'A new version is ready' : apk.available ? `Material Music ${apk.available.versionName} is available` : undefined}
+        hint={pwa.updateReady ? 'A new version is ready' : apk.available ? `PELAGIC ${apk.available.versionName} is available` : undefined}
         dot={pwa.updateReady || !!apk.available}
         control={
           pwa.updateReady ? (
@@ -984,7 +984,7 @@ function AboutSection() {
       {pwa.canInstall && !pwa.installed && !isNative && (
         <Row
           tile={<Icon name="install" size={22} />}
-          label="Install Material Music as an app"
+          label="Install PELAGIC as an app"
           hint="Opens in its own window"
           control={<Act onClick={() => void appUpdate.install()}>Install</Act>}
         />

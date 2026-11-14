@@ -1,15 +1,14 @@
 /**
- * Library search field + Recent searches (Material redesign, LibraryMaterial.dc.html).
+ * Library search field + Recent searches.
  *
- * Desktop: a 56px pill in the Library header (coral cookie search mark · input · ✕). Focused and empty:
+ * Desktop: a compact search field in the Library header. Focused and empty:
  * a Recent searches panel drops below it (each with ✕, Clear all, "Matches titles, artists and albums.
- * Esc clears."). Phone: a 48px pill in the search bar (back arrow on its left), Recent searches as a list.
+ * Esc clears."). Phone: a 48px field in the search bar (back arrow on its left), Recent searches as a list.
  * Keys: Enter opens the top result · Esc clears (then blurs) · ↓ moves into the results.
  */
 import { forwardRef, type KeyboardEvent, type ReactNode } from 'react'
 import { IconButton, Button } from '../../components/ui'
 import { Icon } from '../../design/icons'
-import { SHAPE_PLAYING } from '../../design/shapes'
 import { searchStore } from '../../state/search'
 
 /** Clicks on these keep the field focused (the Recent panel would otherwise hide before the click lands). */
@@ -48,7 +47,7 @@ export const LibrarySearchField = forwardRef<HTMLInputElement, FieldProps>(funct
     <div className={`lb-field-wrap ${phone ? 'is-phone' : ''}`}>
       <div className={`lb-field ${focused ? 'is-focused' : ''}`}>
         {!phone && (
-          <span className="lb-field-ic" style={{ clipPath: SHAPE_PLAYING }} aria-hidden>
+          <span className="lb-field-ic" aria-hidden>
             <Icon name="search" />
           </span>
         )}

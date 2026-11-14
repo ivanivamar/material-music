@@ -1,0 +1,243 @@
+/* Album and Artist pages — handoff 04 Desktop Album, 06 Desktop Artist (the original Pelagic pages,
+   restored over the Material redesign; rules taken from library.css). Phone rules at the end. */
+/* ── Album grid ─────────────────────────────────────── */
+.lib-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(172px, 1fr)); gap: 36px 28px; }
+.lib-grid-sm { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 28px 20px; }
+.lib-grid .acard-img { border-radius: var(--r-cover); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .05); background: var(--surface-1); }
+.lib-grid .acard-meta, .disco-card .acard-meta { margin-top: 2px; }
+
+
+/* quiet links (artist / album names in rows) */
+a.ln { color: inherit; text-decoration: none; }
+a.ln:hover { color: var(--ink-primary); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: rgba(255, 255, 255, .35); }
+
+/* ── Breadcrumb ─────────────────────────────────────── */
+.crumbs {
+  display: flex; align-items: center; gap: 10px; margin: -4px 0 36px;
+  font-family: var(--font-mono); font-size: var(--fs-mono-sm); letter-spacing: .16em; color: var(--ink-secondary);
+}
+.crumbs-back {
+  width: 28px; height: 28px; margin-left: -8px; border: 0; border-radius: 8px; background: none; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; font-size: 16px; color: var(--ink-secondary);
+}
+.crumbs-back:hover { color: var(--ink-primary); background: rgba(255, 255, 255, .05); }
+.crumbs-part { display: inline-flex; gap: 10px; }
+.crumbs-sep { color: var(--ink-tertiary); }
+.crumbs a { color: inherit; text-decoration: none; }
+.crumbs a:hover { color: var(--ink-primary); }
+
+/* ── Section head ───────────────────────────────────── */
+.sect-head { display: flex; align-items: center; gap: 16px; }
+.sect-label { font-family: var(--font-mono); font-size: var(--fs-mono); letter-spacing: .16em; color: var(--ink-primary); white-space: nowrap; }
+.sect-line { flex: 1; height: 1px; background: rgba(255, 255, 255, .08); }
+.sect-right { font-family: var(--font-mono); font-size: var(--fs-mono-sm); letter-spacing: .12em; color: var(--ink-tertiary); white-space: nowrap; }
+.sect-link { color: var(--ink-secondary); text-decoration: none; }
+.sect-link:hover { color: var(--ink-primary); }
+
+/* ── Hero (album / artist) ──────────────────────────── */
+.album-page, .artist-page { position: relative; }
+.album-page > :not(.scene-tint), .artist-page > :not(.artist-banner) { position: relative; z-index: 1; }
+
+/* album-art wash over the content panel (handoff scene(): wash 26%/60%, deep at the bottom). The
+   panel is inset 10px from the window with 28px corners (shell.css .shell-panel); the wash fills it
+   down to the player bar. */
+.scene-tint {
+  position: fixed; left: var(--sidebar-w); right: 10px; top: 10px; bottom: calc(var(--playerbar-h) + 10px);
+  border-radius: 28px 28px 0 0;
+  z-index: 0; pointer-events: none; opacity: 0; transition: opacity 1.2s var(--ease);
+}
+.scene-tint.is-on { opacity: 1; }
+
+.hero { display: flex; align-items: flex-end; gap: 44px; margin-bottom: 36px; }
+.hero-cover { width: 264px; height: 264px; flex: none; border-radius: var(--r-cover); object-fit: cover; display: block; box-shadow: 0 0 0 1px rgba(255, 255, 255, .08), 0 40px 80px -30px rgba(0, 0, 0, .8); transition: box-shadow 1.2s var(--ease); }
+.hero-cover-empty { background: var(--surface-1); }
+.hero-text { display: flex; flex-direction: column; gap: 18px; min-width: 0; flex: 1; }
+.hero-meta { font-family: var(--font-mono); font-size: var(--fs-mono-sm); letter-spacing: .16em; color: var(--ink-secondary); }
+.hero-title {
+  margin: 0; font-weight: 400; letter-spacing: var(--ls-hero); line-height: .95;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; padding-bottom: .06em;
+  overflow-wrap: break-word; font-size: min(var(--hs, 80px), 6.2vw);
+}
+.hero-line { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.hero-artist { font-size: 18px; color: var(--ink-primary); }
+.hero-dash { width: 24px; height: 1px; background: rgba(255, 255, 255, .3); }
+.hero-stats { font-family: var(--font-mono); font-size: var(--fs-mono); letter-spacing: .12em; color: var(--ink-secondary); }
+
+.hero-artist-page, .hero.hero-artist { align-items: center; margin-bottom: 48px; }
+.hero-artist .hero-text { gap: 16px; }
+.hero-buttons { display: flex; align-items: center; gap: 10px; flex: none; }
+
+/* artist banner: background photo (or the photo blurred), faded into the page */
+.artist-banner {
+  /* reaches up behind the top bar (search pill); the scroller clips what's above it.
+     Bottom edge stays at 400px as before. */
+  position: absolute; left: -56px; right: -56px; top: -55px; height: 455px; z-index: 0; pointer-events: none;
+  background-size: cover; background-position: center 30%;
+  opacity: .22;
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, rgba(0, 0, 0, .6) 45%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0%, rgba(0, 0, 0, .6) 45%, transparent 100%);
+}
+.artist-banner.is-blurred { filter: blur(48px); opacity: .3; transform: scale(1.1); }
+
+/* ── Album actions ──────────────────────────────────── */
+.actions { display: flex; align-items: center; gap: 12px; margin-bottom: 36px; }
+.actions .actions-play { padding: 0 26px; min-width: 124px; }
+.actions .btn-secondary { padding: 0 22px; }
+.actions-spacer { flex: 1; }
+.lib-actions { margin-bottom: 28px; }
+.actions-info { display: flex; flex-direction: column; gap: 3px; align-items: flex-end; text-align: right; }
+.actions-info-main { font-size: 14px; }
+.actions-info-meta { font-family: var(--font-mono); font-size: var(--fs-mono-sm); letter-spacing: .12em; color: var(--ink-secondary); }
+
+/* ── Tracklist (album) ──────────────────────────────── */
+.tracklist { --cols: 36px minmax(0, 1fr) 64px; display: flex; flex-direction: column; }
+.tl-head {
+  display: grid; grid-template-columns: var(--cols); align-items: center; gap: 12px; height: 34px; padding: 0 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, .1);
+  font-family: var(--font-mono); font-size: var(--fs-mono-sm); letter-spacing: .16em; color: var(--ink-tertiary);
+}
+.tl-h-n { text-align: center; }
+.tl-h-r { text-align: right; }
+.tl-disc { padding: 22px 12px 8px; font-family: var(--font-mono); font-size: var(--fs-mono-sm); letter-spacing: .16em; color: var(--ink-secondary); border-bottom: 1px solid rgba(255, 255, 255, .06); }
+.trow.trow-album { grid-template-columns: var(--cols); height: 48px; border-bottom-color: rgba(255, 255, 255, .04); }
+.trow.trow-album .trow-dl, .trow.trow-album .trow-label { display: none; }
+.trow.trow-album:hover { background: rgba(255, 255, 255, .04); }
+/* Android app: offline status column (✓ / progress ring) */
+.tracklist.has-dl { --cols: 36px minmax(0, 1fr) 24px 64px; }
+.tracklist.has-dl .trow.trow-album .trow-dl { display: flex; }
+
+.more-by { margin-top: 64px; display: flex; flex-direction: column; gap: 20px; }
+
+/* ── Artist columns ─────────────────────────────────── */
+.artist-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 520px); gap: 64px; align-items: start; }
+.artist-songs { display: flex; flex-direction: column; gap: 14px; }
+.trow.trow-artist { grid-template-columns: 28px minmax(0, 1fr) 52px 52px; height: 56px; border-bottom-color: rgba(255, 255, 255, .04); }
+.trow.trow-artist .trow-dl { display: none; }
+.trow.trow-artist .trow-label { order: 3; }
+.trow.trow-artist .trow-dur { order: 4; }
+.trow.trow-artist .trow-sub { font-size: 12px; }
+.trow.trow-artist .trow-label { letter-spacing: .1em; }
+.artist-songs.has-dl .trow.trow-artist { grid-template-columns: 28px minmax(0, 1fr) 24px 52px 52px; }
+.artist-songs.has-dl .trow.trow-artist .trow-dl { display: flex; }
+
+/* ⋯ next to Play / Shuffle (album / artist menu) */
+.actions-more.ibtn { width: 46px; height: 46px; font-size: 21px; color: var(--ink-primary); border: 1.5px solid var(--border-strong); box-sizing: border-box; }
+.actions-more.ibtn:hover:not(:disabled) { border-color: rgba(255, 255, 255, .4); }
+
+/* ── Available offline (album page, Android app) ────── */
+.offl { display: flex; align-items: center; gap: 16px; flex: none; }
+.offl-main { display: flex; align-items: center; gap: 16px; cursor: pointer; }
+.offl-text { display: flex; flex-direction: column; gap: 3px; align-items: flex-end; text-align: right; }
+.offl-title { font-size: 14px; }
+.offl-status { font-family: var(--font-mono); font-size: var(--fs-mono-sm); letter-spacing: .12em; color: var(--ink-secondary); white-space: nowrap; }
+.offl.is-on .offl-status { color: var(--ink-primary); }
+
+/* ── Download button (Android) ──────────────────────── */
+.actions-dl.is-done .btn-ic { color: var(--ink-primary); }
+.actions-dl-count { font-size: 12px; letter-spacing: .1em; }
+.more-btn {
+  align-self: flex-start; height: 32px; padding: 0 12px; margin-left: 0; border-radius: 8px;
+  border: 1.5px solid var(--border); background: none; cursor: pointer;
+  font-family: var(--font-mono); font-size: var(--fs-mono-sm); letter-spacing: .14em; color: var(--ink-secondary);
+}
+.more-btn:hover { color: var(--ink-primary); border-color: rgba(255, 255, 255, .3); }
+
+.artist-disco { display: flex; flex-direction: column; gap: 28px; }
+.disco-group { display: flex; flex-direction: column; gap: 14px; }
+.disco-grid { display: grid; grid-template-columns: repeat(auto-fill, 150px); gap: 24px 20px; }
+.disco-card .acard-img { border-radius: var(--r-cover); background: var(--surface-1); }
+.disco-card .acard-sub { font-family: var(--font-mono); font-size: var(--fs-mono-sm); letter-spacing: .1em; text-transform: uppercase; margin-top: 2px; }
+
+
+@media (max-width: 1320px) {
+  .artist-cols { grid-template-columns: minmax(0, 1fr); gap: 48px; }
+  .artist-disco { order: -1; }
+  .disco-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+  .hero.hero-artist { flex-wrap: wrap; row-gap: 28px; }
+  .hero.hero-artist .hero-text { flex-basis: 0; }
+  .hero.hero-artist .hero-buttons { flex-basis: 100%; }
+}
+@media (max-width: 1100px) {
+  .hero { gap: 28px; }
+  .hero-cover { width: 200px; height: 200px; }
+  .actions-info { display: none; }
+  .actions:has(.offl) { flex-wrap: wrap; row-gap: 20px; }
+  .actions .offl { flex-basis: 100%; justify-content: space-between; }
+  .actions .offl-text { align-items: flex-start; text-align: left; }
+}
+
+/* ── Added after the handoff, in its style ───────────── */
+/* hearts on the rows (components/LikeButton): un-liked ones wait for the row hover (like.css) */
+.trow-like.like { width: 28px; height: 28px; border-radius: 8px; color: var(--ink-tertiary); }
+.trow-like.like .ms { font-size: 18px; }
+.trow-like.like:hover:not(:disabled) { background: none; color: var(--ink-primary); }
+.trow-like.like.is-on { color: var(--like); }
+/* no tracks on Drive for this album */
+.tl-empty { padding: 48px 0 24px; display: flex; justify-content: center; }
+/* More by / discography: the Library page's album cards at 150px */
+.more-by-grid { margin-top: 0; }
+.disco-grid .lb-card .hcard-s, .more-by-grid .lb-card .hcard-s { font-family: var(--font-mono); font-size: var(--fs-mono-sm); letter-spacing: .1em; text-transform: uppercase; }
+/* artist: Follow (new-release alerts), lit like the handoff's selected segment when on */
+.hero-follow.is-on { color: #fff; background: rgba(255, 255, 255, .1); border-color: rgba(255, 255, 255, .3); }
+/* "playing near you" chip (pages/concerts/OnTour) under the stats */
+.hero-tour { display: flex; }
+.artist-disco > .ot { margin-bottom: 4px; }
+
+/* ── Phone ── */
+/* ── Album / Artist ── */
+.shell.is-phone .crumbs { margin: -6px 0 18px; }
+.shell.is-phone .scene-tint { left: 0; right: 0; top: 0; bottom: 0; border-radius: 0; }
+.shell.is-phone .hero { flex-direction: column; align-items: stretch; gap: 22px; margin-bottom: 24px; }
+.shell.is-phone .hero-cover { width: min(236px, 62vw); height: min(236px, 62vw); align-self: center; }
+.shell.is-phone .hero-text { gap: 10px; }
+.shell.is-phone .hero-title { font-size: min(var(--hs, 80px), 8.6vw); letter-spacing: -0.025em; line-height: 1; }
+.shell.is-phone .hero-line { gap: 10px 12px; }
+.shell.is-phone .hero-artist { font-size: 16px; }
+.shell.is-phone .hero-dash { display: none; }
+.shell.is-phone .hero-stats { font-size: var(--fs-mono-sm); }
+
+.shell.is-phone .hero.hero-artist { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 18px; margin-bottom: 28px; }
+.shell.is-phone .hero-avatar { width: 96px !important; height: 96px !important; }
+.shell.is-phone .hero-avatar .avatar-art-mono { font-size: 24px; }
+.shell.is-phone .hero.hero-artist .hero-text { flex: 1; min-width: 0; gap: 8px; }
+.shell.is-phone .hero.hero-artist .hero-meta { font-size: var(--fs-mono-xs); }
+.shell.is-phone .hero.hero-artist .hero-buttons { flex-basis: 100%; }
+.shell.is-phone .hero-buttons .btn { flex: 1; height: 48px; }
+/* phone: past the sticky search bar (64px + status bar) and the 8px page padding */
+.shell.is-phone .artist-banner { left: -20px; right: -20px; top: calc(-100px - env(safe-area-inset-top)); height: calc(400px + env(safe-area-inset-top)); }
+
+.shell.is-phone .actions { gap: 10px; margin-bottom: 20px; }
+.shell.is-phone .actions .btn { flex: 1; min-width: 0; height: 48px; }
+.shell.is-phone .actions-spacer, .shell.is-phone .actions-info { display: none; }
+/* Download: a compact square next to Play / Shuffle (✓ / ring + 07/11) */
+.shell.is-phone .actions .actions-dl, .shell.is-phone .hero-buttons .actions-dl { flex: 0 0 auto; min-width: 48px; padding: 0 13px; gap: 8px; }
+.shell.is-phone .actions-dl .actions-dl-label { display: none; }
+/* album "Available offline": full-width card under Play / Shuffle */
+.shell.is-phone .actions:has(.offl) { flex-wrap: wrap; row-gap: 12px; }
+.shell.is-phone .actions .offl {
+  order: 10; flex: 1 0 100%; flex-direction: column; align-items: stretch; gap: 12px;
+  padding: 14px 16px; border-radius: 14px; border: 1.5px solid rgba(255, 255, 255, .09); background: rgba(255, 255, 255, .03);
+}
+.shell.is-phone .offl-main { justify-content: space-between; }
+.shell.is-phone .offl-text { align-items: flex-start; text-align: left; min-width: 0; }
+.shell.is-phone .offl-status { white-space: normal; }
+.shell.is-phone .offl .seg { display: flex; }
+.shell.is-phone .offl .seg-opt { flex: 1; justify-content: center; height: 34px; }
+.shell.is-phone .tl-head, .shell.is-phone .trow.trow-album { padding: 0 4px; gap: 10px; }
+.shell.is-phone .trow.trow-album { height: 56px; }
+.shell.is-phone .more-by { margin-top: 40px; }
+
+.shell.is-phone .artist-cols { gap: 36px; }
+.shell.is-phone .artist-disco { order: 0; }
+.shell.is-phone .trow.trow-artist { grid-template-columns: 24px minmax(0, 1fr) 52px; }
+.shell.is-phone .trow.trow-artist .trow-label { display: none; }
+.shell.is-phone .tracklist.has-dl { --cols: 28px minmax(0, 1fr) 22px 52px; }
+.shell.is-phone .artist-songs.has-dl .trow.trow-artist { grid-template-columns: 24px minmax(0, 1fr) 22px 52px; }
+.shell.is-phone .disco-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px 14px; }
+
+.shell.is-phone .disco-grid, .shell.is-phone .more-by-grid { grid-template-columns: repeat(auto-fill, 150px); justify-content: space-between; gap: 22px 14px; }
+/* Play · Shuffle · Follow share the row; Follow shrinks to its icon */
+.shell.is-phone .hero-buttons .hero-follow { flex: 0 0 48px; padding: 0; }
+.shell.is-phone .hero-follow-l { display: none; }
+.shell.is-phone .hero-buttons .actions-more { flex: 0 0 48px; width: 48px; height: 48px; }
+.shell.is-phone .hero-buttons { gap: 8px; }

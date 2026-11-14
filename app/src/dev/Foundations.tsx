@@ -34,7 +34,7 @@ export function Foundations() {
   return (
     <div className="fd">
       <header className="fd-head">
-        <div className="t-mono">Material Music / foundations</div>
+        <div className="t-mono">PELAGIC / foundations</div>
         <div className="t-page">Tokens, type, icons and textures.</div>
       </header>
 

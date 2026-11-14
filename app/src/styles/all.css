@@ -13,8 +13,9 @@
 @import './tokens.css';
 @import './base.css';
 @import '../components/ui/card.css';
-@import '../components/ui/ui.css';
 @import '../components/ui/material.css';
+/* Canonical shared controls load after retained playback primitives. */
+@import '../components/ui/ui.css';
 @import '../components/ui/overlay.css';
 @import '../components/ui/tabs-badge.css';
 @import '../components/atmosphere.css';
@@ -27,18 +28,18 @@
 @import '../pages/home/home.css';
 @import '../screens/screens.css';
 @import '../nowplaying/lyrics.css';
-@import '../nowplaying/player.css';
 @import '../components/marquee.css';
-@import '../nowplaying/carousel/carousel.css';
 @import '../sync/devices.css';
 @import '../dj/dj.css';
 @import '../nowplaying/nowplaying.css';
+@import '../nowplaying/queue.css';
 @import '../shell/playerbar.css';
 @import '../shell/sidebar.css';
 @import '../actions/actions.css';
 @import '../shell/shell.css';
 @import '../shell/phone.css';
 @import '../pages/library/detail.css';
+@import '../pages/library/album.css';
 @import '../pages/library/lib2.css';
 @import '../pages/downloads/downloads.css';
 @import '../pages/upload/upload.css';

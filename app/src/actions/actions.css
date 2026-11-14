@@ -102,12 +102,6 @@
 .dlg-new-row { display: flex; gap: 18px; align-items: center; }
 .dlg-new-cover { width: 96px; height: 96px; border-radius: 12px; flex: none; }
 .dlg-new-field { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
-.dlg-input {
-  height: 48px; padding: 0 14px; border-radius: 12px; border: 1.5px solid rgba(255, 255, 255, .22);
-  background: #0E0E10; color: var(--ink-primary); outline: none; font: inherit; font-size: 15px; box-sizing: border-box; width: 100%;
-}
-.dlg-input:focus { border-color: rgba(255, 255, 255, .4); }
-.dlg-textarea { height: auto; padding: 12px 14px; resize: none; line-height: 1.45; }
 .dlg-hint { font-family: var(--font-mono); font-size: 10px; letter-spacing: .12em; color: var(--ink-tertiary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .dlg-buttons { display: flex; justify-content: flex-end; gap: 10px; }
 
@@ -132,10 +126,8 @@
 /* ── Edit genre (step 20b) ─────────────────────────── */
 .gd { gap: 18px; }
 .gd-chips {
-  display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-height: 48px; box-sizing: border-box; padding: 7px 8px;
-  border-radius: 12px; border: 1.5px solid rgba(255, 255, 255, .22); background: #0E0E10;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px; box-sizing: border-box; padding: 7px 8px;
 }
-.gd-chips:focus-within { border-color: rgba(255, 255, 255, .4); }
 .gd-chip { display: inline-flex; align-items: center; gap: 4px; height: 30px; padding: 0 4px 0 12px; border-radius: 15px; background: rgba(255, 255, 255, .1); font-size: 14px; color: var(--ink-primary); }
 .gd-chip button { width: 24px; height: 24px; border: 0; border-radius: 12px; background: none; color: var(--ink-secondary); display: inline-flex; align-items: center; justify-content: center; font-size: 13px; cursor: pointer; }
 .gd-chip button:hover { color: var(--ink-primary); background: rgba(255, 255, 255, .1); }
@@ -156,15 +148,9 @@
 .sm-rule { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 8px 8px 8px 10px; border-radius: 12px; background: rgba(255, 255, 255, .03); }
 .sm-none { font-size: 13px; color: var(--ink-tertiary); padding: 4px 2px; }
 .sm-select { position: relative; display: inline-flex; align-items: center; }
-.sm-select select {
-  appearance: none; -webkit-appearance: none; height: 36px; padding: 0 30px 0 12px; border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, .12); background: #1b1b1e; color: var(--ink-primary); font: inherit; font-size: 13.5px; cursor: pointer; max-width: 100%;
-}
-.sm-select select:focus { outline: none; border-color: rgba(255, 255, 255, .4); }
-.sm-select select option { background: #1b1b1e; color: var(--ink-primary); }
 .sm-select > svg { position: absolute; right: 9px; font-size: 14px; color: var(--ink-tertiary); pointer-events: none; }
-.sm .dlg-input.sm-num { width: 74px; height: 36px; padding: 0 10px; font-size: 13.5px; border-radius: 10px; }
-.sm .dlg-input.sm-text { flex: 1; min-width: 120px; height: 36px; padding: 0 12px; font-size: 13.5px; border-radius: 10px; }
+.sm .dlg-input.sm-num { width: 74px; }
+.sm .dlg-input.sm-text { flex: 1; min-width: 120px; }
 .sm-num:disabled { opacity: .4; }
 .sm-word { font-size: 13.5px; color: var(--ink-secondary); }
 .sm-presets { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -243,15 +229,7 @@ html[data-phone] .gc-opt { height: 44px; font-size: 15px; }
 .as-pl-cover { filter: none; }
 .as-pl-meta { font-family: var(--font-sans); font-size: 12px; letter-spacing: 0; }
 
-/* ── Dialogs, Material redesign (PlaylistDialog.dc.html): headline, outlined fields, coral actions ── */
-.dlg-input {
-  height: 56px; padding: 0 16px; border-radius: 8px; border: 0; background: none; color: var(--ink-primary); font: inherit; font-size: 16px;
-  box-shadow: inset 0 0 0 1px oklch(0.50 0.012 40); outline: none; transition: box-shadow 150ms var(--ease-std);
-}
-.dlg-input:hover { box-shadow: inset 0 0 0 1px oklch(0.70 0.012 40); }
-.dlg-input:focus { box-shadow: inset 0 0 0 2px var(--brand); border: 0; }
-.dlg-input-lg { font-size: 16px; }
-.dlg-textarea { height: auto; padding: 14px 16px; }
+/* ── Dialog visual refinements ── */
 .dlg-hint { font-family: var(--font-sans); font-size: 12px; letter-spacing: 0; color: var(--ink-secondary); }
 .dlg-flabel { font-size: 12px; font-weight: 600; color: var(--ink-secondary); }
 .dlg-new-cover { border-radius: 16px; }
@@ -265,9 +243,5 @@ html[data-phone] .gc-opt { height: 44px; font-size: 15px; }
 .sm-block { border-top: 0; padding-top: 0; gap: 12px; }
 .sm-rules { gap: 8px; }
 .sm-rule { padding: 8px 8px 8px 12px; border-radius: 20px; background: oklch(0.25 0.009 40); gap: 8px; }
-.sm-select select { height: 40px; padding: 0 34px 0 14px; border-radius: 12px; border: 0; background: oklch(0.30 0.012 40); font-size: 14px; font-weight: 600; }
-.sm-select select:focus { box-shadow: inset 0 0 0 2px var(--brand); }
-.sm-select select option { background: oklch(0.26 0.009 40); }
-.sm .dlg-input.sm-num, .sm .dlg-input.sm-text { height: 40px; border-radius: 12px; font-size: 14px; }
 .sm-word { font-size: 14px; }
 .sm-limit input[type='checkbox'] { accent-color: var(--brand); width: 18px; height: 18px; }

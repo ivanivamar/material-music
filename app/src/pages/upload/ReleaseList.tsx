@@ -1,11 +1,12 @@
 /**
- * Batch Upload — left column (Material 3 Expressive redesign, UploadMaterial.dc.html):
- * toolbar (filter chips, Upload / Pause all / Resume), phone summary card, the release
+ * Batch Upload — left column: toolbar (select-all, filter pills, Upload / Pause all / Resume), the release
  * rows and the footer (overall progress + status line).
+ *
+ * Row: checkbox · 44px cover · title / artist · tracks found/total · progress line · status.
+ * Click a row = focus it (clears the ticks); click its checkbox = tick it (focus unchanged).
  */
 import type { MouseEvent } from 'react'
-import { Button, Chip } from '../../components/ui'
-import { Icon, type IconName } from '../../design/icons'
+import { Button } from '../../components/ui'
 import { useCover } from '../../lib/covers'
 import type { Catalogue } from '../../state/library'
 import { clearFinished, pause, resume, setChecked, setFilter, setFocus, start, toggleChecked, type UploadAlbum, type UploadFilter, type UploadState } from '../../state/upload'
@@ -19,7 +20,7 @@ const FILTERS: [UploadFilter, string][] = [
   ['added', 'Added'],
 ]
 
-export function ReleaseList({ s, cat, view, phone = false, onInspect }: { s: UploadState; cat: Catalogue | null; view: BatchView; phone?: boolean; onInspect?: (key: string) => void }) {
+export function ReleaseList({ s, cat, view }: { s: UploadState; cat: Catalogue | null; view: BatchView }) {
   const shown = s.albums.filter((a) => inFilter(a, s, cat, s.filter))
   const checked = new Set(s.checked)
   const multi = s.checked.length >= 2
@@ -30,69 +31,46 @@ export function ReleaseList({ s, cat, view, phone = false, onInspect }: { s: Upl
   return (
     <section className="ub-list" aria-label="Releases">
       <div className="ub-toolbar">
-        {!phone && <Checkbox state={allOn ? true : some ? 'mixed' : false} label="Select all shown" onClick={() => setChecked(allOn ? [] : shown.map((a) => a.key))} />}
+        <Checkbox state={allOn ? true : some ? 'mixed' : false} label="Select all shown" onClick={() => setChecked(allOn ? [] : shown.map((a) => a.key))} />
         <div className="ub-pills" role="group" aria-label="Filter">
           {FILTERS.map(([k, label]) => (
-            <Chip key={k} check={false} className={k === 'need' && view.counts.need > 0 ? 'is-warn' : undefined} selected={s.filter === k} count={view.counts[k]} onClick={() => setFilter(k)}>
+            <button key={k} type="button" className={`ub-pill ${k === 'need' && view.counts.need > 0 ? 'is-warn' : ''}`} aria-pressed={s.filter === k} onClick={() => setFilter(k)}>
               {label}
-            </Chip>
+              <span className="ub-pill-n">{view.counts[k]}</span>
+            </button>
           ))}
         </div>
-        {!phone && (
-          <>
-            <span className="ub-grow" />
-            <BatchButton view={view} />
-          </>
-        )}
+        <span className="ub-grow" />
+        <BatchButton view={view} />
       </div>
-
-      {phone && (
-        <div className="card card-filled card-lg ub-phone-sum">
-          <div className="ub-phone-sum-l">
-            <div className="ub-foot-bar" aria-hidden>
-              <span style={{ width: `${view.pct}%` }} />
-            </div>
-            <div className="ub-foot-meta" role="status">
-              {view.foot}
-            </div>
-          </div>
-          <BatchButton view={view} />
-        </div>
-      )}
 
       <div className="ub-rows" role="list">
         {shown.map((a) => (
-          <Row key={a.key} a={a} s={s} cat={cat} focused={!multi && a.key === focus} checked={checked.has(a.key)} phone={phone} onInspect={onInspect} />
+          <Row key={a.key} a={a} s={s} cat={cat} focused={!multi && a.key === focus} checked={checked.has(a.key)} />
         ))}
         {!shown.length && <div className="ub-rows-none">Nothing here right now.</div>}
       </div>
 
-      {(!phone || view.counts.added > 0 || s.skipped > 0 || s.unreadable > 0) && (
-        <div className="ub-foot">
-          {!phone && (
-            <div className="ub-foot-bar" aria-hidden>
-              <span style={{ width: `${view.pct}%` }} />
-            </div>
-          )}
-          <div className="ub-foot-line">
-            {!phone && (
-              <span className="ub-foot-meta" role="status">
-                {view.foot}
-              </span>
-            )}
-            {(s.skipped > 0 || s.unreadable > 0) && (
-              <span className="ub-foot-skip">
-                {[s.skipped > 0 && `${plural(s.skipped, 'file', 'files')} skipped · not FLAC`, s.unreadable > 0 && `${plural(s.unreadable, 'file', 'files')} unreadable`].filter(Boolean).join(' · ')}
-              </span>
-            )}
-            {view.counts.added > 0 && (
-              <Button variant="outlined" size="sm" className="ub-foot-clear" onClick={clearFinished}>
-                Clear finished
-              </Button>
-            )}
-          </div>
+      <div className="ub-foot">
+        <div className="ub-foot-bar" aria-hidden>
+          <span style={{ width: `${view.pct}%` }} />
         </div>
-      )}
+        <div className="ub-foot-line">
+          <span className="ub-foot-meta" role="status">
+            {view.foot}
+          </span>
+          {(s.skipped > 0 || s.unreadable > 0) && (
+            <span className="ub-foot-skip">
+              {[s.skipped > 0 && `${plural(s.skipped, 'FILE')} SKIPPED · NOT FLAC`, s.unreadable > 0 && `${plural(s.unreadable, 'FILE')} UNREADABLE`].filter(Boolean).join(' · ')}
+            </span>
+          )}
+          {view.counts.added > 0 && (
+            <button type="button" className="ub-foot-clear" onClick={clearFinished}>
+              CLEAR FINISHED
+            </button>
+          )}
+        </div>
+      </div>
     </section>
   )
 }
@@ -100,21 +78,18 @@ export function ReleaseList({ s, cat, view, phone = false, onInspect }: { s: Upl
 function BatchButton({ view }: { view: BatchView }) {
   if (view.button === 'upload')
     return (
-      <Button variant="brand" onClick={start} disabled={!view.canUpload}>
-        <Icon name="upload" />
+      <Button size="sm" icon="upload" className="ub-batch" onClick={start} disabled={!view.canUpload}>
         Upload
       </Button>
     )
   if (view.button === 'pause')
     return (
-      <Button variant="outlined" onClick={pause}>
-        <Icon name="pauseF" />
+      <Button size="sm" variant="secondary" icon="pauseF" className="ub-batch" onClick={pause}>
         Pause all
       </Button>
     )
   return (
-    <Button variant="outlined" onClick={resume}>
-      <Icon name="playF" />
+    <Button size="sm" variant="secondary" icon="playF" className="ub-batch" onClick={resume}>
       Resume
     </Button>
   )
@@ -122,60 +97,29 @@ function BatchButton({ view }: { view: BatchView }) {
 
 export function Checkbox({ state, label, onClick }: { state: boolean | 'mixed'; label: string; onClick: (e: MouseEvent) => void }) {
   return (
-    <button type="button" role="checkbox" aria-checked={state} aria-label={label} className={`ub-check ${state ? 'is-on' : ''}`} onClick={onClick}>
-      {state === true ? <Icon name="done" size={14} /> : state === 'mixed' ? '–' : ''}
+    <button type="button" role="checkbox" aria-checked={state} aria-label={label} className="ub-check" onClick={onClick}>
+      {state === true ? '✓' : state === 'mixed' ? '–' : ''}
     </button>
   )
 }
 
-/** Cover art: dropped art, else the library's cover, else a neutral music-note placeholder. */
-export function Thumb({ a, cat, size = 'sm', label }: { a: UploadAlbum; cat: Catalogue | null; size?: 'sm' | 'lg'; label?: string }) {
+/** 44px cover: the dropped art, else the library's cover, else a striped placeholder. */
+export function Thumb({ a, cat, size = 'sm', label = 'NO ART' }: { a: UploadAlbum; cat: Catalogue | null; size?: 'sm' | 'lg'; label?: string }) {
   const lib = useCover(a.coverUrl ? null : cat?.albums[a.albumId]?.cover)
   const art = a.coverUrl ?? lib
-  return art ? (
-    <img className={`ub-thumb ub-thumb-${size}`} src={art} alt="" />
-  ) : (
-    <span className={`ub-thumb ub-thumb-${size} ub-thumb-none`} aria-hidden>
-      {label === '' ? null : <Icon name="song" size={size === 'lg' ? 28 : 20} />}
-    </span>
-  )
+  return art ? <img className={`ub-thumb ub-thumb-${size}`} src={art} alt="" /> : <span className={`ub-thumb ub-thumb-${size} ub-thumb-none`}>{label}</span>
 }
 
-const STATUS_ICON: Record<RowStatus['tone'], IconName> = {
-  warn: 'warning',
-  added: 'checkCircle',
-  ready: 'checkCircle',
-  live: 'upload',
-  queued: 'clock',
-  skip: 'block',
-}
-
-export function StatusDot({ st, phone }: { st: RowStatus; phone?: boolean }) {
+export function StatusDot({ st }: { st: RowStatus }) {
   return (
-    <span className={`ub-st is-${st.tone} ${phone ? 'is-phone' : ''}`}>
-      <Icon name={STATUS_ICON[st.tone]} filled={st.tone === 'warn' || st.tone === 'added' || st.tone === 'ready'} />
-      <span className="ub-st-text">{phone ? st.word : st.label}</span>
+    <span className={`ub-st is-${st.tone}`}>
+      <span className="ub-st-dot" aria-hidden />
+      {st.label}
     </span>
   )
 }
 
-function Row({
-  a,
-  s,
-  cat,
-  focused,
-  checked,
-  phone,
-  onInspect,
-}: {
-  a: UploadAlbum
-  s: UploadState
-  cat: Catalogue | null
-  focused: boolean
-  checked: boolean
-  phone?: boolean
-  onInspect?: (key: string) => void
-}) {
+function Row({ a, s, cat, focused, checked }: { a: UploadAlbum; s: UploadState; cat: Catalogue | null; focused: boolean; checked: boolean }) {
   const st = statusOf(a, s, cat)
   const issue = issueOf(a, s, cat)
   const m = missingOf(a, s)
@@ -186,59 +130,35 @@ function Row({
     <div
       role="listitem"
       tabIndex={0}
-      className={`ub-row ${focused ? 'is-focus' : ''} ${checked ? 'is-checked' : ''} ${a.skipped ? 'is-skipped' : ''} ${phone ? 'is-phone' : ''}`}
+      className={`ub-row ${focused ? 'is-focus' : ''} ${checked ? 'is-checked' : ''} ${a.skipped ? 'is-skipped' : ''}`}
       aria-current={focused || undefined}
-      onClick={(e) => {
-        if (e.metaKey || e.ctrlKey) {
-          toggleChecked(a.key)
-          return
-        }
-        setFocus(a.key)
-        onInspect?.(a.key)
-      }}
+      onClick={() => setFocus(a.key)}
       onKeyDown={(e) => {
         if (e.target !== e.currentTarget || (e.key !== 'Enter' && e.key !== ' ')) return
         e.preventDefault()
         setFocus(a.key)
-        onInspect?.(a.key)
       }}
     >
-      {!phone && (
-        <Checkbox
-          state={checked}
-          label={`Select ${a.title}`}
-          onClick={(e) => {
-            e.stopPropagation()
-            toggleChecked(a.key)
-          }}
-        />
-      )}
+      <Checkbox
+        state={checked}
+        label={`Select ${a.title}`}
+        onClick={(e) => {
+          e.stopPropagation()
+          toggleChecked(a.key)
+        }}
+      />
       <Thumb a={a} cat={cat} />
-      {phone ? (
-        <span className="ub-row-mid">
-          <span className="ub-row-title">{a.title}</span>
-          <span className="ub-row-sub">
-            {a.artist} · <span className={m.found < total ? 'is-warn' : ''}>{m.found}/{total}</span>
-          </span>
-          <span className="ub-row-line" aria-hidden>
-            <span className={`${issue ? 'is-warn' : ''} ${live ? 'is-live' : ''}`} style={{ width: `${a.skipped ? 0 : pct}%` }} />
-          </span>
-        </span>
-      ) : (
-        <>
-          <span className="ub-row-names">
-            <span className="ub-row-title">{a.title}</span>
-            <span className="ub-row-sub">{a.artist}</span>
-          </span>
-          <span className={`ub-row-tracks ${m.found < total ? 'is-warn' : ''}`}>
-            {m.found}/{total}
-          </span>
-          <span className="ub-row-line" aria-hidden>
-            <span className={`${issue ? 'is-warn' : ''} ${live ? 'is-live' : ''}`} style={{ width: `${a.skipped ? 0 : pct}%` }} />
-          </span>
-        </>
-      )}
-      <StatusDot st={st} phone={phone} />
+      <span className="ub-row-names">
+        <span className="ub-row-title">{a.title}</span>
+        <span className="ub-row-sub">{a.artist}</span>
+      </span>
+      <span className={`ub-row-tracks ${m.found < total ? 'is-warn' : ''}`}>
+        {m.found}/{total}
+      </span>
+      <span className="ub-row-line" aria-hidden>
+        <span className={`${issue ? 'is-warn' : ''} ${live ? 'is-live' : ''}`} style={{ width: `${a.skipped ? 0 : pct}%` }} />
+      </span>
+      <StatusDot st={st} />
     </div>
   )
 }

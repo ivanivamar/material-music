@@ -18,7 +18,7 @@ export const DEFAULTS = {
   concurrency: 2,
 };
 
-// per-file scope, same as the app (app/src/config.ts): only files created by this Google Cloud project
-export const SCOPES = ['https://www.googleapis.com/auth/drive.file'];
+// Full Drive access, same as the app (app/src/config.ts), so existing libraries can be discovered.
+export const SCOPES = ['https://www.googleapis.com/auth/drive'];
 export const CATALOGUE_NAME = 'library.json';
 export const CATALOGUE_VERSION = 1;

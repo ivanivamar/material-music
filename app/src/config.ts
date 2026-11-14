@@ -6,12 +6,10 @@ export const GOOGLE_CLIENT_ID: string =
   import.meta.env.VITE_GOOGLE_CLIENT_ID ?? '1053700895476-6jafnagm34rs2fpv87b9oh9oogbjvm3c.apps.googleusercontent.com'
 
 /**
- * Per-file Drive scope: only the files this app (any OAuth client of its Google Cloud project: web,
- * Android, tools/import) created — the Pelagic folder and everything in it. A leaked token can't
- * reach the rest of the Drive. Files added by hand through the Drive website are invisible to it.
- * Keep in step with DriveAuth.java, PelagicNativePlugin.java and tools/import/src/config.js.
+ * Full Drive access is needed to discover an existing Pelagic folder/library.json, including files
+ * created outside the app's per-file grant. Keep in step with Android and tools/import.
  */
-export const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file'
+export const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive'
 
 /** Folder in My Drive written by tools/import, and the catalogue inside it. */
 export const DRIVE_ROOT = 'Pelagic'

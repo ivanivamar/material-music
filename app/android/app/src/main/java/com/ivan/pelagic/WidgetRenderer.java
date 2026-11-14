@@ -32,7 +32,7 @@ import java.util.Map;
  *
  * Nothing playing: design_handoff_widget_idle (iTiny, iPill, iSq, iBar, iFull).
  *
- * No like / favourite button anywhere (Material Music rule).
+ * No like / favourite button anywhere (PELAGIC rule).
  */
 final class WidgetRenderer {
 
@@ -282,7 +282,7 @@ final class WidgetRenderer {
             } else {
                 int n = r.m.info.songs;
                 title = "Shuffle library";
-                artist = n > 0 ? n + (n == 1 ? " song" : " songs") : "Material Music";
+                artist = n > 0 ? n + (n == 1 ? " song" : " songs") : "PELAGIC";
                 label = "Start";
                 sub = artist;
                 art = null;

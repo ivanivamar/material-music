@@ -1,17 +1,16 @@
 /**
- * Lyrics column of the full-screen player (Material 3 Expressive).
+ * Lyrics column of the full-screen player (handoff 08).
  *
- * Synced (LRC): the sung line expands into an expressive album-tinted tonal card with a glowing
- * accent bar, bold display typography, and live equaliser bars; surrounding lines stay crisp and
- * readable; the list glides between lines while clamping top/bottom bounds so there is never an
- * empty void at the start or end of a song. Click/tap a line to seek to it. Wheel or touch-scroll
- * browses freely (with a quick "Sync" pill to jump back), settling back on the sung line after idle.
- * Plain lyrics: an expressive, scrollable stanza column. None: empty state.
- * Japanese / Korean lyrics: an optional romanised line under each line (lib/romaji.ts; toggle in the footer).
+ * Synced (LRC): the sung line sits at 42% of the column, lit white with a glow; lines fade with
+ * distance; the list glides between lines (1.1s, default ease; instant with reduced motion).
+ * Click a line to seek to it. Scrolling the wheel (or dragging with a finger) browses freely, and
+ * the list settles back on the sung line a few seconds later.
+ * Plain lyrics: a static, scrollable column. None: empty state.
+ * Japanese / Korean lyrics: an optional romanised line under each line (lib/romaji.ts), switched by
+ * the ROMAJI chip next to the source label (handoff 08: the chip only shows with lyrics on screen).
  */
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type TouchEvent, type WheelEvent } from 'react'
-import { EmptyState, Eq, formatTime } from '../components/ui'
-import { Icon } from '../design/icons'
+import { EmptyState } from '../components/ui'
 import { lineAt, parseLyrics, type LyricLine } from '../lib/lrc'
 import { lyricsScript, useRomaji, type RomajiState } from '../lib/romaji'
 import { settingsStore, useSettings } from '../state/settings'
@@ -46,31 +45,29 @@ function useLineIndex(lines: LyricLine[] | null, position: number, playing: bool
   return playing && ahead && ahead.pos === position ? Math.max(reported, ahead.idx) : reported
 }
 
-const lineOpacity = (i: number, cur: number, browsing: boolean) => {
+const lineOpacity = (i: number, cur: number) => {
   if (i === cur) return 1
-  if (browsing) return i < cur ? 0.68 : 0.82
-  if (cur < 0) return Math.max(0.4, 0.9 - 0.08 * i)
   const d = i - cur
-  return d < 0 ? Math.max(0.32, 0.52 - 0.06 * (-d - 1)) : Math.max(0.38, 0.84 - 0.09 * (d - 1))
+  return d < 0 ? Math.max(0.1, 0.42 - 0.1 * (-d - 1)) : Math.max(0.12, 0.55 - 0.12 * (d - 1))
 }
 
-const IDLE_MS = 3800
+const IDLE_MS = 3500
 
-/**
- * Romanisation on/off in the lyrics footer (Japanese: romaji, Korean: Revised Romanization); the
- * setting is shared PC ↔ phone.
- */
-function RomajiToggle({ lines, romaji }: { lines: LyricLine[]; romaji: RomajiState }) {
+/** ROMAJI / ROMANIZED chip (Japanese / Korean lyrics only); the setting is shared PC ↔ phone. */
+function RomajiChip({ lines, romaji }: { lines: LyricLine[]; romaji: RomajiState }) {
   const { romaji: on } = useSettings()
   const script = lyricsScript(lines.map((l) => l.text))
   if (!script) return null
-  const name = script === 'ko' ? 'Romanized' : 'Romaji'
-  const label = on ? (romaji.status === 'loading' ? `${name}…` : romaji.status === 'unavailable' ? `${name} · offline` : name) : name
+  const name = script === 'ko' ? 'ROMANIZED' : 'ROMAJI'
+  const label = on ? (romaji.status === 'loading' ? `${name}…` : romaji.status === 'unavailable' ? `${name} · OFFLINE` : name) : name
   return (
-    <button type="button" className={`ly-romaji ${on ? 'is-on' : ''}`} aria-pressed={on} onClick={() => settingsStore.set('romaji', !on)} title={romaji.status === 'unavailable' ? 'Needs the internet the first time for this song' : undefined}>
-      <span className="ly-romaji-a" aria-hidden>
-        {script === 'ko' ? '가→ga' : 'あ→a'}
-      </span>
+    <button
+      type="button"
+      className={`ly-romaji t-mono ${on ? 'is-on' : ''}`}
+      aria-pressed={on}
+      onClick={() => settingsStore.set('romaji', !on)}
+      title={romaji.status === 'unavailable' ? 'Needs the internet the first time for this song' : undefined}
+    >
       {label}
     </button>
   )
@@ -80,36 +77,22 @@ function SyncedLyrics({ lines, position, playing, trackId, romaji }: { lines: Ly
   const roma = romaji.status === 'ready' ? romaji.lines : null
   const cur = useLineIndex(lines, position, playing)
   const focus = Math.max(cur, 0)
-  const vpRef = useRef<HTMLDivElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
   const lineRefs = useRef<(HTMLButtonElement | null)[]>([])
   const [offset, setOffset] = useState(0)
-  const [minOffset, setMinOffset] = useState(0)
   const [manual, setManual] = useState(0)
-  const [touching, setTouching] = useState(false)
   const [snap, setSnap] = useState(true)
   const idle = useRef(0)
   const touch = useRef({ y0: 0, y: 0, moved: false, swallow: false })
 
-  // keep the focused line near 36% of the viewport, clamped so top/bottom never leave dead space
+  // centre the focused line (measured: lines wrap, and romaji adds a line under each)
   useLayoutEffect(() => {
     const measure = () => {
-      const vpH = vpRef.current?.clientHeight ?? 0
-      const listH = listRef.current?.offsetHeight ?? 0
-      const minOff = Math.min(0, vpH - listH)
-      setMinOffset(minOff)
       const el = lineRefs.current[focus]
-      if (el && vpH > 0) {
-        const anchor = vpH * 0.36
-        const ideal = anchor - (el.offsetTop + el.offsetHeight / 2)
-        setOffset(Math.min(0, Math.max(minOff, ideal)))
-      } else {
-        setOffset(0)
-      }
+      if (el) setOffset(-(el.offsetTop + el.offsetHeight / 2))
     }
     measure()
     const ro = new ResizeObserver(measure)
-    if (vpRef.current) ro.observe(vpRef.current)
     if (listRef.current) ro.observe(listRef.current)
     return () => ro.disconnect()
   }, [focus, lines, roma])
@@ -129,23 +112,28 @@ function SyncedLyrics({ lines, position, playing, trackId, romaji }: { lines: Ly
 
   useEffect(() => () => window.clearTimeout(idle.current), [])
 
-  const scheduleReturn = () => {
+  const settleLater = () => {
     window.clearTimeout(idle.current)
     idle.current = window.setTimeout(() => setManual(0), IDLE_MS)
   }
-
-  const onWheel = (e: WheelEvent) => {
-    setManual((m) => Math.max(minOffset - offset, Math.min(-offset, m - e.deltaY)))
-    scheduleReturn()
+  // keep some of the list in view: total shift stays within [-list height, 0]
+  const clampManual = (m: number) => {
+    const h = listRef.current?.offsetHeight ?? 0
+    return Math.max(-h - offset, Math.min(-offset, m))
   }
 
+  const onWheel = (e: WheelEvent) => {
+    setManual((m) => clampManual(m - e.deltaY))
+    settleLater()
+  }
+
+  // touch: a vertical drag browses (the phone has no wheel); a tap still seeks
   const onTouchStart = (e: TouchEvent) => {
     if (e.touches.length !== 1) return
     window.clearTimeout(idle.current)
     const y = e.touches[0].clientY
     touch.current = { y0: y, y, moved: false, swallow: false }
   }
-
   const onTouchMove = (e: TouchEvent) => {
     if (e.touches.length !== 1) return
     const y = e.touches[0].clientY
@@ -155,19 +143,15 @@ function SyncedLyrics({ lines, position, playing, trackId, romaji }: { lines: Ly
       if (Math.abs(y - touch.current.y0) < 6) return
       touch.current.moved = true
       touch.current.swallow = true
-      setTouching(true)
     }
-    setManual((m) => Math.max(minOffset - offset, Math.min(-offset, m + dy)))
+    setManual((m) => clampManual(m + dy))
   }
-
   const onTouchEnd = () => {
-    if (touch.current.moved) {
-      setTouching(false)
-      scheduleReturn()
-      window.setTimeout(() => {
-        touch.current.swallow = false
-      }, 300)
-    }
+    if (!touch.current.moved) return
+    settleLater()
+    window.setTimeout(() => {
+      touch.current.swallow = false
+    }, 300)
   }
 
   const seekTo = (l: LyricLine) => {
@@ -177,92 +161,36 @@ function SyncedLyrics({ lines, position, playing, trackId, romaji }: { lines: Ly
     playerStore.seek(l.time + 0.01)
   }
 
-  const y = Math.min(0, Math.max(minOffset, offset + manual))
-  const topFade = y < -8
-  const botFade = y > minOffset + 8
-  const browsing = manual !== 0
-
   return (
     <>
-      <div
-        ref={vpRef}
-        className={`ly-viewport ${topFade ? 'has-top-fade' : ''} ${botFade ? 'has-bot-fade' : ''}`}
-        onWheel={onWheel}
-        onTouchStart={onTouchStart}
-        onTouchMove={onTouchMove}
-        onTouchEnd={onTouchEnd}
-        onTouchCancel={onTouchEnd}
-      >
-        <div
-          ref={listRef}
-          className={`ly-list pg-anim ${snap ? 'is-snap' : ''} ${browsing ? 'is-manual' : ''} ${touching ? 'is-touching' : ''}`}
-          style={{ transform: `translate3d(0, ${y}px, 0)` }}
-        >
-          {lines.map((l, i) => {
-            const isOn = i === cur
-            const isPast = cur >= 0 && i < cur
-            const isNext = i === cur + 1
-            return (
-              <button
-                key={i}
-                ref={(el) => {
-                  lineRefs.current[i] = el
-                }}
-                type="button"
-                className={`ly-line pg-anim ${isOn ? 'is-on' : ''} ${isPast ? 'is-past' : ''} ${isNext ? 'is-next' : ''} ${l.text ? '' : 'is-gap'}`}
-                style={{ opacity: lineOpacity(i, cur, browsing) }}
-                onClick={() => seekTo(l)}
-                aria-current={isOn ? 'true' : undefined}
-                tabIndex={-1}
-              >
-                <span className="ly-bar" aria-hidden />
-                <span className="ly-body">
-                  {l.text ? (
-                    <>
-                      <span className="ly-text">{l.text}</span>
-                      {roma?.[i] && (
-                        <span className="ly-roma" lang="und-Latn">
-                          {roma[i]}
-                        </span>
-                      )}
-                    </>
-                  ) : (
-                    <span className={`ly-dots ${isOn && playing ? 'is-playing' : ''}`} aria-label="Instrumental break">
-                      <i />
-                      <i />
-                      <i />
-                    </span>
-                  )}
+      <div className="ly-viewport" onWheel={onWheel} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd} onTouchCancel={onTouchEnd}>
+        <div ref={listRef} className={`ly-list pg-anim ${snap ? 'is-snap' : ''} ${manual ? 'is-manual' : ''}`} style={{ transform: `translateY(${offset + manual}px)` }}>
+          {lines.map((l, i) => (
+            <button
+              key={i}
+              ref={(el) => {
+                lineRefs.current[i] = el
+              }}
+              type="button"
+              className={`ly-line pg-anim ${i === cur ? 'is-on' : ''} ${l.text ? '' : 'is-gap'}`}
+              style={{ opacity: lineOpacity(i, cur) }}
+              onClick={() => seekTo(l)}
+              aria-current={i === cur ? 'true' : undefined}
+              tabIndex={-1}
+            >
+              {l.text || '· · ·'}
+              {l.text && roma?.[i] && (
+                <span className="ly-roma" lang="und-Latn">
+                  {roma[i]}
                 </span>
-                <span className="ly-side" aria-hidden>
-                  {isOn && <Eq playing={playing} />}
-                  <span className="ly-time">{formatTime(l.time)}</span>
-                </span>
-              </button>
-            )
-          })}
+              )}
+            </button>
+          ))}
         </div>
-        {browsing && (
-          <button
-            type="button"
-            className="ly-sync-btn"
-            onClick={() => {
-              window.clearTimeout(idle.current)
-              setManual(0)
-            }}
-          >
-            <Icon name="lyrics" />
-            <span>Resume sync</span>
-          </button>
-        )}
       </div>
-      <div className="ly-foot">
-        <span className="ly-badge">
-          <span className="ly-badge-dot" />
-          SYNCED · LRC
-        </span>
-        <RomajiToggle lines={lines} romaji={romaji} />
-        <span className="ly-hint">TAP LINE TO SEEK</span>
+      <div className="ly-meta">
+        <RomajiChip lines={lines} romaji={romaji} />
+        <span className="t-mono">SYNCED · LRC</span>
       </div>
       <span className="sr-only" aria-live="polite">
         {cur >= 0 ? lines[cur].text : ''}
@@ -275,7 +203,7 @@ function PlainLyrics({ lines, romaji }: { lines: LyricLine[]; romaji: RomajiStat
   const roma = romaji.status === 'ready' ? romaji.lines : null
   return (
     <>
-      <div className="ly-viewport has-bot-fade">
+      <div className="ly-viewport">
         <div className="ly-plain">
           {lines.map((l, i) =>
             l.text ? (
@@ -293,9 +221,9 @@ function PlainLyrics({ lines, romaji }: { lines: LyricLine[]; romaji: RomajiStat
           )}
         </div>
       </div>
-      <div className="ly-foot">
-        <span className="ly-badge is-plain">UNSYNCED · FROM TAGS</span>
-        <RomajiToggle lines={lines} romaji={romaji} />
+      <div className="ly-meta">
+        <RomajiChip lines={lines} romaji={romaji} />
+        <span className="t-mono">UNSYNCED · FROM TAGS</span>
       </div>
     </>
   )

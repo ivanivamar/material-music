@@ -84,7 +84,7 @@ export function AppError({ error }: { error: Error }) {
       <div className="scr-center">
         <div className="scr-copy">
           <h1 className="scr-title">Something went wrong</h1>
-          <p className="scr-body">Material Music hit an error it couldn’t recover from. Reloading usually fixes it; your library and queue are saved.</p>
+          <p className="scr-body">PELAGIC hit an error it couldn’t recover from. Reloading usually fixes it; your library and queue are saved.</p>
         </div>
         <div className="scr-btns">
           <Button variant="brand" size="lg" onClick={reload}>
