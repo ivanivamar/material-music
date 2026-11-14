@@ -77,9 +77,9 @@ export function DiscoveryView({ c, mix, backBtn }: { c: Catalogue; mix: Discover
   const coverSize = phone ? 200 : 208
 
   return (
-    <div className={`mx-page dsc-page hue-scope ${phone ? 'is-phone' : ''}`} style={{ '--h': 20, '--hc': 1 } as CSSProperties}>
+    <div className={`mx-page dsc-page is-legacy hue-scope ${phone ? 'is-phone' : ''}`} style={{ '--h': 20, '--hc': 1 } as CSSProperties}>
       {backBtn}
-      <header className="card card-raised card-lg mx-hero">
+      <header className="mx-hero">
         <div className="mx-cover">
           <MixCover c={c} mix={mix} size={coverSize} />
         </div>
@@ -130,7 +130,7 @@ export function DiscoveryView({ c, mix, backBtn }: { c: Catalogue; mix: Discover
         </div>
       )}
 
-      <div className="card card-filled card-lg mx-list dsc-list" role="list">
+      <div className="mx-list dsc-list" role="list">
         {shown.map((t, i) => (
           <PreviewRow
             key={t.dz}
@@ -230,7 +230,7 @@ function Wishlist({ phone }: { phone: boolean }) {
         <h2 className="hs-title">Wishlist</h2>
         <span className="hs-sub">{plural(list.length, 'song', 'songs')} to get · leaves the list once it’s in your library</span>
       </div>
-      <div className="card card-filled card-lg mx-list dsc-list" role="list">
+      <div className="mx-list dsc-list" role="list">
         {list.map((w) => {
           const pv = previewsStore.get(previewId(w.dz))
           return (

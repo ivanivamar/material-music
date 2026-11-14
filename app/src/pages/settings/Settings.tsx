@@ -1,10 +1,11 @@
 /**
- * Settings (Material 3 Expressive redesign, SettingsMaterial.dc.html). Everything saves the moment
- * it changes; there is no Save button.
+ * Settings (handoff `Settings.dc.html`, DJ section from the DJ handoff; original Pelagic design, rolled
+ * back from Material in Nov 2026). Everything saves the moment it changes; there is no Save button.
  *
- * Desktop: a 200px sticky column ("Settings" + "Saved automatically" + pill subnav) beside a 740px
- * column of rounded 28px section cards.
- * Phone: a sticky header (← Settings · Saved), coral section labels, segmented controls and sliders
+ * Desktop: a 200px sticky column (SAVED AUTOMATICALLY · Settings · section list with a glowing dot on
+ * the section in view) beside a 720px column of sections. Each section: 22px title + mono note over
+ * a 1px rule, then 68px rows (label + mono hint left, control right).
+ * Phone: a sticky header (‹ Settings · SAVED), mono section labels, segmented controls and sliders
  * full width under their row.
  *
  * Only rows that do something real are here. Unbuilt features (Opus 320, normalisation, crossfade,
@@ -12,7 +13,7 @@
  * when I play an album") remain hidden.
  */
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { Chip, IconButton, Button, LinearProgress, Segmented, StorageBar, TextField, Toggle, ValueSlider, useToast, type SegOption, Alert } from '../../components/ui'
+import { Chip, Segmented, Slider, TextField, Toggle, useToast, type SegOption } from '../../components/ui'
 import { Icon } from '../../design/icons'
 import type { MotionSetting, ParticleSetting } from '../../design/tokens'
 import { DJ_TYPES, TYPE_LABEL, type DjType } from '../../dj/engine'
@@ -147,9 +148,11 @@ export function Settings() {
       {phone ? (
         <div className="st st-phone">
           <header className="st-phead">
-            <IconButton icon="back" label="Back" size="lg" variant="strong" onClick={() => back(href('home'))} />
+            <button type="button" className="st-back" aria-label="Back" onClick={() => back(href('home'))}>
+              <Icon name="chevL" />
+            </button>
             <h1 className="st-ptitle">Settings</h1>
-            <span className="st-saved">Saved</span>
+            <span className="st-saved">SAVED</span>
           </header>
           <div className="st-secs">{body}</div>
         </div>
@@ -157,12 +160,13 @@ export function Settings() {
         <div className="st">
           <aside className="st-side">
             <div className="st-head">
+              <div className="st-meta">SAVED AUTOMATICALLY</div>
               <h1 className="st-title">Settings</h1>
-              <div className="st-meta">Saved automatically</div>
             </div>
             <nav className="st-subnav" aria-label="Settings sections">
               {sections.map((s) => (
                 <button key={s.id} type="button" className={`st-sublink ${active === s.id ? 'is-on' : ''}`} aria-current={active === s.id ? 'true' : undefined} onClick={() => jump(s.id)}>
+                  <span className="st-subdot" aria-hidden />
                   {s.label}
                 </button>
               ))}
@@ -182,16 +186,14 @@ function SectionGroup({ label, note, children }: { label: string; note?: string;
   return (
     <>
       {phone ? (
-        <div className="st-plabel">{label}</div>
+        <div className="st-plabel">{label.toUpperCase()}</div>
       ) : (
         <div className="st-shead">
           <h2 className="st-slabel">{label}</h2>
           {note && <span className="st-snote">{note}</span>}
         </div>
       )}
-      <div className="card card-filled card-lg card-flush st-card">
-        <div className="st-card-in">{children}</div>
-      </div>
+      {children}
     </>
   )
 }
@@ -199,7 +201,7 @@ function SectionGroup({ label, note, children }: { label: string; note?: string;
 interface RowProps {
   label: ReactNode
   hint?: ReactNode
-  /** coral status dot before the hint */
+  /** glowing status dot before the hint */
   dot?: boolean
   muted?: boolean
   tile?: ReactNode
@@ -242,9 +244,9 @@ function Row({ label, hint, dot, muted, tile, round, control, wide, below }: Row
 
 function Act({ children, onClick, danger, disabled }: { children: ReactNode; onClick: () => void; danger?: boolean; disabled?: boolean }) {
   return (
-    <Button variant={danger ? 'danger-outlined' : 'outlined'} className="st-act" disabled={disabled} onClick={onClick}>
+    <button type="button" className={`st-act ${danger ? 'is-danger' : ''}`} disabled={disabled} onClick={onClick}>
       {children}
-    </Button>
+    </button>
   )
 }
 
@@ -258,9 +260,16 @@ function ValueBtn({ children, onClick, open, label }: { children: ReactNode; onC
   )
 }
 
+function SliderCtl({ label, value, shown, onChange, disabled, step }: { label: string; value: number; shown: string; onChange: (v: number) => void; disabled?: boolean; step?: number }) {
+  return (
+    <div className={`st-slider ${disabled ? 'is-off' : ''}`}>
+      <Slider label={label} value={value} knob={12} height={24} step={step} onChange={onChange} valueText={() => shown} />
+      <span className="st-sval">{shown}</span>
+    </div>
+  )
+}
 
-
-
+/** Inline "are you sure" under a row (handoff: red outline, Cancel · red button). */
 function useConfirm(id: string) {
   const { conf, setConf } = useContext(SettingsCtx)
   return {
@@ -268,17 +277,18 @@ function useConfirm(id: string) {
     ask: () => setConf(id),
     box: (text: string, btn: string, run: () => void) =>
       conf === id ? (
-        <Alert
-          tone="danger"
-          role="alertdialog"
-          label={text}
-          actions={
-            <>
-            <Button variant="plain" onClick={() => setConf(null)}>
+        <div className="st-conf" role="alertdialog" aria-label={text}>
+          <span className="st-conf-ic">
+            <Icon name="alert" />
+          </span>
+          <span className="st-conf-text">{text}</span>
+          <span className="st-conf-btns">
+            <button type="button" className="st-conf-cancel" onClick={() => setConf(null)}>
               Cancel
-            </Button>
-            <Button
-              variant="error"
+            </button>
+            <button
+              type="button"
+              className="st-conf-go"
               autoFocus
               onClick={() => {
                 setConf(null)
@@ -286,12 +296,9 @@ function useConfirm(id: string) {
               }}
             >
               {btn}
-            </Button>
-            </>
-          }
-        >
-          {text}
-        </Alert>
+            </button>
+          </span>
+        </div>
       ) : null,
   }
 }
@@ -304,9 +311,9 @@ const initials = (s: string) =>
     .map((w) => w[0]!.toUpperCase())
     .join('') || '?'
 
-const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+const MON = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
 const clock = (d: Date) => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
-/** "21:40" today, else "14 Oct 21:40" */
+/** "21:40" today, else "14 OCT 21:40" */
 function stamp(ms: number): string {
   const d = new Date(ms)
   return d.toDateString() === new Date().toDateString() ? clock(d) : `${d.getDate()} ${MON[d.getMonth()]} ${clock(d)}`
@@ -341,7 +348,6 @@ function AccountSection() {
         })}
       />
       <Row
-        tile={<Icon name="account" size={22} />}
         label="Switch account"
         hint="Sign in with another Google account"
         control={<Act onClick={() => void sessionStore.signIn({ switchAccount: true })}>Switch</Act>}
@@ -389,23 +395,22 @@ function LibrarySection() {
       {desktopFolder && linked ? (
         <>
           <Row
-            tile={<Icon name="folderClosed" size={22} />}
+            tile={<Icon name="library" size={20} />}
             label={local.name}
             hint={`${folderState} · ${albums}${counts ? ` · ${fmtBytes(counts.flac)} FLAC` : ''}`}
             dot={local.status === 'granted'}
             control={
               <>
                 {!phone && (
-                  <Button variant="plain" size="sm" className="st-link" onClick={() => void localFolder.unlink()}>
+                  <button type="button" className="st-link" onClick={() => void localFolder.unlink()}>
                     Stop using
-                  </Button>
+                  </button>
                 )}
                 <Act onClick={() => void link()}>Change folder</Act>
               </>
             }
           />
           <Row
-            tile={<Icon name="cloud" size={22} />}
             label="Stream from Drive when the folder is missing"
             hint={s.driveFallback ? 'Keeps playing if the disk is unplugged' : 'Tracks not in the folder won’t play'}
             control={<Toggle label="Stream from Drive when the folder is missing" checked={s.driveFallback} onChange={(v) => settingsStore.set('driveFallback', v)} />}
@@ -413,7 +418,7 @@ function LibrarySection() {
         </>
       ) : (
         <Row
-          tile={<Icon name="cloud" size={22} />}
+          tile={<Icon name="cloud" size={20} />}
           label="Google Drive"
           hint={`My Drive / Pelagic${counts ? ` · ${fmtN(counts.tracks)} tracks` : ''}`}
           dot={!expired}
@@ -421,7 +426,6 @@ function LibrarySection() {
         />
       )}
       <Row
-        tile={<Icon name="sync" size={22} />}
         label="Check Drive for changes"
         hint={lib.refreshing ? 'Checking Drive…' : lib.syncedAt ? `Last checked ${stamp(lib.syncedAt)}` : 'Not checked yet'}
         control={
@@ -429,23 +433,20 @@ function LibrarySection() {
             {lib.refreshing ? 'Checking…' : 'Check now'}
           </Act>
         }
-        below={lib.refreshing ? <LinearProgress className="pg-anim" /> : undefined}
+        below={lib.refreshing ? <div className="st-prog pg-anim" aria-hidden /> : undefined}
       />
       <Row
-        tile={<Icon name="health" size={22} />}
         label="Library health"
         hint={issues === null ? 'Looking…' : issues ? `${fmtN(issues)} to fix · covers, lyrics, genre, year, duplicates, bitrate` : 'All clear'}
         dot={issues === 0}
         control={<Act onClick={() => go(href('health'))}>Open</Act>}
       />
       <Row
-        tile={<Icon name="lyrics" size={22} />}
         label="Look up lyrics for new uploads"
         hint={s.fetchLyrics ? 'Songs without lyrics get them from LRCLIB after upload' : 'Only lyrics from the file tags'}
         control={<Toggle label="Look up lyrics for new uploads" checked={s.fetchLyrics} onChange={(v) => settingsStore.set('fetchLyrics', v)} />}
       />
       <Row
-        tile={<span className="set-romaji-tile">あ</span>}
         label="Romanize Japanese and Korean lyrics"
         hint={s.romaji ? 'Romaji / Revised Romanization under each line · also in the lyrics panel' : 'Lyrics show as written'}
         control={<Toggle label="Romanize Japanese and Korean lyrics" checked={s.romaji} onChange={(v) => settingsStore.set('romaji', v)} />}
@@ -469,7 +470,6 @@ function PlaybackSection() {
   return (
     <SectionGroup label="Playback" note="From the next song">
       <Row
-        tile={<Icon name="highQuality" size={22} />}
         label="Streaming quality"
         hint={linked ? 'From Drive · the local folder always plays FLAC' : hint}
         wide={<Segmented label="Streaming quality" value={s.streamQuality} options={STREAM} onChange={(v) => settingsStore.set('streamQuality', v)} />}
@@ -500,7 +500,6 @@ function DevicesSection() {
   return (
     <SectionGroup label="Devices" note="Firebase">
       <Row
-        tile={<Icon name="devices" size={22} />}
         label="Sync playback between devices"
         hint={status}
         dot={available && s.syncPlayback && sync.status === 'on' && online > 0}
@@ -508,7 +507,6 @@ function DevicesSection() {
         control={<Toggle label="Sync playback between devices" checked={available && s.syncPlayback} disabled={!available} onChange={(v) => settingsStore.set('syncPlayback', v)} />}
       />
       <Row
-        tile={<Icon name={isNative ? 'smartphone' : 'computer'} size={22} />}
         label="This device’s name"
         hint="Shown on your other devices (Play on …)"
         below={
@@ -596,7 +594,6 @@ function CloudSection() {
   return (
     <SectionGroup label="Cloud data" note="Firestore">
       <Row
-        tile={<Icon name="cloud" size={22} />}
         label="Playlists, history, DJ and Jump back in"
         hint={status}
         dot={available && cloud.status === 'on'}
@@ -604,7 +601,6 @@ function CloudSection() {
         below={<span className="st-hint">Kept in the cloud and shared by your devices, as are these settings: motion, particles, texture, lyrics fetching and the New releases hour. Music and the library stay on Drive.</span>}
       />
       <Row
-        tile={<Icon name="delete" size={22} />}
         label="Old Drive copies"
         hint={
           legacy == null
@@ -653,6 +649,8 @@ function DownloadsSection() {
   const used = n?.used ?? 0
   const whole = data ? libraryBytes(data, { quality: dl.prefs.quality, albumQuality: {} }) : 0
   const hasPins = dl.prefs.pins.length > 0
+  const other = n ? Math.max(0, n.total - n.free - used) : 0
+  const pct = (b: number) => (n?.total ? `${Math.min(100, (b / n.total) * 100)}%` : '0%')
 
   const setQuality = (q: DownloadQuality) => {
     const before = dl.prefs.quality
@@ -675,18 +673,15 @@ function DownloadsSection() {
   return (
     <SectionGroup label="Downloads" note={used ? `${fmtBytes(used)} stored` : 'Nothing stored'}>
       <Row
-        tile={<Icon name="cloudDownload" size={22} />}
         label="Download quality"
         hint={whole ? `Whole library ≈ ${fmtBytes(whole)}` : undefined}
         wide={<Segmented label="Download quality" value={dl.prefs.quality} options={DQ} onChange={setQuality} />}
       />
       <Row
-        tile={<Icon name="wifi" size={22} />}
         label="Download on Wi-Fi only"
         control={<Toggle label="Download on Wi-Fi only" checked={dl.prefs.wifiOnly} onChange={(v) => downloadsStore.setWifiOnly(v)} />}
       />
       <Row
-        tile={<Icon name="sdStorage" size={22} />}
         label="Storage"
         control={
           <Act danger disabled={!hasPins && !used} onClick={c.ask}>
@@ -697,13 +692,13 @@ function DownloadsSection() {
           <>
             {n && (
               <div className="st-store">
-                <StorageBar used={used} free={n.free} total={n.total} />
+                <div className="st-sbar">
+                  <span className="st-sbar-me" style={{ width: pct(used) }} />
+                  <span className="st-sbar-other" style={{ width: pct(other) }} />
+                </div>
                 <div className="st-store-line">
-                  <span>
-                    <i className="st-sdot st-sdot-me" />
-                    PELAGIC {used ? fmtBytes(used) : '0 MB'}
-                  </span>
-                  <span>{fmtBytes(n.free)} free</span>
+                  <span>PELAGIC {used ? fmtBytes(used) : '0 MB'}</span>
+                  <span>{fmtBytes(n.free)} FREE</span>
                 </div>
               </div>
             )}
@@ -712,7 +707,6 @@ function DownloadsSection() {
         }
       />
       <Row
-        tile={<Icon name="folder" size={22} />}
         label="Downloaded music"
         control={<ValueBtn onClick={() => go(href('downloads'))}>Manage</ValueBtn>}
       />
@@ -739,18 +733,15 @@ function ReleasesSection() {
   return (
     <SectionGroup label="New releases" note="MusicBrainz">
       <Row
-        tile={<Icon name="radar" size={22} />}
         label="Daily sonar sweep"
         hint={nextLabel}
         wide={<Segmented label="Daily sonar sweep" value={String(s.sweepHour)} options={SWEEP} onChange={(v) => settingsStore.set('sweepHour', Number(v))} />}
       />
       <Row
-        tile={<Icon name="album" size={22} />}
         label="Hide reissues and deluxe editions"
         control={<Toggle label="Hide reissues and deluxe editions" checked={rs.doc.hideReissues[0]} onChange={(v) => releasesStore.setHideReissues(v)} />}
       />
       <Row
-        tile={<Icon name="artist" size={22} />}
         label="Followed artists"
         control={<ValueBtn onClick={() => go(`${href('new')}?artists`)}>{`${fmtN(followed.length)} · ${muted ? `${fmtN(muted)} muted` : 'none muted'}`}</ValueBtn>}
       />
@@ -776,7 +767,6 @@ function ConcertsSection() {
     <>
       <SectionGroup label="Concerts" note="Ticketmaster · checked daily">
         <Row
-          tile={<Icon name="city" size={22} />}
           label="Home city"
           hint="Used for Concerts near you. No GPS."
           control={
@@ -836,22 +826,18 @@ function DjSection() {
   return (
     <SectionGroup label="DJ" note="Sessions and voice">
       <Row
-        tile={<Icon name="recordVoiceOver" size={22} />}
         label="Voice intros"
         hint={p.voice ? 'Male English voice before each session' : 'Intros appear as text for 5 seconds'}
         control={<Toggle label="Voice intros" checked={p.voice} onChange={(v) => djStore.setPref('voice', v)} />}
       />
       <Row
-        tile={<Icon name="volume" size={22} />}
         label="Voice volume"
         hint="Relative to the music"
         wide={
-          <ValueSlider
-            className="st-slider"
+          <SliderCtl
             label="Voice volume"
             value={p.voice ? p.voiceVolume : 0}
-            shown={p.voice ? `${Math.round(p.voiceVolume * 100)}%` : 'Off'}
-            valueText={p.voice ? `${Math.round(p.voiceVolume * 100)}%` : 'Off'}
+            shown={p.voice ? `${Math.round(p.voiceVolume * 100)}%` : 'OFF'}
             disabled={!p.voice}
             step={0.05}
             onChange={(v) => p.voice && djStore.setPref('voiceVolume', Math.round(v * 100) / 100)}
@@ -859,7 +845,6 @@ function DjSection() {
         }
       />
       <Row
-        tile={<Icon name="tune" size={22} />}
         label="Session types"
         hint="What Start DJ mixes"
         control={
@@ -884,14 +869,12 @@ function DjSection() {
       />
       {isNative && (
         <Row
-          tile={<Icon name="cloudDownload" size={22} />}
           label="Only downloaded songs on mobile data"
           hint="Offline always uses downloaded songs"
           control={<Toggle label="Only downloaded songs on mobile data" checked={p.dataSaver} onChange={(v) => djStore.setPref('dataSaver', v)} />}
         />
       )}
       <Row
-        tile={<Icon name="psychology" size={22} />}
         label="What the DJ has learned"
         hint={learnedHint}
         control={
@@ -928,19 +911,16 @@ function AtmosphereSection() {
   return (
     <SectionGroup label="Atmosphere" note="This page changes live">
       <Row
-        tile={<Icon name="spark" size={22} />}
         label="Motion"
         hint={s.motion === 'system' ? (sysReduced ? 'System asks for reduced motion' : 'System allows motion') : undefined}
         wide={<Segmented label="Motion" value={s.motion} options={MOTION} onChange={(v) => settingsStore.set('motion', v)} />}
       />
       <Row
-        tile={<Icon name="palette" size={22} />}
         label="Drifting particles"
         hint="Marine snow · fades out with reduced motion"
         wide={<Segmented label="Drifting particles" value={s.particles} options={PARTICLES} onChange={(v) => settingsStore.set('particles', v)} />}
       />
       <Row
-        tile={<Icon name="grid" size={22} />}
         label="Stone, grain and contour texture"
         control={<Toggle label="Stone, grain and contour texture" checked={s.texture} onChange={(v) => settingsStore.set('texture', v)} />}
       />
@@ -967,7 +947,6 @@ function AboutSection() {
   return (
     <SectionGroup label="About">
       <Row
-        tile={<Icon name="info" size={22} />}
         label="Version"
         hint={pwa.updateReady ? 'A new version is ready' : apk.available ? `PELAGIC ${apk.available.versionName} is available` : undefined}
         dot={pwa.updateReady || !!apk.available}
@@ -983,7 +962,6 @@ function AboutSection() {
       />
       {pwa.canInstall && !pwa.installed && !isNative && (
         <Row
-          tile={<Icon name="install" size={22} />}
           label="Install PELAGIC as an app"
           hint="Opens in its own window"
           control={<Act onClick={() => void appUpdate.install()}>Install</Act>}
@@ -991,7 +969,6 @@ function AboutSection() {
       )}
       {!phone && (
         <Row
-          tile={<Icon name="keyboard" size={22} />}
           label="Keyboard shortcuts"
           control={
             <ValueBtn open={keys} label="Keyboard shortcuts" onClick={() => setKeys((k) => !k)}>
@@ -1012,7 +989,7 @@ function AboutSection() {
           }
         />
       )}
-      <Row tile={<Icon name="cloud" size={22} />} label="Catalogue data" hint="MusicBrainz · Cover Art Archive · Deezer artist photos" />
+      <Row label="Catalogue data" hint="MusicBrainz · Cover Art Archive · Deezer artist photos" />
     </SectionGroup>
   )
 }

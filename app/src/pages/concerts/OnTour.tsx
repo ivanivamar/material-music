@@ -21,6 +21,7 @@ import { buildShows, dateLine, isNear, metaLine, regionsLabel, shortDate, status
 import { useLibrary } from '../../state/library'
 import { useReleases } from '../../state/releases'
 import { go } from '../../shell/routes'
+import { SectionHead } from '../library/common'
 import { DateBlock, StatusChip, TicketsIcon, TicketsPill, hueVars } from './parts'
 
 export const ON_TOUR_ID = 'on-tour'
@@ -131,13 +132,13 @@ export function OnTour({ artistId, H }: { artistId: string; H: number }) {
     body = (
       <div className="ot-skel">
         <div className="ot-skel-row">
-          <Skeleton width={52} height={56} radius={16} />
+          <Skeleton width={52} height={58} radius={10} />
           <div className="ot-skel-lines">
             <Skeleton width="60%" height={14} radius={7} />
             <Skeleton width="40%" height={10} radius={5} />
           </div>
         </div>
-        <Skeleton height={52} radius="8px 8px 24px 24px" />
+        <Skeleton height={14} width="45%" radius={7} />
       </div>
     )
   else if (error)
@@ -196,14 +197,11 @@ export function OnTour({ artistId, H }: { artistId: string; H: number }) {
   return (
     <section className="ot" id={ON_TOUR_ID} aria-label="On tour">
       <div className="ot-head">
-        <div className="ot-titlerow">
-          <h2 className="ot-title">On tour</h2>
-          {!loading && !error && <span className="ot-count">{count}</span>}
-        </div>
+        <SectionHead label="ON TOUR" right={!loading && !error ? count.toUpperCase() : undefined} />
         {home && (
           <div className="ot-sub">
-            <Icon name="location" filled />
-            Near {home.name} · <span className="cx-mono">{radius} km</span>
+            <Icon name="location" />
+            Near {home.name} · {radius} km
           </div>
         )}
       </div>

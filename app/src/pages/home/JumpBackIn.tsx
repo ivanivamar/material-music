@@ -14,6 +14,7 @@ import { playPlaylist } from '../../actions/ops'
 import { useCover } from '../../lib/covers'
 import { useArtTint } from '../../design/tint'
 import { parseRadioId } from '../../lib/mixing'
+import { DjMark } from '../../dj/DjMark'
 import { djUi, useDjView } from '../../state/djUi'
 import { nowPlayingStore } from '../../state/nowPlaying'
 import { albumPlays } from '../../state/homeViews'
@@ -26,7 +27,7 @@ import { radioStore } from '../../state/radio'
 import type { RecentItem } from '../../state/recent'
 import { isTouch } from '../../state/viewport'
 import { albumTrackIds, artistTrackIds, playList } from '../library/playback'
-import { ArtistDisc, CookiePlay, DjKnobMark, MixCover, RadioArt, SmartArt, radiusFor, useArtistHue, useRadioHue, type RadioArtSeed } from './art'
+import { ArtistDisc, CookiePlay, MixCover, RadioArt, SmartArt, radiusFor, useArtistHue, useRadioHue, type RadioArtSeed } from './art'
 import { radioArtSeed } from './cards'
 import { PlaylistCover } from '../playlists/PlaylistCover'
 
@@ -312,7 +313,7 @@ export function DjTile({ size, phone }: { size: number; phone: boolean }) {
       }}
     >
       <span className="jt-art">
-        <DjKnobMark size={size} on={on} />
+        <DjMark size={size} speaking={speaking} onAir={on && !speaking} radius={8} shadow={`0 0 0 1px rgba(198,180,242,${on ? 0.28 : 0.14})`} />
       </span>
       <span className="jt-text">
         <span className="jt-name">{on ? (view.session?.title ?? 'DJ') : 'DJ'}</span>

@@ -106,15 +106,9 @@
 .hl-list.dt-list {
   display: flex;
   flex-direction: column;
-  gap: 2px;
 }
 
-/* Direct child .dt-row receives the exact border radius from detail.css:
-   - :first-child: 24px top-left, 24px top-right, 8px bottom-left, 8px bottom-right
-   - middle children: 8px on all corners
-   - :last-child: 8px top-left, 8px top-right, 24px bottom-left, 24px bottom-right
-   - :only-child: 24px on all corners
-*/
+/* rows are the shared flat track rows from detail.css */
 .hl-list > .dt-row {
   display: flex;
   flex-direction: column;
@@ -131,26 +125,27 @@
   align-items: center;
   gap: 12px;
   min-height: 64px;
-  padding: 0 16px 0 20px;
+  padding: 0 12px;
   border-radius: inherit;
   cursor: pointer;
-  transition: background-color 150ms var(--ease-std);
+  transition: background-color .2s var(--ease);
 }
 
+.hl-list > .dt-row:hover { background: none; }
 .hl-list > .dt-row:hover:not(.is-open) .hl-row-main {
-  background: oklch(0.26 0.009 40);
+  background: var(--surface-1);
 }
 
 .hl-list > .dt-row.is-current:not(.is-open) .hl-row-main {
-  background: oklch(0.33 0.045 38);
+  background: rgba(255, 255, 255, .03);
 }
 
 /* Cover and monogram placeholder */
 .dt-row .dt-cover {
   position: relative;
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
   overflow: hidden;
   flex: none;
   background: var(--surface-2);
@@ -286,7 +281,7 @@
 
 /* ── Inline Fix Panel under .dt-row ─────────────────── */
 .hl-list > .dt-row.is-open {
-  background: oklch(0.24 0.01 40);
+  background: var(--surface-1);
 }
 
 .hl-list > .dt-row.is-open .hl-row-main {
@@ -560,11 +555,10 @@
 .hl-dup-list.dt-list {
   display: flex;
   flex-direction: column;
-  gap: 2px;
 }
 
 .hl-dup-row.is-best {
-  background: oklch(0.225 0.015 38 / 0.5);
+  background: rgba(255, 255, 255, .03);
 }
 
 .hl-best-badge {
@@ -629,11 +623,13 @@
   align-self: flex-start;
 }
 
+.shell.is-phone .hl-list > .dt-row { height: auto; padding: 0; }
+
 .shell.is-phone .hl-list .hl-row-main {
   min-height: 60px;
   height: auto;
   flex-wrap: wrap;
-  padding: 10px 14px;
+  padding: 10px 8px;
   gap: 8px 12px;
 }
 
@@ -763,3 +759,76 @@
 @media (prefers-reduced-motion: reduce) {
   .hl-nf-toggle svg { transition: none; }
 }
+
+/* ═══ Original Pelagic look (rolled back from Material, Nov 2026): no tonal surfaces or coral, mono
+   status text, outlined chips and bars, hairlines. Later rules here win over the ones above. ═══ */
+.hl-kicker-card { display: flex; align-items: baseline; gap: 16px; padding: 0; margin: 0 0 22px; background: none; border: 0; box-shadow: none; border-radius: 0; min-height: 0; }
+.hl-kicker-icon { display: none; }
+.hl-kicker-copy { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.hl-kicker-title { margin: 0; font-size: 22px; font-weight: 400; letter-spacing: -.01em; color: var(--ink-primary); }
+.hl-kicker-hint { margin: 0; font-family: var(--font-mono); font-size: var(--fs-mono-sm); letter-spacing: .12em; line-height: 1.6; text-transform: uppercase; color: var(--ink-secondary); }
+.hl-kicker-badge { flex: none; height: auto; padding: 0; border-radius: 0; background: none; font-family: var(--font-mono); font-size: var(--fs-mono-sm); font-weight: 400; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-tertiary); }
+
+/* status words */
+.hl-status-pill, .hl-why-pill {
+  height: auto; padding: 0; border-radius: 0; background: none !important; gap: 8px;
+  font-family: var(--font-mono); font-size: var(--fs-mono-sm); font-weight: 400; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-secondary);
+}
+.hl-status-pill.is-active { color: var(--ink-primary); }
+.hl-status-pill.is-muted { color: var(--ink-tertiary); }
+.hl-status-pill.is-error { color: var(--danger); }
+.hl-pulse-dot { width: 6px; height: 6px; background: #fff; box-shadow: 0 0 6px rgba(255, 255, 255, .7); }
+
+/* fix panel under a row */
+.hl-list > .dt-row.is-open { background: none; }
+.hl-list > .dt-row.is-open .hl-row-main { background: var(--surface-1); }
+.hl-panel { padding: 8px 12px 20px 104px; background: none; border-top: 0; }
+.hl-cand { border-radius: 8px; border: 1.5px solid var(--border); background: var(--surface-1); box-shadow: none; }
+.hl-cand:hover:not(:disabled) { border-color: rgba(255, 255, 255, .6); box-shadow: var(--glow-ring); transform: none; }
+.hl-cand-badge { background: linear-gradient(to top, rgba(0, 0, 0, .75), transparent); color: var(--ink-primary); border-radius: 0; font-family: var(--font-mono); font-size: 9px; letter-spacing: .1em; font-weight: 400; }
+.hl-note { font-family: var(--font-mono); font-size: var(--fs-mono-sm); letter-spacing: .08em; color: var(--ink-secondary); }
+.hl-note.is-error { color: var(--danger); }
+.hl-glabel { font-family: var(--font-mono); font-size: 10px; font-weight: 400; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-tertiary); }
+.hl-chip { height: 34px; padding: 0 14px; border-radius: 999px; border: 1.5px solid var(--border); background: transparent; color: var(--ink-primary); font-size: 14px; font-weight: 400; box-shadow: none; }
+.hl-chip:hover:not(:disabled) { background: var(--surface-2); border-color: var(--border-strong); }
+.hl-chip.is-on { background: #fff; border-color: #fff; color: #0b0b0c; }
+.hl-chip-source { font-family: var(--font-mono); font-size: 10px; letter-spacing: .1em; color: var(--ink-secondary); }
+.hl-chip.is-on .hl-chip-source { color: rgba(11, 11, 12, .6); }
+
+/* lyrics bar: an outlined box with a 1px progress line */
+.hl-bar { gap: 16px; margin-bottom: 8px; padding: 14px 18px; border-radius: 12px; background: none; border: 1.5px solid var(--border); box-shadow: none; }
+.hl-bar-icon { display: none; }
+.hl-bar-title { font-size: 15px; font-weight: 500; color: var(--ink-primary); }
+.hl-bar-sub { font-family: var(--font-mono); font-size: var(--fs-mono-sm); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-secondary); }
+.hl-bar-track { --lp-h: 1px; border-radius: 0; background: none; }
+.hl-bar-track .mm-lprog-bar { background: #fff; box-shadow: var(--glow-line); border-radius: 0; }
+
+/* Not on LRCLIB */
+.hl-nf { border-top: 1px solid var(--hairline); margin-top: 24px; padding-top: 8px; background: none; border-radius: 0; }
+.hl-nf-toggle { border-radius: 8px; background: none; color: var(--ink-primary); }
+.hl-nf-toggle:hover { background: var(--surface-1); }
+.hl-nf-toggle:focus-visible { outline: 1.5px solid rgba(255, 255, 255, .7); }
+.hl-nf-title { font-size: 15px; font-weight: 400; }
+.hl-nf-count { background: none; padding: 0; height: auto; font-family: var(--font-mono); font-size: var(--fs-mono-sm); font-weight: 400; letter-spacing: .12em; color: var(--ink-tertiary); }
+.hl-nf-hint { font-family: var(--font-mono); font-size: var(--fs-mono-sm); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-tertiary); }
+
+/* duplicates */
+.hl-dup-group { padding: 4px 16px 6px; gap: 0; border-radius: 12px; background: var(--surface-1); border: 1.5px solid rgba(255, 255, 255, .07); box-shadow: none; }
+.hl-dup-head { padding: 10px 0 6px; }
+.hl-dup-tag { height: auto; padding: 0; border-radius: 0; background: none; font-family: var(--font-mono); font-size: var(--fs-mono-sm); font-weight: 400; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-secondary); }
+.hl-dup-tag .ms { color: var(--ink-secondary); font-size: 14px; }
+.hl-dup-count { font-family: var(--font-mono); font-size: var(--fs-mono-sm); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-tertiary); }
+.hl-dup-group .dt-row { border-radius: 0; }
+.hl-dup-group .dt-row:last-child { border-bottom: 0; }
+.hl-dup-row.is-best { background: none; }
+.hl-best-badge { padding: 2px 7px; border-radius: 4px; border: 1px solid var(--border-strong); background: none; font-family: var(--font-mono); font-size: 9px; font-weight: 400; letter-spacing: .12em; color: var(--ink-secondary); }
+.hl-dup-fact-meta { font-family: var(--font-mono); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; }
+
+/* paging and the background note */
+.hl-more { justify-content: flex-start; margin: 20px 0 8px; }
+.hl-more-count { font-family: var(--font-mono); font-size: var(--fs-mono-sm); letter-spacing: .12em; text-transform: uppercase; }
+.hl-bg-banner { font-family: var(--font-mono); font-size: var(--fs-mono-sm); letter-spacing: .12em; color: var(--ink-secondary); }
+
+.shell.is-phone .hl-kicker-card { flex-direction: column; gap: 8px; margin-bottom: 16px; }
+.shell.is-phone .hl-panel { padding: 8px 8px 18px; }
+.shell.is-phone .hl-bar { flex-direction: column; align-items: stretch; }

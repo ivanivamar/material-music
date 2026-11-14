@@ -23,7 +23,7 @@ export {
 } from './Status'
 export { ToastProvider, useToast, type ToastInput } from './Toast'
 export { TrackRow, AlbumCard } from './Media'
-export { CookieButton, WaveProgress, AlbumEq, WaveSeek, ThinSlider, ValueSlider, ModeToggle, LoadingShape } from './Material'
+export { CookieButton, AlbumEq, LoadingShape } from './Material'
 
 export { Portal, usePresence, useOverlayKeys } from './overlay'
 export { Sheet, type SheetProps, type SheetTone } from './Sheet'

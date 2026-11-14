@@ -46,12 +46,12 @@
 .am-find input::placeholder { color: var(--ink-tertiary); }
 .am-pl-list {
   display: flex; flex-direction: column; max-height: min(320px, 46vh); overflow-y: auto; overscroll-behavior: contain;
-  scrollbar-width: thin; scrollbar-color: oklch(0.44 0.012 40) transparent;
+  scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, .14) transparent;
 }
 .am-pl-list::-webkit-scrollbar { width: 8px; }
 .am-pl-list::-webkit-scrollbar-track { background: transparent; margin: 8px 0; }
-.am-pl-list::-webkit-scrollbar-thumb { background: oklch(0.44 0.012 40); border-radius: 999px; border: 2px solid transparent; background-clip: padding-box; }
-.am-pl-list::-webkit-scrollbar-thumb:hover { background: oklch(0.56 0.014 40); border: 2px solid transparent; background-clip: padding-box; }
+.am-pl-list::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, .14); border-radius: 999px; border: 2px solid transparent; background-clip: padding-box; }
+.am-pl-list::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, .28); border: 2px solid transparent; background-clip: padding-box; }
 .am-pl {
   display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 8px; flex: none; width: 100%;
   border: 0; border-radius: 9px; background: none; cursor: pointer; text-align: left; font: inherit; color: var(--ink-primary);
@@ -215,14 +215,14 @@ html[data-phone] .gc-opt { height: 44px; font-size: 15px; }
 .am-item:hover, .am-item:focus-visible, .am-item.is-open { background: var(--menu-hover); outline: none; }
 .am-ic { font-size: 22px; color: var(--ink-secondary); }
 .am-ic .ms { font-size: 22px; }
-.am-hint { font-family: var(--font-sans); font-size: 12px; letter-spacing: 0; color: oklch(0.72 0.014 40); }
+.am-hint { font-family: var(--font-sans); font-size: 12px; letter-spacing: 0; color: var(--ink-secondary); }
 .am-chev { font-size: 20px; }
 .am-item.is-danger, .am-item.is-danger .am-ic { color: oklch(0.78 0.12 25); }
 .am-div { height: 1px; margin: 8px 0; background: var(--outline); }
 .am-find { border-radius: 999px; }
 .am-pl-cover { filter: none; border-radius: 8px !important; }
 .am-pl-in { font-family: var(--font-sans); letter-spacing: 0; font-size: 12px; }
-.as-head { padding: 2px 4px 12px; margin: 0; border-bottom: 1px solid oklch(0.38 0.012 40); }
+.as-head { padding: 2px 4px 12px; margin: 0; border-bottom: 1px solid var(--hairline-strong); }
 .as-head .am-head-cover { width: 48px; height: 48px; border-radius: 10px; }
 .as-head-title { font-size: 16px; font-weight: 600; }
 .as-head-sub { font-family: var(--font-sans); font-size: 12px; letter-spacing: 0; }
@@ -242,6 +242,6 @@ html[data-phone] .gc-opt { height: 44px; font-size: 15px; }
 .sm-name { font-size: 20px; font-weight: 600; }
 .sm-block { border-top: 0; padding-top: 0; gap: 12px; }
 .sm-rules { gap: 8px; }
-.sm-rule { padding: 8px 8px 8px 12px; border-radius: 20px; background: oklch(0.25 0.009 40); gap: 8px; }
+.sm-rule { padding: 8px 8px 8px 12px; border-radius: 12px; background: var(--surface-1); border: 1.5px solid rgba(255, 255, 255, .07); gap: 8px; }
 .sm-word { font-size: 14px; }
-.sm-limit input[type='checkbox'] { accent-color: var(--brand); width: 18px; height: 18px; }
+.sm-limit input[type='checkbox'] { accent-color: #fff; width: 18px; height: 18px; }

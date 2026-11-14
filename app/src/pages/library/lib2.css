@@ -112,8 +112,8 @@
 .lb-ln:hover { color: var(--ink-primary); text-decoration: underline; text-underline-offset: 3px; }
 .lb-salbum { font-size: 14px; color: var(--ink-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .lb-sd { font-size: 12px; color: var(--ink-secondary); text-align: right; font-variant-numeric: tabular-nums; }
-.mx-qpill { display: inline-block; font-size: 11px; font-weight: 600; padding: 4px 8px; border-radius: 8px; white-space: nowrap; color: oklch(0.84 0.07 230); background: oklch(0.84 0.07 230 / 0.14); }
-.mx-qpill.is-24 { color: oklch(0.84 0.07 295); background: oklch(0.84 0.07 295 / 0.14); }
+.mx-qpill { display: inline-flex; align-items: center; height: 20px; padding: 0 6px; border-radius: 5px; border: var(--bw-control) solid rgba(255, 255, 255, .16); box-sizing: border-box; font-family: var(--font-mono); font-size: var(--fs-mono-xs, 9px); font-weight: 400; letter-spacing: .1em; text-transform: uppercase; white-space: nowrap; color: var(--ink-secondary); background: none; }
+.mx-qpill.is-24 { color: #fff; border-color: rgba(255, 255, 255, .5); background: none; box-shadow: 0 0 8px -2px rgba(255, 255, 255, .3); }
 
 /* ── A–Z scrubber ──────────────────────────────────── */
 .lb-has-scrub { padding-right: 24px; }

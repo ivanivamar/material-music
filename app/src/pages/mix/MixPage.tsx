@@ -17,7 +17,6 @@ import { LikeButton } from '../../components/LikeButton'
 import { useMemo, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from 'react'
 import type React from 'react'
 import { IconButton, Button, AlbumEq, CookieButton, formatTime, qualityLabel, useToast } from '../../components/ui'
-import { SHAPE_CLOVER, SHAPE_PLAYING } from '../../design/shapes'
 import { Icon } from '../../design/icons'
 import { actions, trackDrag } from '../../actions/actions'
 import { useLazyCover } from '../../lib/covers'
@@ -145,13 +144,14 @@ function MixView({ c, mix, backBtn }: { c: Catalogue; mix: MixPlan; backBtn: Rea
 
   const stats = [plural(tracks.length, 'song', 'songs'), seconds ? fmtTotal(seconds).toLowerCase() : null, offline !== null ? `${offline} of ${tracks.length} offline` : mix.newCount ? `${mix.newCount} new to you` : null].filter(Boolean).join(' · ')
   const kicker = mix.kind === 'daily' ? `DAILY MIX ${mix.n ?? ''} · REFRESHES DAILY` : KIND_KICKER[mix.kind]
-  const legacy = mix.kind === 'daily' || mix.kind === 'deep' || mix.kind === 'redis'
+  // every mix uses the original Pelagic page (the Material look is gone)
+  const legacy = true
   const coverSize = legacy ? (phone ? 228 : compact ? 168 : 200) : phone ? 200 : compact ? 176 : 208
 
   return (
     <div className={`mx-page hue-scope ${phone ? 'is-phone' : ''} ${legacy ? 'is-legacy' : ''}`} style={{ '--h': mix.hue, '--hc': 1 } as CSSProperties}>
       {backBtn}
-      <header className="card card-raised card-lg mx-hero">
+      <header className="mx-hero">
         <div className="mx-cover">
           <MixCover c={c} mix={mix} size={coverSize} radius={legacy ? 14 : undefined} />
         </div>
@@ -214,7 +214,7 @@ function MixView({ c, mix, backBtn }: { c: Catalogue; mix: MixPlan; backBtn: Rea
         </div>
       )}
 
-      <div className={`card card-filled card-lg mx-list ${dayPlan ? 'is-day' : ''}`} role="table">
+      <div className={`mx-list ${dayPlan ? 'is-day' : ''}`} role="table">
         {!phone && (
           <div className="mx-head" role="row">
             <span className="mx-c-n">#</span>
@@ -340,8 +340,6 @@ function Expired({ c, id, set, backBtn }: { c: Catalogue; id: string; set: MixSe
       {backBtn}
       <div className="mx-expired">
         <div className="mx-exp-mark" style={{ width: S, height: S }} aria-hidden>
-          <span className="mx-exp-clover" style={{ clipPath: SHAPE_CLOVER }} />
-          <span className="mx-exp-cookie" style={{ inset: phone ? 22 : 26, clipPath: SHAPE_PLAYING }} />
           <Icon name="autorenew" size={phone ? 36 : 45} className="mx-exp-ic" />
         </div>
         <h2 className="mx-exp-t">This mix has been refreshed</h2>

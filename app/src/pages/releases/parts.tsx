@@ -1,8 +1,8 @@
 /** New Releases pieces shared by the feed, the hero and the detail panel / sheet. */
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type MouseEvent, type PointerEvent, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent, type PointerEvent, type ReactNode } from 'react'
 import { LoadingShape, useToast } from '../../components/ui'
 import { Icon, type IconName } from '../../design/icons'
-import { cookie } from '../../design/shapes'
+import { GRAIN } from '../../design/textures'
 import { fetchDzPreviews, type DzPreviews } from '../../lib/deezer'
 import { coverUrl, mbReleaseGroupUrl } from '../../lib/musicbrainz'
 import { PelagicNative, isNative } from '../../native/bridge'
@@ -59,14 +59,17 @@ export function phoneMeta(it: FeedItem): string {
 
 const failed = new Set<string>()
 
-function artistHue(name: string): number {
-  let h = 0
-  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) % 360
-  return h
+function hash(s: string): number {
+  let h = 2166136261
+  for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619)
+  return h >>> 0
 }
 
 /**
- * Release cover (Cover Art Archive, else M3 Expressive gradient sleeve with artist hue and cookie burst).
+ * Release cover. Not owned yet → softened (new / acquired) or low contrast (seen); in the library →
+ * full contrast. No art on the Cover Art Archive → a generated cover (original Pelagic sleeve): grain,
+ * a hairline at the golden cut, a thin ring placed from the release id, artist and title in mono,
+ * tagged NO COVER ART.
  */
 export function ReleaseCover({ item, size = 'sm' }: { item: FeedItem; size?: 'xs' | 'sm' | 'lg' }) {
   const id = item.rel.id
@@ -89,14 +92,17 @@ export function ReleaseCover({ item, size = 'sm' }: { item: FeedItem; size?: 'xs
         }}
       />
     )
-  const h = artistHue(item.rel.a)
+  const h = hash(id)
+  const ring: CSSProperties = { right: `${14 + (h % 13)}%`, top: `${16 + ((h >>> 4) % 13)}%`, width: `${22 + ((h >>> 8) % 9)}%` }
   return (
-    <div className={`${cls} nr-fb nr-fb-${size}`} style={{ background: `linear-gradient(160deg, oklch(0.56 0.11 ${h}), oklch(0.28 0.07 ${h}))` }} aria-hidden>
-      <div className="nr-fb-burst" style={{ background: `oklch(0.82 0.10 ${h} / 0.35)`, clipPath: cookie(9, 0.06) }} />
+    <div className={`${cls} nr-fb nr-fb-${size}`} style={{ '--nr-grain': GRAIN } as CSSProperties} aria-hidden>
+      <span className="nr-fb-line" />
+      <span className="nr-fb-ring" style={ring} />
       {size !== 'xs' && (
         <>
           <span className="nr-fb-a">{item.rel.a}</span>
           <span className="nr-fb-t">{item.rel.t}</span>
+          <span className="nr-fb-tag">NO COVER ART</span>
         </>
       )}
     </div>

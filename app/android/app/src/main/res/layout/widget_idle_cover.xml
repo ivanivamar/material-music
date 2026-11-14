@@ -1,9 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-    Widget 2×2+ (2 columns, 2+ rows), nothing playing (design_handoff_widget_idle iSq):
-    padding 16, space-between: art 64 + play 56 (bottom-aligned), title + "Resume · artist"
-    (the handoff's header with the name left out, Ivan Nov 1). Play resumes; the rest opens the app.
--->
+<!-- Widget 2×2+, nothing playing: mark + NOTHING PLAYING, greeting, Resume …, play + DJ pill -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@android:id/background"
     android:layout_width="match_parent"
@@ -22,38 +18,41 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
-        android:paddingStart="16dp"
-        android:paddingTop="16dp"
-        android:paddingEnd="16dp"
-        android:paddingBottom="16dp">
+        android:padding="16dp">
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="64dp"
-            android:gravity="bottom"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
             android:orientation="horizontal">
 
             <ImageView
-                android:id="@+id/wg_art"
-                android:layout_width="64dp"
-                android:layout_height="64dp"
+                android:layout_width="30dp"
+                android:layout_height="20dp"
+                android:layout_marginStart="-5dp"
                 android:importantForAccessibility="no"
-                android:scaleType="fitXY" />
+                android:src="@drawable/ic_wg_mark" />
 
-            <FrameLayout
+            <LinearLayout
                 android:layout_width="0dp"
-                android:layout_height="1dp"
-                android:layout_weight="1" />
+                android:layout_height="wrap_content"
+                android:layout_marginStart="5dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
 
-            <FrameLayout
-                android:id="@+id/wg_play"
-                android:layout_width="56dp"
-                android:layout_height="56dp"
-                android:background="@drawable/wg_i_play"
-                android:contentDescription="@string/wg_resume">
+                <TextView
+                    style="@style/WgMono"
+                    android:letterSpacing="0.16"
+                    android:text="NOTHING PLAYING" />
 
-                <ImageView style="@style/WgIPlayIcon" />
-            </FrameLayout>
+                <TextView
+                    android:id="@+id/wg_greeting"
+                    style="@style/WgText"
+                    android:layout_marginTop="2dp"
+                    android:letterSpacing="-0.015"
+                    android:textSize="20dp"
+                    android:visibility="gone" />
+            </LinearLayout>
         </LinearLayout>
 
         <FrameLayout
@@ -63,10 +62,54 @@
 
         <TextView
             android:id="@+id/wg_title"
-            style="@style/WgI" />
+            style="@style/WgText"
+            android:letterSpacing="-0.01"
+            android:textSize="17dp" />
 
         <TextView
             android:id="@+id/wg_sub"
-            style="@style/WgI.Sub" />
+            style="@style/WgText.Muted"
+            android:layout_marginTop="3dp"
+            android:textSize="12dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:id="@+id/wg_play"
+                style="@style/WgPlay" />
+
+            <LinearLayout
+                android:id="@+id/wg_dj"
+                android:layout_width="0dp"
+                android:layout_height="44dp"
+                android:background="@drawable/wg_dj_pill"
+                android:contentDescription="@string/wg_start_dj"
+                android:gravity="center"
+                android:orientation="horizontal"
+                android:paddingStart="0dp"
+                android:paddingEnd="0dp"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1">
+
+                <ImageView
+                    android:layout_width="5dp"
+                    android:layout_height="5dp"
+                    android:layout_marginEnd="8dp"
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/wg_dj_dot" />
+
+                <TextView
+                    style="@style/WgMono"
+                    android:letterSpacing="0.16"
+                    android:text="DJ"
+                    android:textColor="@color/wg_lilac"
+                    android:textSize="10dp" />
+            </LinearLayout>
+        </LinearLayout>
     </LinearLayout>
 </FrameLayout>

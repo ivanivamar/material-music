@@ -1,29 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Home screen widget (WidgetMaterial.dc.html). Colours, sizes and text styles. -->
+<!-- Home screen widget (design_handoff_android_widget). Colours, sizes and text styles. -->
 <resources>
-    <color name="wg_base">#FF141110</color>
-    <color name="wg_glass">#EB141110</color>
-    <color name="wg_surface">#FF211C1A</color>
-    <color name="wg_text">#FFF4EDE9</color>
-    <color name="wg_text2">#FFD6C3B9</color>
-    <color name="wg_muted">#FF9E8D84</color>
-    <color name="wg_faint">#FF685B54</color>
-    <color name="wg_lilac">#FFD9B9FF</color>
-    <color name="wg_hair">#24FFFFFF</color>
+    <color name="wg_base">#FF0B0B0C</color>
+    <!-- widget background: glass, the wallpaper shows through a little (WidgetArt.GLASS) -->
+    <color name="wg_glass">#CC1E1E22</color>
+    <color name="wg_surface">#FF141416</color>
+    <color name="wg_text">#FFEDEDED</color>
+    <color name="wg_text2">#FFBDBDBD</color>
+    <color name="wg_muted">#FF8A8A8E</color>
+    <color name="wg_faint">#FF55555A</color>
+    <color name="wg_lilac">#FFC6B4F2</color>
+    <color name="wg_hair">#14FFFFFF</color>
 
-    <!-- Nothing playing (design_handoff_widget_idle): warm hue 38, fixed -->
-    <color name="wg_i_on">#FFF8EBE7</color>
-    <color name="wg_i_onvar">#FFD0B8B0</color>
-    <color name="wg_i_primary">#FFFFB7A0</color>
-    <color name="wg_i_onprimary">#FF39160A</color>
-    <color name="wg_i_high">#B8301C15</color>
-    <color name="wg_i_rim2">#47A57262</color>
-    <color name="wg_dj_bg">#FF2E274E</color>
-    <color name="wg_dj_rim">#737F75B8</color>
-    <color name="wg_dj_fg">#FFEEEDFB</color>
-    <color name="wg_dj_knob">#FFC9C1FF</color>
-
-    <dimen name="wg_radius">28dp</dimen>
+    <dimen name="wg_radius">24dp</dimen>
 
     <string name="wg_name">Now playing</string>
     <string name="wg_description">What\'s playing, with controls and the queue</string>
@@ -35,49 +24,6 @@
     <string name="wg_repeat">Repeat</string>
     <string name="wg_shuffle_library">Shuffle library</string>
     <string name="wg_start_dj">Start the DJ</string>
-    <string name="wg_resume">Resume</string>
-    <string name="wg_search">Search</string>
-    <string name="wg_brand">PELAGIC</string>
-
-    <!-- idle layouts: one line, fixed line box (the handoff's line heights), warm text -->
-    <style name="WgI">
-        <item name="android:layout_width">match_parent</item>
-        <item name="android:layout_height">20dp</item>
-        <item name="android:gravity">center_vertical|start</item>
-        <item name="android:singleLine">true</item>
-        <item name="android:ellipsize">end</item>
-        <item name="android:includeFontPadding">false</item>
-        <item name="android:fontFamily">sans-serif-medium</item>
-        <item name="android:textSize">14dp</item>
-        <item name="android:textColor">@color/wg_i_on</item>
-    </style>
-    <!-- 12 / 16, onVar -->
-    <style name="WgI.Sub">
-        <item name="android:layout_height">16dp</item>
-        <item name="android:fontFamily">sans-serif</item>
-        <item name="android:textSize">12dp</item>
-        <item name="android:textColor">@color/wg_i_onvar</item>
-    </style>
-    <!-- 11 / 16 600 +0.04em, primary ("Resume · 2:29 left") -->
-    <style name="WgI.Label">
-        <item name="android:layout_height">16dp</item>
-        <item name="android:textSize">11dp</item>
-        <item name="android:letterSpacing">0.04</item>
-        <item name="android:textColor">@color/wg_i_primary</item>
-    </style>
-    <!-- 13 / 20 600: header name, chip text -->
-    <style name="WgI.Small">
-        <item name="android:textSize">13dp</item>
-    </style>
-    <!-- icon in the primary play button -->
-    <style name="WgIPlayIcon">
-        <item name="android:layout_width">28dp</item>
-        <item name="android:layout_height">28dp</item>
-        <item name="android:layout_gravity">center</item>
-        <item name="android:src">@drawable/ic_wg_play</item>
-        <item name="android:tint">@color/wg_i_onprimary</item>
-        <item name="android:importantForAccessibility">no</item>
-    </style>
 
     <style name="WgText">
         <item name="android:layout_width">match_parent</item>
@@ -92,35 +38,39 @@
         <item name="android:fontFamily">sans-serif-medium</item>
     </style>
     <style name="WgText.Muted">
-        <item name="android:textColor">@color/wg_text2</item>
+        <item name="android:textColor">@color/wg_muted</item>
     </style>
-    <style name="WgLabel">
+    <style name="WgMono">
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:singleLine">true</item>
         <item name="android:ellipsize">end</item>
         <item name="android:includeFontPadding">false</item>
-        <item name="android:fontFamily">sans-serif-medium</item>
-        <item name="android:textSize">11dp</item>
-        <item name="android:letterSpacing">0.04</item>
-        <item name="android:textColor">@color/wg_text2</item>
+        <item name="android:fontFamily">monospace</item>
+        <item name="android:textSize">9dp</item>
+        <item name="android:letterSpacing">0.14</item>
+        <item name="android:textColor">@color/wg_muted</item>
     </style>
-    <!-- secondary transport button: 40 x 44, icon 24 -->
+    <!-- secondary transport button: 40 x 44, icon 20 -->
     <style name="WgIconBtn">
         <item name="android:layout_width">40dp</item>
         <item name="android:layout_height">44dp</item>
-        <item name="android:paddingStart">8dp</item>
-        <item name="android:paddingEnd">8dp</item>
-        <item name="android:paddingTop">10dp</item>
-        <item name="android:paddingBottom">10dp</item>
+        <item name="android:paddingStart">10dp</item>
+        <item name="android:paddingEnd">10dp</item>
+        <item name="android:paddingTop">12dp</item>
+        <item name="android:paddingBottom">12dp</item>
         <item name="android:scaleType">fitCenter</item>
         <item name="android:tint">@color/wg_text</item>
     </style>
-    <!-- play / pause bitmap button -->
+    <!-- play / pause: 44 circle, icon 18 -->
     <style name="WgPlay">
-        <item name="android:layout_width">48dp</item>
-        <item name="android:layout_height">48dp</item>
-        <item name="android:scaleType">fitXY</item>
+        <item name="android:layout_width">44dp</item>
+        <item name="android:layout_height">44dp</item>
+        <item name="android:padding">13dp</item>
+        <item name="android:scaleType">fitCenter</item>
+        <item name="android:background">@drawable/wg_play_bg</item>
+        <item name="android:src">@drawable/ic_wg_play</item>
+        <item name="android:tint">@color/wg_base</item>
         <item name="android:contentDescription">@string/wg_play</item>
     </style>
 </resources>

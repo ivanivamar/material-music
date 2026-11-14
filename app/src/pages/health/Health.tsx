@@ -151,7 +151,7 @@ export function Health() {
         </div>
       </div>
 
-      <div className="card card-md hl-kicker-card">
+      <div className="hl-kicker-card">
         <div className="hl-kicker-icon" aria-hidden>
           <Icon name={currentTab.icon} size={22} />
         </div>
@@ -161,7 +161,7 @@ export function Health() {
         </div>
         {counts && counts[current] > 0 && (
           <div className="hl-kicker-badge">
-            {fmtN(counts[current])} {plural(counts[current], 'item', 'items')}
+            {plural(counts[current], 'item', 'items')}
           </div>
         )}
       </div>
@@ -823,7 +823,7 @@ function LyricsBar({ songs }: { songs: Track[] }) {
   ].filter(Boolean)
 
   return (
-    <div className="card card-md hl-bar">
+    <div className="hl-bar">
       <div className="hl-bar-icon" aria-hidden>
         <Icon name="lyrics" size={24} />
       </div>
@@ -856,7 +856,7 @@ function LyricsBar({ songs }: { songs: Track[] }) {
         ) : (
           <>
             <div className="hl-bar-title">
-              {left ? `${fmtN(left)} ${plural(left, 'song', 'songs')} to look up` : 'Every song has been looked up'}
+              {left ? `${plural(left, 'song', 'songs')} to look up` : 'Every song has been looked up'}
             </div>
             <div className="hl-bar-sub">Synced (LRC) lyrics when available, otherwise plain text lyrics</div>
           </>
@@ -995,7 +995,7 @@ function DupCard({ group, c }: { group: DupGroup; c: Catalogue }) {
     void removeFromLibraryOp(toast, { kind: 'track', trackIds: tracks.filter((t) => t.id !== id).map((t) => t.id) })
 
   return (
-    <div className="card card-inset card-md hl-dup-group">
+    <div className="hl-dup-group">
       <div className="hl-dup-head">
         <div className="hl-dup-head-left">
           <span className="hl-dup-tag">

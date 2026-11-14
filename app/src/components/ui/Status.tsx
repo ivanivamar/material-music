@@ -1,5 +1,4 @@
 import type { CSSProperties, ReactNode } from 'react'
-import { SHAPE_CLOVER } from '../../design/shapes'
 import { Icon } from '../../design/icons'
 import { quality as Q, type QualityKind } from '../../design/tokens'
 import { useMotion } from '../../state/motion'
@@ -20,7 +19,7 @@ export function qualityLabel(codec: 'flac' | 'opus', opts: { bitDepth?: number; 
 
 export function QualityBadge({ kind, children }: { kind: QualityKind; children: ReactNode }) {
   return (
-    <span className="badge badge-q" style={{ '--qc': Q[kind].join(',') } as CSSProperties}>
+    <span className={`badge badge-q is-${kind}`} style={{ '--qc': Q[kind].join(',') } as CSSProperties}>
       {children}
     </span>
   )
@@ -177,9 +176,12 @@ interface EmptyStateProps {
 export function EmptyState({ icon, title, body, actions }: EmptyStateProps) {
   return (
     <div className="empty">
-      <div className="empty-mark" aria-hidden>
-        <span className="empty-clover" style={{ clipPath: SHAPE_CLOVER }} />
-        <Icon name={icon} className="empty-ic" />
+      <div className="empty-rings" aria-hidden>
+        <span />
+        <span />
+        <span>
+          <Icon name={icon} />
+        </span>
       </div>
       <div className="empty-copy">
         <div className="empty-title">{title}</div>

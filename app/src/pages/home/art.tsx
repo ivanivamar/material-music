@@ -275,37 +275,6 @@ export function SmartBadge({ size = 32 }: { size?: number }) {
 
 /* ── DJ mark (dial) ─────────────────────────────────── */
 
-function knobPath(n: number, amp: number, R: number, cx: number, cy: number) {
-  let d = ''
-  for (let i = 0; i <= 150; i++) {
-    const t = (i / 150) * Math.PI * 2
-    const r = R * (1 - amp + amp * Math.cos(n * t))
-    d += (i ? 'L' : 'M') + (cx + Math.sin(t) * r).toFixed(2) + ' ' + (cy - Math.cos(t) * r).toFixed(2)
-  }
-  return d + 'Z'
-}
-const KNOB_SM = knobPath(8, 0.07, 38, 50, 50)
-const KNOB_LG = knobPath(9, 0.06, 30, 50, 54)
-
-export function DjKnobMark({ size, on }: { size: number; on: boolean }) {
-  const sm = size <= 64
-  return (
-    <div className="hx-dj" style={{ width: size, height: size, borderRadius: Math.round(size * 0.27) }} aria-hidden>
-      <svg viewBox="0 0 100 100">
-        {!sm &&
-          [-55, -27.5, 0, 30, 55].map((a) => {
-            const r = (a * Math.PI) / 180
-            return <circle key={a} cx={50 + Math.sin(r) * 40} cy={54 - Math.cos(r) * 40} r={a === 30 ? 3.2 : 2.2} fill={a === 30 ? 'oklch(0.93 0.05 80)' : 'oklch(0.62 0.10 290)'} />
-          })}
-        <g className={`hx-dj-knob ${on ? 'is-on mm-anim' : ''}`} style={{ transformOrigin: sm ? '50% 50%' : '50% 54%' }}>
-          <path d={sm ? KNOB_SM : KNOB_LG} fill="oklch(0.84 0.09 290)" />
-          {sm ? <rect x={44} y={18} width={12} height={24} rx={6} fill="oklch(0.28 0.08 292)" /> : <rect x={46} y={30} width={8} height={18} rx={4} fill="oklch(0.28 0.08 292)" />}
-        </g>
-      </svg>
-    </div>
-  )
-}
-
 /** Circular play button for Home cards and tiles. */
 export function CookiePlay({ size, playing, label, onClick, tone = 'album', className }: { size: number; playing: boolean; label: string; onClick: (e: MouseEvent) => void; tone?: 'album' | 'brand' | 'dj'; className?: string }) {
   return (

@@ -4,8 +4,10 @@
   display: inline-grid; place-items: center; -webkit-tap-highlight-color: transparent;
 }
 .mm-cookie:disabled { cursor: default; opacity: .5; }
-.mm-cookie-shape { position: absolute; inset: 0; transition: clip-path 520ms var(--ease-shape), background-color 300ms var(--ease-std); }
-.mm-cookie-shape.is-on { animation: pm-spin 14s linear infinite; }
+/* the original Pelagic round play button: a light circle with a soft glow (no shape morph) */
+.mm-cookie-shape { position: absolute; inset: 0; border-radius: 50%; transition: transform .3s var(--ease), box-shadow .4s var(--ease), background-color .3s var(--ease); }
+.mm-cookie:hover:not(:disabled) .mm-cookie-shape { box-shadow: 0 0 32px -4px rgba(255, 255, 255, .45); }
+.mm-cookie-shape.is-on { box-shadow: 0 0 28px -6px rgba(255, 255, 255, .5); }
 .mm-cookie-ic { position: relative; display: grid; place-items: center; z-index: 2; transition: opacity 200ms var(--ease-std), transform 320ms var(--ease-shape); }
 .mm-cookie.is-loading .mm-cookie-ic { opacity: 0; transform: scale(.4); }
 .mm-cookie-load { position: absolute; left: 50%; top: 50%; z-index: 2; margin: 0; translate: -50% -50%; animation: mm-load-in 320ms var(--ease-shape) both; }
@@ -14,8 +16,8 @@
 /* loading indicator: the shape morphs (one step per ~650ms) while the wrapper turns */
 .mm-load { display: inline-block; flex: none; }
 .mm-load:not(.mm-cookie-load) { position: relative; }
-.mm-load-shape { position: absolute; inset: 0; animation: mm-load-morph 3.9s cubic-bezier(0.38, 1.21, 0.22, 1) infinite, pm-spin 1.3s linear infinite; }
-.mm-cookie:active .mm-cookie-shape { transform: scale(.94); }
+.mm-load-ring { position: absolute; inset: 0; box-sizing: border-box; border-radius: 50%; border: 1.5px solid currentColor; border-right-color: transparent; opacity: .85; animation: pm-spin .9s linear infinite; }
+.mm-cookie:active:not(:disabled) .mm-cookie-shape { transform: scale(.95); }
 
 .mm-wave { position: relative; width: 100%; }
 .mm-wave-played { position: absolute; left: 0; top: 2px; -webkit-mask-repeat: repeat-x; mask-repeat: repeat-x; }
@@ -84,15 +86,6 @@
 .dl-cloud { display: inline-flex; color: var(--ink-tertiary); }
 .dl-cloud .ms { font-size: 22px; }
 
-/* empty state: clover mark, 24px title, one line, tonal actions */
-.empty { gap: 16px; padding: 48px 32px; }
-.empty-mark { position: relative; width: 120px; height: 120px; display: flex; align-items: center; justify-content: center; margin-bottom: 4px; }
-.empty-clover { position: absolute; inset: 0; background: oklch(0.225 0.008 40); }
-.empty-ic { position: relative; font-size: 45px; color: var(--brand); }
-.empty-copy { gap: 8px; max-width: 420px; }
-.empty-title { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; }
-.empty-body { font-size: 14px; line-height: 1.5; }
-.empty-actions { margin-top: 4px; }
 
 /* M3 value slider (Settings values, DJ voice volume): 8px track, 4px handle with a gap ring.
    Tint per page with --vs-accent / --vs-handle / --vs-track / --vs-gap. */
