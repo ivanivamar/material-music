@@ -7,7 +7,7 @@
 import { useState, type DragEvent } from 'react'
 import { useToast, IconButton } from '../components/ui'
 import { Icon } from '../design/icons'
-import { AppMark } from '../components/Logo'
+import { PortholeMark } from '../components/Logo'
 import { AccountChip } from '../pages/AccountMenu'
 import { useLocalFolder } from '../lib/localFolder'
 import { actions, DRAG_MIME, draggedTracks } from '../actions/actions'
@@ -37,7 +37,7 @@ export function Sidebar({ active, activePlaylist, badges }: { active: RouteKey; 
   return (
     <aside className="sb">
       <a className="sb-brand" href={href('home')} aria-label="PELAGIC home">
-        <AppMark size={36} className="sb-mark" />
+        <PortholeMark size={26} className="sb-mark" />
         <span className="sb-brand-text">
           <span className="sb-word">PELAGIC</span>
           <span className="sb-src">{linked ? 'Local library' : 'Google Drive'}</span>

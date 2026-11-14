@@ -1,60 +1,98 @@
 /**
- * PELAGIC app mark: icon 8a "Play & disc, dark" (design_handoff_app_icon_8a, final).
- * 100-unit grid: dark tile gradient #231b18 → #110c0a, play triangle #e55745 (corners rounded r 9),
- * amber ring #ffc65a r 21 and coral disc #fc8b5d r 15 at (43, 50), cream eighth note #fcf8f3.
- * Every layer but the tile has a soft drop shadow (0, 1.4) blur 1.3, black 55 %.
- * Used wherever the logo appears; the launcher / PWA / Android assets come from the same geometry.
+ * The Pelagic "Porthole" mark (final 10c, "Minimal"): a thin light ring around a dark glass window,
+ * white equaliser pills rising from a soft waterline. Grayscale, light from the top left. Geometry is
+ * the 1024 canvas of design_handoff_app_icon/PortholeMinimal.dc.html variant "i" (copied exactly).
+ * `tile` adds the squircle app-icon tile; without it the box hugs the ring. Sizes up to 48 px use the
+ * "small" variant (4 wide bars, no waterline / bubbles / glow). The ring and waterline are 2 px at any size.
  */
 import { useId } from 'react'
 
-interface MarkProps {
+interface PortholeProps {
+  /** rendered width/height in px (without `tile` this is the ring's box) */
   size?: number
-  /** in-app tile with 30 % corners (sidebar, top bar, sign-in); false = square full-bleed (launcher masks it) */
+  /** squircle tile behind the porthole (app-icon look) */
   tile?: boolean
   className?: string
 }
 
-export function AppMark({ size = 36, tile = true, className }: MarkProps) {
+const pill = (x: number, y: number, w: number, h: number) => {
+  const r = w / 2
+  const hh = Math.max(h, w)
+  return `M${x} ${y + r}a${r} ${r} 0 0 1 ${w} 0v${hh - w}a${r} ${r} 0 0 1 ${-w} 0Z`
+}
+
+function barsPath(small: boolean) {
+  const hs = small ? [120, 220, 300, 200] : [120, 208, 288, 184, 104]
+  const w = small ? 64 : 36
+  const gap = small ? 40 : 28
+  const x0 = 512 - (hs.length * w + (hs.length - 1) * gap) / 2
+  return hs.map((h, i) => {
+    const x = x0 + i * (w + gap)
+    return small ? pill(x, 512 - h / 2, w, h) : pill(x, 600 - h, w, h + w / 2)
+  }).join('')
+}
+
+const CURVE = 'M140 618 C 260 586, 380 586, 512 618 S 764 650, 884 618'
+const BARS_SMALL = barsPath(true)
+const BARS_FULL = barsPath(false)
+
+export function PortholeMark({ size = 150, tile = false, className }: PortholeProps) {
   const id = useId().replace(/:/g, '')
-  const sh = `url(#s${id})`
+  const small = size <= 48
+  const u = (n: string) => `${id}${n}`
+  const ref = (n: string) => `url(#${u(n)})`
+  // tight box around the ring (r 360 + a little for the glow) unless the tile is shown
+  const viewBox = tile ? '0 0 1024 1024' : '132 132 760 760'
   return (
-    <svg className={className} width={size} height={size} viewBox="0 0 100 100" aria-hidden style={{ display: 'block', flex: 'none' }}>
+    <svg className={className} width={size} height={size} viewBox={viewBox} aria-hidden style={{ display: 'block', flex: 'none' }}>
       <defs>
-        <linearGradient id={`t${id}`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#231b18" />
-          <stop offset="1" stopColor="#110c0a" />
-        </linearGradient>
-        <filter id={`s${id}`} x="-20%" y="-20%" width="140%" height="150%">
-          <feDropShadow dx="0" dy="1.4" stdDeviation="1.3" floodColor="#000" floodOpacity="0.55" />
-        </filter>
+        <linearGradient id={u('bg')} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#151518" /><stop offset="1" stopColor="#0A0A0C" /></linearGradient>
+        <linearGradient id={u('gl')} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#232428" /><stop offset="1" stopColor="#08080A" /></linearGradient>
+        <filter id={u('glow')} x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="9" result="b" /><feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
+        <clipPath id={u('win')}><circle cx="512" cy="512" r="359" /></clipPath>
+        <clipPath id={u('tile')}><rect width="1024" height="1024" rx="236" /></clipPath>
       </defs>
-      <rect width="100" height="100" rx={tile ? 30 : 0} fill={`url(#t${id})`} />
-      <path d="M31.83 20.44Q24 16 24 25L24 75Q24 84 31.83 79.56L76.17 54.44Q84 50 76.17 45.56Z" fill="#e55745" filter={sh} />
-      <circle cx="43" cy="50" r="21" fill="#ffc65a" filter={sh} />
-      <circle cx="43" cy="50" r="15" fill="#fc8b5d" filter={sh} />
-      <g transform="translate(43 49) scale(0.8)" fill="#fcf8f3" filter={sh}>
-        <circle cx="-2.5" cy="9" r="6" />
-        <rect x="-0.5" y="-12" width="4" height="21" rx="1" />
-        <rect x="-0.5" y="-12" width="10" height="5.5" rx="1" />
+      <g clipPath={tile ? ref('tile') : undefined}>
+        {tile && <rect width="1024" height="1024" fill={ref('bg')} />}
+        <circle cx="512" cy="512" r="360" fill={ref('gl')} />
+        <circle cx="512" cy="512" r="360" fill="none" stroke="#D8D8DC" strokeWidth="2" vectorEffect="non-scaling-stroke" />
+        <path d="M232 430 A292 292 0 0 1 430 232" fill="none" stroke="#fff" strokeOpacity="0.2" strokeWidth={small ? 28 : 18} strokeLinecap="round" />
+        {!small && (
+          <>
+            <circle cx="676" cy="336" r="9" fill="none" stroke="#fff" strokeOpacity="0.3" strokeWidth="4" />
+            <circle cx="700" cy="300" r="5" fill="#fff" fillOpacity="0.3" />
+            <g clipPath={ref('win')}>
+              <path d={`${CURVE} L884 884 L140 884 Z`} fill="#fff" fillOpacity="0.05" />
+              <path d={CURVE} fill="none" stroke="#fff" strokeOpacity="0.4" strokeWidth="2" vectorEffect="non-scaling-stroke" />
+            </g>
+          </>
+        )}
+        <path d={small ? BARS_SMALL : BARS_FULL} fill="#fff" filter={small ? undefined : ref('glow')} />
       </g>
+      {tile && <rect x="2" y="2" width="1020" height="1020" rx="234" fill="none" stroke="#fff" strokeOpacity="0.08" strokeWidth="4" />}
     </svg>
   )
 }
 
-export function Wordmark({ size = 18, className }: { size?: number; className?: string }) {
+interface WordmarkProps {
+  size?: number
+  className?: string
+}
+
+export function Wordmark({ size = 30, className }: WordmarkProps) {
   return (
-    <span className={className} style={{ fontSize: size, lineHeight: 1.1, fontWeight: 600, letterSpacing: '-0.01em' }}>
-      PELAGIC
+    <span className={`t-wordmark ${className ?? ''}`} style={{ fontSize: size, lineHeight: 1 }}>
+      Pelagic
     </span>
   )
 }
 
-/** Mark + wordmark stacked (sign-in, first run, about). */
-export function Lockup({ size = 96 }: { size?: number }) {
+/** Mark + wordmark stacked (sign-in, first-run, about). */
+export function Lockup({ size = 150 }: { size?: number }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: size * 0.2 }}>
-      <AppMark size={size} />
-      <Wordmark size={size * 0.28} />
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: size * 0.21 }}>
+      <PortholeMark size={size} />
+      <Wordmark size={size * 0.2} />
     </div>
   )
 }

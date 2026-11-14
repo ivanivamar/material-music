@@ -25,7 +25,7 @@ controls are the first pass; feature screens are updated incrementally.
 | `src/styles/base.css` | Reset, type helpers (`.t-hero`, `.t-page`, `.t-mono`…), shared keyframes, reduced-motion rules |
 | `src/design/icons.tsx` | `<Icon name="…" />`: the 24-grid, 1.25-stroke icon set |
 | `src/design/textures.ts` | `STONE`, `GRAIN`, `CONTOUR_SMOOTH`, `CONTOUR_LIVE` texture data URIs |
-| `src/components/Logo.tsx` | `AppMark`: app icon 8a "Play & disc, dark" (`tile` = 30 % corners), wordmark, lockup. Launcher / PWA / splash / notification assets: `icon-masters/` + `public/icons/` + Android `res/` (generator in the Claude project, `claude/material-music-icon-build/`) |
+| `src/components/Logo.tsx` | `PortholeMark`: the original Pelagic porthole icon, wordmark, lockup. The same mark is used for the launcher, PWA, favicon, splash, and sidebar |
 | `src/components/Atmosphere.tsx` | Background layers: stone, breathing contours, grain, light pools, marine snow. Follows the Motion / particles / texture settings |
 | `src/components/ui/` | Core components: `Button`, `IconButton`, `PlayButton`, `Toggle`, `Segmented`, `Chip`, `Slider`, `SeekBar`, `Waveform`, `QualityBadge`, `ReleaseBadge`, `Eq`, `DownloadStatus`/`DownloadIcon`, `Skeleton`, `Rule`, `Sonar`, `OfflineBanner`, `EmptyState`, `TrackRow`, `AlbumCard`, toasts (`ToastProvider` + `useToast()`) |
 | `src/state/settings.ts` | Settings store (`useSettings`, `settingsStore.set`), saved instantly to localStorage (Drive sync later) |

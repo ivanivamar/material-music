@@ -7,7 +7,7 @@ import type { CSSProperties } from 'react'
 import { Icon, ICON_NAMES } from '../design/icons'
 import { CONTOUR_SMOOTH, GRAIN, STONE } from '../design/textures'
 import { quality } from '../design/tokens'
-import { AppMark, Lockup } from '../components/Logo'
+import { PortholeMark, Lockup } from '../components/Logo'
 
 const SWATCHES: [string, string, string][] = [
   ['bg-0', '#050505', 'deepest canvas'],
@@ -43,8 +43,8 @@ export function Foundations() {
         <div className="fd-row fd-logo">
           <Lockup size={150} />
           <div className="fd-tiles">
-            <div className="fd-appicon fd-appicon-lg"><AppMark size={44} tile /></div>
-            <div className="fd-appicon"><AppMark size={20} tile /></div>
+            <div className="fd-appicon fd-appicon-lg"><PortholeMark size={44} tile /></div>
+            <div className="fd-appicon"><PortholeMark size={20} tile /></div>
           </div>
         </div>
       </section>
