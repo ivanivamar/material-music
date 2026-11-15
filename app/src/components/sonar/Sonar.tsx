@@ -9,7 +9,7 @@
  *
  * Geometry: angles are degrees clockwise from 12 o'clock.
  */
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { useHistory } from '../../state/history'
 import { usePlayerPosition } from '../../state/player'
 
@@ -22,17 +22,17 @@ export function arcPath(cx: number, cy: number, r: number, a0: number, a1: numbe
   return `M${x0.toFixed(2)} ${y0.toFixed(2)} A${r} ${r} 0 ${a1 - a0 > 180 ? 1 : 0} 1 ${x1.toFixed(2)} ${y1.toFixed(2)}`
 }
 
-/** Width of an element, kept up to date. */
-export function useWidth<T extends HTMLElement>(): [React.RefObject<T | null>, number] {
-  const ref = useRef<T>(null)
+/** Width of an element, kept up to date (a callback ref, so it follows the element if it changes). */
+export function useWidth<T extends HTMLElement>(): [(el: T | null) => void, number] {
   const [w, setW] = useState(0)
-  useEffect(() => {
-    const el = ref.current
+  const ro = useRef<ResizeObserver | null>(null)
+  const ref = useCallback((el: T | null) => {
+    ro.current?.disconnect()
+    ro.current = null
     if (!el) return
-    const ro = new ResizeObserver(([e]) => setW(Math.round(e.contentRect.width)))
-    ro.observe(el)
     setW(Math.round(el.getBoundingClientRect().width))
-    return () => ro.disconnect()
+    ro.current = new ResizeObserver(([e]) => setW(Math.round(e.contentRect.width)))
+    ro.current.observe(el)
   }, [])
   return [ref, w]
 }
@@ -60,6 +60,8 @@ export interface SonarSong {
   isNew?: boolean
   /** 0..1 play weight for a blip inside the ring (omit for none) */
   weight?: number
+  /** being dragged to a new place (playlist reordering): lit */
+  lifted?: boolean
 }
 
 export interface Span {
@@ -82,6 +84,70 @@ export function layoutSpans(songs: SonarSong[], gap: number): Span[] {
   })
 }
 
+/** Stable keys for songs (the same song can appear twice in a playlist). */
+export function songKeys(songs: SonarSong[]): string[] {
+  const seen = new Map<string, number>()
+  return songs.map((s) => {
+    const n = seen.get(s.id) ?? 0
+    seen.set(s.id, n + 1)
+    return `${s.id}#${n}`
+  })
+}
+
+const TWEEN_MS = 280
+const ease = (t: number) => 1 - Math.pow(1 - t, 3)
+
+/**
+ * The spans to draw: when the order changes (a playlist row is dragged), each song's arc glides
+ * from where it was to its new place instead of jumping.
+ */
+export function useTweenSpans(keys: string[], target: Span[]): Span[] {
+  const shown = useRef(new Map<string, Span>())
+  const [, setTick] = useState(0)
+  const raf = useRef(0)
+  const anim = useRef<{ from: Map<string, Span>; t0: number } | null>(null)
+  const sig = keys.map((k, i) => `${k}:${target[i].a0.toFixed(2)}`).join('|')
+
+  useEffect(() => {
+    const prev = shown.current
+    const moved = keys.some((k, i) => {
+      const p = prev.get(k)
+      return p && Math.abs(p.a0 - target[i].a0) > 0.05
+    })
+    if (!prev.size || !moved || matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      shown.current = new Map(keys.map((k, i) => [k, target[i]]))
+      anim.current = null
+      setTick((t) => t + 1)
+      return
+    }
+    anim.current = { from: new Map(prev), t0: performance.now() }
+    const step = (now: number) => {
+      const a = anim.current
+      if (!a) return
+      const t = Math.min(1, (now - a.t0) / TWEEN_MS)
+      const e = ease(t)
+      const next = new Map<string, Span>()
+      keys.forEach((k, i) => {
+        const f = a.from.get(k) ?? target[i]
+        const g = target[i]
+        const a0 = f.a0 + (g.a0 - f.a0) * e
+        const a1 = f.a1 + (g.a1 - f.a1) * e
+        next.set(k, { a0, a1, mid: (a0 + a1) / 2 })
+      })
+      shown.current = next
+      setTick((x) => x + 1)
+      if (t < 1) raf.current = requestAnimationFrame(step)
+      else anim.current = null
+    }
+    cancelAnimationFrame(raf.current)
+    raf.current = requestAnimationFrame(step)
+    return () => cancelAnimationFrame(raf.current)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sig])
+
+  return keys.map((k, i) => shown.current.get(k) ?? target[i])
+}
+
 export interface SonarRingProps {
   songs: SonarSong[]
   /** index of the loaded song in `songs`, or -1 when nothing here is loaded */
@@ -97,6 +163,8 @@ export interface SonarRingProps {
   gap?: number
   /** time ticks outside the ring (every 10 min, longer every 30) */
   ticks?: boolean
+  /** tick spacing in seconds: [minor, major] (albums: every minute, longer every 5) */
+  tickEvery?: [number, number]
   /** inner band: runs of the same `group` */
   bands?: boolean
   /** play-count blips inside the ring (uses song.weight) */
@@ -107,7 +175,11 @@ export interface SonarRingProps {
   /** drawn in the middle */
   children?: ReactNode
   /** extra absolutely-positioned things (tags), given the geometry */
-  overlay?: (g: { cx: number; cy: number; R: number; spans: Span[] }) => ReactNode
+  overlay?: (g: { cx: number; cy: number; R: number; spans: Span[]; pos: number }) => ReactNode
+  /** faint guide circles inside and outside the ring (album page) */
+  guides?: boolean
+  /** nothing here playing: the sweep rests at 12 o'clock */
+  restHand?: boolean
   label: string
 }
 
@@ -121,11 +193,13 @@ function LiveRing(p: SonarRingProps) {
   return <RingBody {...p} pos={pos} />
 }
 
-function RingBody({ songs, current, playing, size, radius = 0.78, width = 12, gap = 1.6, ticks, bands, blips, hover = -1, onHover, onPick, children, overlay, label, pos }: SonarRingProps & { pos: number }) {
+function RingBody({ songs, current, playing, size, radius = 0.78, width = 12, gap = 1.6, ticks, tickEvery = [600, 1800], guides, restHand, bands, blips, hover = -1, onHover, onPick, children, overlay, label, pos }: SonarRingProps & { pos: number }) {
   const cx = size / 2
   const cy = size / 2
   const R = Math.round((size / 2) * radius)
-  const spans = useMemo(() => layoutSpans(songs, gap), [songs, gap])
+  const target = useMemo(() => layoutSpans(songs, gap), [songs, gap])
+  const keys = useMemo(() => songKeys(songs), [songs])
+  const spans = useTweenSpans(keys, target)
   const total = useMemo(() => songs.reduce((a, s) => a + (s.len > 0 ? s.len : 180), 0), [songs])
   const live = current >= 0 && current < songs.length
   const curLen = live ? songs[current].len || 180 : 1
@@ -135,15 +209,16 @@ function RingBody({ songs, current, playing, size, radius = 0.78, width = 12, ga
   const tickEls = useMemo(() => {
     if (!ticks) return null
     const out: ReactNode[] = []
-    for (let s = 0; s <= total; s += 600) {
+    const [minor, major] = tickEvery
+    for (let s = 0; s <= total; s += minor) {
       const a = (s / total) * 360
-      const big = s % 1800 === 0
+      const big = s % major === 0
       const [x0, y0] = polar(cx, cy, R + width / 2 + 4, a)
       const [x1, y1] = polar(cx, cy, R + width / 2 + (big ? 11 : 7), a)
       out.push(<line key={s} x1={x0} y1={y0} x2={x1} y2={y1} className={big ? 'sn-tick is-big' : 'sn-tick'} />)
     }
     return out
-  }, [ticks, total, cx, cy, R, width])
+  }, [ticks, total, cx, cy, R, width, tickEvery])
 
   const bandEls = useMemo(() => {
     if (!bands) return null
@@ -177,6 +252,17 @@ function RingBody({ songs, current, playing, size, radius = 0.78, width = 12, ga
 
   return (
     <div className={`sn ${live ? 'is-live' : ''} ${live && !playing ? 'is-paused' : ''}`} style={{ width: size, height: size } as CSSProperties}>
+      {guides && (
+        <div className="sn-sweep" aria-hidden style={{ left: cx, top: cy } as CSSProperties}>
+          <span className="sn-guide" style={{ width: R * 1.38 * 2, height: R * 1.38 * 2, left: -R * 1.38, top: -R * 1.38, opacity: 0.7 }} />
+          <span className="sn-guide" style={{ width: R * 0.71 * 2, height: R * 0.71 * 2, left: -R * 0.71, top: -R * 0.71 }} />
+        </div>
+      )}
+      {!live && restHand && (
+        <div className="sn-sweep" aria-hidden style={{ left: cx, top: cy } as CSSProperties}>
+          <span className="sn-hand is-rest" style={{ height: hand, top: -hand }} />
+        </div>
+      )}
       {live && (
         <div className="sn-sweep" aria-hidden style={{ left: cx, top: cy } as CSSProperties}>
           <span className="sn-trail" style={{ width: R * 2, height: R * 2, left: -R, top: -R, background: `conic-gradient(from ${(sweep - 70).toFixed(1)}deg, rgba(255,255,255,0) 0deg, rgba(255,255,255,.08) 70deg, rgba(255,255,255,0) 70.2deg)` }} />
@@ -189,7 +275,7 @@ function RingBody({ songs, current, playing, size, radius = 0.78, width = 12, ga
           const sp = spans[i]
           const state = !live ? 'idle' : i < current ? 'played' : i === current ? 'current' : 'next'
           return (
-            <g key={s.id + ':' + i} className={`sn-seg is-${state} ${s.isNew ? 'is-new' : ''} ${hover === i ? 'is-hover' : ''}`}>
+            <g key={keys[i]} className={`sn-seg is-${state} ${s.isNew ? 'is-new' : ''} ${hover === i ? 'is-hover' : ''} ${s.lifted ? 'is-lifted' : ''}`}>
               <path d={arcPath(cx, cy, R, sp.a0, sp.a1)} className="sn-arc" strokeWidth={hover === i ? width + 4 : width} />
               {i === current && frac > 0.002 && <path d={arcPath(cx, cy, R, sp.a0, sweep)} className="sn-fill" strokeWidth={width + 2} />}
               <path
@@ -209,7 +295,7 @@ function RingBody({ songs, current, playing, size, radius = 0.78, width = 12, ga
         {blipEls}
         {live && <circle cx={dx} cy={dy} r={4.5} className="sn-dot" />}
       </svg>
-      {overlay?.({ cx, cy, R, spans })}
+      {overlay?.({ cx, cy, R, spans, pos })}
       {children && <div className="sn-center">{children}</div>}
     </div>
   )

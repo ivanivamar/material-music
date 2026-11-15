@@ -553,13 +553,9 @@ export function stuckOffset(main: HTMLElement) {
   return (parseFloat(getComputedStyle(bar).top) || 0) + bar.offsetHeight + 8
 }
 
-/** Vertical A–Z strip on the right: tap / drag to jump; the letter at the top of the view is lit. */
-export function Scrubber({ present }: { present: Set<string> }) {
+/** The letter group at the top of the view (lit in the scrubbers). */
+export function useActiveLetter(present: Set<string>): [string | null, (l: string | null) => void] {
   const [active, setActive] = useState<string | null>(null)
-  const [bubble, setBubble] = useState<{ l: string; y: number } | null>(null)
-  const stripRef = useRef<HTMLDivElement>(null)
-  const dragging = useRef(false)
-
   useEffect(() => {
     const main = document.getElementById('main')
     if (!main) return
@@ -586,18 +582,33 @@ export function Scrubber({ present }: { present: Set<string> }) {
       main.removeEventListener('scroll', on)
     }
   }, [present])
+  return [active, setActive]
+}
+
+/** Scroll to letter `l` (else the next one that exists); returns the letter it landed on. */
+export function jumpToLetter(l: string, present: Set<string>): string | null {
+  const main = document.getElementById('main')
+  if (!main) return null
+  const want = LETTERS.slice(Math.max(0, LETTERS.indexOf(l))).find((x) => present.has(x)) ?? [...LETTERS].reverse().find((x) => present.has(x))
+  if (!want) return null
+  const el = main.querySelector<HTMLElement>(`[data-letter="${CSS.escape(want)}"]`)
+  if (!el) return null
+  main.scrollTo({ top: main.scrollTop + el.getBoundingClientRect().top - main.getBoundingClientRect().top - stuckOffset(main) })
+  return want
+}
+
+export { LETTERS }
+
+/** Vertical A–Z strip on the right: tap / drag to jump; the letter at the top of the view is lit. */
+export function Scrubber({ present }: { present: Set<string> }) {
+  const [active, setActive] = useActiveLetter(present)
+  const [bubble, setBubble] = useState<{ l: string; y: number } | null>(null)
+  const stripRef = useRef<HTMLDivElement>(null)
+  const dragging = useRef(false)
 
   const jump = (l: string) => {
-    const main = document.getElementById('main')
-    if (!main) return
-    // the letter itself, else the next one that exists
-    const order = LETTERS.slice(LETTERS.indexOf(l)).filter((x) => present.has(x))
-    const want = order[0]
-    if (!want) return
-    const el = main.querySelector<HTMLElement>(`[data-letter="${CSS.escape(want)}"]`)
-    if (!el) return
-    main.scrollTo({ top: main.scrollTop + el.getBoundingClientRect().top - main.getBoundingClientRect().top - stuckOffset(main) })
-    setActive(want)
+    const got = jumpToLetter(l, present)
+    if (got) setActive(got)
   }
   const at = (clientY: number) => {
     const r = stripRef.current?.getBoundingClientRect()

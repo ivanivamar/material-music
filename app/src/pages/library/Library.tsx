@@ -26,23 +26,22 @@ import { IconButton, Button, EmptyState, Menu, MenuItem, MenuLabel, MenuSeparato
 import { offlineIndex, useDownloads, useOnline, type OfflineIndex } from '../../state/downloads'
 import { Icon, type IconName } from '../../design/icons'
 import { actions } from '../../actions/actions'
-import { libraryStats, tracksByAlbum, useLibrary, type Catalogue, type Track } from '../../state/library'
+import { libraryStats, tracksByAlbum, useLibrary, type Catalogue } from '../../state/library'
 import { libraryPrefs, useLibraryPrefs, type ArtistSort, type LibraryView, type MixedSort } from '../../state/libraryPrefs'
 import { usePlaylists } from '../../state/playlists'
 import { LIBRARY_TABS, go, libraryHref, type LibraryTab } from '../../shell/routes'
 import { TopbarSlot } from '../../shell/topbarSlot'
-import { ALBUM_SORTS, allAlbums, allTracks, artistsByName, byName, fmtN, sortAlbums, sortTracks, type AlbumSort, type ArtistInfo, type SongSort } from '../../state/views'
-import { playList, useContextState, useNowPlaying } from './playback'
-import { playerStore } from '../../state/player'
+import { ALBUM_SORTS, allAlbums, allTracks, artistsByName, byName, fmtN, sortAlbums, type AlbumSort, type ArtistInfo, type SongSort } from '../../state/views'
+import { playList } from './playback'
 import { searchStore, useSearch, type SearchFilter } from '../../state/search'
 import { useIsPhone, isTouch } from '../../state/viewport'
 import { SearchResultsView } from '../search/Search'
 import { firstResult, openTopResult, shownCount, useSearchResults } from '../search/results'
 import { LibrarySearchField, RecentSearches } from './LibrarySearch'
 import { forgetScrollBeforeFocus, noteScrollBeforeFocus, restoreBrowseScroll, setLibraryQuery } from './browseContext'
-import { CardGroups, NewTile, Scrubber, SongGroups, albumItem, artistItem, groupItems, playlistItem, sortItems, stuckOffset, type GroupBy, type LibItem } from './libgrid'
-import { SongsRing } from '../../components/sonar/SongsRing'
-import { usePlayCounts } from '../../components/sonar/Sonar'
+import { CardGroups, NewTile, Scrubber, albumItem, artistItem, groupItems, playlistItem, sortItems, type GroupBy, type LibItem } from './libgrid'
+import { SongsSonar } from './SongsSonar'
+import { HalfRingScrubber } from './HalfRing'
 
 const TAB_LABEL: Record<LibraryTab, string> = { all: 'All', artists: 'Artists', albums: 'Albums', playlists: 'Playlists', songs: 'Songs' }
 
@@ -202,7 +201,7 @@ export function Library({ tab: routeTab }: { tab: LibraryTab | null }) {
       ) : (
         !empty && topbarSlot && createPortal(field, topbarSlot)
       )}
-      {!phoneSearching && (
+      {!phoneSearching && !(tab === 'songs' && !typing) && (
         <header className="lb-head">
           <div className="lb-head-text">
             <h1 className="lb-title">Library</h1>
@@ -235,7 +234,7 @@ export function Library({ tab: routeTab }: { tab: LibraryTab | null }) {
           {typing ? (
             <div className="lb-bar-r lb-resl">{results ? `${fmtN(shownCount(results, filter))} ${shownCount(results, filter) === 1 ? 'result' : 'results'} for ‘${query.trim()}’` : ''}</div>
           ) : (
-            !phoneSearching && <BrowseControls tab={browseTab} phone={phone} offline={offline} filter={filterOffline} count={counts[browseTab]} />
+            !phoneSearching && browseTab !== 'songs' && <BrowseControls tab={browseTab} phone={phone} offline={offline} filter={filterOffline} count={counts[browseTab]} />
           )}
         </div>
       )}
@@ -440,6 +439,7 @@ function CardsView({ c, tab, filter, phone }: { c: Catalogue; tab: Exclude<Libra
 
   const groups = useMemo(() => groupItems(items, by, (i) => i), [items, by])
   const letters = by === 'name' || by === 'artist'
+  const letterCounts = useMemo(() => new Map(groups.map((g) => [g.label, g.items.length])), [groups])
   const present = useMemo(() => new Set(letters ? groups.map((g) => g.label) : []), [groups, letters])
 
   if (tab === 'playlists' && !loaded) return null
@@ -485,7 +485,7 @@ function CardsView({ c, tab, filter, phone }: { c: Catalogue; tab: Exclude<Libra
             : undefined
         }
       />
-      {letters && <Scrubber present={present} />}
+      {letters && (phone ? <HalfRingScrubber present={present} counts={letterCounts} unit={tab === 'artists' ? 'artists' : tab === 'albums' ? 'albums' : 'items'} /> : <Scrubber present={present} />)}
     </div>
   )
 }
@@ -496,90 +496,10 @@ const actions_smart = () => actions.smartPlaylist()
 /* ── Songs ──────────────────────────────────────────── */
 
 function SongsView({ c, filter, phone }: { c: Catalogue; filter: OfflineIndex | null; phone: boolean }) {
-  const prefs = useLibraryPrefs()
-  const { songSort, songDesc } = prefs
-  const view = viewOf('songs', prefs)
   const tracks = useMemo(() => {
-    const list = sortTracks(c, allTracks(c), songSort, songDesc)
+    const list = allTracks(c)
     return filter ? list.filter((t) => filter.tracks.has(t.id)) : list
-  }, [c, songSort, songDesc, filter])
-  const by: GroupBy = songSort === 'added' ? 'added' : songSort === 'title' ? 'name' : songSort === 'artist' ? 'artist' : null
-  const groups = useMemo(() => groupItems<Track>(tracks, by, (t) => ({ title: t.title, artist: t.artist, added: Date.parse(t.addedAt ?? '') || 0, year: null })), [tracks, by])
-  const index = useMemo(() => new Map(tracks.map((t, i) => [t.id, i])), [tracks])
-  const ctx = useContextState('library', filter ? 'songs-offline' : 'songs')
-  const context = filter ? { kind: 'library' as const, id: 'songs-offline', label: 'Library · Songs offline' } : { kind: 'library' as const, id: 'songs', label: 'Library · Songs' }
-  const ids = () => tracks.map((t) => t.id)
-  const play = (id: string) => playList(ids(), context, { start: index.get(id) ?? 0 })
-  const letters = (by === 'name' || by === 'artist') && view === 'timeline'
-  const present = useMemo(() => new Set(letters ? groups.map((g) => g.label) : []), [groups, letters])
-  const counts = usePlayCounts()
-  const now = useNowPlaying()
-  const named = view === 'timeline' && groups.length > 0 && groups[0].label !== ''
-  const ringGroups = useMemo(() => groups.map((g) => ({ label: g.label, count: g.items.length, letter: g.letter })), [groups])
-  const ringBlips = useMemo(() => {
-    const top = tracks
-      .map((t, i) => ({ i, n: counts.get(t.id) ?? 0, title: t.title }))
-      .filter((x) => x.n > 0)
-      .sort((a, b) => b.n - a.n)
-      .slice(0, 40)
-    const max = top[0]?.n ?? 1
-    return top.map((x) => ({ at: x.i + 0.5, w: x.n / max, title: x.title }))
-  }, [tracks, counts])
-  const jumpGroup = (k: number) => {
-    const main = document.getElementById('main')
-    const el = main?.querySelectorAll<HTMLElement>('.lb-groups.is-timeline > .lb-group')[k]
-    if (!main || !el) return
-    main.scrollTo({ top: main.scrollTop + el.getBoundingClientRect().top - main.getBoundingClientRect().top - stuckOffset(main) })
-  }
-  const showRing = named && !phone
-
+  }, [c, filter])
   if (filter && tracks.length === 0) return <NothingOffline />
-  return (
-    <div className={letters ? 'lb-has-scrub' : undefined}>
-      <div className="lb-actions">
-        <Button variant="tonal" disabled={!tracks.length} onClick={() => (ctx.active ? playerStore.toggle() : playList(ids(), context, { start: 0 }))}>
-          <Icon name={ctx.playing ? 'pauseF' : 'playF'} />
-          {ctx.playing ? 'Pause' : ctx.active ? 'Resume' : 'Play'}
-        </Button>
-        <Button variant="outlined-ink" disabled={!tracks.length} onClick={() => playList(ids(), context, { shuffle: true })}>
-          <Icon name="shuffle" />
-          Shuffle
-        </Button>
-      </div>
-      {showRing ? (
-        <div className="sn-split is-songs">
-          <div>
-            <SongGroups c={c} groups={groups} timeline={view === 'timeline'} phone={phone} onPlay={play} />
-          </div>
-          <aside className="sn-panel">
-            <SongsRing groups={ringGroups} blips={ringBlips} nowAt={now.id ? (index.get(now.id) ?? -1) : -1} size={300} onJump={jumpGroup} sectionSelector=".lb-groups.is-timeline > .lb-group" />
-            <div className="sn-legend">
-              <div className="sn-legend-row">
-                <span className="sn-legend-sw">
-                  <i />
-                </span>
-                Arc · a group, sized by songs
-              </div>
-              <div className="sn-legend-row">
-                <span className="sn-legend-sw">
-                  <i className="is-dot" />
-                </span>
-                Blip · one of your most played
-              </div>
-              <div className="sn-legend-row">
-                <span className="sn-legend-sw">
-                  <i className="is-win" />
-                </span>
-                Bright edge · rows on screen
-              </div>
-              <div className="sn-legend-row">Tap an arc to jump</div>
-            </div>
-          </aside>
-        </div>
-      ) : (
-        <SongGroups c={c} groups={groups} timeline={view === 'timeline'} phone={phone} onPlay={play} />
-      )}
-      {letters && <Scrubber present={present} />}
-    </div>
-  )
+  return <SongsSonar c={c} tracks={tracks} phone={phone} />
 }

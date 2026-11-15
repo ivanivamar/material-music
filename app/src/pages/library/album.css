@@ -241,3 +241,53 @@ a.ln:hover { color: var(--ink-primary); text-decoration: underline; text-underli
 .shell.is-phone .hero-follow-l { display: none; }
 .shell.is-phone .hero-buttons .actions-more { flex: 0 0 48px; width: 48px; height: 48px; }
 .shell.is-phone .hero-buttons { gap: 8px; }
+
+/* ── Album, ring view on a wide screen: two columns (Nov 2026 sonar mockup) ── */
+.al2 { display: grid; grid-template-columns: 300px minmax(0, 1fr); column-gap: 48px; align-items: start; }
+.al2-side { display: flex; flex-direction: column; gap: 24px; min-width: 0; position: sticky; top: 24px; }
+.al2-side .crumbs { margin: -4px 0 0; }
+.al2-cover { width: 220px; height: 220px; border-radius: var(--r-cover); object-fit: cover; display: block; box-shadow: 0 0 0 1px rgba(255, 255, 255, .08), 0 30px 60px -24px rgba(0, 0, 0, .8); transition: box-shadow 1.2s var(--ease); }
+.al2-head { display: flex; flex-direction: column; gap: 12px; }
+.al2-title {
+  margin: 0; font-weight: 400; letter-spacing: -0.035em; line-height: .98; font-size: var(--hs, 52px); padding-bottom: .04em;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: break-word;
+}
+.al2-artist { font-size: 16px; color: var(--ink-primary); align-self: flex-start; }
+.al2-btns { display: flex; gap: 10px; }
+.al2-btns .actions-play { padding: 0 24px; min-width: 120px; }
+.al2-facts { display: flex; flex-direction: column; }
+.al2-fact { display: flex; justify-content: space-between; gap: 16px; padding: 11px 0; border-bottom: 1px solid var(--hairline); }
+.al2-k { font-family: var(--font-mono); font-size: var(--fs-mono-sm); letter-spacing: .16em; text-transform: uppercase; color: var(--ink-tertiary); }
+.al2-v { font-family: var(--font-mono); font-size: var(--fs-mono); letter-spacing: .06em; color: var(--ink-secondary); text-align: right; }
+.al2-v.is-on { color: var(--ink-primary); }
+.al2-offline .offl { justify-content: space-between; width: 100%; }
+.al2-main { min-width: 0; padding-top: 2px; }
+.al2-main .sn-tag-title { max-width: 150px; }
+.album-page.is-2col .more-by { margin-top: 40px; }
+@media (max-width: 1100px) {
+  .al2 { grid-template-columns: minmax(0, 1fr); row-gap: 36px; }
+  .al2-side { position: static; display: grid; grid-template-columns: 220px minmax(0, 1fr); column-gap: 36px; row-gap: 20px; align-items: end; }
+  .al2-side .crumbs { grid-column: 1 / -1; }
+  .al2-cover { grid-row: span 2; }
+  .al2-facts, .al2-offline { grid-column: 1 / -1; }
+}
+.al2-btns .al2-like, .alp-btns .al2-like { width: 46px; height: 46px; flex: none; border: 1.5px solid var(--border-strong); border-radius: 12px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; }
+
+/* ── Album, ring view on the phone (mockup) ── */
+.album-page.is-phone-ring { display: flex; flex-direction: column; }
+.alp-bar { display: flex; align-items: center; gap: 4px; height: 52px; margin: -8px -6px 0; }
+.alp-flex { flex: 1; }
+.alp-head { display: flex; align-items: center; gap: 14px; padding: 0 4px; }
+.alp-cover { width: 60px; height: 60px; flex: none; border-radius: 8px; object-fit: cover; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .06); }
+.alp-text { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.alp-title { margin: 0; font-size: 24px; font-weight: 400; letter-spacing: -0.025em; line-height: 1.05; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.alp-artist { font-size: 14px; color: #bdbdbd; align-self: flex-start; }
+.alp-lab { font-family: var(--font-mono); font-size: 9px; letter-spacing: .16em; text-transform: uppercase; color: var(--ink-tertiary); }
+.album-page.is-phone-ring .sn-stack { margin-top: 6px; gap: 0; }
+.alp-btns { display: flex; gap: 8px; width: 100%; padding: 4px 4px 0; box-sizing: border-box; }
+.alp-btns .alp-play { flex: 1; height: 48px; }
+.alp-btns .actions-more.ibtn, .alp-btns .al2-like { width: 48px; height: 48px; }
+.album-page.is-phone-ring .sn-mini-list { margin-top: 14px; }
+.al2 { grid-template-columns: 320px minmax(0, 1fr); }
+.al2-k { white-space: nowrap; flex: none; }
+.al2-v { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }

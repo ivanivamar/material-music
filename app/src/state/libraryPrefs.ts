@@ -20,10 +20,16 @@ export interface LibraryPrefs {
   views: Partial<Record<LibraryTab, LibraryView>>
   /** Android app: show only what's stored on the phone (Albums / Artists / Songs) */
   offlineOnly: boolean
+  /** Songs (sonar view): what the ring groups by, and the order inside each group */
+  songRing: SongRing
+  songOrder: SongOrder
 }
 
+export type SongRing = 'letter' | 'artist' | 'genre' | 'year'
+export type SongOrder = 'az' | 'plays' | 'added'
+
 const KEY = 'pelagic.library.v1'
-const DEFAULTS: LibraryPrefs = { tab: 'all', albumSort: 'added', artistSort: 'name', songSort: 'added', songDesc: false, allSort: 'added', playlistSort: 'added', views: {}, offlineOnly: false }
+const DEFAULTS: LibraryPrefs = { tab: 'all', albumSort: 'added', artistSort: 'name', songSort: 'added', songDesc: false, allSort: 'added', playlistSort: 'added', views: {}, offlineOnly: false, songRing: 'letter', songOrder: 'az' }
 
 let prefs: LibraryPrefs = (() => {
   try {

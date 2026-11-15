@@ -4,7 +4,7 @@
  * in the list. The sweep and a bright edge follow the scroll position: the rows on screen. Tapping
  * an arc jumps there.
  */
-import { useEffect, useMemo, useState, type CSSProperties } from 'react'
+import { useMemo, useState, type CSSProperties } from 'react'
 import { arcPath, polar } from './Sonar'
 
 export interface RingGroup {
@@ -20,65 +20,29 @@ interface Props {
   /** index in the whole list of the playing song, or -1 */
   nowAt: number
   size: number
-  /** scroll so group k's head sits under the sticky bar */
+  /** scroll so group k's head sits at the top */
   onJump: (k: number) => void
-  /** the group sections, in order (for scroll tracking) */
-  sectionSelector: string
+  /** the songs on screen: [first, last] positions in the whole list */
+  view: [number, number]
+  /** small: no labels, thinner (the phone header dial) */
+  mini?: boolean
 }
 
-export function SongsRing({ groups, blips, nowAt, size, onJump, sectionSelector }: Props) {
+export function SongsRing({ groups, blips, nowAt, size, onJump, view, mini }: Props) {
   const total = groups.reduce((a, g) => a + g.count, 0) || 1
   const starts = useMemo(() => groups.map((_, k) => groups.slice(0, k).reduce((a, g) => a + g.count, 0)), [groups])
-  const [view, setView] = useState<[number, number]>([0, 0])
   const [hover, setHover] = useState(-1)
-
-  // where the list is scrolled to, in songs
-  useEffect(() => {
-    const main = document.getElementById('main')
-    if (!main) return
-    let raf = 0
-    const posAt = (y: number, secs: HTMLElement[]) => {
-      for (let k = 0; k < secs.length; k++) {
-        const r = secs[k].getBoundingClientRect()
-        if (y < r.bottom || k === secs.length - 1) {
-          const f = Math.max(0, Math.min(1, (y - r.top) / Math.max(1, r.height)))
-          return (starts[k] ?? 0) + f * (groups[k]?.count ?? 0)
-        }
-      }
-      return 0
-    }
-    const update = () => {
-      raf = 0
-      const secs = [...main.querySelectorAll<HTMLElement>(sectionSelector)]
-      if (!secs.length) return
-      const box = main.getBoundingClientRect()
-      const a = posAt(box.top + 140, secs)
-      const b = posAt(box.bottom - 100, secs)
-      setView((v) => (Math.abs(v[0] - a) < 0.2 && Math.abs(v[1] - b) < 0.2 ? v : [a, Math.max(a, b)]))
-    }
-    const on = () => {
-      if (!raf) raf = requestAnimationFrame(update)
-    }
-    update()
-    main.addEventListener('scroll', on, { passive: true })
-    window.addEventListener('resize', on)
-    return () => {
-      cancelAnimationFrame(raf)
-      main.removeEventListener('scroll', on)
-      window.removeEventListener('resize', on)
-    }
-  }, [groups, starts, sectionSelector])
 
   const cx = size / 2
   const cy = size / 2
   const R = Math.round((size / 2) * 0.78)
-  const W = 10
+  const W = mini ? 3 : 10
   const GAP = groups.length > 40 ? 0.5 : 1.2
   const ang = (n: number) => (n / total) * 360
   const focus = hover >= 0 ? hover : Math.max(0, starts.findIndex((s, k) => view[0] >= s && view[0] < s + groups[k].count))
   const sweep = ang(view[0])
   const hand = R + 10
-  const labelled = groups.every((g) => g.letter)
+  const labelled = !mini && groups.every((g) => g.letter)
   const g = groups[focus]
 
   return (
@@ -124,13 +88,13 @@ export function SongsRing({ groups, blips, nowAt, size, onJump, sectionSelector 
         })}
         {nowAt >= 0 && <circle {...cxy(polar(cx, cy, R, ang(nowAt + 0.5)))} r={4} className="sn-dot" />}
       </svg>
-      {g && (
+      {g && !mini && (
         <div className="sn-center" style={{ maxWidth: R * 0.9 }}>
           <div className={g.letter ? 'sn-now' : 'sn-now is-sm'} style={g.letter ? { fontSize: 56, lineHeight: 1 } : undefined}>
             {g.label}
           </div>
           <div className="sn-mono">
-            {g.count} {g.count === 1 ? 'song' : 'songs'}
+            {(Math.floor(view[0]) + 1).toLocaleString('en')}–{(Math.floor(view[1]) + 1).toLocaleString('en')}
           </div>
         </div>
       )}

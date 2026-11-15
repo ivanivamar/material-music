@@ -3,14 +3,15 @@
  * the ring, each next to its arc. Phone, narrow panels and long albums: the ring on top and a compact
  * numbered list under it. The centre shows what's playing (or a Play button when nothing here is).
  */
-import { useState, type CSSProperties, type MouseEvent } from 'react'
-import { IconButton, formatTime } from '../../components/ui'
+import { useState, type CSSProperties, type MouseEvent, type ReactNode } from 'react'
+import { IconButton } from '../../components/ui'
 import { Icon } from '../../design/icons'
 import { LikeButton } from '../../components/LikeButton'
 import { SonarRing, fmtClock, fmtLeft, polar, rad, useTimeLeft, useWidth, type SonarSong } from '../../components/sonar/Sonar'
 import { usePlayerPosition } from '../../state/player'
 import { useIsPhone } from '../../state/viewport'
 import type { Track } from '../../state/library'
+import { useLikedIndex } from '../../state/likes'
 
 export interface AlbumSonarProps {
   tracks: Track[]
@@ -21,25 +22,34 @@ export interface AlbumSonarProps {
   onPlayAt: (i: number) => void
   onPlay: () => void
   onMore: (trackId: string, e: MouseEvent) => void
+  /** album cover (shown in the middle while nothing from here plays) */
+  cover?: string | null
+  /** the last song heard from here (history), for "Resume …" */
+  resume?: { index: number } | null
+  /** phone: shown between the ring and the list (the buttons) */
+  between?: ReactNode
 }
 
 const MAX_TAGS = 16
 
-export function AlbumSonar({ tracks, current, playing, variousArtists, onPlayAt, onPlay, onMore }: AlbumSonarProps) {
+export function AlbumSonar({ tracks, current, playing, variousArtists, onPlayAt, onPlay, onMore, cover, resume, between }: AlbumSonarProps) {
+  const liked = useLikedIndex()
   const [ref, width] = useWidth<HTMLDivElement>()
   const phone = useIsPhone()
   const [hover, setHover] = useState(-1)
   const songs: SonarSong[] = tracks.map((t, i) => ({ id: t.id, len: t.duration || 0, title: t.title, num: String(t.track ?? i + 1).padStart(2, '0') }))
-  const tagged = !phone && tracks.length <= MAX_TAGS && width >= 760
+  const tagged = !phone && tracks.length <= MAX_TAGS && width >= 640
   const total = songs.reduce((a, s) => a + (s.len || 0), 0)
 
-  const center = (small: boolean) =>
+  const center = (small: boolean, fs?: number) =>
     current >= 0 ? (
       <>
         <div className="sn-lab">
           {small ? `${current + 1} of ${tracks.length}` : `${playing ? 'Now' : 'Paused'} · track ${current + 1} of ${tracks.length}`}
         </div>
-        <div className={`sn-now ${small ? 'is-sm' : ''}`}>{tracks[current].title}</div>
+        <div className={`sn-now ${small ? 'is-sm' : ''}`} style={fs ? { fontSize: fs } : undefined}>
+          {tracks[current].title}
+        </div>
         <NowClock len={tracks[current].duration || 0} />
         {!small && (
           <div className="sn-iconrow">
@@ -48,25 +58,28 @@ export function AlbumSonar({ tracks, current, playing, variousArtists, onPlayAt,
           </div>
         )}
       </>
-    ) : hover >= 0 ? (
-      <>
-        <div className="sn-lab">Track {hover + 1} of {tracks.length}</div>
-        <div className={`sn-now is-dim ${small ? 'is-sm' : ''}`}>{tracks[hover].title}</div>
-        <div className="sn-mono">{tracks[hover].duration ? formatTime(tracks[hover].duration) : '—'}</div>
-      </>
     ) : (
       <>
-        <button type="button" className="sn-play" onClick={onPlay} aria-label="Play album" style={small ? ({ width: 52, height: 52 } as CSSProperties) : undefined}>
-          <Icon name="playF" />
+        <button type="button" className={`sn-cover ${small ? 'is-sm' : ''}`} onClick={onPlay} aria-label="Play album">
+          {cover ? <img src={cover} alt="" draggable={false} /> : <span className="sn-cover-empty" />}
+          <span className="sn-cover-btn">
+            <Icon name="playF" />
+          </span>
         </button>
-        <div className="sn-lab">
+        <div className="sn-lab" style={{ color: 'var(--ink-secondary)' }}>
           {tracks.length} songs · {Math.round(total / 60)} min
         </div>
+        {resume && tracks[resume.index] && (
+          <button type="button" className="sn-resume" onClick={() => onPlayAt(resume.index)}>
+            Resume {tracks[resume.index].title}
+          </button>
+        )}
       </>
     )
 
   if (tagged) {
-    const size = Math.max(360, Math.min(560, width - 470))
+    // the tags need ~150px on each side of the ring
+    const size = Math.max(320, Math.min(560, width - 260))
     return (
       <div className="sn-album" ref={ref} style={{ paddingTop: 56, paddingBottom: 64 } as CSSProperties}>
         <SonarRing
@@ -77,11 +90,14 @@ export function AlbumSonar({ tracks, current, playing, variousArtists, onPlayAt,
           width={14}
           gap={1.8}
           ticks
+          tickEvery={[60, 300]}
+          guides
+          restHand
           hover={hover}
           onHover={setHover}
           onPick={onPlayAt}
           label="Tracklist around a ring, each song sized by its length"
-          overlay={({ cx, cy, R, spans }) =>
+          overlay={({ cx, cy, R, spans, pos }) =>
             tracks.map((t, i) => {
               const mid = spans[i].mid
               const [x, y] = polar(cx, cy, R + 34, mid)
@@ -110,8 +126,9 @@ export function AlbumSonar({ tracks, current, playing, variousArtists, onPlayAt,
                   aria-label={`${i === current ? 'Playing' : 'Play'} ${t.title}`}
                 >
                   <span className="sn-tag-meta">
-                    {songs[i].num} · {t.duration ? formatTime(t.duration) : '—'}
+                    {songs[i].num} · {i === current ? `${fmtClock(pos)} / ${fmtClock(t.duration || 0)}` : t.duration ? fmtClock(t.duration) : '—'}
                     {variousArtists ? ` · ${t.artist}` : ''}
+                    {liked.ids.has(t.id) ? ' · ♥' : ''}
                   </span>
                   <span className="sn-tag-title">{t.title}</span>
                 </button>
@@ -119,20 +136,48 @@ export function AlbumSonar({ tracks, current, playing, variousArtists, onPlayAt,
             })
           }
         >
-          {center(false)}
+          {center(false, size < 480 ? 22 : undefined)}
         </SonarRing>
       </div>
     )
   }
 
-  const size = Math.max(260, Math.min(phone ? 340 : 420, width || 340))
+  const size = Math.max(260, Math.min(phone ? 362 : 420, width || 362))
+  const swatch = (i: number) => (current < 0 ? 'rgba(255,255,255,.2)' : i < current ? 'rgba(255,255,255,.45)' : i === current ? '#ffffff' : 'rgba(255,255,255,.14)')
   return (
     <div ref={ref} className={phone || width < 900 ? 'sn-stack' : 'sn-side'}>
-      <SonarRing songs={songs} current={current} playing={playing} size={size} width={phone ? 10 : 12} gap={1.6} ticks={!phone} hover={hover} onHover={setHover} onPick={onPlayAt} label="Tracklist as a ring">
-        {center(true)}
+      <SonarRing
+        songs={songs}
+        current={current}
+        playing={playing}
+        size={size}
+        radius={0.78}
+        restHand
+        width={phone ? 10 : 12}
+        gap={1.6}
+        ticks
+        tickEvery={[60, 300]}
+        hover={hover}
+        onHover={setHover}
+        onPick={onPlayAt}
+        label="Tracklist as a ring"
+        overlay={({ cx, cy, R, spans }) =>
+          tracks.length <= 24 &&
+          spans.map((sp, i) => {
+            const [x, y] = polar(cx, cy, R + 24, sp.mid)
+            return (
+              <span key={i} className={`sn-num ${i === current ? 'is-on' : ''}`} style={{ left: x, top: y } as CSSProperties} aria-hidden>
+                {songs[i].num}
+              </span>
+            )
+          })
+        }
+      >
+        {center(true, phone ? 20 : undefined)}
       </SonarRing>
+      {between}
       <div className="sn-mini-list" role="list">
-        {current >= 0 && <TimeLeftHead songs={songs} current={current} />}
+        {current >= 0 && !phone && <TimeLeftHead songs={songs} current={current} />}
         {tracks.map((t, i) => (
           <button
             key={t.id}
@@ -148,11 +193,12 @@ export function AlbumSonar({ tracks, current, playing, variousArtists, onPlayAt,
             }}
           >
             <span className="sn-mrow-n">{songs[i].num}</span>
+            <span className="sn-swatch" style={{ background: swatch(i), boxShadow: i === current ? '0 0 6px rgba(255,255,255,.8)' : undefined }} />
             <span className="sn-mrow-t">
               <span className="sn-mrow-title">{t.title}</span>
               {variousArtists && <span className="sn-mrow-sub">{t.artist}</span>}
             </span>
-            <span className="sn-mrow-d">{t.duration ? formatTime(t.duration) : '—'}</span>
+            <span className="sn-mrow-d">{t.duration ? fmtClock(t.duration) : '—'}</span>
           </button>
         ))}
       </div>
