@@ -2,8 +2,9 @@
  * Playlist cover (handoff 09): the custom image when there is one, else a 2×2 mosaic of the first
  * four different album covers (gap 2px on #0B0B0C). One album → its cover fills the tile; two or
  * three → they repeat across the four tiles (a b / b a, a b / c a); none → the playlist glyph.
- * Liked songs has its own fixed cover: a dark warm tile with a top-left glow, a dot grid fading in
- * from the top-right, two quarter rings in the bottom-left and a big coral heart in the middle.
+ * Liked songs has its own fixed cover (Nov 15): a white glowing heart on a near-black tile in the
+ * app's atmosphere style — stone texture, faint contour lines of one terrain, light pools, grain and
+ * marine snow. Two static SVGs next to this file (generator: claude/liked-cover-heart/gen.py).
  */
 import type { CSSProperties } from 'react'
 import { Icon, type IconName } from '../../design/icons'
@@ -88,46 +89,20 @@ function MosaicTiles({ covers, lazy = false }: { covers: string[]; lazy?: boolea
   )
 }
 
-/** Dot grid for the Liked cover: top-right, fading out towards the middle (viewBox units). */
-const LIKED_DOTS = (() => {
-  const out: { x: number; y: number; r: number; o: number }[] = []
-  for (let y = 5; y < 64; y += 6.4)
-    for (let x = 95; x > 44; x -= 6.4) {
-      const d = Math.hypot(100 - x, y) / 62
-      if (d >= 1) continue
-      const t = 1 - d
-      out.push({ x: +x.toFixed(2), y: +y.toFixed(2), r: +(0.55 + 0.35 * t).toFixed(2), o: +(0.12 + 0.5 * t * t).toFixed(2) })
-    }
-  return out
-})()
+/**
+ * The Liked songs cover art. Up to 56 px the small version is used (bigger heart, no contour lines or
+ * snow), so the heart stays clear in rows and the sidebar; bigger tiles and parent-sized covers get
+ * the full one.
+ */
+const LIKED_ART = new URL('./liked-cover.svg', import.meta.url).href
+const LIKED_ART_SMALL = new URL('./liked-cover-small.svg', import.meta.url).href
 
-/** The Liked songs cover: one SVG that scales with the tile, so the same look from 26 to 264 px. */
 export function LikedCover({ size, className, style }: { size?: number; className?: string; style?: CSSProperties }) {
   const cls = ['plc', 'plc-liked', className].filter(Boolean).join(' ')
+  const src = size !== undefined && size <= 56 ? LIKED_ART_SMALL : LIKED_ART
   return (
     <div className={cls} style={{ ...(size ? { width: size, height: size } : {}), ...style }} role="img" aria-label="Liked songs">
-      <svg className="plc-liked-art" viewBox="0 0 100 100" aria-hidden>
-        <g className="plc-liked-dots">
-          {LIKED_DOTS.map((d, i) => (
-            <circle key={i} cx={d.x} cy={d.y} r={d.r} opacity={d.o} />
-          ))}
-        </g>
-        <g className="plc-liked-rings">
-          <circle cx="8" cy="95" r="33" />
-          <circle cx="8" cy="95" r="45" />
-        </g>
-        <path className="plc-liked-big" d={heartAt(50, 52, 2.4)} />
-      </svg>
+      <img className="plc-full" src={src} alt="" decoding="async" draggable={false} />
     </div>
   )
-}
-
-/** Material "favorite" (24-unit box, centred) placed at (cx, cy) and scaled by k. */
-function heartAt(cx: number, cy: number, k: number): string {
-  const P = [
-    [12, 21.35], [10.55, 20.03], [5.4, 15.36, 2, 12.28, 2, 8.5], [2, 5.42, 4.42, 3, 7.5, 3], [9.24, 3, 10.91, 3.81, 12, 5.09],
-    [13.09, 3.81, 14.76, 3, 16.5, 3], [19.58, 3, 22, 5.42, 22, 8.5], [22, 12.28, 18.6, 15.36, 13.45, 20.04], [12, 21.35],
-  ]
-  const f = (x: number, y: number) => `${(cx + (x - 12) * k).toFixed(2)} ${(cy + (y - 12.2) * k).toFixed(2)}`
-  return P.map((p, i) => (i === 0 ? `M${f(p[0], p[1])}` : p.length === 2 ? `L${f(p[0], p[1])}` : `C${f(p[0], p[1])} ${f(p[2], p[3])} ${f(p[4], p[5])}`)).join('') + 'Z'
 }
