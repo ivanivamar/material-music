@@ -283,3 +283,13 @@ onAccountReset(() => {
   queue.length = 0
   bump()
 })
+
+/** Library artists whose cached related artists include Deezer artist `dz`, most related first. */
+export function listersOf(dz: number): string[] {
+  const out: { id: string; at: number }[] = []
+  for (const [artistId, e] of Object.entries(cache)) {
+    const i = e.artists.findIndex((a) => a.id === dz)
+    if (i >= 0) out.push({ id: artistId, at: i })
+  }
+  return out.sort((a, b) => a.at - b.at).map((x) => x.id)
+}

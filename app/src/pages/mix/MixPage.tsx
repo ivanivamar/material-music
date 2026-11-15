@@ -36,9 +36,10 @@ import { MixCard, cardSize, useHomeSize } from '../home/cards'
 import { useMadeForYou } from '../../state/madeForYou'
 import { hideFromDayMix, nextUpdateLabel, type DayMix } from '../../state/daymix'
 import { DISC_ID, type DiscoveryMix } from '../../state/discovery'
-import { ListRing } from '../../components/sonar/ListRing'
-import { fmtClock, usePlayCounts, type SonarSong } from '../../components/sonar/Sonar'
-import { SnHead, SnRow, UpNext } from '../../components/sonar/SnList'
+import { ListHero } from '../../components/list/ListHero'
+import { ListHead, RowCover, SongRow, UpNext } from '../../components/list/SongList'
+import { fmtClock, usePlayCounts, type ListSong } from '../../components/list/listUtils'
+import { LikeButton } from '../../components/LikeButton'
 import { Crumbs } from '../library/common'
 import { DiscoveryPending, DiscoveryView } from './DiscoveryView'
 
@@ -107,26 +108,9 @@ function MixView({ c, mix }: { c: Catalogue; mix: MixPlan }) {
   const [saved, setSaved] = useState(false)
   const counts = usePlayCounts()
   const likedIx = useLikedIndex()
-  const songs: SonarSong[] = useMemo(() => {
-    const max = Math.max(1, ...tracks.map((t) => counts.get(t.id) ?? 0))
-    return tracks.map((t) => ({ id: t.id, len: t.duration || 0, title: t.title, isNew: mix.kind !== 'redis' && !last.has(t.id), weight: (counts.get(t.id) ?? 0) / max }))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mix.trackIds.join('|'), counts, last])
-  const ringCurrent = curId ? tracks.findIndex((t) => t.id === curId) : -1
-  const ring = (size: number, compactRing: boolean) => (
-    <ListRing
-      songs={songs}
-      current={ringCurrent}
-      playing={playing}
-      size={size}
-      onPick={(i) => playFrom(tracks[i])}
-      onPlay={playAll}
-      blips
-      legend={songs.some((x) => x.isNew) ? ['length', 'new', 'blip'] : ['length', 'blip']}
-      label={`${mix.title} as a ring: solid arcs are songs you know, hatched arcs are new to you`}
-      compact={compactRing}
-    />
-  )
+  const fresh = (t: Track) => mix.kind !== 'redis' && !last.has(t.id)
+  const songs: ListSong[] = tracks.map((t) => ({ id: t.id, len: t.duration || 0 }))
+  const current = curId ? tracks.findIndex((t) => t.id === curId) : -1
 
   const save = () => {
     const d = new Date()
@@ -154,52 +138,78 @@ function MixView({ c, mix }: { c: Catalogue; mix: MixPlan }) {
     return m >= 60 ? `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, '0')} min` : `${m} min`
   }
   const title = dayPlan ? dayPlan.phrase : mix.title
-  const newCount = songs.filter((x) => x.isNew).length
+  const newCount = tracks.filter(fresh).length
   const expires = dayPlan ? `Next update ${nextRefresh}` : `Refreshes ${nextRefresh}`
   const why = (t: Track) => {
-    if (mix.kind !== 'redis' && !last.has(t.id)) return 'New to you'
+    if (fresh(t)) return 'New to you'
     if (likedIx.ids.has(t.id)) return 'Liked'
     const n = counts.get(t.id) ?? 0
     return n === 1 ? 'Played once' : `Played ${n} times`
   }
-  const playBtn = (cls: string) => (
-    <Button icon={playing ? 'pauseF' : 'playF'} onClick={playAll} className={cls}>
-      {playing ? 'Pause' : active ? 'Resume' : 'Play'}
-    </Button>
+  const buttons = (
+    <>
+      <Button icon={playing ? 'pauseF' : 'playF'} onClick={playAll}>
+        {playing ? 'Pause' : active ? 'Resume' : 'Play'}
+      </Button>
+      {phone ? (
+        <IconButton icon="shuffle" label="Shuffle" shape="square" className="lh-sq" onClick={() => playMix(mix, { shuffle: true })} />
+      ) : (
+        <Button variant="secondary" icon="shuffle" onClick={() => playMix(mix, { shuffle: true })}>
+          Shuffle
+        </Button>
+      )}
+      <Button variant="secondary" onClick={save}>
+        {saved ? 'Saved' : phone ? 'Save' : 'Save as playlist'}
+      </Button>
+      {!phone && <IconButton icon="more" label="More" shape="square" className="lh-sq" onClick={menu} />}
+    </>
   )
-  const shuffleBtn = <IconButton icon="shuffle" label="Shuffle" shape="square" className="snp-sq" onClick={() => playMix(mix, { shuffle: true })} />
-  const saveBtn = (
-    <Button variant="secondary" onClick={save} className="snp-edit">
-      {saved ? 'Saved' : phone ? 'Save' : 'Save as playlist'}
-    </Button>
+  const tags = dayPlan && dayPlan.tags.some((t) => t.genre) && (
+    <div className="lh-rules">
+      {dayPlan.tags
+        .filter((t) => t.genre)
+        .map((t) => (
+          <span key={t.label} className="lh-rule">
+            {t.label}
+          </span>
+        ))}
+    </div>
   )
   const list = (
-    <div className="snl snl-mix" role="list">
-      {!phone && <SnHead cols={['#', null, 'Title', 'Artist', 'Why it’s here', 'Time']} />}
+    <div className="sl sl-mix" role="list">
+      {!phone && <ListHead cols={['#', null, 'Title', 'Why it’s here', null, 'Time', null]} />}
       {tracks.map((t, i) => {
-        const fresh = mix.kind !== 'redis' && !last.has(t.id)
         const unavailable = !!allowed && !allowed.has(t.id)
+        const album = c.albums[t.albumId]
         const artist = (
           <a href={artistHref(t.artistId)} draggable={false} onClick={(e) => e.stopPropagation()}>
             {t.artist}
           </a>
         )
         return (
-          <SnRow
+          <SongRow
             key={t.id}
             phone={phone}
-            n={String(i + 1).padStart(2, '0')}
-            len={t.duration ?? 0}
-            isNew={fresh}
+            n={String(i + 1)}
+            art={<RowCover fileId={album?.cover} />}
+            isNew={fresh(t)}
             title={t.title}
-            colA={artist}
-            colB={why(t)}
-            sub={artist}
+            sub={
+              phone ? (
+                <>
+                  {artist} · {why(t).toLowerCase()}
+                </>
+              ) : (
+                artist
+              )
+            }
+            liked={likedIx.ids.has(t.id)}
+            colA={why(t)}
+            like={<LikeButton trackId={t.id} size="xs" hover />}
             time={t.duration ? fmtClock(t.duration) : '—'}
-            meta={t.duration ? fmtClock(t.duration) : ''}
             current={curId === t.id}
             playing={playing}
-            played={ringCurrent >= 0 && i < ringCurrent}
+            played={current >= 0 && i < current}
             dim={unavailable}
             onPlay={() => playFrom(t)}
             onMore={(e) => actions.menu({ kind: 'track', trackId: t.id }, e)}
@@ -211,96 +221,46 @@ function MixView({ c, mix }: { c: Catalogue; mix: MixPlan }) {
     </div>
   )
 
-  if (phone)
-    return (
-      <div className="mx-page hue-scope snpage is-phone" style={{ '--h': mix.hue, '--hc': 1 } as CSSProperties}>
+  return (
+    <div className={`mx-page hue-scope lp ${phone ? 'is-phone' : ''}`} style={{ '--h': mix.hue, '--hc': 1 } as CSSProperties}>
+      {phone ? (
         <div className="alp-bar">
           <IconButton icon="chevL" label="Back" onClick={() => back(href('home'))} />
           <span className="alp-flex" />
           <IconButton icon="more" label="More" onClick={menu} />
         </div>
-        <div className="alp-head">
-          <MixCover c={c} mix={mix} size={56} radius={10} />
-          <div className="alp-text">
-            <h1 className="alp-title" style={{ fontSize: 26 }}>
-              {title}
-            </h1>
-            <div className="alp-lab">{[KIND_SHORT[mix.kind], newCount ? `${newCount} new` : null, dayPlan ? `next ${nextRefresh}` : `refreshes ${nextRefresh}`].filter(Boolean).join(' · ')}</div>
-          </div>
+      ) : (
+        <Crumbs fallback={href('home')} parts={[<a key="h" href={href('home')}>HOME</a>, <span key="m">MIXES</span>]} />
+      )}
+      <ListHero
+        phone={phone}
+        art={<MixCover c={c} mix={mix} size={phone ? 120 : 220} radius={12} />}
+        kicker={phone ? KIND_SHORT[mix.kind] : kicker}
+        title={title}
+        titleText={title}
+        line={mix.why ? <span className="lh-desc">{mix.why}</span> : undefined}
+        stats={[`${tracks.length} songs`, fmtHM(seconds), newCount ? `${newCount} new to you` : null].filter(Boolean).join(' · ')}
+        extra={tags || undefined}
+        buttons={buttons}
+        aside={phone ? undefined : <span className="lh-sorted">{dayPlan ? expires : `${expires} · save it to keep it`}</span>}
+      />
+      {offline !== null && (
+        <div className="mx-offline">
+          <Icon name="offline" />
+          <span className="mx-offline-t">You’re offline. Only downloaded songs play.</span>
+          <span className="mx-offline-m">
+            {offline} of {tracks.length}
+          </span>
         </div>
-        <div className="alp-btns" style={{ marginTop: 14 }}>
-          {playBtn('alp-play')}
-          {shuffleBtn}
-          {saveBtn}
-        </div>
-        {offline !== null && (
-          <div className="mx-offline">
-            <Icon name="offline" />
-            <span className="mx-offline-t">You’re offline. Only downloaded songs play.</span>
-            <span className="mx-offline-m">
-              {offline} of {tracks.length}
-            </span>
-          </div>
-        )}
-        <div className="sn-phone-ring">{ring(300, true)}</div>
-        <UpNext songs={songs} current={ringCurrent} />
+      )}
+      <section className="lp-main">
+        {phone && <UpNext phone songs={songs} current={current} />}
         {list}
-      </div>
-    )
-
-  return (
-    <div className="mx-page hue-scope snpage" style={{ '--h': mix.hue, '--hc': 1 } as CSSProperties}>
-      <div className="snp">
-        <aside className="snp-side">
-          <Crumbs fallback={href('home')} parts={[<a key="h" href={href('home')}>HOME</a>, <span key="m">MIXES</span>]} />
-          <div className="snp-mixhead">
-            <MixCover c={c} mix={mix} size={76} radius={12} />
-            <div className="snp-mixtext">
-              <span className="sn-lab" style={{ color: 'var(--ink-secondary)' }}>
-                {kicker}
-              </span>
-              <h1 className="snp-title" style={{ '--ts': title.length > 24 ? '32px' : '40px' } as CSSProperties} title={title}>
-                {title}
-              </h1>
-            </div>
-          </div>
-          {mix.why && <div className="snp-desc">{mix.why}</div>}
-          {dayPlan && dayPlan.tags.some((t) => t.genre) && (
-            <div className="snp-chips">
-              {dayPlan.tags
-                .filter((t) => t.genre)
-                .map((t) => (
-                  <span key={t.label} className="snp-chip is-static">
-                    {t.label}
-                  </span>
-                ))}
-            </div>
-          )}
-          <div className="snp-ring">{ring(380, false)}</div>
-          <div className="al2-facts">
-            <div className="al2-fact">
-              <span className="al2-k">{dayPlan ? 'Updates' : 'Expires'}</span>
-              <span className="al2-v is-on">{dayPlan ? expires : `${expires} · save it to keep it`}</span>
-            </div>
-          </div>
-        </aside>
-        <section className="snp-main">
-          <div className="snp-bar">
-            {playBtn('snp-play')}
-            {shuffleBtn}
-            {saveBtn}
-            <IconButton icon="more" label="More" shape="square" className="snp-sq" onClick={menu} />
-            <span className="snp-flex" />
-            <span className="snp-sorted">
-              {tracks.length} songs · {fmtHM(seconds)}
-            </span>
-          </div>
-          {list}
-          <div className="mx-foot">
-            {mixContext(mix).label} · {plural(tracks.length, 'song', 'songs')}
-          </div>
-        </section>
-      </div>
+        <div className="lp-foot">
+          {mixContext(mix).label} · {plural(tracks.length, 'song', 'songs')}
+          {phone ? ` · ${dayPlan ? `next ${nextRefresh}` : `refreshes ${nextRefresh}`}` : ''}
+        </div>
+      </section>
     </div>
   )
 }

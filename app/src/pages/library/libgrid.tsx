@@ -599,15 +599,20 @@ export function jumpToLetter(l: string, present: Set<string>): string | null {
 
 export { LETTERS }
 
-/** Vertical A–Z strip on the right: tap / drag to jump; the letter at the top of the view is lit. */
-export function Scrubber({ present }: { present: Set<string> }) {
-  const [active, setActive] = useActiveLetter(present)
+/**
+ * Vertical A–Z strip on the right (desktop and phone): tap / drag to jump; the letter at the top of
+ * the view is lit. Windowed lists (Library → Songs) pass their own `onJump` and `active`, since their
+ * letter heads aren't all in the page.
+ */
+export function Scrubber({ present, onJump, active: activeProp }: { present: Set<string>; onJump?: (l: string) => string | null; active?: string | null }) {
+  const [activeDom, setActive] = useActiveLetter(present)
+  const active = activeProp !== undefined ? activeProp : activeDom
   const [bubble, setBubble] = useState<{ l: string; y: number } | null>(null)
   const stripRef = useRef<HTMLDivElement>(null)
   const dragging = useRef(false)
 
   const jump = (l: string) => {
-    const got = jumpToLetter(l, present)
+    const got = onJump ? onJump(l) : jumpToLetter(l, present)
     if (got) setActive(got)
   }
   const at = (clientY: number) => {

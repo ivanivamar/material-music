@@ -29,7 +29,6 @@ import { initDjLive } from './dj/live'
 import { historyStore } from './state/history'
 import './state/removal'
 import { releasesStore } from './state/releases'
-import { initDiscover } from './state/discover'
 import { initPlayTracker } from './player/playTracker'
 import { initPlayerSync } from './sync/playerSync'
 import { initCloud } from './sync/cloud'
@@ -119,8 +118,6 @@ initRadio()
 initWidget()
 // Android: release-day notifications for New Releases reminders, even with the app closed.
 initReleaseNotifications()
-// New Releases → Discover: recent releases by related artists who aren't in the library.
-initDiscover()
 // Discovery mix (Nov 2026): this week's previews + wishlist, so a restored queue knows its songs
 initDiscovery()
 // Concerts: Ticketmaster tour dates once a day; home city + hand-added shows synced through Drive concerts.json.

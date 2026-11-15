@@ -1,54 +1,48 @@
 /**
- * New Releases (Material 3 Expressive redesign, handoff NewReleasesMaterial.dc.html).
- * The daily MusicBrainz sweep of artists in the library.
- * Tabs:
- *   Upcoming: Weekly timeline with countdowns, rail node indicators and Remind me toggles.
- *   Out now:  Hero banner (newest from most played) + card grid (desktop) / swipe rows (phone).
- *   Discover: Related artist recommendations to follow for sweeps.
+ * New releases (Nov 2026 canvas "New releases page"): one page, your artists only — the daily
+ * MusicBrainz sweep of the library artists plus the Deezer artists you follow. Related artists live
+ * on the artist pages now (Fans also like), so there is no Discover tab, no hero and no tabs.
+ *
+ *   FROM 142 ARTISTS YOU FOLLOW · CHECKED TODAY 06:12
+ *   New releases                                              ⟳  [⚙ Followed artists]
+ *   (All) (Albums) (Singles & EPs)                     2 NEW · 3 SEEN   (Show seen)
+ *   COMING SOON ——— n          compact cards, bell = remind me (notification at 09:00 on Android)
+ *   THIS WEEK ———               rows: cover · title / artist / facts · status · Preview | Play · ✓ 👁 ✕
+ *   EARLIER THIS MONTH ———
+ *   OLDER ———
+ *
+ * A row opens the release panel (tracklist with previews, links, match). Phone: swipe a row right for
+ * seen, left to dismiss. `#/new?rel=<id>` (Home, notifications) opens a release; `?artists` the list.
  */
-import { useEffect, useMemo, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent } from 'react'
-import { Chip, EmptyState, LinearProgress, Menu, MenuItem, Segmented, Tabs as KitTabs, Button, IconButton, Alert } from '../../components/ui'
+import { useEffect, useMemo, useState, type MouseEvent } from 'react'
+import { Alert, Button, EmptyState, IconButton, LinearProgress } from '../../components/ui'
 import { Icon } from '../../design/icons'
+import { PreviewRing } from '../../components/list/PreviewRing'
+import { ListSection } from '../../components/list/SongList'
+import { SectionHead } from '../library/common'
 import { useOnline } from '../../state/downloads'
 import { useHistory } from '../../state/history'
 import { useLibrary, type Catalogue } from '../../state/library'
 import { nowPlayingStore } from '../../state/nowPlaying'
-import { releasesStore, sweepTargets, useReleases, type ReleasesState, type StatusFilter } from '../../state/releases'
-import { TOP_ARTISTS, buildFeed, buildSuggestions, fmtRelDate, fmtStamp, isOwned, type Feed, type FeedItem, type UpWeek } from '../../state/releaseViews'
-import { refreshDiscover } from '../../state/discover'
-import { stopPreview } from '../../state/preview'
-import { DiscoverTab } from './Discover'
+import { releasesStore, sweepTargets, useReleases, type ReleasesState } from '../../state/releases'
+import { buildFeed, fmtStamp, isOwned, type FeedItem } from '../../state/releaseViews'
+import { stopPreview, usePreview } from '../../state/preview'
 import { useIsPhone } from '../../state/viewport'
-import { artistHref, go, href, replace } from '../../shell/routes'
+import { href, replace } from '../../shell/routes'
 import { registerBack } from '../../native/backButton'
 import { FollowedArtists, ReleaseDetail, ReleasePanel, type PanelState } from './ReleasePanel'
-import {
-  Countdown,
-  Dot,
-  MatchingVeil,
-  OwnedTag,
-  PreviewButton,
-  ReleaseCover,
-  Spinner,
-  SwipeRow,
-  TypeBadge,
-  canPreview,
-  cardMeta,
-  longMeta,
-  ownedCount,
-  phoneMeta,
-  playRelease,
-  useReleaseActions,
-  type ReleaseActions,
-} from './parts'
+import { MatchingVeil, OwnedTag, PreviewButton, ReleaseCover, SwipeRow, canPreview, ownedCount, playRelease, useReleaseActions, type ReleaseActions } from './parts'
+import { agoLabel, dayLabel, firstClip, relFacts } from './relText'
 
-type Tab = 'up' | 'out' | 'disc'
-const TABS: [Tab, string, Parameters<typeof Icon>[0]['name']][] = [
-  ['up', 'Upcoming', 'upcoming'],
-  ['out', 'Out now', 'album'],
-  ['disc', 'Discover', 'explore'],
+type TypeFilter = 'all' | 'album' | 'short'
+const TYPES: [TypeFilter, string][] = [
+  ['all', 'All'],
+  ['album', 'Albums'],
+  ['short', 'Singles & EPs'],
 ]
-let sessionTab: Tab = 'up'
+let sessionType: TypeFilter = 'all'
+const DAY = 86_400_000
+const SOON_SHOWN = 6
 
 export function NewReleases() {
   const { data } = useLibrary()
@@ -70,19 +64,23 @@ function panelFromHash(): PanelState {
   return null
 }
 
+/** Seen by the user (a release that's partly in the library follows its stored mark). */
+const isSeen = (it: FeedItem) => it.status === 'seen' || (isOwned(it.status) && it.mark === 'seen')
+
 function Page({ c }: { c: Catalogue }) {
   const rs = useReleases()
   const history = useHistory()
   const phone = useIsPhone()
   const online = useOnline()
   const feed = buildFeed(rs.doc, c, history.plays, rs.prefs)
-  const suggestions = buildSuggestions(rs.doc, c, history.plays)
   const artistsN = useMemo(() => sweepTargets(c, rs.doc).length, [c, rs.doc])
-  const [tab, setTabState] = useState<Tab>(sessionTab)
-  const setTab = (t: Tab) => {
-    sessionTab = t
-    setTabState(t)
+  const [type, setTypeState] = useState<TypeFilter>(sessionType)
+  const setType = (t: TypeFilter) => {
+    sessionType = t
+    setTypeState(t)
   }
+  const showSeen = rs.prefs.status !== 'new'
+  const [allSoon, setAllSoon] = useState(false)
 
   const [panel, setPanelState] = useState<PanelState>(() => panelFromHash())
   const [shown, setShown] = useState<PanelState>(panel)
@@ -92,7 +90,7 @@ function Page({ c }: { c: Catalogue }) {
       if (!p) return
       setPanelState(p)
       setShown(p)
-      if (p.kind === 'rel' && releasesStore.get().doc.marks[p.id]?.[0] !== 'gone') {
+      if (p.kind === 'rel') {
         const m = releasesStore.get().doc.marks[p.id]?.[0]
         if (!m || m === 'new') releasesStore.mark(p.id, 'seen')
       }
@@ -112,23 +110,19 @@ function Page({ c }: { c: Catalogue }) {
   const close = () => setPanelState(null)
   const act = useReleaseActions({ onDismissed: (id) => setPanel((p) => (p?.kind === 'rel' && p.id === id ? null : p)) })
 
-  // a song preview doesn't follow you out of New Releases
+  // a song preview doesn't follow you out of New releases
   useEffect(() => () => stopPreview(), [])
 
   useEffect(() => {
     if (releasesStore.due()) void releasesStore.sweep()
-    else {
-      void releasesStore.fillDetails()
-      void refreshDiscover()
-    }
+    else void releasesStore.fillDetails()
   }, [])
 
   useEffect(() => {
     if (!panel) return
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape' || e.defaultPrevented) return
-      const ui = nowPlayingStore.get()
-      if (ui.open) return
+      if (nowPlayingStore.get().open) return
       e.preventDefault()
       setPanelState(null)
     }
@@ -149,20 +143,36 @@ function Page({ c }: { c: Catalogue }) {
   }
   const detailItem = shown?.kind === 'rel' ? feed.byId.get(shown.id) : undefined
 
+  // what the page shows: visible releases (not dismissed, not complete in the library, artist followed)
+  const view = useMemo(() => {
+    const byType = (it: FeedItem) => type === 'all' || (type === 'album' ? it.rel.type === 'album' : it.rel.type === 'ep' || it.rel.type === 'single')
+    const live = feed.all.filter((it) => it.visible && byType(it))
+    const soon = live.filter((it) => it.upcoming).sort((a, b) => a.day - b.day)
+    const out = live.filter((it) => !it.upcoming)
+    const counts = { fresh: out.filter((it) => !isSeen(it)).length, seen: out.filter(isSeen).length }
+    const list = showSeen ? out : out.filter((it) => it.status === 'acq' || !isSeen(it))
+    const t0 = new Date()
+    t0.setHours(0, 0, 0, 0)
+    const weekStart = t0.getTime() - 6 * DAY
+    const monthStart = new Date(t0.getFullYear(), t0.getMonth(), 1).getTime()
+    const groups = [
+      { key: 'week', label: 'This week', items: list.filter((it) => it.day >= weekStart) },
+      { key: 'month', label: 'Earlier this month', items: list.filter((it) => it.day < weekStart && it.day >= monthStart) },
+      { key: 'older', label: 'Older', items: list.filter((it) => it.day < Math.min(weekStart, monthStart)) },
+    ].filter((g) => g.items.length)
+    return { soon, counts, groups, any: live.length > 0 }
+  }, [feed, type, showSeen])
+
   const firstSweep = !rs.doc.sweep.at
-  const showTabs = !firstSweep || feed.all.length > 0
-  const discN = suggestions.filter((s) => !s.followed).length
-  const counts: Record<Tab, number> = { up: feed.tabs.up, out: feed.tabs.out, disc: discN }
-  const filtered = (tab === 'out' && rs.prefs.status !== 'all') || rs.prefs.artist !== null
-  const empty = showTabs && !rs.sweeping && ((tab === 'up' && !feed.weeks.length) || (tab === 'out' && !feed.outShown))
+  const soonShown = allSoon ? view.soon : view.soon.slice(0, phone ? 12 : SOON_SHOWN)
 
   return (
-    <div className={`nr is-legacy ${phone ? 'is-phone' : ''}`}>
+    <div className={`rl ${phone ? 'is-phone' : ''}`}>
       <Header rs={rs} artistsN={artistsN} phone={phone} online={online} onArtists={() => setPanel({ kind: 'artists' })} />
 
       {!online && (
         <Alert tone="info" icon="offline" actions={rs.doc.sweep.at && <span className="nr-mono">LAST CHECKED {fmtStamp(rs.doc.sweep.at)}</span>}>
-          No signal. Showing the last sonar.
+          No signal. Showing the last check. Previews need a connection.
         </Alert>
       )}
       {rs.error && (
@@ -176,98 +186,77 @@ function Page({ c }: { c: Catalogue }) {
             </Button>
           }
         >
-          Couldn’t complete the sweep.{' '}
-          {rs.error.status === 503 || rs.error.status === 429 ? 'MusicBrainz rate limited. Retrying shortly.' : 'MusicBrainz request failed.'}
+          Couldn’t complete the check. {rs.error.status === 503 || rs.error.status === 429 ? 'MusicBrainz rate limited. Retrying shortly.' : 'MusicBrainz request failed.'}
         </Alert>
       )}
 
-      {showTabs && <ReleaseTabs tab={tab} counts={counts} phone={phone} onTab={setTab} />}
-      {showTabs && tab !== 'disc' && (
-        <Filters
-          key={tab}
-          tab={tab}
-          rs={rs}
-          feed={feed}
-          c={c}
-          phone={phone}
-        />
-      )}
-
-      {tab === 'out' && feed.hero && (
-        <Hero
-          item={feed.hero}
-          line={phone ? feed.heroLine.phone : feed.heroLine.desktop}
-          phone={phone}
-          act={act}
-          online={online}
-          onOpen={open}
-        />
-      )}
-
-      {empty && (
-        <EmptyState
-          icon={filtered ? 'tune' : tab === 'up' ? 'upcoming' : 'album'}
-          title={filtered ? 'No matching releases' : tab === 'up' ? 'No upcoming releases found' : 'All caught up'}
-          body={
-            filtered
-              ? 'Your active filters hide everything on this tab.'
-              : tab === 'up'
-              ? 'MusicBrainz is checked daily for new announcements. The next sweep runs at 06:00.'
-              : 'All recent releases from your artists are either in your library or marked as seen.'
-          }
-          actions={
-            filtered ? (
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={() => releasesStore.setPrefs({ status: 'all', artist: null })}
-              >
-                Clear filters
-              </button>
-            ) : undefined
-          }
-        />
-      )}
-
-      {tab === 'up' && feed.weeks.length > 0 && (
-        <div className="nr-weeks">
-          {feed.weeks.map((w) => (
-            <UpcomingWeek key={w.key} week={w} phone={phone} act={act} onOpen={open} />
+      {(view.any || type !== 'all' || !firstSweep) && (
+        <div className="sl-tools rl-tools">
+          {TYPES.map(([k, label]) => (
+            <button key={k} type="button" className={`sl-chip ${type === k ? 'is-on' : ''}`} aria-pressed={type === k} onClick={() => setType(k)}>
+              {label}
+            </button>
           ))}
+          <span className="lh-flex" />
+          {!phone && (
+            <span className="lh-sorted">
+              {view.counts.fresh} new · {view.counts.seen} seen
+            </span>
+          )}
+          <button type="button" className={`sl-chip ${showSeen ? 'is-on' : ''}`} aria-pressed={showSeen} onClick={() => releasesStore.setPrefs({ status: showSeen ? 'new' : 'all' })}>
+            <Icon name="eye" />
+            Show seen
+          </button>
         </div>
       )}
 
-      {tab === 'out' && (
-        <>
-          {feed.groups.map((g) => (
-            <section key={g.key} className="nr-group">
-              <div className="nr-ghead">
-                <span>{g.label}</span>
-                <span className="nr-gline" />
-                <span className="nr-gcount">{phone ? String(g.items.length).padStart(2, '0') : g.range}</span>
-              </div>
-              {phone ? (
-                <div className="nr-rows">
-                  {g.items.map((it) => (
-                    <PhoneRow key={it.rel.id} item={it} act={act} onOpen={open} />
-                  ))}
-                </div>
-              ) : (
-                <div className="nr-grid">
-                  {g.items.map((it) => (
-                    <Card key={it.rel.id} item={it} act={act} online={online} onOpen={open} />
-                  ))}
-                </div>
-              )}
-            </section>
-          ))}
-          {phone && feed.groups.length > 0 && (
-            <div className="nr-swipe-hint">SWIPE RIGHT FOR SEEN · LEFT TO DISMISS</div>
+      {view.soon.length > 0 && (
+        <section className="lp-sec rl-soon">
+          {phone ? <ListSection phone label="Coming soon" right={String(view.soon.length)} /> : <SectionHead label="COMING SOON" right={`${view.soon.length} · REMIND ME = A NOTIFICATION AT 09:00`} />}
+          <div className={phone ? 'rl-soon-row' : 'rl-soon-grid'}>
+            {soonShown.map((it) => (
+              <SoonCard key={it.rel.id} item={it} act={act} onOpen={open} />
+            ))}
+          </div>
+          {!phone && view.soon.length > SOON_SHOWN && (
+            <button type="button" className="more-btn" onClick={() => setAllSoon((v) => !v)}>
+              {allSoon ? 'SHOW FEWER' : `SHOW ALL ${view.soon.length}`}
+            </button>
           )}
-        </>
+        </section>
       )}
 
-      {tab === 'disc' && <DiscoverTab items={suggestions} phone={phone} online={online} topN={TOP_ARTISTS} />}
+      {view.groups.map((g) => (
+        <section key={g.key} className="lp-sec rl-group">
+          {phone ? <ListSection phone label={g.label} right={String(g.items.length)} /> : <SectionHead label={g.label.toUpperCase()} right={`${g.items.length}`} />}
+          <div className="rl-rows">
+            {g.items.map((it) =>
+              phone ? (
+                <SwipeRow key={it.rel.id} seenWord={it.status === 'seen' ? 'Unseen' : 'Seen'} onTap={() => open(it)} onSeen={() => act.toggleSeen(it)} onDismiss={() => act.dismiss(it)}>
+                  <PhoneRow item={it} online={online} />
+                </SwipeRow>
+              ) : (
+                <Row key={it.rel.id} item={it} act={act} online={online} onOpen={open} />
+              ),
+            )}
+          </div>
+        </section>
+      ))}
+      {phone && view.groups.length > 0 && <div className="nr-swipe-hint">SWIPE RIGHT FOR SEEN · LEFT TO DISMISS</div>}
+
+      {!rs.sweeping && view.groups.length === 0 && view.soon.length === 0 && (
+        <EmptyState
+          icon={firstSweep ? 'radar' : 'album'}
+          title={firstSweep ? 'Nothing checked yet' : type !== 'all' || !showSeen ? 'Nothing here with these filters' : 'All caught up'}
+          body={
+            firstSweep
+              ? 'Your artists are checked on MusicBrainz once a day. The first check starts when you’re online.'
+              : type !== 'all' || !showSeen
+                ? 'Try All, or turn on Show seen.'
+                : 'Recent releases from your artists are in your library or dismissed. The next check runs at 06:00.'
+          }
+        />
+      )}
 
       <ReleasePanel open={!!panel} phone={phone} onClose={close} contentKey={shown?.kind === 'rel' ? shown.id : (shown?.kind ?? '')}>
         {shown?.kind === 'artists' && <FollowedArtists c={c} phone={phone} onClose={close} />}
@@ -279,662 +268,162 @@ function Page({ c }: { c: Catalogue }) {
 
 /* ── Header ──────────────────────────────────────────── */
 
-function Header({
-  rs,
-  artistsN,
-  phone,
-  online,
-  onArtists,
-}: {
-  rs: ReleasesState
-  artistsN: number
-  phone: boolean
-  online: boolean
-  onArtists: () => void
-}) {
+function Header({ rs, artistsN, phone, online, onArtists }: { rs: ReleasesState; artistsN: number; phone: boolean; online: boolean; onArtists: () => void }) {
   const sw = rs.sweeping
   const at = rs.doc.sweep.at
-  const line = sw
-    ? phone
-      ? `Sweep · ${sw.done} / ${sw.total}`
-      : `Sonar sweep · ${sw.done} / ${sw.total} artists`
-    : at
-    ? phone
-      ? `Last sonar · ${fmtStamp(at)}`
-      : `Last sonar · ${fmtStamp(at)} · ${artistsN} artists`
-    : phone
-    ? 'No sonar yet'
-    : `No sonar yet · ${artistsN} artists`
-
-  const pct = sw && sw.total ? (sw.done / sw.total) * 100 : 0
-
+  const line = sw ? `Checking · ${sw.done} / ${sw.total} artists` : at ? `${phone ? '' : `From ${artistsN} artists you follow · `}checked ${fmtStamp(at).toLowerCase()}` : `${artistsN} artists · not checked yet`
+  const pct = sw && sw.total ? sw.done / sw.total : 0
   return (
     <>
-      <div className="nr-head">
-        <div className="nr-head-text">
-          <div className={`nr-radar ${sw ? 'is-sweeping' : ''}`}>
-            <Icon name="radar" />
-            <span>{line}</span>
-          </div>
-          <h1 className="nr-title">New releases</h1>
+      <header className="rl-head">
+        <div className="rl-head-text">
+          <span className="lh-kicker">{line}</span>
+          <h1 className="rl-title">New releases</h1>
         </div>
-        <div className="nr-head-tools">
-          {phone ? (
-            <IconButton icon="gear" label="Followed artists" size="lg" variant="soft" onClick={onArtists} />
-          ) : (
-            <Button variant="outlined-ink" size="lg" icon="gear" onClick={onArtists} title="Followed artists">
-              Followed artists
-              <span className="nr-follow-n">{artistsN}</span>
-            </Button>
-          )}
-          <IconButton
-            icon="refresh"
-            size="lg"
-            variant="tonal"
-            className={sw ? 'nr-sweeping' : undefined}
-            label={sw ? 'Sweeping MusicBrainz' : 'Check MusicBrainz now'}
-            title={sw ? 'Sweeping MusicBrainz…' : 'Check MusicBrainz now'}
-            disabled={!online && !sw}
-            onClick={() => !sw && void releasesStore.sweep({ manual: true })}
-          />
-        </div>
-      </div>
-      {sw && (
-        <LinearProgress className="nr-progress" value={pct / 100} />
-      )}
+        <IconButton
+          icon="refresh"
+          className={sw ? 'nr-sweeping' : undefined}
+          label={sw ? 'Checking MusicBrainz' : 'Check now'}
+          disabled={!online && !sw}
+          onClick={() => !sw && void releasesStore.sweep({ manual: true })}
+        />
+        {phone ? (
+          <IconButton icon="gear" label="Followed artists" onClick={onArtists} />
+        ) : (
+          <Button variant="secondary" size="sm" icon="gear" onClick={onArtists}>
+            Followed artists
+          </Button>
+        )}
+      </header>
+      {sw && <LinearProgress className="nr-progress" value={pct} />}
     </>
   )
 }
 
-/* ── Tabs ────────────────────────────────────────────── */
+/* ── Coming soon card ────────────────────────────────── */
 
-function ReleaseTabs({
-  tab,
-  counts,
-  phone,
-  onTab,
-}: {
-  tab: Tab
-  counts: Record<Tab, number>
-  phone: boolean
-  onTab: (t: Tab) => void
-}) {
-  // the kit Tabs; full width (and a little shorter) on the phone
-  const items = TABS.map(([id, label, icon]) => ({ value: id, label, icon: phone ? undefined : icon, count: counts[id] }))
-  return (
-    <div className="nr-tabs">
-      <KitTabs label="New releases" value={tab} onChange={onTab} items={items} full={phone} size={phone ? 'sm' : 'md'} />
-      {!phone && tab === 'disc' && <span className="nr-tab-right">From your {TOP_ARTISTS} most-played artists</span>}
-    </div>
-  )
-}
-
-/* ── Filters (Upcoming + Out now) ─────────────────────── */
-
-function Filters({
-  tab,
-  rs,
-  feed,
-  c,
-  phone,
-}: {
-  tab: Tab
-  rs: ReleasesState
-  feed: Feed
-  c: Catalogue
-  phone: boolean
-}) {
-  const { status, artist, reversed } = rs.prefs
-  const hideRe = rs.doc.hideReissues[0]
-  const [artistAt, setArtistAt] = useState<HTMLElement | null>(null)
-
-  const artistName = artist ? (c.artists[artist]?.name ?? 'Artist') : 'All artists'
-  const anyFilter = (tab === 'out' && status !== 'all') || artist !== null
-  const set = (s: StatusFilter) => releasesStore.setPrefs({ status: s })
-
-  const statusOpts: [StatusFilter, string, number][] = [
-    ['all', 'All', feed.status.all],
-    ['new', 'New', feed.status.new],
-    ['seen', 'Seen', feed.status.seen],
-  ]
-
-  const artistChip = (
-    <Chip selected={artist !== null} trailingIcon="arrowDrop" popup="listbox" expanded={!!artistAt} onClick={(e) => setArtistAt(artistAt ? null : e.currentTarget)}>
-      {artistName}
-    </Chip>
-  )
-
-  return (
-    <div className="nr-filters">
-      {tab === 'out' &&
-        (phone ? (
-          statusOpts.map(([id, label]) => (
-            <Chip key={id} selected={status === id} role="radio" onClick={() => set(id)}>
-              {label}
-            </Chip>
-          ))
-        ) : (
-          <Segmented label="Status" size={36} value={status} onChange={set} options={statusOpts.map(([id, label]) => ({ value: id, label }))} />
-        ))}
-
-      {artistChip}
-      <Menu open={!!artistAt} anchor={artistAt} onClose={() => setArtistAt(null)} label="Filter by artist" role="listbox" width={300}>
-        <MenuItem selected={artist === null} onSelect={() => releasesStore.setPrefs({ artist: null })}>
-          All artists
-        </MenuItem>
-        {feed.artistOpts.map((o) => (
-          <MenuItem key={o.id} selected={artist === o.id} trailing={o.plays > 0 ? `${o.plays.toLocaleString('en-US')} plays` : undefined} onSelect={() => releasesStore.setPrefs({ artist: o.id })}>
-            {o.name}
-          </MenuItem>
-        ))}
-      </Menu>
-
-      <Chip selected={hideRe} onClick={() => releasesStore.setHideReissues(!hideRe)}>
-        {phone ? 'No reissues' : 'Hide reissues & deluxe'}
-      </Chip>
-
-      {tab === 'up' && (
-        <Chip selected={reversed} onClick={() => releasesStore.setPrefs({ reversed: !reversed })}>
-          Furthest first
-        </Chip>
-      )}
-
-      {anyFilter && (
-        <Button variant="ghost" size="sm"
-          className="nr-clear"
-          onClick={() => releasesStore.setPrefs({ status: 'all', artist: null })}
-        >
-          Clear filters
-        </Button>
-      )}
-
-      {!phone && (
-        <span className="nr-countline">
-          {tab === 'up'
-            ? `${feed.upLine.upcoming} UPCOMING · ${feed.upLine.reminders} REMINDERS`
-            : `${feed.status.new} NEW · ${feed.status.seen} SEEN`}
-        </span>
-      )}
-    </div>
-  )
-}
-
-/* ── Upcoming Timeline ───────────────────────────────── */
-
-const WEEKDAYS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']
-const hasDay = (it: FeedItem) => it.rel.date.split('-').length >= 3
-
-function whenLabel(it: FeedItem): string {
-  if (!hasDay(it)) return fmtRelDate(it.rel.date)
-  const d = fmtRelDate(it.rel.date).replace(/ \d{4}$/, '').replace(/^0/, '')
-  return `${WEEKDAYS[new Date(it.day).getDay()]} ${d}`
-}
-
-function countParts(it: FeedItem): { n: string; u: string } {
-  if (!hasDay(it)) {
-    const [m, y] = fmtRelDate(it.rel.date).split(' ')
-    return { n: m, u: y ?? '' }
-  }
-  return { n: String(it.daysTo), u: it.daysTo === 1 ? 'DAY' : 'DAYS' }
-}
-
-function upMeta(it: FeedItem, phone: boolean): string {
-  const n = it.detail?.tracks.length
-  return [
-    it.status === 'pre' ? `PRE-RELEASE ${ownedCount(it, true)}` : null,
-    whenLabel(it),
-    n ? `${n} TRK` : null,
-    !phone && it.detail?.label ? it.detail.label.toUpperCase() : null,
-  ]
-    .filter(Boolean)
-    .join(' · ')
-}
-
-function UpcomingWeek({
-  week,
-  phone,
-  act,
-  onOpen,
-}: {
-  week: UpWeek
-  phone: boolean
-  act: ReleaseActions
-  onOpen: (it: FeedItem) => void
-}) {
-  const n = String(week.items.length).padStart(2, '0')
-  if (phone) {
-    return (
-      <section className="nr-week-phone">
-        <div className="nr-week-head-phone">
-          <span className="nr-week-ring" />
-          <span className="nr-week-label">{week.label}</span>
-          <span className="nr-week-range">{week.range}</span>
-          <span className="nr-week-line" />
-          <span className="nr-week-count">{n}</span>
-        </div>
-        <div className="nr-week-rows-phone">
-          {week.items.map((it) => (
-            <UpPhoneRow key={it.rel.id} item={it} act={act} onOpen={onOpen} />
-          ))}
-        </div>
-      </section>
-    )
-  }
-
-  return (
-    <section className="nr-week">
-      <div className="nr-week-head">
-        <span className="nr-week-label">{week.label}</span>
-        <span className="nr-week-node">
-          <span />
-        </span>
-        <span className="nr-week-meta">
-          <span>{week.range}</span>
-          <span className="nr-week-line" />
-          <span>{n}</span>
-        </span>
-      </div>
-      <div className="nr-week-rows">
-        <div className="nr-week-rail" />
-        {week.items.map((it) => (
-          <UpRow key={it.rel.id} item={it} act={act} onOpen={onOpen} />
-        ))}
-      </div>
-    </section>
-  )
-}
-
-function RemindButton({
-  item,
-  act,
-  icon,
-}: {
-  item: FeedItem
-  act: ReleaseActions
-  icon?: boolean
-}) {
-  const on = item.reminded
-  const label = on ? 'Reminder set' : 'Remind me'
+function SoonCard({ item, act, onOpen }: { item: FeedItem; act: ReleaseActions; onOpen: (it: FeedItem) => void }) {
   const remind = (e: MouseEvent) => {
     e.stopPropagation()
     act.remind(item)
   }
-  if (icon) return <IconButton icon={on ? 'bellF' : 'bell'} label={label} size="lg" variant={on ? 'tonal' : 'soft'} pressed={on} onClick={remind} />
   return (
-    <Button variant={on ? 'tonal' : 'outlined-ink'} icon={on ? 'bellF' : 'bell'} aria-pressed={on} title={label} onClick={remind}>
-      {label}
-    </Button>
-  )
-}
-
-function UpRow({
-  item,
-  act,
-  onOpen,
-}: {
-  item: FeedItem
-  act: ReleaseActions
-  onOpen: (it: FeedItem) => void
-}) {
-  const near = hasDay(item) && item.daysTo <= 4
-  const cd = countParts(item)
-  const key = (e: ReactKeyboardEvent) => {
-    if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
-      e.preventDefault()
-      onOpen(item)
-    }
-  }
-
-  return (
-    <div
-      className={`nr-up ${near ? 'is-near' : ''}`}
-      role="button"
-      tabIndex={0}
-      onClick={() => onOpen(item)}
-      onKeyDown={key}
-    >
-      <div className="nr-up-cd">
-        <span className="nr-up-n">{cd.n}</span>
-        <span className="nr-up-u">{cd.u}</span>
-      </div>
-      <div className="nr-up-node">
-        <span />
-      </div>
-      <div className="nr-up-cover">
-        <ReleaseCover item={item} />
-      </div>
-      <div className="nr-up-info">
-        <div className="nr-up-trow">
-          {item.status === 'new' && <Dot />}
-          <span className="nr-up-t">{item.rel.t}</span>
-        </div>
-        <button
-          type="button"
-          className="nr-up-a"
-          onClick={(e) => {
-            e.stopPropagation()
-            if (!item.external && item.owners[0]) go(artistHref(item.owners[0].id))
-          }}
-        >
-          {item.rel.a}
-        </button>
-        <div className="nr-up-meta">
-          <TypeBadge item={item} />
-          <span>{upMeta(item, false)}</span>
-        </div>
-      </div>
-      <RemindButton item={item} act={act} />
-    </div>
-  )
-}
-
-function UpPhoneRow({
-  item,
-  act,
-  onOpen,
-}: {
-  item: FeedItem
-  act: ReleaseActions
-  onOpen: (it: FeedItem) => void
-}) {
-  const cd = countParts(item)
-  const near = hasDay(item) && item.daysTo <= 4
-  return (
-    <div className={`nr-up-phone ${near ? 'is-near' : ''}`} onClick={() => onOpen(item)}>
-      <div className="nr-up-cd">
-        <span className={`nr-up-n ${near ? 'is-near' : ''}`}>{cd.n}</span>
-        <span className="nr-up-u">{cd.u}</span>
-      </div>
-      <div className="nr-up-cover">
-        <ReleaseCover item={item} />
-      </div>
-      <div className="nr-up-info">
-        <div className="nr-up-trow">
-          <span className="nr-up-t">{item.rel.t}</span>
-          {item.status === 'new' && <span className="nr-dot" />}
-        </div>
-        <span className="nr-up-a">{item.rel.a}</span>
-        <div className="nr-up-meta">
-          <span>{upMeta(item, true)}</span>
-        </div>
-      </div>
-      <RemindButton item={item} act={act} icon />
-    </div>
-  )
-}
-
-/* ── Out Now Hero ────────────────────────────────────── */
-
-function Hero({
-  item,
-  line,
-  phone,
-  act,
-  online,
-  onOpen,
-}: {
-  item: FeedItem
-  line: string
-  phone: boolean
-  act: ReleaseActions
-  online: boolean
-  onOpen: (it: FeedItem) => void
-}) {
-  const lib = isOwned(item.status)
-  const stop = (fn: () => void) => (e: MouseEvent) => {
-    e.stopPropagation()
-    fn()
-  }
-
-  const toArtist = stop(() => {
-    if (!item.external && item.owners[0]) go(artistHref(item.owners[0].id))
-  })
-
-  if (phone) {
-    return (
-      <div className="card card-lg card-interactive nr-hero-phone" onClick={() => onOpen(item)}>
-        <div className="nr-hero-phone-top">
-          <div className="nr-hero-cover">
-            <ReleaseCover item={item} size="sm" />
-            {item.status === 'acq' && <MatchingVeil compact />}
-          </div>
-          <div className="nr-hero-text">
-            <span className="nr-hero-line">{line}</span>
-            <div className="nr-hero-t">{item.rel.t}</div>
-            <span className="nr-hero-a">{item.rel.a}</span>
-          </div>
-        </div>
-        <div className="nr-hero-acts">
-          {lib ? (
-            <button type="button" className="btn btn-primary nr-hero-pbtn" onClick={stop(() => playRelease(item))}>
-              <span className="btn-ic"><Icon name="playF" /></span>
-              Play
-            </button>
-          ) : item.status === 'acq' ? (
-            <Button variant="secondary" className="nr-hero-acq-btn" title="Stop matching" onClick={stop(() => act.got(item))}>
-              <span className="btn-ic"><Spinner /></span>
-              Matching your files…
-            </Button>
-          ) : (
-            <>
-              <button
-                type="button"
-                className="btn btn-primary nr-hero-pbtn"
-                onClick={stop(() => act.got(item))}
-              >
-                <span className="btn-ic"><Icon name="check" /></span>
-                I’ve got it
-              </button>
-              {online && canPreview(item) && <PreviewButton item={item} variant="heroPhone" />}
-              <button
-                type="button"
-                className="btn btn-ghost nr-hero-sqbtn"
-                title={item.status === 'seen' ? 'Mark new' : 'Mark seen'}
-                aria-label={item.status === 'seen' ? 'Mark new' : 'Mark seen'}
-                onClick={stop(() => act.toggleSeen(item))}
-              >
-                <Icon name="eye" />
-              </button>
-              <button
-                type="button"
-                className="btn btn-ghost nr-hero-sqbtn"
-                title="Dismiss"
-                aria-label="Dismiss"
-                onClick={stop(() => act.dismiss(item))}
-              >
-                <Icon name="x" />
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-    )
-  }
-
-  const titleSize = item.rel.t.length > 26 ? 44 : item.rel.t.length > 16 ? 52 : 60
-
-  return (
-    <div className="card card-lg card-interactive nr-hero" onClick={() => onOpen(item)}>
-      <div className="nr-hero-cover">
-        <ReleaseCover item={item} size="lg" />
-        {item.upcoming && <Countdown item={item} />}
-        {item.status === 'acq' && <MatchingVeil />}
-      </div>
-      <div className="nr-hero-text">
-        <span className="nr-hero-line">{line}</span>
-        <button
-          type="button"
-          className="nr-hero-trow"
-          onClick={stop(() => onOpen(item))}
-          aria-label={`${item.rel.t}: details`}
-        >
-          {item.status === 'new' && <Dot size="lg" />}
-          <span className="nr-hero-t" style={{ '--nr-hero-fs': `${titleSize}px` } as CSSProperties}>
-            {item.rel.t}
-          </span>
-        </button>
-        <button type="button" className="nr-hero-a" onClick={toArtist}>
-          {item.rel.a}
-        </button>
-        <div className="nr-hero-meta">
-          <TypeBadge item={item} />
-          <span>{longMeta(item)}</span>
-        </div>
-        <div className="nr-hero-acts">
-          {lib ? (
-            <>
-              <button type="button" className="btn btn-primary" onClick={stop(() => playRelease(item))}>
-                <span className="btn-ic"><Icon name="playF" /></span>
-                Play
-              </button>
-              <OwnedTag item={item} />
-              <span className="nr-mono">{ownedCount(item)}</span>
-            </>
-          ) : (
-            <>
-              <button
-                type="button"
-                className={`btn ${item.status === 'acq' ? 'btn-secondary' : 'btn-primary'}`}
-                onClick={stop(() => act.got(item))}
-                title={item.status === 'acq' ? 'Stop matching' : undefined}
-              >
-                <span className="btn-ic">{item.status === 'acq' ? <Spinner /> : <Icon name="check" />}</span>
-                {item.status === 'acq' ? 'Matching…' : "I’ve got it"}
-              </button>
-              {online && canPreview(item) && <PreviewButton item={item} variant="hero" />}
-              <button type="button" className="btn btn-secondary" onClick={stop(() => act.toggleSeen(item))}>
-                <span className="btn-ic"><Icon name="eye" /></span>
-                {item.status === 'seen' ? 'Mark new' : 'Mark seen'}
-              </button>
-              <Chip selected={false} trailingIcon="ext" disabled={!online} onClick={stop(() => act.external(item))}>
-                MusicBrainz
-              </Chip>
-              <button
-                type="button"
-                className="btn btn-ghost"
-                style={{ marginLeft: 'auto' }}
-                onClick={stop(() => act.dismiss(item))}
-              >
-                <span className="btn-ic"><Icon name="x" /></span>
-                Dismiss
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-/* ── Out Now Card Grid ───────────────────────────────── */
-
-function Card({
-  item,
-  act,
-  online,
-  onOpen,
-}: {
-  item: FeedItem
-  act: ReleaseActions
-  online: boolean
-  onOpen: (it: FeedItem) => void
-}) {
-  const lib = isOwned(item.status)
-  const stop = (fn: () => void) => (e: MouseEvent) => {
-    e.stopPropagation()
-    fn()
-  }
-
-  return (
-    <div className="card card-md card-interactive nr-card" onClick={() => onOpen(item)}>
-      <div className="nr-card-art">
-        <ReleaseCover item={item} size="sm" />
-        {item.status === 'new' && <span className="nr-badge-tag is-new">NEW</span>}
-        {item.status === 'acq' && <span className="nr-badge-tag is-acq">MATCHING</span>}
-        {lib && <span className="nr-badge-tag is-lib">IN LIBRARY</span>}
-
-        <div className="nr-card-acts">
-          {lib ? (
-            <button
-              type="button"
-              className="nr-card-btn is-primary"
-              onClick={stop(() => playRelease(item))}
-            >
-              <Icon name="playF" />
-              Play
-            </button>
-          ) : (
-            <>
-              <button
-                type="button"
-                className="nr-card-btn"
-                onClick={stop(() => act.got(item))}
-                title={item.status === 'acq' ? 'Stop matching' : undefined}
-              >
-                <Icon name="check" />
-                <span className="nr-card-btn-label">{item.status === 'acq' ? 'Matching' : 'Got it'}</span>
-              </button>
-              {online && canPreview(item) && <PreviewButton item={item} variant="card" />}
-              <button
-                type="button"
-                className="nr-card-btn is-icon"
-                aria-label="Mark seen"
-                onClick={stop(() => act.toggleSeen(item))}
-              >
-                <Icon name="eye" />
-              </button>
-              <button
-                type="button"
-                className="nr-card-btn is-icon"
-                aria-label="Dismiss"
-                onClick={stop(() => act.dismiss(item))}
-              >
-                <Icon name="x" />
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-
-      <div className="nr-card-text">
-        <div className="nr-card-title">{item.rel.t}</div>
-        <div className="nr-card-artist">{item.rel.a}</div>
-        <div className="nr-card-sub">{cardMeta(item)}</div>
-      </div>
-    </div>
-  )
-}
-
-function PhoneRow({
-  item,
-  act,
-  onOpen,
-}: {
-  item: FeedItem
-  act: ReleaseActions
-  onOpen: (it: FeedItem) => void
-}) {
-  return (
-    <SwipeRow
-      seenWord={item.status === 'seen' ? 'Mark new' : 'Mark seen'}
-      onTap={() => onOpen(item)}
-      onSeen={() => act.toggleSeen(item)}
-      onDismiss={() => act.dismiss(item)}
-    >
-      <div className="nr-row-cover">
+    <div className="rl-sc" role="button" tabIndex={0} onClick={() => onOpen(item)} onKeyDown={(e) => e.key === 'Enter' && onOpen(item)}>
+      <span className="rl-sc-art">
         <ReleaseCover item={item} size="xs" />
-      </div>
-      <div className="nr-row-info">
-        <div className="nr-row-trow">
-          <span className="nr-row-title">{item.rel.t}</span>
-          {item.status === 'new' && <span className="nr-dot" />}
-        </div>
-        <div className="nr-row-artist">{item.rel.a}</div>
-        <div className="nr-row-meta">{phoneMeta(item)}</div>
-      </div>
-      {item.status === 'acq' && (
-        <span className="nr-matching-badge">MATCHING</span>
-      )}
-    </SwipeRow>
+      </span>
+      <span className="rl-sc-text">
+        <span className={`ax-mono ${item.reminded ? 'is-on' : ''}`}>
+          {item.daysTo <= 1 ? 'Tomorrow' : `In ${item.daysTo} days`} · {dayLabel(item).toLowerCase()}
+        </span>
+        <span className="rl-sc-t">{item.rel.t}</span>
+        <span className="rl-sc-a">{item.owners[0]?.name ?? item.rel.a}</span>
+      </span>
+      <IconButton icon={item.reminded ? 'bellF' : 'bell'} label={item.reminded ? 'Reminder set' : 'Remind me'} pressed={item.reminded} className={item.reminded ? 'is-on' : undefined} onClick={remind} />
+    </div>
+  )
+}
+
+/* ── Rows ────────────────────────────────────────────── */
+
+function StatusTag({ item }: { item: FeedItem }) {
+  if (isOwned(item.status))
+    return (
+      <span className={`rl-tag ${item.status === 'lib' ? 'is-on' : ''}`}>
+        <OwnedTag item={item} /> {ownedCount(item)}
+      </span>
+    )
+  if (item.status === 'acq') return <span className="rl-tag">MATCHING</span>
+  if (item.status === 'seen') return <span className="rl-tag is-dim">SEEN</span>
+  return <span />
+}
+
+function PreviewLine({ item }: { item: FeedItem }) {
+  const pv = usePreview()
+  if (!pv.key || !pv.key.startsWith(`${item.rel.id}#`)) return null
+  const n = Number(pv.key.split('#')[1]) + 1
+  return (
+    <div className="rl-pv">
+      <span className="ax-mono is-on">Preview · song {n}</span>
+      <span className="rl-pv-bar">
+        <span style={{ width: `${Math.round(pv.progress * 100)}%` }} />
+      </span>
+      <span className="ax-mono">{Math.round(pv.progress * 30)} s / 30 s</span>
+    </div>
+  )
+}
+
+function Row({ item, act, online, onOpen }: { item: FeedItem; act: ReleaseActions; online: boolean; onOpen: (it: FeedItem) => void }) {
+  const owned = isOwned(item.status)
+  const seen = item.status === 'seen'
+  const stop = (e: MouseEvent) => e.stopPropagation()
+  return (
+    <div className={`rl-row ${seen ? 'is-seen' : ''}`} role="button" tabIndex={0} onClick={() => onOpen(item)} onKeyDown={(e) => e.key === 'Enter' && onOpen(item)}>
+      <span className="rl-art">
+        <ReleaseCover item={item} size="sm" />
+        {item.status === 'acq' && <MatchingVeil compact />}
+      </span>
+      <span className="rl-text">
+        <span className="rl-t">
+          {item.status === 'new' && <span className="ax-dot" aria-label="New" role="img" />}
+          <span className="rl-tt">{item.rel.t}</span>
+        </span>
+        <span className="rl-a">{item.owners.map((a) => a.name).join(', ') || item.rel.a}</span>
+        <span className="ax-mono">
+          {relFacts(item)} · {agoLabel(item).toLowerCase()}
+        </span>
+      </span>
+      <StatusTag item={item} />
+      <span className="rl-acts" onClick={stop}>
+        {owned ? (
+          <Button size="sm" icon="playF" onClick={() => playRelease(item)}>
+            Play
+          </Button>
+        ) : (
+          canPreview(item) && online && <PreviewButton item={item} variant="hero" />
+        )}
+        <span className="rl-more">
+          {!owned && <IconButton icon="done" label={item.status === 'acq' ? 'Stop matching' : 'I’ve got it'} pressed={item.status === 'acq'} onClick={() => act.got(item)} />}
+          {!owned && <IconButton icon="eye" label={seen ? 'Mark unseen' : 'Mark seen'} pressed={seen} onClick={() => act.toggleSeen(item)} />}
+          <IconButton icon="x" label="Dismiss" onClick={() => act.dismiss(item)} />
+        </span>
+      </span>
+      <PreviewLine item={item} />
+    </div>
+  )
+}
+
+function PhoneRow({ item, online }: { item: FeedItem; online: boolean }) {
+  const owned = isOwned(item.status)
+  const tag = item.status === 'lib' ? 'IN LIBRARY' : owned ? ownedCount(item, true) : item.status === 'acq' ? 'MATCHING' : null
+  return (
+    <span className={`rl-prow ${item.status === 'seen' ? 'is-seen' : ''}`}>
+      <span className="rl-art">
+        <ReleaseCover item={item} size="sm" />
+        {item.status === 'acq' && <MatchingVeil compact />}
+      </span>
+      <span className="rl-text">
+        <span className="rl-t">
+          {item.status === 'new' && <span className="ax-dot" aria-label="New" role="img" />}
+          <span className="rl-tt">{item.rel.t}</span>
+        </span>
+        <span className="rl-a">{item.owners[0]?.name ?? item.rel.a}</span>
+        <span className="rl-pmeta">
+          <span className="ax-mono">
+            {relFacts(item).split(' · ')[0]} · {agoLabel(item).toLowerCase()}
+          </span>
+          {tag && <span className={`rl-tag ${item.status === 'lib' ? 'is-on' : ''}`}>{tag}</span>}
+        </span>
+      </span>
+      <span className="rl-pbtn" onPointerDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
+        {owned ? (
+          <button type="button" className="hx-cplay rs-play" aria-label={`Play ${item.rel.t}`} onClick={() => playRelease(item)}>
+            <Icon name="playF" />
+          </button>
+        ) : (
+          canPreview(item) && online && <PreviewRing id={item.rel.id} load={() => firstClip(item)} label={`Preview ${item.rel.t}`} size={40} />
+        )}
+      </span>
+    </span>
   )
 }

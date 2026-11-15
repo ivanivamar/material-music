@@ -49,4 +49,5 @@
 @import '../pages/library/avatar.css';
 @import '../pages/releases/releases.css';
 @import '../pages/mix/mix.css';
-@import '../components/sonar/sonar.css';
+@import '../components/list/list.css';
+@import '../pages/releases/rl.css';

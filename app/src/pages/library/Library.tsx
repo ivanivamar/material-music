@@ -40,8 +40,7 @@ import { firstResult, openTopResult, shownCount, useSearchResults } from '../sea
 import { LibrarySearchField, RecentSearches } from './LibrarySearch'
 import { forgetScrollBeforeFocus, noteScrollBeforeFocus, restoreBrowseScroll, setLibraryQuery } from './browseContext'
 import { CardGroups, NewTile, Scrubber, albumItem, artistItem, groupItems, playlistItem, sortItems, type GroupBy, type LibItem } from './libgrid'
-import { SongsSonar } from './SongsSonar'
-import { HalfRingScrubber } from './HalfRing'
+import { SongsList } from './SongsList'
 
 const TAB_LABEL: Record<LibraryTab, string> = { all: 'All', artists: 'Artists', albums: 'Albums', playlists: 'Playlists', songs: 'Songs' }
 
@@ -439,7 +438,6 @@ function CardsView({ c, tab, filter, phone }: { c: Catalogue; tab: Exclude<Libra
 
   const groups = useMemo(() => groupItems(items, by, (i) => i), [items, by])
   const letters = by === 'name' || by === 'artist'
-  const letterCounts = useMemo(() => new Map(groups.map((g) => [g.label, g.items.length])), [groups])
   const present = useMemo(() => new Set(letters ? groups.map((g) => g.label) : []), [groups, letters])
 
   if (tab === 'playlists' && !loaded) return null
@@ -485,7 +483,7 @@ function CardsView({ c, tab, filter, phone }: { c: Catalogue; tab: Exclude<Libra
             : undefined
         }
       />
-      {letters && (phone ? <HalfRingScrubber present={present} counts={letterCounts} unit={tab === 'artists' ? 'artists' : tab === 'albums' ? 'albums' : 'items'} /> : <Scrubber present={present} />)}
+      {letters && <Scrubber present={present} />}
     </div>
   )
 }
@@ -501,5 +499,5 @@ function SongsView({ c, filter, phone }: { c: Catalogue; filter: OfflineIndex | 
     return filter ? list.filter((t) => filter.tracks.has(t.id)) : list
   }, [c, filter])
   if (filter && tracks.length === 0) return <NothingOffline />
-  return <SongsSonar c={c} tracks={tracks} phone={phone} />
+  return <SongsList c={c} tracks={tracks} phone={phone} />
 }

@@ -3,6 +3,7 @@
  *
  *   greeting header
  *   Jump back in       DJ tile + the last things played from (synced PC ↔ phone, state/recent.ts)
+ *   New releases       Out now from your artists, last 30 days + "n coming soon" (Nov 2026; hidden when empty)
  *   Your <year> recap  (step 21, Dec 18 – Jan 31 only)
  *   Made for you       Day mix + Discovery first (state/madeForYou.ts), then Daily Mixes, Deep cuts,
  *                      Rediscover (state/mixes.ts, computed after first paint)
@@ -37,6 +38,7 @@ import { RecapShelf } from './stats/RecapShelf'
 import { AlbumCardHome, ArtistCard, avatarSize, cardSize, MixCard, NewSmartCard, RadioCardView, SkelCard, SmartCard, SmartInvite, useHomeSize } from './home/cards'
 import { JumpBackIn, jumpTiles } from './home/JumpBackIn'
 import { ShelfCard, useConcertShelf } from './concerts/cards'
+import { ReleaseCard, SoonCard, useHomeReleases } from './home/ReleasesShelf'
 
 function useMinuteClock() {
   const [now, setNow] = useState(() => new Date())
@@ -106,6 +108,7 @@ export function Home() {
   const mixes = made.set
   const radios = today ? radioSet(relVersion, now.getTime()) : null
   const concerts = useConcertShelf()
+  const rels = useHomeReleases(data)
 
   // pick up plays / recents from the other device (throttled; the stores also sync on focus / reconnect)
   useEffect(() => {
@@ -145,6 +148,15 @@ export function Home() {
         <Shelf label="Jump back in" sub={phone ? (tiles.length + 1 < 6 ? 'Your last plays' : 'Synced with PC') : tiles.length + 1 < 8 ? 'Your last plays · PC and phone' : 'Synced · PC and phone'} phone={phone} row="none" inline className="hs-jbi">
           <JumpBackIn tiles={tiles} phone={phone} size={size === 'desk' ? 56 : 48} />
         </Shelf>
+
+        {(rels.items.length > 0 || rels.upcoming.length > 0) && (
+          <Shelf label="New releases" sub={`From your artists${rels.fresh ? ` · ${rels.fresh} new` : ''}`} subHref={href('new')} phone={phone} className="hs-releases">
+            {rels.items.map((it) => (
+              <ReleaseCard key={it.rel.id} item={it} size={cs} />
+            ))}
+            {rels.upcoming.length > 0 && <SoonCard upcoming={rels.upcoming} size={cs} />}
+          </Shelf>
+        )}
 
         {/* once a year: Dec 18 – Jan 31 (step 21) */}
         <RecapShelf c={data} plays={history.plays} now={now} playing={playing} />
