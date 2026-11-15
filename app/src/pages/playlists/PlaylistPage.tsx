@@ -34,6 +34,9 @@ import { trackDownload } from '../library/DownloadButton'
 import { PinOfflineToggle } from '../library/OfflineToggle'
 import { ActBtn, DetailBack, DtList, DtRow, MoreBtn, softDate, titleSize } from '../library/detail'
 import { useContextState, useNowPlaying } from '../library/playback'
+import { ListRing } from '../../components/sonar/ListRing'
+import { LikedRing } from '../../components/sonar/LikedRing'
+import { usePlayCounts, type SonarSong } from '../../components/sonar/Sonar'
 import { PlaylistCover } from './PlaylistCover'
 
 const RULE_ICON: Record<Rule['field'], IconName> = { added: 'calendar', lastPlayed: 'history', plays: 'history', playsIn: 'stats', genre: 'label', artist: 'artist', album: 'album', title: 'song', decade: 'calendar', year: 'calendar' }
@@ -93,6 +96,40 @@ function PlaylistView({ c, p }: { c: Catalogue; p: Playlist }) {
   const coverUrl = useCover(p.cover || p.id === LIKED_ID ? null : firstCover ? c.albums[firstCover.albumId]?.cover : null)
   // Liked songs: the rose of its cover, not the first album's colour
   const tint = useArtTint(coverUrl) ?? (p.id === LIKED_ID ? { hue: 12, chroma: 0.9 } : null)
+  const counts = usePlayCounts()
+
+  // the ring beside the list: playable rows in order
+  const songs: SonarSong[] = useMemo(
+    () => info.rows.filter((r) => r.track).map((r) => ({ id: r.track!.id, len: r.track!.duration || 0, title: r.track!.title, group: r.track!.artistId })),
+    [info.rows],
+  )
+  const ringCurrent = ctx.active && ctx.currentId ? info.ids.indexOf(ctx.currentId) : -1
+  const pickSong = (i: number) => {
+    if (ctx.active && ctx.currentId === info.ids[i]) return playerStore.toggle()
+    playerStore.playQueue(info.ids, i, context)
+  }
+  const likedRows = useMemo(
+    () => (liked ? info.rows.map((r, i) => ({ at: Date.parse(r.entry.addedAt) || 0, trackId: r.track?.id ?? null, i })) : []),
+    [liked, info.rows],
+  )
+  const jumpTo = (i: number) => document.querySelector(`.dt-row[data-i="${i}"]`)?.scrollIntoView({ block: 'start', behavior: 'smooth' })
+  const ring = (size: number, compact: boolean) =>
+    liked ? (
+      <LikedRing rows={likedRows} counts={counts} nowId={now.id} size={size} onJump={jumpTo} compact={compact} />
+    ) : (
+      <ListRing
+        songs={songs}
+        current={ringCurrent}
+        playing={ctx.playing}
+        size={size}
+        onPick={pickSong}
+        onPlay={onPlay}
+        bands={!smart}
+        legend={smart ? ['length', 'ticks'] : ['length', 'band', 'ticks']}
+        label={`${p.name} as a ring: one arc per song, sized by its length`}
+        compact={compact}
+      />
+    )
 
   return (
     <div className="dt-page hue-scope is-legacy-playlist" style={{ '--h': tint?.hue ?? 40, '--hc': tint?.chroma ?? 0 } as CSSProperties}>
@@ -222,6 +259,9 @@ function PlaylistView({ c, p }: { c: Catalogue; p: Playlist }) {
           />
         </div>
       ) : (
+        <div className="sn-split">
+        <div>
+        {phone && <div className="sn-phone-ring">{ring(300, true)}</div>}
         <Table
           c={c}
           p={p}
@@ -234,6 +274,14 @@ function PlaylistView({ c, p }: { c: Catalogue; p: Playlist }) {
           onRemove={(r) => removeFromPlaylist(toast, p.id, [r.entry.entryId])}
           phone={phone}
         />
+        </div>
+        {!phone && (
+          <aside className="sn-panel">
+            {ring(320, false)}
+            {liked && <div className="sn-legend"><div className="sn-legend-row"><span className="sn-legend-sw"><i className="is-dot" /></span>Blip · a like · brighter = more plays</div><div className="sn-legend-row">Tap a month to jump to it</div></div>}
+          </aside>
+        )}
+        </div>
       )}
     </div>
   )

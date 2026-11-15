@@ -1,0 +1,133 @@
+/* Sonar ring (components/sonar/Sonar.tsx) and the pages that use it. White-only Pelagic accents. */
+.sn { position: relative; flex: none; user-select: none; }
+.sn-svg { position: absolute; inset: 0; overflow: visible; }
+.sn-arc, .sn-fill, .sn-hit, .sn-band { fill: none; }
+.sn-arc { stroke: rgba(255, 255, 255, .14); transition: stroke .25s var(--ease), stroke-width .2s var(--ease); }
+.sn-seg.is-idle .sn-arc { stroke: rgba(255, 255, 255, .2); }
+.sn-seg.is-played .sn-arc { stroke: rgba(255, 255, 255, .45); }
+.sn-seg.is-next .sn-arc { stroke: rgba(255, 255, 255, .12); }
+.sn-seg.is-current .sn-arc { stroke: rgba(255, 255, 255, .16); }
+.sn-seg.is-new .sn-arc { stroke-dasharray: 2 2.5; }
+.sn-seg.is-new.is-next .sn-arc, .sn-seg.is-new.is-idle .sn-arc { stroke: rgba(255, 255, 255, .4); }
+.sn-seg.is-hover .sn-arc { stroke: rgba(255, 255, 255, .7); }
+.sn-fill { stroke: #fff; filter: drop-shadow(0 0 6px rgba(255, 255, 255, .7)); }
+.sn-hit { stroke: transparent; cursor: pointer; pointer-events: stroke; }
+.sn-tick { stroke: rgba(255, 255, 255, .12); stroke-width: 1; }
+.sn-tick.is-big { stroke: rgba(255, 255, 255, .3); }
+.sn-band { stroke: rgba(255, 255, 255, .1); stroke-width: 4; }
+.sn-band.is-pair { stroke: rgba(255, 255, 255, .28); }
+.sn-band.is-run { stroke: rgba(255, 255, 255, .55); }
+.sn-blip { fill: #fff; }
+.sn-dot { fill: #fff; filter: drop-shadow(0 0 6px rgba(255, 255, 255, .9)); }
+.sn-sweep { position: absolute; width: 0; height: 0; pointer-events: none; }
+.sn-trail { position: absolute; border-radius: 50%; }
+.sn-hand { position: absolute; left: 0; width: 1px; background: linear-gradient(to top, rgba(255, 255, 255, 0), #fff); box-shadow: 0 0 8px rgba(255, 255, 255, .7); }
+.sn.is-paused .sn-trail { opacity: .5; }
+.sn-center { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; max-width: 46%; }
+.sn-center > * { pointer-events: auto; }
+
+.sn-lab { font-family: var(--font-mono); font-size: var(--fs-mono-sm); letter-spacing: .16em; text-transform: uppercase; color: var(--ink-tertiary); }
+.sn-mono { font-family: var(--font-mono); font-size: var(--fs-mono); letter-spacing: .06em; color: var(--ink-secondary); }
+.sn-now { font-size: 28px; font-weight: 300; letter-spacing: -.02em; line-height: 1.08; color: #fff; text-shadow: 0 0 22px rgba(255, 255, 255, .4); overflow-wrap: anywhere; }
+.sn-now.is-sm { font-size: 18px; }
+.sn-now { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
+.sn-now.is-sm { -webkit-line-clamp: 2; }
+.sn-now.is-dim { color: var(--ink-primary); text-shadow: none; }
+
+/* row marks */
+.sn-glyph { flex: none; display: block; }
+.sn-glyph-bg { fill: none; stroke: rgba(255, 255, 255, .1); stroke-width: 2; }
+.sn-glyph-arc { fill: none; stroke: rgba(255, 255, 255, .45); stroke-width: 2; stroke-linecap: round; }
+.sn-glyph.is-new .sn-glyph-arc { stroke-dasharray: 2 2; }
+.sn-glyph.is-on .sn-glyph-arc { stroke: #fff; filter: drop-shadow(0 0 3px rgba(255, 255, 255, .8)); }
+.sn-pdot { display: inline-block; flex: none; border-radius: 50%; background: #fff; }
+.sn-pdot.is-glow { box-shadow: 0 0 6px rgba(255, 255, 255, .45); }
+.sn-pdot.is-on { box-shadow: 0 0 10px rgba(255, 255, 255, .85); }
+
+/* ── Section head with the ring / list switch ───────── */
+.sn-head { display: flex; align-items: center; gap: 16px; margin-bottom: 8px; }
+.sn-head .sect-line { flex: 1; }
+.sn-switch { display: inline-flex; align-items: center; gap: 8px; height: 28px; padding: 0 2px; border: 0; background: none; cursor: pointer; font-family: var(--font-mono); font-size: var(--fs-mono-sm); letter-spacing: .16em; text-transform: uppercase; color: var(--ink-secondary); }
+.sn-switch:hover { color: var(--ink-primary); }
+.sn-switch svg { width: 14px; height: 14px; }
+
+/* ── Album: tracklist as a ring with tags around ────── */
+.sn-album { display: flex; justify-content: center; padding: 8px 0 24px; }
+.sn-tag {
+  position: absolute; display: flex; flex-direction: column; gap: 3px; max-width: 220px; padding: 4px 6px; border: 0; border-radius: 8px;
+  background: none; font: inherit; color: inherit; cursor: pointer; white-space: nowrap;
+}
+.sn-tag:hover, .sn-tag.is-hover { background: rgba(255, 255, 255, .05); }
+.sn-tag-meta { font-family: var(--font-mono); font-size: var(--fs-mono-sm); letter-spacing: .14em; color: var(--ink-tertiary); }
+.sn-tag-title { font-size: 14px; color: #bdbdbd; overflow: hidden; text-overflow: ellipsis; max-width: 210px; }
+.sn-tag.is-played .sn-tag-title { color: var(--ink-secondary); }
+.sn-tag.is-current .sn-tag-title { color: #fff; text-shadow: 0 0 18px rgba(255, 255, 255, .45); }
+.sn-tag.is-current .sn-tag-meta, .sn-tag.is-hover .sn-tag-meta { color: var(--ink-primary); }
+.sn-tag.is-hover .sn-tag-title { color: var(--ink-primary); }
+.sn-play {
+  width: 64px; height: 64px; border: 0; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+  background: #ededed; color: #0b0b0c; box-shadow: 0 0 36px -6px rgba(255, 255, 255, .55);
+}
+.sn-play svg { width: 22px; height: 22px; }
+.sn-iconrow { display: flex; gap: 6px; margin-top: 2px; }
+
+/* ring + compact numbered list (phone, or albums with many songs) */
+.sn-stack { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.sn-side { display: grid; grid-template-columns: minmax(0, auto) minmax(0, 1fr); gap: 36px; align-items: start; }
+.sn-mini-list { width: 100%; display: flex; flex-direction: column; }
+.sn-mrow {
+  display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 0 6px; border: 0; border-bottom: 1px solid var(--hairline);
+  background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; width: 100%;
+}
+.sn-mrow:hover { background: rgba(255, 255, 255, .03); }
+.sn-mrow-n { width: 22px; flex: none; font-family: var(--font-mono); font-size: var(--fs-mono-sm); color: var(--ink-tertiary); }
+.sn-mrow-t { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.sn-mrow-title { font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sn-mrow-sub { font-size: 12px; color: var(--ink-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sn-mrow-d { font-family: var(--font-mono); font-size: var(--fs-mono-sm); color: var(--ink-secondary); flex: none; }
+.sn-mrow.is-played .sn-mrow-title { color: var(--ink-secondary); }
+.sn-mrow.is-current { background: rgba(255, 255, 255, .04); }
+.sn-mrow.is-current .sn-mrow-title { color: #fff; text-shadow: 0 0 18px rgba(255, 255, 255, .45); }
+.sn-new { font-family: var(--font-mono); font-size: 9px; letter-spacing: .14em; color: var(--ink-primary); border: 1px solid rgba(255, 255, 255, .3); border-radius: 4px; padding: 1px 4px; margin-left: 8px; vertical-align: 2px; }
+
+/* ── Panel beside a list (playlist / mix / songs / liked) ─ */
+.sn-panel { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.sn-legend { display: flex; flex-direction: column; gap: 7px; align-self: stretch; }
+.sn-legend-row { display: flex; align-items: center; gap: 10px; font-family: var(--font-mono); font-size: var(--fs-mono-sm); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-tertiary); }
+.sn-legend-sw { width: 18px; flex: none; display: flex; justify-content: center; }
+.sn-legend-sw i { display: block; width: 18px; height: 4px; background: rgba(255, 255, 255, .3); }
+.sn-legend-sw i.is-band { height: 3px; background: rgba(255, 255, 255, .55); }
+.sn-legend-sw i.is-tick { height: 1px; }
+.sn-legend-sw i.is-hatch { height: 6px; background: repeating-linear-gradient(90deg, rgba(255, 255, 255, .5) 0 1.5px, transparent 1.5px 3.5px); }
+.sn-legend-sw i.is-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ink-primary); }
+
+/* list + ring side by side on wide screens */
+.sn-split { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 44px; align-items: start; }
+.sn-split > .sn-panel { position: sticky; top: 96px; }
+@media (max-width: 1180px) { .sn-split { grid-template-columns: minmax(0, 1fr); } .sn-split > .sn-panel { display: none; } }
+.shell.is-phone .sn-split { grid-template-columns: minmax(0, 1fr); }
+.shell.is-phone .sn-split > .sn-panel { display: none; }
+.sn-phone-ring { display: none; justify-content: center; margin: 4px 0 12px; }
+.shell.is-phone .sn-phone-ring { display: flex; }
+.sn-mlab { fill: var(--ink-tertiary); font-family: var(--font-mono); font-size: 9px; letter-spacing: .08em; pointer-events: none; }
+.sn-mlab.is-on { fill: #fff; }
+.sn-center .sn-lab { white-space: nowrap; }
+/* lists beside the ring panel: the narrower column sets (Quality hidden) */
+@media (min-width: 1181px) {
+  .shell:not(.is-phone) .sn-split .mx-list { --cols: 40px minmax(0, 1fr) minmax(0, 150px) 104px 32px 44px; }
+  .shell:not(.is-phone) .sn-split .mx-list.is-day { --cols: 40px minmax(0, 1fr) minmax(0, 150px) 104px 32px 32px 44px; }
+  .shell:not(.is-phone) .sn-split .mx-head > :nth-child(4), .shell:not(.is-phone) .sn-split .mx-q { display: none; }
+}
+.sn-artist { display: flex; justify-content: center; padding: 12px 0 8px; min-height: 1px; }
+.sn-inner { fill: none; stroke: rgba(255, 255, 255, .05); stroke-width: 1; }
+.sn-blip-hit { fill: transparent; cursor: pointer; }
+.sn .sn-mlab { font-size: 9px; }
+.sn-win { fill: none; stroke: #fff; stroke-width: 2; filter: drop-shadow(0 0 4px rgba(255, 255, 255, .9)); }
+.sn-legend-sw i.is-win { height: 2px; background: #fff; box-shadow: 0 0 4px #fff; }
+.sn-split.is-songs > .sn-panel { top: 132px; }
+/* the ring replaces the A–Z strip where it shows */
+@media (min-width: 1181px) { .shell:not(.is-phone) .lb-has-scrub:has(.sn-split) .lb-scrub { display: none; } .shell:not(.is-phone) .lb-has-scrub:has(.sn-split) { padding-right: 0; } }
+@media (min-width: 1181px) {
+  .shell:not(.is-phone) .sn-split .lb-srow:not(.is-compact) { grid-template-columns: 44px minmax(0, 1.25fr) minmax(0, 1fr) 32px 48px; }
+  .shell:not(.is-phone) .sn-split .lb-srow .lb-sq { display: none; }
+}

@@ -32,6 +32,9 @@ import { LibCard, albumItem } from './libgrid'
 import { useIsPhone } from '../../state/viewport'
 import { HeroTourChip, OnTour, useTourNear } from '../concerts/OnTour'
 import { useArtistLook } from '../concerts/parts'
+import { ArtistRing } from '../../components/sonar/ArtistRing'
+import { useSonarMode, useWidth } from '../../components/sonar/Sonar'
+import { SonarSwitch } from './AlbumSonar'
 
 const ORDER: ReleaseKind[] = ['album', 'ep', 'single', 'live']
 const SONGS_COLLAPSED = 10
@@ -42,6 +45,8 @@ export function ArtistPage({ id }: { id: string }) {
   const now = useNowPlaying()
   const ctx = useContextState('artist', id)
   const [allSongs, setAllSongs] = useState(false)
+  const [mode, setMode] = useSonarMode('artist')
+  const [ringRef, ringW] = useWidth<HTMLDivElement>()
   const dl = useDownloads()
   const dlNow = useDownloadProgress()
   const history = useHistory()
@@ -144,7 +149,27 @@ export function ArtistPage({ id }: { id: string }) {
 
       <div className="artist-cols">
         <section className={`artist-songs ${dl.available ? 'has-dl' : ''}`}>
-          <SectionHead label={played ? 'MOST PLAYED HERE' : 'SONGS'} right={plural(songs.length, 'TRACK')} />
+          <div className="sn-head">
+            <span className="sect-label">{played ? 'MOST PLAYED HERE' : 'SONGS'}</span>
+            <span className="sect-line" />
+            <span className="sect-right">{plural(songs.length, 'TRACK')}</span>
+            <SonarSwitch mode={mode} onChange={setMode} />
+          </div>
+          {mode === 'ring' && inOrder.length > 0 && (
+            <div ref={ringRef} className="sn-artist">
+              {ringW > 0 && (
+                <ArtistRing
+                  albums={info.albums.map((a) => ({ id: a.id, title: a.title, year: a.year, tracks: (infos.get(a.id)?.tracks ?? []).map((t) => ({ id: t.id, title: t.title, len: t.duration || 0 })) }))}
+                  counts={counts}
+                  nowId={now.id}
+                  playing={now.playing}
+                  size={Math.min(phone ? 340 : 480, ringW)}
+                  onPlay={playAt}
+                  idle={`${plural(info.albums.length, 'release')} · ${plural(inOrder.reduce((s, t) => s + (counts.get(t.id) ?? 0), 0), 'play')}`}
+                />
+              )}
+            </div>
+          )}
           <div>
             {shown.map((t, i) => {
               const album = data.albums[t.albumId]

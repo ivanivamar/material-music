@@ -37,6 +37,8 @@ import { MixCard, cardSize, useHomeSize } from '../home/cards'
 import { useMadeForYou } from '../../state/madeForYou'
 import { hideFromDayMix, nextUpdateLabel, type DayMix } from '../../state/daymix'
 import { DISC_ID, type DiscoveryMix } from '../../state/discovery'
+import { ListRing } from '../../components/sonar/ListRing'
+import { usePlayCounts, type SonarSong } from '../../components/sonar/Sonar'
 import { DiscoveryPending, DiscoveryView } from './DiscoveryView'
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -122,6 +124,27 @@ function MixView({ c, mix, backBtn }: { c: Catalogue; mix: MixPlan; backBtn: Rea
   const nextRefresh = dayPlan ? nextUpdateLabel(dayPlan.slot) : new Date(day.next).toDateString() === new Date(Date.now() + DAY).toDateString() ? 'tomorrow 06:00' : 'today 06:00'
   const compact = useCompact()
   const [saved, setSaved] = useState(false)
+  const counts = usePlayCounts()
+  const songs: SonarSong[] = useMemo(() => {
+    const max = Math.max(1, ...tracks.map((t) => counts.get(t.id) ?? 0))
+    return tracks.map((t) => ({ id: t.id, len: t.duration || 0, title: t.title, isNew: mix.kind !== 'redis' && !last.has(t.id), weight: (counts.get(t.id) ?? 0) / max }))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mix.trackIds.join('|'), counts, last])
+  const ringCurrent = curId ? tracks.findIndex((t) => t.id === curId) : -1
+  const ring = (size: number, compactRing: boolean) => (
+    <ListRing
+      songs={songs}
+      current={ringCurrent}
+      playing={playing}
+      size={size}
+      onPick={(i) => playFrom(tracks[i])}
+      onPlay={playAll}
+      blips
+      legend={songs.some((x) => x.isNew) ? ['length', 'new', 'blip'] : ['length', 'blip']}
+      label={`${mix.title} as a ring: solid arcs are songs you know, hatched arcs are new to you`}
+      compact={compactRing}
+    />
+  )
 
   const save = () => {
     const d = new Date()
@@ -214,6 +237,9 @@ function MixView({ c, mix, backBtn }: { c: Catalogue; mix: MixPlan; backBtn: Rea
         </div>
       )}
 
+      <div className="sn-split">
+      <div>
+      {phone && <div className="sn-phone-ring">{ring(300, true)}</div>}
       <div className={`mx-list ${dayPlan ? 'is-day' : ''}`} role="table">
         {!phone && (
           <div className="mx-head" role="row">
@@ -248,6 +274,9 @@ function MixView({ c, mix, backBtn }: { c: Catalogue; mix: MixPlan; backBtn: Rea
       </div>
       <div className="mx-foot">
         {mixContext(mix).label} · {plural(tracks.length, 'song', 'songs')}
+      </div>
+      </div>
+      {!phone && <aside className="sn-panel">{ring(320, false)}</aside>}
       </div>
     </div>
   )

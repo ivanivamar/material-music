@@ -22,6 +22,8 @@ import { AlbumOfflineToggle } from './OfflineToggle'
 import { useDownloadProgress, useDownloads } from '../../state/downloads'
 import { playList, useContextState, useNowPlaying } from './playback'
 import { LibCard, albumItem } from './libgrid'
+import { AlbumSonar, SonarSwitch } from './AlbumSonar'
+import { useSonarMode } from '../../components/sonar/Sonar'
 
 function released(date?: string, year?: number): string {
   if (date && /^\d{4}-\d{2}-\d{2}/.test(date)) {
@@ -45,6 +47,7 @@ export function AlbumPage({ id }: { id: string }) {
   const dl = useDownloads()
   const dlNow = useDownloadProgress()
   const { doc: genreDoc } = useGenres()
+  const [mode, setMode] = useSonarMode('album')
   const genres = albumGenresOf(genreDoc, album).genres
   const crumbs = <Crumbs fallback={libraryHref('albums')} parts={[<a key="l" href={libraryHref('all')}>LIBRARY</a>, <a key="a" href={libraryHref('albums')}>ALBUMS</a>]} />
 
@@ -143,6 +146,25 @@ export function AlbumPage({ id }: { id: string }) {
         )}
       </div>
 
+      {info.tracks.length > 0 && (
+        <div className="sn-head">
+          <span className="sect-label">TRACKLIST</span>
+          <span className="sect-line" />
+          <SonarSwitch mode={mode} onChange={setMode} />
+        </div>
+      )}
+
+      {mode === 'ring' && info.tracks.length > 0 ? (
+        <AlbumSonar
+          tracks={info.tracks}
+          current={ctx.active && ctx.currentId ? ids.indexOf(ctx.currentId) : -1}
+          playing={ctx.playing}
+          variousArtists={variousArtists}
+          onPlayAt={playAt}
+          onPlay={onPlay}
+          onMore={(trackId, e) => actions.menu({ kind: 'track', trackId }, e)}
+        />
+      ) : (
       <div className={`tracklist ${dl.available ? 'has-dl' : ''}`} role="table">
         <div className="tl-head" role="row">
           <span className="tl-h-n">NO</span>
@@ -181,6 +203,7 @@ export function AlbumPage({ id }: { id: string }) {
           ))
         )}
       </div>
+      )}
 
       {others.length > 0 && (
         <section className="more-by">

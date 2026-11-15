@@ -547,7 +547,7 @@ export function SongGroups({ c, groups, timeline, phone, onPlay }: { c: Catalogu
 const LETTERS = ['#', ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ']
 
 /** Height covered by the sticky bars (top bar on the phone + the chips/sort bar) once stuck, plus a little air. */
-function stuckOffset(main: HTMLElement) {
+export function stuckOffset(main: HTMLElement) {
   const bar = main.querySelector<HTMLElement>('.lb-bar')
   if (!bar) return 72
   return (parseFloat(getComputedStyle(bar).top) || 0) + bar.offsetHeight + 8
