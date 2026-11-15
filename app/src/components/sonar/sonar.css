@@ -324,3 +324,5 @@ g.is-empty .hr-l { opacity: .45; }
 .sn-top-dot { width: 22px; display: flex; justify-content: center; flex: none; }
 .sn-top-dot i { display: block; border-radius: 50%; background: #fff; }
 @media (max-width: 1180px) { .shell:not(.is-phone) .ar2 { grid-template-columns: minmax(0, 1fr); row-gap: 32px; } .ar2-side { position: static; } }
+.sn-alb { box-sizing: border-box; }
+.sn-alb .sn-tag-meta { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }

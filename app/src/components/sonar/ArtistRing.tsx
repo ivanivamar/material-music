@@ -62,7 +62,7 @@ function Body({ albums, counts, nowId, playing, width, height, onPlay, phone, id
     let acc = 0
     const arcs: { id: string; d: string; mid: number; album: RingAlbum }[] = []
     const seams: { x1: number; y1: number; x2: number; y2: number }[] = []
-    const blips: { id: string; title: string; x: number; y: number; r: number; f: number; plays: number; a0: number; a1: number; mid: number; len: number }[] = []
+    const blips: { id: string; title: string; x: number; y: number; r: number; f: number; plays: number; a0: number; a1: number; mid: number; len: number; show: boolean }[] = []
     albums.forEach((a, ai) => {
       const a0 = (acc / total) * 360 + GAP / 2
       const a1 = Math.max(a0 + 0.5, ((acc + lens[ai]) / total) * 360 - GAP / 2)
@@ -72,7 +72,8 @@ function Body({ albums, counts, nowId, playing, width, height, onPlay, phone, id
         const l = t.len || 180
         const t0 = (s / total) * 360
         const t1 = ((s + l) / total) * 360
-        if (ti > 0) {
+        const prevPx = ti > 0 ? (rad(t0 - ((s - (a.tracks[ti - 1].len || 180)) / total) * 360) * R) : 0
+        if (ti > 0 && prevPx >= 7 && rad(t1 - t0) * R >= 7) {
           const [x1, y1] = polar(cx, cy, R - W / 2 - 1, t0)
           const [x2, y2] = polar(cx, cy, R + W / 2 + 1, t0)
           seams.push({ x1, y1, x2, y2 })
@@ -83,14 +84,58 @@ function Body({ albums, counts, nowId, playing, width, height, onPlay, phone, id
         const r = RIN + (R - (phone ? 18 : 26) - RIN) * f
         const mid = (t0 + t1) / 2
         const [x, y] = polar(cx, cy, r, mid)
-        blips.push({ id: t.id, title: t.title, x, y, r, f, plays, a0: t0, a1: t1, mid, len: l })
+        blips.push({ id: t.id, title: t.title, x, y, r, f, plays, a0: t0, a1: t1, mid, len: l, show: !anyPlays || plays > 0 || t.id === nowId })
         s += l
       })
       acc += lens[ai]
     })
-    const top = anyPlays ? blips.filter((b) => b.plays > 0).sort((a, b) => b.plays - a.plays).slice(0, 5) : []
-    return { arcs, seams, blips, top }
-  }, [albums, counts, cx, cy, R, RIN, W, GAP, phone])
+    // ── labels without collisions ──
+    const placed: Box[] = []
+    const fits = (b: Box) => b.x0 >= 0 && b.y0 >= 0 && b.x1 <= width && b.y1 <= height && !placed.some((o) => b.x0 < o.x1 && b.x1 > o.x0 && b.y0 < o.y1 && b.y1 > o.y0)
+    // release tags: biggest releases first, pushed outwards if they'd overlap, else dropped
+    const tags: { id: string; x: number; y: number; right: boolean; vy: number; maxW: number }[] = []
+    const order = arcs.map((a, k) => ({ a, k, len: lens[k] })).sort((p, q) => q.len - p.len)
+    for (const { a } of order) {
+      const right = Math.sin(rad(a.mid)) >= 0
+      const vy = Math.cos(rad(a.mid))
+      const meta = tagMeta(a.album)
+      const label = phone ? shortLabel(a.album) : a.album.title
+      const want = phone ? label.length * 6.4 + 6 : Math.max(Math.min(200, label.length * 8.2), meta.length * 8.8) + 16
+      const h = phone ? 12 : 40
+      for (const dr of phone ? [0, 14] : [0, 24, 48]) {
+        const [x, y] = polar(cx, cy, (phone ? R + W / 2 + 12 : R + 30) + dr, a.mid)
+        const centred = phone && Math.abs(Math.sin(rad(a.mid))) < 0.15
+        // shorten the title to the room up to the edge (it ends in "…")
+        const room = centred ? Math.min(x, width - x) * 2 : right ? width - x : x
+        const w = Math.min(want, room)
+        if (w < (phone ? 48 : 96)) continue
+        const x0 = centred ? x - w / 2 : right ? x : x - w
+        const y0 = phone ? y - h / 2 : vy > 0.6 ? y - h : vy < -0.6 ? y : y - h / 2
+        const box = { x0, y0, x1: x0 + w, y1: y0 + h }
+        if (fits(box)) {
+          placed.push(box)
+          tags.push({ id: a.id, x, y, right, vy, maxW: w })
+          break
+        }
+      }
+    }
+    // the most played songs by name, as many of five as fit
+    const named: string[] = []
+    if (!phone && anyPlays)
+      for (const b of blips.filter((x) => x.plays > 0).sort((p, q) => q.plays - p.plays)) {
+        if (named.length >= 5) break
+        const right = Math.sin(rad(b.mid)) >= 0
+        const w = Math.min(220, b.title.length * 7.4) + 30
+        const x0 = right ? b.x + 10 : b.x - 10 - w
+        const box = { x0, y0: b.y - 10, x1: x0 + w, y1: b.y + 10 }
+        if (fits(box)) {
+          placed.push(box)
+          named.push(b.id)
+        }
+      }
+    const top = named.map((id) => blips.find((b) => b.id === id)!)
+    return { arcs, seams, blips, top, tags }
+  }, [albums, counts, cx, cy, R, RIN, W, GAP, phone, width, height, nowId])
 
   const cur = nowId ? g.blips.find((b) => b.id === nowId) : undefined
   const curAlbum = cur ? albums.find((a) => a.tracks.some((t) => t.id === cur.id))?.id : undefined
@@ -127,17 +172,19 @@ function Body({ albums, counts, nowId, playing, width, height, onPlay, phone, id
             return <line key={b.id} x1={x1} y1={y1} x2={b.x} y2={b.y} className="sn-spoke" />
           })}
         {phone &&
-          g.arcs.map((a) => {
-            const [x, y] = polar(cx, cy, R + W / 2 + 12, a.mid)
+          g.tags.map(({ id, x, y, maxW }) => {
+            const a = g.arcs.find((r) => r.id === id)!
             const sx = Math.sin(rad(a.mid))
-            const label = `${a.album.year ? String(a.album.year).slice(2) + ' ' : ''}${a.album.title}`.toUpperCase()
+            const label = shortLabel(a.album)
+            const fit = Math.max(4, Math.floor((maxW - 6) / 6.4))
             return (
               <text key={a.id} x={x} y={y} textAnchor={sx > 0.15 ? 'start' : sx < -0.15 ? 'end' : 'middle'} dominantBaseline="central" className={`sn-mlab ${a.id === curAlbum ? 'is-on' : ''}`}>
-                {label.length > 16 ? label.slice(0, 15) + '…' : label}
+                {label.length > fit ? label.slice(0, fit - 1) + '…' : label}
               </text>
             )
           })}
         {g.blips.map((b) => {
+          if (!b.show) return null
           const on = b.id === cur?.id
           const r = on ? (phone ? 5 : 6) : (phone ? 1.5 : 2) + (phone ? 3 : 3.5) * b.f
           return (
@@ -162,21 +209,21 @@ function Body({ albums, counts, nowId, playing, width, height, onPlay, phone, id
           )
         })}
       {!phone &&
-        g.arcs.map((a) => {
-          const [x, y] = polar(cx, cy, R + 30, a.mid)
-          const right = Math.sin(rad(a.mid)) >= 0
-          const vy = Math.cos(rad(a.mid))
+        g.tags.map(({ id, x, y, right, vy, maxW }) => {
+          const a = g.arcs.find((r) => r.id === id)!
           const on = a.id === curAlbum
-          const meta = [a.album.year, a.album.kind, `${a.album.tracks.length} ${a.album.tracks.length === 1 ? 'song' : 'songs'}`].filter(Boolean).join(' · ')
+          const meta = tagMeta(a.album)
           return (
             <a
               key={a.id}
               href={a.album.href}
               className={`sn-alb ${on ? 'is-on' : ''}`}
-              style={{ left: x, top: y, transform: `translate(${right ? '0' : '-100%'}, ${vy > 0.6 ? '-100%' : vy < -0.6 ? '0' : '-50%'})`, alignItems: right ? 'flex-start' : 'flex-end', textAlign: right ? 'left' : 'right' } as CSSProperties}
+              style={{ left: x, top: y, maxWidth: maxW, transform: `translate(${right ? '0' : '-100%'}, ${vy > 0.6 ? '-100%' : vy < -0.6 ? '0' : '-50%'})`, alignItems: right ? 'flex-start' : 'flex-end', textAlign: right ? 'left' : 'right' } as CSSProperties}
             >
               <span className="sn-tag-meta">{meta}</span>
-              <span className="sn-alb-t">{a.album.title}</span>
+              <span className="sn-alb-t" style={{ maxWidth: Math.min(200, maxW - 12) }}>
+                {a.album.title}
+              </span>
             </a>
           )
         })}
@@ -247,4 +294,18 @@ export function TopPlayed({ albums, counts, nowId, onPlay, n = 4 }: { albums: Ri
       })}
     </div>
   )
+}
+
+interface Box {
+  x0: number
+  y0: number
+  x1: number
+  y1: number
+}
+
+const tagMeta = (a: RingAlbum) => [a.year, a.kind, `${a.tracks.length} ${a.tracks.length === 1 ? 'song' : 'songs'}`].filter(Boolean).join(' · ')
+
+function shortLabel(a: RingAlbum): string {
+  const s = `${a.year ? String(a.year).slice(2) + ' ' : ''}${a.title}`.toUpperCase()
+  return s.length > 16 ? s.slice(0, 15) + '…' : s
 }
