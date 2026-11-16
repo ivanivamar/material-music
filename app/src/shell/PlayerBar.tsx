@@ -14,7 +14,7 @@ import { TimeSeek, Volume, useFixedOrder, usePlayPause } from '../nowplaying/par
 import { Icon } from '../design/icons'
 import { Marquee } from '../components/Marquee'
 import { isNative } from '../native/bridge'
-import { albumHref, artistHref } from './routes'
+import { albumHref } from './routes'
 import { isIntroId } from '../state/player'
 import { djIntroInfo } from '../state/dj'
 import { useDjView } from '../state/djUi'
@@ -22,6 +22,7 @@ import { useIntroAudio } from '../dj/voice'
 import { DjButton } from '../dj/DjButton'
 import { IntroSub, LiveMark } from '../dj/DjIntro'
 import { useSettings } from '../state/settings'
+import { ArtistLink } from '../components/ArtistPicker'
 
 export function PlayerBar() {
   const p = usePlayer()
@@ -107,9 +108,9 @@ export function PlayerBar() {
                 </a>
                 {djChip}
               </div>
-              <a className="pb-sub pb-link" href={artistHref(track.artistId)} title={track.artist}>
+              <ArtistLink track={track} className="pb-sub pb-link" placement="top-start">
                 <Marquee text={track.artist} />
-              </a>
+              </ArtistLink>
             </div>
             <LikeButton trackId={track.id} size="sm" className="pb-like" />
           </>

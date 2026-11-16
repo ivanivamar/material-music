@@ -21,7 +21,7 @@ import { useMotion } from '../state/motion'
 import { nowPlayingStore, useNowPlayingUi } from '../state/nowPlaying'
 import { playerStore } from '../state/player'
 import { isTouch, useIsPhone } from '../state/viewport'
-import { albumHref, artistHref } from '../shell/routes'
+import { albumHref } from '../shell/routes'
 import { Marquee } from '../components/Marquee'
 import { HeroSub, HeroTitle } from './HeroTitle'
 import { LiveLyrics } from './Lyrics'
@@ -41,6 +41,7 @@ import { introLevel, onFrame } from '../dj/live'
 import { registerBack } from '../native/backButton'
 import { DevicesButton } from '../sync/DevicesButton'
 import { trackOf, albumOf } from '../state/previews'
+import { ArtistLink } from '../components/ArtistPicker'
 
 const closeNp = () => nowPlayingStore.close()
 
@@ -230,9 +231,9 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
                         <HeroSub
                           text={`${songTrack.artist}\n${songAlbum?.title ?? ''}`}
                           artist={
-                            <NpLink href={artistHref(songTrack.artistId)} className="np-artist" title={songTrack.artist}>
+                            <ArtistLink track={songTrack} className="np-artist" onNavigate={nowPlayingStore.closeAndGo}>
                               {songTrack.artist}
-                            </NpLink>
+                            </ArtistLink>
                           }
                           album={
                             songAlbum && (
@@ -304,7 +305,9 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
                           {songTrack.title}
                         </div>
                         <div className="np-ly-sub">
-                          <NpLink href={artistHref(songTrack.artistId)}>{songTrack.artist}</NpLink>
+                          <ArtistLink track={songTrack} onNavigate={nowPlayingStore.closeAndGo}>
+                            {songTrack.artist}
+                          </ArtistLink>
                           {songAlbum && (
                             <>
                               {' · '}

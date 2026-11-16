@@ -8,10 +8,10 @@ import { actions, trackDrag } from '../../actions/actions'
 import { LikeButton } from '../../components/LikeButton'
 import { ListHead, ListWindow, RowCover, SongRow, type ListGroup } from '../../components/list/SongList'
 import { fmtClock, playsLabel } from '../../components/list/listUtils'
-import { artistHref } from '../../shell/routes'
 import type { Catalogue } from '../../state/library'
 import type { PlaylistRow } from '../../state/playlistViews'
 import { LIKED_ID } from '../../state/playlists'
+import { ArtistLinks } from '../../components/ArtistPicker'
 
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
@@ -78,9 +78,7 @@ export function LikedList({
           const t = x.r.track
           const plays = t ? (counts.get(t.id) ?? 0) : 0
           const artist = t ? (
-            <a href={artistHref(t.artistId)} draggable={false}>
-              {t.artist}
-            </a>
+            <ArtistLinks track={t} />
           ) : (
             x.r.entry.artist
           )

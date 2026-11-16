@@ -27,6 +27,7 @@ import { nativeUpdates, useNativeUpdates } from '../native/updates'
 import { Sidebar } from './Sidebar'
 import { TopbarSlot } from './topbarSlot'
 import { ActionHost } from '../actions/ActionHost'
+import { ArtistPickerHost } from '../components/ArtistPicker'
 import { DjPanelHost } from '../dj/DjPanel'
 import { djStore } from '../state/dj'
 import { albumHref, go, href, navKeyOf, releaseHref, type Route } from './routes'
@@ -517,6 +518,7 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
       <NowPlaying />
       <QueuePanel />
       <ActionHost />
+      <ArtistPickerHost />
       <DjPanelHost />
     </div>
     </TopbarSlot.Provider>

@@ -29,6 +29,7 @@ import { PlaylistCover } from '../playlists/PlaylistCover'
 import { LikeButton } from '../../components/LikeButton'
 import { albumTrackIds, artistTrackIds, playList, useNowPlaying } from './playback'
 import { useWindow } from './useWindow'
+import { ArtistLinks } from '../../components/ArtistPicker'
 
 /* ── Items ──────────────────────────────────────────── */
 
@@ -465,9 +466,7 @@ export function SongRowM({
         <div className="lb-st">{title ?? t.title}</div>
         <div className="lb-ss">
           {sub ?? (
-            <a className="lb-ln" href={artistHref(t.artistId)} tabIndex={-1} onClick={(e) => (e.stopPropagation(), onOpen?.())}>
-              {t.artist}
-            </a>
+            <ArtistLinks track={t} linkProps={{ className: 'lb-ln', tabIndex: -1, onClick: (e) => (e.stopPropagation(), onOpen?.()) }} />
           )}
         </div>
       </div>

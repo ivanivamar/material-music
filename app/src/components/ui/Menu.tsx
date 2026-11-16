@@ -33,6 +33,8 @@ export interface MenuProps {
   /** accessible name; also the phone sheet's title unless `title` is given */
   label: string
   title?: ReactNode
+  /** phone sheet: mono line under the title */
+  meta?: ReactNode
   children: ReactNode
   placement?: MenuPlacement
   /** px; default: at least the anchor's width, 200 minimum */
@@ -43,7 +45,7 @@ export interface MenuProps {
   className?: string
 }
 
-export function Menu({ open, onClose, anchor, label, title, children, placement = 'bottom-start', width, phone = 'sheet', role = 'menu', className }: MenuProps) {
+export function Menu({ open, onClose, anchor, label, title, meta, children, placement = 'bottom-start', width, phone = 'sheet', role = 'menu', className }: MenuProps) {
   const isPhone = useIsPhone()
   const asSheet = isPhone && phone === 'sheet'
   const { mounted, shown } = usePresence(open && !asSheet, 200)
@@ -128,7 +130,7 @@ export function Menu({ open, onClose, anchor, label, title, children, placement 
   if (asSheet) {
     return (
       <MenuCtx.Provider value={ctx}>
-        <Sheet open={open} onClose={onClose} label={label} title={title ?? label} closeButton={false} bodyClassName="mn-sheet">
+        <Sheet open={open} onClose={onClose} label={label} title={title ?? label} meta={meta} closeButton={false} bodyClassName="mn-sheet">
           <div role={role} aria-label={label} onKeyDown={onKey} ref={ref}>
             {children}
           </div>
@@ -160,6 +162,8 @@ export interface MenuItemProps {
   children: ReactNode
   onSelect?: () => void
   icon?: IconName
+  /** in place of the icon: an avatar, a cover… */
+  leading?: ReactNode
   /** second line under the label */
   description?: ReactNode
   /** right-aligned text (count, shortcut, value) */
@@ -173,7 +177,7 @@ export interface MenuItemProps {
   className?: string
 }
 
-export function MenuItem({ children, onSelect, icon, description, trailing, selected, danger, disabled, keepOpen, className }: MenuItemProps) {
+export function MenuItem({ children, onSelect, icon, leading, description, trailing, selected, danger, disabled, keepOpen, className }: MenuItemProps) {
   const ctx = useContext(MenuCtx)
   const inPicker = selected !== undefined
   return (
@@ -189,7 +193,7 @@ export function MenuItem({ children, onSelect, icon, description, trailing, sele
         if (!keepOpen) ctx?.close()
       }}
     >
-      {icon && <Icon name={icon} />}
+      {leading ?? (icon && <Icon name={icon} />)}
       <span className="mn-item-l">
         {children}
         {description && <span className="mn-item-d">{description}</span>}

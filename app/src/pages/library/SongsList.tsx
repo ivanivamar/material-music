@@ -12,7 +12,7 @@ import { actions, trackDrag } from '../../actions/actions'
 import { LikeButton } from '../../components/LikeButton'
 import { ListHead, ListSection, ListWindow, RowCover, SongRow, type ListGroup, type ListWindowApi } from '../../components/list/SongList'
 import { fmtClock, fmtHoursMin, playsLabel, usePlayCounts } from '../../components/list/listUtils'
-import { albumHref, artistHref } from '../../shell/routes'
+import { albumHref } from '../../shell/routes'
 import { albumGenresOf, useGenres } from '../../state/genres'
 import type { Catalogue, Track } from '../../state/library'
 import { libraryPrefs, useLibraryPrefs, type SongOrder, type SongRing } from '../../state/libraryPrefs'
@@ -20,6 +20,7 @@ import { useLikedIndex } from '../../state/likes'
 import { playerStore } from '../../state/player'
 import { LETTERS, Scrubber, letterOf } from './libgrid'
 import { playList, useContextState, useNowPlaying } from './playback'
+import { ArtistLinks } from '../../components/ArtistPicker'
 
 const GROUP_LABEL: Record<SongRing, string> = { letter: 'Title', artist: 'Artist', genre: 'Genre', year: 'Year' }
 const ORDER_LABEL: Record<SongOrder, string> = { az: 'A–Z', plays: 'Plays', added: 'Added' }
@@ -147,11 +148,7 @@ export function SongsList({ c, tracks: all, phone }: { c: Catalogue; tracks: Tra
           )}
           renderRow={(t) => {
             const album = c.albums[t.albumId]
-            const artist = (
-              <a href={artistHref(t.artistId)} draggable={false}>
-                {t.artist}
-              </a>
-            )
+            const artist = <ArtistLinks track={t} />
             const albumLink = album ? (
               <a href={albumHref(album.id)} draggable={false}>
                 {album.title}

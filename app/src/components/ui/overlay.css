@@ -166,4 +166,24 @@
 .sh-body.mn-sheet .mn-item { min-height: 44px; border-radius: 8px; padding: 0 12px; font-size: 14px; }
 .sh-body.mn-sheet .mn-sep { margin: 6px 8px; }
 
+/* Artist picker (components/ArtistPicker.tsx): songs with several artists */
+.ap-item { min-height: 52px; }
+.ap-item .mn-item-l { display: flex; flex-direction: column; gap: 2px; }
+.ap-item .mn-item-d { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-secondary); }
+.ap-item .mn-item-t .ms { font-size: 18px; color: var(--ink-secondary); }
+.ap-item .avatar-art.ap-av { border-width: 1px; }
+.ap-off-av {
+  width: 36px; height: 36px; flex: none; border-radius: 50%; border: 1.5px dashed rgba(255, 255, 255, .22);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: .06em; color: var(--ink-secondary);
+}
+.ap-item.is-off { color: var(--ink-secondary); }
+.sh-body.mn-sheet .ap-item { min-height: 60px; gap: 14px; }
+.sh-body.mn-sheet .ap-item .avatar-art.ap-av, .sh-body.mn-sheet .ap-off-av { width: 44px !important; height: 44px !important; }
+/* a song row's artists (one item in flex rows, ellipsis at the end); not-in-library ones are plain text */
+.al-list { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.al-list a { color: inherit; text-decoration: none; }
+.al-list a:hover { color: var(--ink-primary); text-decoration: underline; text-underline-offset: 3px; }
+.al-off { color: inherit; }
+
 /* reduced motion: every overlay part carries .pg-anim (styles/base.css turns its transitions off) */

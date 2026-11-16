@@ -9,6 +9,8 @@
  * turns the sheet into the picker (back · title, new playlist name + Create, the list).
  */
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent } from 'react'
+import { artistPicker } from '../components/ArtistPicker'
+import { songArtists } from '../lib/songArtists'
 import { Button, IconButton, QualityBadge, Sheet as KitSheet, qualityKind, qualityLabel, useToast } from '../components/ui'
 import { Icon, type IconName } from '../design/icons'
 import { useCover } from '../lib/covers'
@@ -74,6 +76,7 @@ function describe(t: ActionTarget, c: Catalogue, toast: Toast, lists: Map<string
     const album = c.albums[tr.albumId]
     const ids = () => [tr.id]
     const pl = t.playlistId ? lists.get(t.playlistId) : undefined
+    const artists = songArtists(tr, c)
     const rows: Row[] = [
       { icon: 'next', label: 'Play next', run: () => queueTracks(toast, ids(), true) },
       { icon: 'queue', label: 'Add to queue', run: () => queueTracks(toast, ids(), false) },
@@ -94,7 +97,10 @@ function describe(t: ActionTarget, c: Catalogue, toast: Toast, lists: Map<string
     rows.push(
       div,
       { icon: 'library', label: 'Go to album', run: () => goTo(albumHref(tr.albumId)) },
-      { icon: 'library', label: 'Go to artist', run: () => goTo(artistHref(album?.artistId ?? tr.artistId)) },
+      artists.length > 1
+        ? // several artists: the artist picker opens where the menu was (sheet on phone)
+          { icon: 'library', label: 'Go to artist', hint: `${artists.length} ARTISTS`, run: () => artistPicker.open(tr.id) }
+        : { icon: 'library', label: 'Go to artist', run: () => goTo(artistHref(album?.artistId ?? tr.artistId)) },
       div,
     )
     if (pl && t.entryId && pl.id !== LIKED_ID) rows.push({ icon: 'x', label: `Remove from ${pl.name}`, danger: true, run: () => removeFromPlaylist(toast, pl.id, [t.entryId!]) })

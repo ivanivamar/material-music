@@ -23,7 +23,7 @@ import { useArtTint } from '../../design/tint'
 import { useCover } from '../../lib/covers'
 import { actions, DRAG_MIME } from '../../actions/actions'
 import { playPlaylist, removeFromPlaylist } from '../../actions/ops'
-import { albumHref, artistHref, libraryHref } from '../../shell/routes'
+import { albumHref, libraryHref } from '../../shell/routes'
 import { downloadsStore, playlistOffline, useDownloads } from '../../state/downloads'
 import { useLibrary, type Catalogue } from '../../state/library'
 import { playerStore } from '../../state/player'
@@ -43,6 +43,7 @@ import { fmtClock, playsLabel, usePlayCounts, type ListSong } from '../../compon
 import { LikedList, type LikedSort } from './LikedList'
 import { PlaylistCover } from './PlaylistCover'
 import { useContextState, useNowPlaying } from '../library/playback'
+import { ArtistLinks } from '../../components/ArtistPicker'
 
 const ENTRY_MIME = 'application/x-pelagic-entry'
 
@@ -493,9 +494,7 @@ function Row({
   const missing = !t
   const reorder = !p.smart && p.id !== LIKED_ID
   const artist = t ? (
-    <a href={artistHref(t.artistId)} draggable={false}>
-      {t.artist}
-    </a>
+    <ArtistLinks track={t} />
   ) : (
     r.entry.artist
   )
