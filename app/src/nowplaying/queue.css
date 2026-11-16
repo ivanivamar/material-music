@@ -229,7 +229,7 @@ html[data-qp] .toasts.toasts-shell { right: 472px; }
 }
 .shell.is-phone .qp.is-expanded { --qp-rest: 0px; }
 .shell.is-phone .qp.is-open { transform: translate3d(0, var(--qp-rest), 0); transition: transform .5s var(--ease), visibility 0s; }
-.shell.is-phone .qp.is-grabbing, .shell.is-phone .qp-scrim.is-grabbing { transition: none; }
+/* a drag (QueuePanel.tsx) moves it with GSAP (lib/drag.ts), which turns these transitions off inline */
 .shell.is-phone .qp-card {
   bottom: var(--qp-rest); border-radius: 28px;
   box-shadow: 0 -20px 60px -20px rgba(0, 0, 0, .8), inset 0 1px 0 rgba(255, 255, 255, .05);
@@ -239,7 +239,7 @@ html[data-qp] .toasts.toasts-shell { right: 472px; }
 .shell.is-phone .qp-head { gap: 12px; padding: 10px 18px 14px; touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none; }
 .qp-grab { align-self: center; display: flex; align-items: center; justify-content: center; width: 72px; height: 16px; margin: -6px 0 -6px; cursor: grab; }
 .qp-grab > span { width: 36px; height: 4px; border-radius: 4px; background: rgba(255, 255, 255, .25); transition: background .2s, width .3s var(--ease); }
-.qp.is-grabbing .qp-grab > span { background: rgba(255, 255, 255, .6); width: 44px; }
+.qp[data-grab] .qp-grab > span { background: rgba(255, 255, 255, .6); width: 44px; }
 .shell.is-phone .qp-head-row { gap: 10px; }
 .shell.is-phone .qp-tool { height: 44px; }
 .shell.is-phone .qp-tool-sq { width: 44px; }

@@ -6,14 +6,17 @@
  * with the content scrolled to the top, and leave every other touch to the browser.
  * Seek / volume sliders and the lyrics list keep their own gestures.
  *
- * The overlay follows the finger; on release it closes past CLOSE_PX or on a downward flick,
- * otherwise it springs back. A drag swallows the click that would follow it.
+ * The overlay follows the finger; on release it closes past CLOSE_PX or on a downward flick (carrying
+ * on down at the finger's speed), otherwise it springs back. A drag swallows the click that would
+ * follow it. The movement is lib/drag.ts (GSAP): a finger can catch the sheet while it springs back.
  *
  * The drag state lives in data-swipe on the element, not in classes: React owns className and
  * rewrites it whole when the player switches to is-closing, which used to wipe the swiped state —
  * the np-out exit animation then played from full height (the "flash" on swipe-close).
  */
 import { useEffect, type RefObject } from 'react'
+import { gsap } from '../lib/gsap'
+import { drag, grab, release, Velocity } from '../lib/drag'
 
 const CLOSE_PX = 140
 const FLICK = 0.6 // px per ms
@@ -27,7 +30,9 @@ export function useSwipeDown(ref: RefObject<HTMLElement | null>, enabled: boolea
     // reopened before the swiped-away sheet unmounted: bring it back on screen
     if (el.dataset.swipe === 'swiped') {
       delete el.dataset.swipe
-      el.style.transform = ''
+      gsap.killTweensOf(el)
+      gsap.set(el, { clearProps: 'transform' })
+      el.style.transition = ''
     }
 
     let armed = false
@@ -36,14 +41,13 @@ export function useSwipeDown(ref: RefObject<HTMLElement | null>, enabled: boolea
     let startX = 0
     let startY = 0
     let dy = 0
-    let lastY = 0
-    let lastT = 0
-    let velocity = 0
+    let from = 0
+    const vel = new Velocity()
     let swallowClick = false
 
     const reset = () => {
       armed = decided = dragging = false
-      dy = velocity = 0
+      dy = 0
     }
 
     const onStart = (e: TouchEvent) => {
@@ -56,8 +60,8 @@ export function useSwipeDown(ref: RefObject<HTMLElement | null>, enabled: boolea
       if (scroller && scroller.scrollTop > 0) return
       armed = true
       startX = e.touches[0].clientX
-      startY = lastY = e.touches[0].clientY
-      lastT = e.timeStamp
+      startY = e.touches[0].clientY
+      vel.reset(startY, e.timeStamp)
     }
 
     const onMove = (e: TouchEvent) => {
@@ -77,28 +81,29 @@ export function useSwipeDown(ref: RefObject<HTMLElement | null>, enabled: boolea
         dragging = true
         // any data-swipe drops the (finished) entry animation, whose fill would override the inline transform
         el.dataset.swipe = 'dragging'
+        // caught while springing back: carry on from where it is
+        from = grab(el)
       }
       if (!dragging) return
       if (e.cancelable) e.preventDefault()
-      dy = Math.max(0, y - startY)
-      const dt = e.timeStamp - lastT
-      if (dt > 0) velocity = 0.8 * ((y - lastY) / dt) + 0.2 * velocity
-      lastY = y
-      lastT = e.timeStamp
-      el.style.transform = `translate3d(0, ${dy}px, 0)`
+      dy = Math.max(0, from + y - startY)
+      vel.add(y, e.timeStamp)
+      drag(el, dy)
     }
 
-    const onEnd = () => {
+    const onEnd = (e: TouchEvent) => {
       if (!dragging) return reset()
       swallowClick = true
       window.setTimeout(() => (swallowClick = false), 350)
+      const velocity = vel.value(e.timeStamp)
       const close = dy > CLOSE_PX || (velocity > FLICK && dy > 24)
       el.dataset.swipe = close ? 'swiped' : 'springing'
-      el.style.transform = close ? 'translate3d(0, 100%, 0)' : ''
-      window.setTimeout(() => {
-        if (close) onClose()
-        else if (el.dataset.swipe === 'springing') el.dataset.swipe = 'idle'
-      }, close ? 260 : 320)
+      if (close) {
+        // on down at the finger's speed; the player closes once it is off screen
+        release(el, el.offsetHeight, { velocity, max: 0.32, onComplete: onClose })
+      } else {
+        release(el, 0, { velocity, clear: true, onComplete: () => el.dataset.swipe === 'springing' && (el.dataset.swipe = 'idle') })
+      }
       reset()
     }
 
@@ -123,7 +128,9 @@ export function useSwipeDown(ref: RefObject<HTMLElement | null>, enabled: boolea
       // screen until it unmounts, or it would snap back to full height for a moment
       if (el.dataset.swipe !== 'swiped') {
         if (el.dataset.swipe) el.dataset.swipe = 'idle'
-        el.style.transform = ''
+        gsap.killTweensOf(el)
+        gsap.set(el, { clearProps: 'transform' })
+        el.style.transition = ''
       }
     }
   }, [ref, enabled, onClose])

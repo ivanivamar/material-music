@@ -26,7 +26,7 @@
  * header drags the sheet (down = close / shrink, up = full height); a press on a header button
  * only becomes a drag after 8px, so taps still work.
  */
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type DragEvent, type KeyboardEvent, type PointerEvent } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type DragEvent, type KeyboardEvent, type PointerEvent } from 'react'
 import { Eq, formatTime, useToast } from '../components/ui'
 import { Icon } from '../design/icons'
 import { useCover } from '../lib/covers'
@@ -38,6 +38,8 @@ import { usePlaylists } from '../state/playlists'
 import { fmtTotal } from '../state/views'
 import { useIsPhone } from '../state/viewport'
 import { PlaylistCover } from '../pages/playlists/PlaylistCover'
+import { gsap } from '../lib/gsap'
+import { drag as dragTo, dragFade, grab as grabEl, px, release, Velocity } from '../lib/drag'
 import { contextLine } from './player'
 import { actions } from '../actions/actions'
 import { trackOf, albumOf } from '../state/previews'
@@ -364,12 +366,46 @@ export function QueuePanel() {
    * down → close (or back to normal height when expanded), up → full height; tap the handle to
    * toggle full height. The sheet follows the finger; the scrim fades while pulling down. */
   const [expanded, setExpanded] = useState(false)
-  const [grabDy, setGrabDy] = useState<number | null>(null)
-  const grab = useRef({ y0: 0, y: 0, t: 0, v: 0, moved: false, onHandle: false, fromBtn: false })
+  const grabRef = useRef({ on: false, y0: 0, from: 0, dy: 0, moved: false, pinned: false, onHandle: false, fromBtn: false })
+  const vel = useRef(new Velocity())
   if (!open && expanded) setExpanded(false)
   const sheetRef = useRef<HTMLElement>(null)
-  // how far the expanded sheet is pushed down at rest (CSS --qp-rest)
-  const restOffset = () => (sheetRef.current ? parseFloat(getComputedStyle(sheetRef.current).getPropertyValue('--qp-rest')) || 0 : 0)
+  const scrimRef = useRef<HTMLDivElement>(null)
+  // how far the sheet rests below full height when not expanded (CSS --qp-rest): the card ends that far
+  // above the sheet's bottom, so its computed `bottom` is the value in px (--qp-rest itself is a max()
+  // expression that parseFloat can't read). Remembered for when the sheet is expanded (bottom 0 then).
+  const restCache = useRef(0)
+  const restOffset = () => {
+    const card = sheetRef.current?.querySelector<HTMLElement>('.qp-card')
+    if (card && !expanded) restCache.current = px(getComputedStyle(card).bottom)
+    return restCache.current || 192
+  }
+  const restNow = () => (expanded ? 0 : restOffset())
+
+  // the movement is lib/drag.ts (GSAP). Opening again: the classes own the transform (a closing glide
+  // already handed it back, this only covers one cut short)
+  useLayoutEffect(() => {
+    const sheet = sheetRef.current
+    if (!open || !sheet) return
+    gsap.killTweensOf([sheet, scrimRef.current])
+    gsap.set(sheet, { clearProps: 'transform' })
+    sheet.style.transition = ''
+    if (scrimRef.current) {
+      gsap.set(scrimRef.current, { clearProps: 'opacity' })
+      scrimRef.current.style.transition = ''
+    }
+  }, [open])
+
+  /** let go: to `to` (a resting offset; the classes take over once there), or off screen when closing */
+  const settle = (to: number | 'closed', velocity: number) => {
+    const sheet = sheetRef.current
+    if (!sheet) return
+    delete sheet.dataset.grab
+    if (to === 'closed') {
+      // keep the class's delayed `visibility: hidden` while it glides out
+      release(sheet, sheet.offsetHeight + 24, { velocity, max: 0.42, clear: true, transition: 'visibility 0s linear var(--dur-panel)', fade: { el: scrimRef.current, to: 0, clear: true } })
+    } else release(sheet, to, { velocity, clear: true, fade: { el: scrimRef.current, to: null } })
+  }
 
   /* The whole header is the grab area, its buttons included: a press on a button stays a tap
    * (the button gets its click) until the finger travels BTN_SLOP, then the zone captures the
@@ -377,21 +413,25 @@ export function QueuePanel() {
   const BTN_SLOP = 8
   const swallowClick = useRef(false)
   const onGrabDown = (e: PointerEvent<HTMLDivElement>) => {
-    if (!phone || !e.isPrimary) return
+    const sheet = sheetRef.current
+    if (!phone || !e.isPrimary || !sheet) return
     const target = e.target as HTMLElement
     const fromBtn = !!target.closest('button')
     if (!fromBtn) e.currentTarget.setPointerCapture(e.pointerId)
     swallowClick.current = false
-    grab.current = { y0: e.clientY, y: e.clientY, t: performance.now(), v: 0, moved: false, onHandle: !!target.closest('.qp-grab'), fromBtn }
-    setGrabDy(0)
+    grabRef.current = { on: true, y0: e.clientY, from: 0, dy: 0, moved: false, pinned: false, onHandle: !!target.closest('.qp-grab'), fromBtn }
+    vel.current.reset(e.clientY, e.timeStamp)
+    // caught mid-glide: hold it where it is
+    if (gsap.isTweening(sheet)) {
+      grabRef.current.pinned = true
+      grabRef.current.from = grabEl(sheet) - restNow()
+    }
   }
   const onGrabMove = (e: PointerEvent<HTMLDivElement>) => {
-    if (grabDy === null) return
-    const g = grab.current
-    const now = performance.now()
-    if (now > g.t) g.v = 0.7 * ((e.clientY - g.y) / (now - g.t)) + 0.3 * g.v // px/ms, + = down
-    g.y = e.clientY
-    g.t = now
+    const g = grabRef.current
+    const sheet = sheetRef.current
+    if (!g.on || !sheet) return
+    vel.current.add(e.clientY, e.timeStamp)
     const dy = e.clientY - g.y0
     if (!g.moved) {
       if (Math.abs(dy) <= (g.fromBtn ? BTN_SLOP : 4)) return
@@ -405,9 +445,15 @@ export function QueuePanel() {
           /* pointer already gone */
         }
       }
+      // a data attribute, not a class: React rewrites this element's className
+      sheet.dataset.grab = ''
+      if (!g.pinned) g.from = grabEl(sheet) - restNow()
     }
+    const d = g.from + dy
     // expanded: can't go higher; normal: up to full height
-    setGrabDy(expanded ? Math.max(0, dy) : Math.max(-restOffset(), dy))
+    g.dy = expanded ? Math.max(0, d) : Math.max(-restOffset(), d)
+    dragTo(sheet, restNow() + g.dy)
+    dragFade(scrimRef.current, g.dy > 0 ? Math.max(0, 1 - g.dy / Math.max(1, window.innerHeight - restNow())) : 1)
   }
   const onGrabClickCapture = (e: React.MouseEvent) => {
     if (!swallowClick.current) return
@@ -415,28 +461,39 @@ export function QueuePanel() {
     e.preventDefault()
     e.stopPropagation()
   }
-  const onGrabUp = () => {
-    if (grabDy === null) return
-    const { v, moved, onHandle } = grab.current
-    const dy = grabDy
-    setGrabDy(null)
+  const onGrabUp = (e: PointerEvent<HTMLDivElement>) => {
+    const g = grabRef.current
+    if (!g.on) return
+    g.on = false
     // a click from this gesture (if any) fires right after pointerup; drop the flag after it
     if (swallowClick.current) window.setTimeout(() => (swallowClick.current = false), 350)
-    if (!moved) {
+    if (!g.moved) {
+      if (g.pinned) settle(restNow(), 0)
       // a tap on the handle itself toggles full height
-      if (onHandle) setExpanded((x) => !x)
+      else if (g.onHandle) setExpanded((x) => !x)
       return
     }
+    const { dy } = g
+    const v = vel.current.value(e.timeStamp)
     if (dy > 0 && (dy > 120 || v > 0.5)) {
-      if (expanded && dy < restOffset() + 200 && v < 1.2) setExpanded(false)
-      else close()
-    } else if (dy < 0 && !expanded && (dy < -60 || v < -0.5)) setExpanded(true)
+      if (expanded && dy < restOffset() + 200 && v < 1.2) {
+        settle(restOffset(), v)
+        setExpanded(false)
+      } else {
+        settle('closed', v)
+        close()
+      }
+    } else if (dy < 0 && !expanded && (dy < -60 || v < -0.5)) {
+      settle(0, v)
+      setExpanded(true)
+    } else settle(restNow(), v)
   }
-  const sheetStyle: CSSProperties | undefined =
-    // transform only (never top/height): the sheet follows the finger from its resting offset
-    grabDy === null ? undefined : { transform: `translate3d(0, calc(var(--qp-rest) + ${grabDy}px), 0)` }
-  const scrimStyle: CSSProperties | undefined =
-    grabDy !== null && grabDy > 0 ? { opacity: Math.max(0, 1 - grabDy / Math.max(1, window.innerHeight - (expanded ? 0 : restOffset()))) } : undefined
+  const onGrabCancel = () => {
+    const g = grabRef.current
+    if (!g.on) return
+    g.on = false
+    if (g.moved || g.pinned) settle(restNow(), 0)
+  }
 
   // toasts step left of the popover while it's open
   useEffect(() => {
@@ -808,11 +865,10 @@ export function QueuePanel() {
 
   return (
     <>
-      <div className={`qp-scrim pg-anim ${overNp ? 'is-over-np' : ''} ${open ? 'is-open' : ''} ${grabDy !== null ? 'is-grabbing' : ''}`} style={scrimStyle} onClick={close} aria-hidden />
+      <div ref={scrimRef} className={`qp-scrim pg-anim ${overNp ? 'is-over-np' : ''} ${open ? 'is-open' : ''}`} onClick={close} aria-hidden />
       <aside
         ref={sheetRef}
-        className={`qp pg-anim ${overNp ? 'is-over-np' : ''} ${open ? 'is-open' : ''} ${drag ? 'is-dragging' : ''} ${expanded ? 'is-expanded' : ''} ${grabDy !== null ? 'is-grabbing' : ''}`}
-        style={sheetStyle}
+        className={`qp pg-anim ${overNp ? 'is-over-np' : ''} ${open ? 'is-open' : ''} ${drag ? 'is-dragging' : ''} ${expanded ? 'is-expanded' : ''}`}
         aria-label="Queue"
         aria-hidden={!open}
         inert={!open}
@@ -820,7 +876,7 @@ export function QueuePanel() {
         onDrop={onDrop}
       >
         <div className="qp-card">
-        <div className="qp-head" onPointerDown={onGrabDown} onPointerMove={onGrabMove} onPointerUp={onGrabUp} onPointerCancel={() => setGrabDy(null)} onClickCapture={onGrabClickCapture}>
+        <div className="qp-head" onPointerDown={onGrabDown} onPointerMove={onGrabMove} onPointerUp={onGrabUp} onPointerCancel={onGrabCancel} onClickCapture={onGrabClickCapture}>
           {phone && (
             <div className="qp-grab" role="presentation" title={expanded ? 'Drag down to shrink or close' : 'Drag up to expand, down to close'}>
               <span />

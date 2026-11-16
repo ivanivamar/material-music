@@ -214,9 +214,8 @@ html[data-np] .toasts.toasts-shell { left: 0; bottom: 40px; }
 /* swipe down to close (nowplaying/swipe.ts) */
 /* swipe state is a data attribute (swipe.ts) — React rewrites className when closing */
 .shell.is-phone .np[data-swipe]:not(.is-closing) { animation: none; }
-.shell.is-phone .np[data-swipe="dragging"] { transition: none; }
-.shell.is-phone .np[data-swipe="springing"] { transition: transform .3s var(--ease); }
-.shell.is-phone .np[data-swipe="swiped"] { animation: none !important; transition: transform .26s cubic-bezier(.4, 0, 1, 1); pointer-events: none; }
+/* the movement itself is GSAP's (lib/drag.ts): no CSS transition on the transform */
+.shell.is-phone .np[data-swipe="swiped"] { animation: none !important; pointer-events: none; }
 .shell.is-phone .np-head { top: var(--np-sat); height: 60px; padding: 0 14px; }
 .shell.is-phone .np-close { width: 44px; height: 44px; padding: 0; margin: 0; justify-content: center; font-size: 0; letter-spacing: 0; }
 .shell.is-phone .np-close :is(svg, .ms) { font-size: 22px; }

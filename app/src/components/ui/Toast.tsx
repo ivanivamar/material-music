@@ -9,6 +9,8 @@
  */
 import { createContext, useCallback, useContext, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react'
 import { Icon, type IconName } from '../../design/icons'
+import { gsap } from '../../lib/gsap'
+import { drag as dragTo, grab, release, Velocity } from '../../lib/drag'
 
 export interface ToastInput {
   text: ReactNode
@@ -153,23 +155,22 @@ function ToastView({
   onRelease: () => void
 }) {
   const ref = useRef<HTMLDivElement>(null)
-  const drag = useRef<{ id: number; x: number; y: number; t: number; dx: number; active: boolean } | null>(null)
+  const drag = useRef<{ id: number; x: number; y: number; t: number; dx: number; from: number; active: boolean } | null>(null)
   const [swiped, setSwiped] = useState(false)
 
-  const setX = (dx: number, animate: boolean) => {
+  const vel = useRef(new Velocity())
+  /** follow the finger (lib/drag.ts: GSAP owns the transform); fades a little as it goes left */
+  const setX = (dx: number) => {
     const el = ref.current
     if (!el) return
-    // the enter animation's fill would otherwise override an inline transform
-    el.style.animation = 'none'
-    el.style.transition = animate ? 'transform .22s var(--ease-shape, ease), opacity .22s ease' : 'none'
-    el.style.transform = dx ? `translateX(${dx}px)` : ''
-    el.style.opacity = dx < 0 ? String(Math.max(0.2, 1 + dx / 260)) : ''
+    dragTo(el, dx, 'x')
+    gsap.set(el, { opacity: dx < 0 ? Math.max(0.2, 1 + dx / 260) : 1 })
   }
 
   const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
     if (e.pointerType === 'mouse' || t.leaving || swiped) return
     if ((e.target as HTMLElement).closest('button')) return
-    drag.current = { id: e.pointerId, x: e.clientX, y: e.clientY, t: e.timeStamp, dx: 0, active: false }
+    drag.current = { id: e.pointerId, x: e.clientX, y: e.clientY, t: e.timeStamp, dx: 0, from: 0, active: false }
   }
 
   const onPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
@@ -185,12 +186,22 @@ function ToastView({
         return
       }
       d.active = true
-      ref.current?.setPointerCapture(e.pointerId)
+      const el = ref.current
+      if (el) {
+        el.setPointerCapture(e.pointerId)
+        // the enter animation's fill would otherwise override an inline transform
+        el.style.animation = 'none'
+        // caught while springing back: carry on from where it is
+        d.from = grab(el, 'x')
+      }
+      vel.current.reset(e.clientX, e.timeStamp)
       onHold()
     }
+    vel.current.add(e.clientX, e.timeStamp)
     // leftward follows the finger; rightward gets heavy resistance
-    d.dx = dx < 0 ? dx : dx * 0.2
-    setX(d.dx, false)
+    const x = d.from + dx
+    d.dx = x < 0 ? x : x * 0.2
+    setX(d.dx)
   }
 
   const end = (e: ReactPointerEvent<HTMLDivElement>, cancelled: boolean) => {
@@ -198,15 +209,22 @@ function ToastView({
     if (!d || d.id !== e.pointerId) return
     drag.current = null
     if (!d.active) return
-    const v = d.dx / Math.max(1, e.timeStamp - d.t)
+    const v = vel.current.value(e.timeStamp)
+    const el = ref.current
     if (!cancelled && (d.dx < -SWIPE_DISMISS_PX || (d.dx < -24 && v < -SWIPE_FLICK_V))) {
-      const w = ref.current?.offsetWidth ?? 320
+      const w = el?.offsetWidth ?? 320
       setSwiped(true)
-      setX(-(w + 40), true)
-      if (ref.current) ref.current.style.opacity = '0'
+      if (el) {
+        // off to the left at the finger's speed, fading out on the way
+        const time = release(el, -(w + 40), { axis: 'x', velocity: v, max: 0.3 })
+        gsap.to(el, { opacity: 0, duration: time, ease: 'power1.out' })
+      }
       onDismiss()
     } else {
-      setX(0, true)
+      if (el) {
+        release(el, 0, { axis: 'x', velocity: v, clear: true })
+        gsap.to(el, { opacity: 1, duration: 0.22, onComplete: () => void gsap.set(el, { clearProps: 'opacity' }) })
+      }
       onRelease()
     }
   }

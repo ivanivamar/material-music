@@ -13,10 +13,14 @@
  *
  * Only `transform` and the scrim's `opacity` change during a drag (GPU layers, no relayout): the
  * Android WebView re-rasterised the Queue every frame when its size changed mid-drag.
+ * The movement is lib/drag.ts (GSAP): on release the sheet leaves / settles at the finger's speed, a
+ * finger can catch it mid-glide, and once it lands the transform goes back to the CSS classes.
  */
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { IconButton } from './Button'
 import { Portal, useOverlayKeys, usePresence } from './overlay'
+import { gsap } from '../../lib/gsap'
+import { drag, dragFade, grab, px, release, Velocity } from '../../lib/drag'
 
 const CLOSE_PX = 120
 const EXPAND_PX = 60
@@ -107,85 +111,98 @@ export function Sheet({
     const body = bodyRef.current
     if (!mounted || !sheet || !card || !head) return
     // fresh open: drop whatever a previous drag-close left inline
-    sheet.style.transform = ''
+    gsap.killTweensOf([sheet, scrimRef.current])
+    gsap.set(sheet, { clearProps: 'transform' })
     sheet.style.transition = ''
+    if (scrimRef.current) {
+      gsap.set(scrimRef.current, { clearProps: 'opacity' })
+      scrimRef.current.style.transition = ''
+    }
 
-    const g = { on: false, moved: false, fromBtn: false, onHandle: false, y0: 0, x0: 0, y: 0, t: 0, v: 0, dy: 0, swallow: false, pointerId: -1 }
-    // the resting offset of an expandable sheet (its normal height), whether or not it is expanded now
-    const restPx = () => parseFloat(getComputedStyle(sheet).getPropertyValue('--sh-rest')) || 0
+    const g = { on: false, moved: false, pinned: false, fromBtn: false, onHandle: false, y0: 0, x0: 0, from: 0, dy: 0, swallow: false, pointerId: -1 }
+    const vel = new Velocity()
+    // the resting offset of an expandable sheet (its normal height), whether or not it is expanded now:
+    // the card ends --sh-rest-now above the box, so its `bottom` is that offset in px when not expanded
+    const restCache = { px: 0 }
+    const restPx = () => {
+      if (!live.current.expandable) return 0
+      if (!live.current.expanded) restCache.px = px(getComputedStyle(card).bottom)
+      return restCache.px || px(getComputedStyle(sheet).getPropertyValue('--sh-rest')) || 192
+    }
+    /** where the sheet rests in its current state */
+    const restNow = () => (live.current.expandable && !live.current.expanded ? restPx() : 0)
 
     const paint = (dy: number) => {
-      sheet.style.transition = 'none'
-      sheet.style.transform = `translate3d(0, calc(var(--sh-rest-now) + ${dy}px), 0)`
-      const scrim = scrimRef.current
-      if (scrim) {
-        scrim.style.transition = 'none'
-        scrim.style.opacity = dy > 0 ? String(Math.max(0, 1 - dy / Math.max(1, card.offsetHeight))) : ''
-      }
+      drag(sheet, restNow() + dy)
+      dragFade(scrimRef.current, dy > 0 ? Math.max(0, 1 - dy / Math.max(1, card.offsetHeight)) : 1)
     }
-    const release = (closing: boolean) => {
+    /** let go: off screen (closing), or to the resting offset of the state it ends in */
+    const release_ = (closing: boolean, velocity: number, to = restNow()) => {
       sheet.classList.remove('is-grabbing')
-      sheet.style.transition = ''
       const scrim = scrimRef.current
-      if (scrim) scrim.style.transition = ''
       if (closing) {
-        // carry on down from where the finger let go
-        sheet.style.transform = 'translate3d(0, calc(100% + 24px), 0)'
-        if (scrim) scrim.style.opacity = '0'
-      } else {
-        sheet.style.transform = ''
-        if (scrim) scrim.style.opacity = ''
-      }
+        // carry on down from where the finger let go; keep the class's delayed `visibility: hidden`
+        release(sheet, sheet.offsetHeight + 24, { velocity, max: 0.4, transition: 'visibility 0s linear 420ms', fade: { el: scrim, to: 0 } })
+      } else release(sheet, to, { velocity, clear: true, fade: { el: scrim, to: null } })
     }
 
     const begin = (x: number, y: number, t: number, fromBtn: boolean, onHandle: boolean) => {
-      Object.assign(g, { on: true, moved: false, fromBtn, onHandle, x0: x, y0: y, y, t, v: 0, dy: 0 })
+      Object.assign(g, { on: true, moved: false, pinned: false, fromBtn, onHandle, x0: x, y0: y, from: 0, dy: 0 })
+      vel.reset(y, t)
+      // caught mid-glide: hold it where it is
+      if (gsap.isTweening(sheet)) {
+        g.pinned = true
+        g.from = grab(sheet) - restNow()
+      }
     }
     /** returns true once this gesture is a sheet drag */
     const move = (x: number, y: number, t: number) => {
       if (!g.on) return false
-      if (t > g.t) g.v = 0.7 * ((y - g.y) / (t - g.t)) + 0.3 * g.v // px/ms, + = down
-      g.y = y
-      g.t = t
+      vel.add(y, t)
       const dy = y - g.y0
       if (!g.moved) {
         if (Math.abs(dy) <= (g.fromBtn ? BTN_SLOP : SLOP)) return false
         if (Math.abs(x - g.x0) > Math.abs(dy) * 1.2) {
           g.on = false // a sideways swipe isn't ours
+          if (g.pinned) release_(false, 0)
           return false
         }
         g.moved = true
         if (g.fromBtn) g.swallow = true
         sheet.classList.add('is-grabbing')
+        if (!g.pinned) g.from = grab(sheet) - restNow()
       }
       const { expanded: ex, expandable: can } = live.current
+      const d = g.from + dy
       // up: to full height when expandable, otherwise a little rubber band
-      g.dy = dy >= 0 ? dy : can && !ex ? Math.max(-restPx(), dy) : dy / 5
+      g.dy = d >= 0 ? d : can && !ex ? Math.max(-restPx(), d) : d / 5
       paint(g.dy)
       return true
     }
-    const end = () => {
+    const end = (t: number) => {
       if (!g.on) return
       g.on = false
       const { expanded: ex, expandable: can, onClose: close, setExpanded: setEx } = live.current
       if (g.swallow) window.setTimeout(() => (g.swallow = false), 350)
       if (!g.moved) {
-        if (g.onHandle && can) setEx(!ex) // a tap on the handle toggles full height
+        if (g.pinned) release_(false, 0)
+        else if (g.onHandle && can) setEx(!ex) // a tap on the handle toggles full height
         return
       }
-      const { dy, v } = g
+      const { dy } = g
+      const v = vel.value(t)
       if (dy > 0 && (dy > CLOSE_PX || v > FLICK)) {
         if (ex && dy < restPx() + 200 && v < 1.2) {
-          release(false)
+          release_(false, v, restPx())
           setEx(false)
         } else {
-          release(true)
+          release_(true, v)
           close()
         }
       } else if (dy < 0 && can && !ex && (dy < -EXPAND_PX || v < -FLICK)) {
-        release(false)
+        release_(false, v, 0)
         setEx(true)
-      } else release(false)
+      } else release_(false, v)
     }
 
     /* header: pointer events (touch-action: none in CSS) */
@@ -209,11 +226,11 @@ export function Sheet({
         }
       }
     }
-    const onUp = (e: PointerEvent) => e.pointerId === g.pointerId && end()
+    const onUp = (e: PointerEvent) => e.pointerId === g.pointerId && end(e.timeStamp)
     const onCancel = (e: PointerEvent) => {
       if (e.pointerId !== g.pointerId || !g.on) return
       g.on = false
-      release(false)
+      release_(false, 0)
     }
     const onClickCapture = (e: MouseEvent) => {
       if (!g.swallow) return
@@ -241,16 +258,17 @@ export function Sheet({
       // only a downward pull takes over; an upward one is a normal scroll
       if (!g.moved && t.clientY - g.y0 < -SLOP) {
         bodyArmed = g.on = false
+        if (g.pinned) release_(false, 0)
         return
       }
       if (move(t.clientX, t.clientY, e.timeStamp) && e.cancelable) e.preventDefault()
       if (!g.on) bodyArmed = false
     }
-    const onTouchEnd = () => {
+    const onTouchEnd = (e: TouchEvent) => {
       if (!bodyArmed) return
       bodyArmed = false
       if (g.moved) g.swallow = true
-      end()
+      end(e.timeStamp)
     }
 
     head.addEventListener('pointerdown', onDown)

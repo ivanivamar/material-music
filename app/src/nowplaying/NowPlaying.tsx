@@ -127,8 +127,9 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
   // phone: swipe down anywhere (outside sliders / lyrics) to close, like the queue sheet
   const rootRef = useRef<HTMLDivElement>(null)
   useSwipeDown(rootRef, phone && !closing && !startView, closeNp)
-  // the bar's cover grows into this one on open, and shrinks back into the bar on close
-  useCoverFlight(rootRef, { closing, ly, enabled: motion && !startView && !intro && !!songTrack })
+  // the bar's cover grows into this one on open and shrinks back into the bar on close; desktop:
+  // the cover moves between the two views when Now playing ⇄ Lyrics flips
+  useCoverFlight(rootRef, { closing, ly, enabled: motion && !startView && !intro && !!songTrack, viewMorph: !phone })
   // mount the lyrics column the first time it's shown, then keep it (so it can fade out)
   const [lyMounted, setLyMounted] = useState(ly)
   if (ly && !lyMounted) setLyMounted(true)
