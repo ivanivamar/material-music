@@ -8,12 +8,16 @@
 import { gsap } from 'gsap'
 import { CustomEase } from 'gsap/CustomEase'
 import { InertiaPlugin } from 'gsap/InertiaPlugin'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
 
-gsap.registerPlugin(CustomEase, InertiaPlugin)
+gsap.registerPlugin(CustomEase, InertiaPlugin, ScrollTrigger)
 
 /** --ease in tokens.css: cubic-bezier(.31, .94, .34, 1) */
 export const EASE = CustomEase.create('pg-ease', 'M0,0 C0.31,0.94 0.34,1 1,1')
 /** shared-element move (cover flight): gentle start, long soft landing */
 export const EASE_MOVE = CustomEase.create('pg-move', 'M0,0 C0.3,0 0.1,1 1,1')
 
-export { gsap }
+export { gsap, ScrollTrigger }
+
+/** the app's scrolling area (AppShell's <main>): pages scroll inside it, not the window */
+export const scroller = () => document.getElementById('main')

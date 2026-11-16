@@ -26,6 +26,8 @@ import { nativeUpdates, useNativeUpdates } from '../native/updates'
 
 import { Sidebar } from './Sidebar'
 import { TopbarSlot } from './topbarSlot'
+import { EASE, gsap, ScrollTrigger } from '../lib/gsap'
+import { motionOff } from '../lib/drag'
 import { ActionHost } from '../actions/ActionHost'
 import { ArtistPickerHost } from '../components/ArtistPicker'
 import { DjPanelHost } from '../dj/DjPanel'
@@ -434,6 +436,26 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
     if (y) requestAnimationFrame(() => main.scrollTo({ top: y }))
   }, [route.path])
 
+  // A new page fades in and rises a little (GSAP). Only when the page itself changes (another
+  // album, Home → Library…), not when a page switches its own tab (Library tabs, Stats periods).
+  // The inline transform is cleared at the end: a transformed ancestor would turn the page's
+  // position: fixed parts into page-relative ones. Scroll triggers (collapsing headers) measured
+  // the page while it was offset, so they re-measure once it lands.
+  const pageRef = useRef<HTMLDivElement>(null)
+  const pageKey = route.kind === 'app' ? `${route.key}/${'id' in route ? route.id : ''}` : route.path
+  const shownKey = useRef(pageKey)
+  useLayoutEffect(() => {
+    const el = pageRef.current
+    if (!el || shownKey.current === pageKey) return
+    shownKey.current = pageKey
+    if (motionOff()) return
+    gsap.fromTo(
+      el,
+      { opacity: 0, y: 14 },
+      { opacity: 1, y: 0, duration: 0.42, ease: EASE, overwrite: true, clearProps: 'opacity,transform', onComplete: () => ScrollTrigger.refresh() },
+    )
+  }, [pageKey])
+
   const key = route.kind === 'app' ? route.key : null
   // desktop: Library puts its own (live) search field into the top bar's slot; every other page gets the pill
   const [slot, setSlot] = useState<HTMLElement | null>(null)
@@ -445,7 +467,11 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
     toast.show({ icon: 'shuffle', text: `Shuffling your library · ${ids.length.toLocaleString('en-GB')} songs` })
   }
 
-  const page = <div className="shell-page">{children}</div>
+  const page = (
+    <div ref={pageRef} className="shell-page">
+      {children}
+    </div>
+  )
 
   return (
     <TopbarSlot.Provider value={phone ? null : slot}>

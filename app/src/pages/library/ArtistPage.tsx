@@ -12,7 +12,7 @@
  *   "playing near you" chip under the stats when a date is near home.
  * - Hearts on the rows (Liked songs), "· 7 OFFLINE" in the stats on the phone.
  */
-import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type RefObject } from 'react'
 import { Button, EmptyState, IconButton, formatTime } from '../../components/ui'
 import { LikeButton } from '../../components/LikeButton'
 import { actions, trackDrag } from '../../actions/actions'
@@ -35,6 +35,7 @@ import { useIsPhone } from '../../state/viewport'
 import { HeroTourChip, OnTour, useTourNear } from '../concerts/OnTour'
 import { useArtistLook } from '../concerts/parts'
 import { ListSection, SongRow } from '../../components/list/SongList'
+import { CompactBar, useCollapsingHeader } from '../../components/list/CompactBar'
 import { playsLabel } from '../../components/list/listUtils'
 import { useLikedIndex } from '../../state/likes'
 import { radioStore } from '../../state/radio'
@@ -75,6 +76,11 @@ export function ArtistPage({ id }: { id: string }) {
   const phone = useIsPhone()
   const tourNear = useTourNear(id)
   const tourHue = useArtistLook(artist).H
+  // scrolling collapses the header into a compact bar (components/list/CompactBar.tsx)
+  const heroRef = useRef<HTMLElement>(null)
+  const barRef = useRef<HTMLDivElement>(null)
+  const heroParts = phone ? { art: ':scope > :first-child', text: '.alp-text', title: '.alp-title' } : { art: '.hero-avatar', text: '.hero-text', title: '.hero-title' }
+  useCollapsingHeader(heroRef, barRef, heroParts, [phone, id, !!artist])
   const counts = useMemo(() => {
     const m = new Map<string, number>()
     for (const p of history.plays) m.set(p.trackId, (m.get(p.trackId) ?? 0) + 1)
@@ -213,7 +219,8 @@ export function ArtistPage({ id }: { id: string }) {
           <span className="alp-flex" />
           <IconButton icon="more" label="More" onClick={(e) => actions.menu({ kind: 'artist', artistId: artist.id }, e)} />
         </div>
-        <div className="alp-head">
+        <CompactBar barRef={barRef} art={<ArtistAvatar artist={artist} size={32} lazy={false} />} title={artist.name} round />
+        <div ref={heroRef as RefObject<HTMLDivElement | null>} className="alp-head">
           <ArtistAvatar artist={artist} size={64} lazy={false} />
           <div className="alp-text">
             <h1 className="alp-title" style={{ fontSize: 30, letterSpacing: '-0.03em', lineHeight: 1 }}>
@@ -251,7 +258,8 @@ export function ArtistPage({ id }: { id: string }) {
       {bg && <div className={`artist-banner ${blurred ? 'is-blurred' : ''}`} style={{ backgroundImage: `url(${bg})` }} aria-hidden />}
       {crumbs}
 
-      <header className="hero hero-artist">
+      <CompactBar barRef={barRef} art={<ArtistAvatar artist={artist} size={36} lazy={false} />} title={artist.name} round />
+      <header ref={heroRef} className="hero hero-artist">
         <ArtistAvatar artist={artist} size={180} lazy={false} className="hero-avatar" />
         <div className="hero-text">
           <div className="hero-meta">{meta}</div>

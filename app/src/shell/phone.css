@@ -23,7 +23,8 @@
 .shell.is-phone .sd-r2 { left: -260px; top: calc(48% - 60px); width: 480px; height: 480px; box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, .07); }
 .shell.is-phone .sd-r3 { display: none; }
 .shell.is-phone .shell-page {
-  padding: calc(18px + env(safe-area-inset-top)) 20px calc(var(--android-tabs-h) + 32px + env(safe-area-inset-bottom));
+  --page-px: 20px;
+  padding: calc(18px + env(safe-area-inset-top)) var(--page-px) calc(var(--android-tabs-h) + 32px + env(safe-area-inset-bottom));
 }
 .shell.is-phone.has-ptb .shell-page { padding-top: 8px; }
 .shell.is-phone.has-mini .shell-page {

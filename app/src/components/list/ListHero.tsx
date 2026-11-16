@@ -6,8 +6,10 @@
  * Desktop: 220px art beside the text, the buttons under both.
  * Phone: `stack` puts a 200px cover over the text (albums); `side` keeps a 120px art beside a
  * shorter title (playlists, mixes). The buttons fill the width.
+ * Scrolling collapses it into a compact bar at the top (CompactBar.tsx).
  */
-import type { CSSProperties, ReactNode } from 'react'
+import { useRef, type CSSProperties, type ReactNode } from 'react'
+import { CompactBar, useCollapsingHeader } from './CompactBar'
 
 /** Title size steps down for long titles so they stay on ≤ 2 lines. */
 function titleSize(t: string, phone: boolean): number {
@@ -43,9 +45,13 @@ export function ListHero({
   phone: boolean
   layout?: 'stack' | 'side'
 }) {
+  const heroRef = useRef<HTMLElement>(null)
+  const barRef = useRef<HTMLDivElement>(null)
+  useCollapsingHeader(heroRef, barRef, { art: '.lh-art', text: '.lh-text', title: '.lh-title' }, [phone, layout])
   return (
     <>
-      <header className={`lh ${phone ? `is-phone is-${layout}` : ''}`}>
+      <CompactBar barRef={barRef} art={art} title={titleText} />
+      <header ref={heroRef} className={`lh ${phone ? `is-phone is-${layout}` : ''}`}>
         <div className="lh-art">{art}</div>
         <div className="lh-text">
           {kicker != null && <div className="lh-kicker">{kicker}</div>}

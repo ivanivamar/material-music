@@ -28,8 +28,9 @@
   outline: none;
   scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, .12) transparent;
 }
-.shell-page { padding: 40px 56px 170px; min-height: 100%; }
-@media (max-width: 1299px) { .shell-page { padding-left: 36px; padding-right: 36px; } }
+/* --page-px: the side padding, for full-bleed parts of a page (the collapsing header's bar) */
+.shell-page { --page-px: 56px; padding: 40px var(--page-px) 170px; min-height: 100%; }
+@media (max-width: 1299px) { .shell-page { --page-px: 36px; } }
 
 /* The old shell used the configurable atmosphere instead of decorative coral geometry. */
 .shell-deco { display: none; }
