@@ -11,7 +11,8 @@
  *   EARLIER THIS MONTH ———
  *   OLDER ———
  *
- * A row opens the release panel (tracklist with previews, links, match). Phone: swipe a row right for
+ * A row opens the release panel (tracklist with previews, links, match), or the album when it's
+ * already in the library (all or some songs; desktop rows keep an ⓘ for the panel). Phone: swipe a row right for
  * seen, left to dismiss. `#/new?rel=<id>` (Home, notifications) opens a release; `?artists` the list.
  */
 import { useEffect, useMemo, useState, type MouseEvent } from 'react'
@@ -28,11 +29,11 @@ import { releasesStore, sweepTargets, useReleases, type ReleasesState } from '..
 import { buildFeed, fmtStamp, isOwned, type FeedItem } from '../../state/releaseViews'
 import { stopPreview, usePreview } from '../../state/preview'
 import { useIsPhone } from '../../state/viewport'
-import { href, replace } from '../../shell/routes'
+import { go, href, replace } from '../../shell/routes'
 import { registerBack } from '../../native/backButton'
 import { FollowedArtists, ReleaseDetail, ReleasePanel, type PanelState } from './ReleasePanel'
 import { MatchingVeil, OwnedTag, PreviewButton, ReleaseCover, SwipeRow, canPreview, ownedCount, playRelease, useReleaseActions, type ReleaseActions } from './parts'
-import { agoLabel, dayLabel, firstClip, relFacts } from './relText'
+import { agoLabel, dayLabel, firstClip, ownedAlbumHref, relFacts } from './relText'
 
 type TypeFilter = 'all' | 'album' | 'short'
 const TYPES: [TypeFilter, string][] = [
@@ -137,9 +138,16 @@ function Page({ c }: { c: Catalogue }) {
     }
   }, [panel])
 
-  const open = (it: FeedItem) => {
+  const details = (it: FeedItem) => {
     if (it.status === 'new') releasesStore.mark(it.rel.id, 'seen')
     setPanel({ kind: 'rel', id: it.rel.id })
+  }
+  // in the library (all or some songs) → its album; else the panel
+  const open = (it: FeedItem) => {
+    const lib = ownedAlbumHref(it)
+    if (!lib) return details(it)
+    if (it.status === 'new' || it.mark === 'new') releasesStore.mark(it.rel.id, 'seen')
+    go(lib)
   }
   const detailItem = shown?.kind === 'rel' ? feed.byId.get(shown.id) : undefined
 
@@ -236,7 +244,7 @@ function Page({ c }: { c: Catalogue }) {
                   <PhoneRow item={it} online={online} />
                 </SwipeRow>
               ) : (
-                <Row key={it.rel.id} item={it} act={act} online={online} onOpen={open} />
+                <Row key={it.rel.id} item={it} act={act} online={online} onOpen={open} onDetails={details} />
               ),
             )}
           </div>
@@ -353,7 +361,7 @@ function PreviewLine({ item }: { item: FeedItem }) {
   )
 }
 
-function Row({ item, act, online, onOpen }: { item: FeedItem; act: ReleaseActions; online: boolean; onOpen: (it: FeedItem) => void }) {
+function Row({ item, act, online, onOpen, onDetails }: { item: FeedItem; act: ReleaseActions; online: boolean; onOpen: (it: FeedItem) => void; onDetails: (it: FeedItem) => void }) {
   const owned = isOwned(item.status)
   const seen = item.status === 'seen'
   const stop = (e: MouseEvent) => e.stopPropagation()
@@ -385,6 +393,7 @@ function Row({ item, act, online, onOpen }: { item: FeedItem; act: ReleaseAction
         <span className="rl-more">
           {!owned && <IconButton icon="done" label={item.status === 'acq' ? 'Stop matching' : 'I’ve got it'} pressed={item.status === 'acq'} onClick={() => act.got(item)} />}
           {!owned && <IconButton icon="eye" label={seen ? 'Mark unseen' : 'Mark seen'} pressed={seen} onClick={() => act.toggleSeen(item)} />}
+          {owned && <IconButton icon="info" label="Release details" onClick={() => onDetails(item)} />}
           <IconButton icon="x" label="Dismiss" onClick={() => act.dismiss(item)} />
         </span>
       </span>

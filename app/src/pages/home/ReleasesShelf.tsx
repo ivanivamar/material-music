@@ -1,7 +1,7 @@
 /**
  * Home → New releases (Nov 2026 canvas, row 1): Out now releases of the last 30 days from your
  * artists (the New Releases sweep, followed Deezer artists included), new ones first. A card opens
- * the release on the New releases page. Not in the library → a preview button (30 s, Deezer); in
+ * the album when it's in the library (all or some songs), else the release on the New releases page. Not in the library → a preview button (30 s, Deezer); in
  * the library → Play; partly there → "4/11". The last card counts what's coming and opens the page.
  * Hidden when there's nothing.
  */
@@ -16,7 +16,7 @@ import { buildFeed, isOwned, type FeedItem } from '../../state/releaseViews'
 import { stopPreview } from '../../state/preview'
 import { go, href } from '../../shell/routes'
 import { ReleaseCover, canPreview, ownedCount, playRelease } from '../releases/parts'
-import { agoLabel, dayLabel, firstClip, typeWord } from '../releases/relText'
+import { agoLabel, dayLabel, firstClip, ownedAlbumHref, typeWord } from '../releases/relText'
 
 const DAY = 86_400_000
 const MAX = 12
@@ -45,7 +45,8 @@ export function useHomeReleases(c: Catalogue | null): HomeReleases {
   }, [feed])
 }
 
-const openRelease = (it: FeedItem) => go(`${href('new')}?rel=${encodeURIComponent(it.rel.id)}`)
+/** In the library → its album; else the release on the New releases page. */
+const openRelease = (it: FeedItem) => go(ownedAlbumHref(it) ?? `${href('new')}?rel=${encodeURIComponent(it.rel.id)}`)
 
 export function ReleaseCard({ item, size }: { item: FeedItem; size: number }) {
   const online = useOnline()

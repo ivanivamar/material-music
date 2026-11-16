@@ -1,5 +1,6 @@
 /** Short texts for a release in the new list layouts (Home shelf, releases page, artist page). */
-import { fmtLength, fmtRelShort, type FeedItem } from '../../state/releaseViews'
+import { fmtLength, fmtRelShort, isOwned, type FeedItem } from '../../state/releaseViews'
+import { albumHref } from '../../shell/routes'
 
 const DAY = 86_400_000
 const WEEKDAYS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']
@@ -35,3 +36,8 @@ export function relFacts(it: FeedItem): string {
 
 /** A release's first song with a Deezer clip, for PreviewRing. */
 export { firstClip } from './clip'
+
+/** A release you already have (all or some of its songs): its album page in the library, else null. */
+export function ownedAlbumHref(it: FeedItem): string | null {
+  return isOwned(it.status) && it.match?.albumId ? albumHref(it.match.albumId) : null
+}

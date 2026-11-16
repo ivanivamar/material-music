@@ -25,6 +25,7 @@ import { releasesStore, useReleases } from '../../state/releases'
 import { libraryHref } from '../../shell/routes'
 import { RELEASE_LABEL, albumInfos, artistInfos, fmtTotal, plural, type ReleaseKind } from '../../state/views'
 import type { FeedItem } from '../../state/releaseViews'
+import { ownedAlbumHref } from '../releases/relText'
 import { ArtistAvatar, Crumbs, SectionHead } from './common'
 import { DownloadButton, trackDownload } from './DownloadButton'
 import { artistOffline, downloadsStore, useDownloadProgress, useDownloads } from '../../state/downloads'
@@ -37,7 +38,7 @@ import { ListSection, SongRow } from '../../components/list/SongList'
 import { playsLabel } from '../../components/list/listUtils'
 import { useLikedIndex } from '../../state/likes'
 import { radioStore } from '../../state/radio'
-import { back } from '../../shell/routes'
+import { back, go } from '../../shell/routes'
 import { useToast } from '../../components/ui'
 import { stopPreview } from '../../state/preview'
 import { ArtistGaps, ArtistPanel, FansAlsoLike, LatestRelease, type ArtistPanelState } from './ArtistExtras'
@@ -191,9 +192,12 @@ export function ArtistPage({ id }: { id: string }) {
     </section>
   ))
 
+  // in the library → its album; else the release panel
   const openRel = (it: FeedItem) => {
-    if (it.status === 'new') relStore.mark(it.rel.id, 'seen')
-    setPanel({ kind: 'rel', id: it.rel.id })
+    if (it.status === 'new' || it.mark === 'new') relStore.mark(it.rel.id, 'seen')
+    const lib = ownedAlbumHref(it)
+    if (lib) go(lib)
+    else setPanel({ kind: 'rel', id: it.rel.id })
   }
   const latest = <LatestRelease c={data} artistId={artist.id} phone={phone} onOpen={openRel} />
   const gaps = <ArtistGaps c={data} artist={artist} phone={phone} />

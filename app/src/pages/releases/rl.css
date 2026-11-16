@@ -44,7 +44,8 @@
 .rs-soon { text-decoration: none; color: inherit; }
 .rs-soon-art {
   position: relative; display: block; flex: none; margin-bottom: 8px; border-radius: 14px; box-sizing: border-box;
-  border: 1.5px dashed rgba(255, 255, 255, .22); background: rgba(255, 255, 255, .02); transition: border-color .2s var(--ease-std);
+  border: 1.5px dashed rgba(255, 255, 255, .22); background: rgba(255, 255, 255, .02); outline: 1.5px solid transparent; outline-offset: 2px;
+  transition: border-color .2s var(--ease-std), outline-color 200ms var(--ease-std), outline-offset 250ms var(--ease-std);
 }
 .rs-soon:hover .rs-soon-art { border-color: rgba(255, 255, 255, .45); }
 .rs-soon-cover { position: absolute; border-radius: 8px; overflow: hidden; box-shadow: 0 8px 20px -8px rgba(0, 0, 0, .8); }
