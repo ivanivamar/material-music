@@ -165,10 +165,11 @@
   --track-hi: #55555a;
   --brand: #ffffff;
   --brand-hi: #ffffff;
-  /* Liked songs (hearts, the Liked songs cover): a rose next to the coral brand */
-  --like: oklch(0.74 0.16 12);
-  --like-hi: oklch(0.84 0.11 12);
-  --like-deep: oklch(0.42 0.13 10);
+  /* Liked songs (hearts, the Liked kicker): the DJ's soft lilac, so the app keeps one pastel family
+     (was a saturated rose, oklch(0.74 0.16 12), which read pink next to everything else) */
+  --like: oklch(0.84 0.09 290);
+  --like-hi: oklch(0.92 0.05 290);
+  --like-deep: oklch(0.42 0.08 290);
   --on-brand: #0b0b0c;
   /* album accents: --h = playing album hue (set from the cover, albumHue.ts); small elements only */
   --h: 38;

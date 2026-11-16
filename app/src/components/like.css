@@ -1,4 +1,4 @@
-/* The heart button (components/LikeButton.tsx) and its fountain. */
+/* The heart button (components/LikeButton.tsx) and its ping. */
 
 .like {
   position: relative; flex: none; display: inline-flex; align-items: center; justify-content: center;
@@ -11,7 +11,7 @@
 .like:disabled { opacity: .35; cursor: default; }
 .like.is-ink { color: inherit; }
 .like.is-on, .like.is-on.is-ink { color: var(--like); }
-.like.is-on:hover:not(:disabled) { color: var(--like-hi); background: oklch(0.74 0.16 12 / 0.12); }
+.like.is-on:hover:not(:disabled) { color: var(--like-hi); background: oklch(0.84 0.09 290 / 0.12); }
 
 .like-ic { position: relative; display: inline-flex; align-items: center; justify-content: center; }
 .like .ms { font-size: 20px; transition: font-variation-settings .25s var(--ease); }
@@ -28,53 +28,36 @@
   .like-host:hover .like.is-hover, .like-host:focus-within .like.is-hover { opacity: 1; }
 }
 
-/* the pop when it fills */
-.like-ic.is-pop { animation: like-pop .52s var(--ease-pop) both; }
-.like-ic.is-pop::after {
-  content: ''; position: absolute; inset: -6px; border-radius: 999px; pointer-events: none;
-  border: 2px solid var(--like); opacity: 0; animation: like-ring .5s var(--ease) both;
+/* liking: the heart settles in (a small dip and a light overshoot) and two thin rings ping out of it,
+   the same rings and timing as the play button (ui.css .playbtn-ring), in the heart's lilac.
+   Unliking: a quick dip. Rings grow by `inset`, not scale (scaled 1px rings rasterise into flat,
+   flickering segments; see the play button). */
+.like-ic.is-pop { animation: like-settle .5s var(--ease) both; }
+.like-ic.is-unpop { animation: like-dip .3s var(--ease) both; }
+.like-pings { position: absolute; inset: 0; pointer-events: none; }
+.like-ring {
+  position: absolute; inset: 0; border-radius: 50%;
+  border: 1px solid var(--like); opacity: 0;
+  animation: like-ping .8s var(--ease-sonar) forwards;
 }
-@keyframes like-pop {
-  0% { transform: scale(.55); }
-  45% { transform: scale(1.3); }
-  72% { transform: scale(.92); }
+.like-ring2 { border-color: oklch(0.84 0.09 290 / 0.6); animation-delay: .18s; }
+@keyframes like-settle {
+  0% { transform: scale(.8); }
+  55% { transform: scale(1.08); }
   100% { transform: scale(1); }
 }
-@keyframes like-ring {
-  0% { transform: scale(.4); opacity: .9; }
-  100% { transform: scale(1.35); opacity: 0; }
+@keyframes like-dip {
+  0% { transform: scale(1); }
+  40% { transform: scale(.82); }
+  100% { transform: scale(1); }
 }
+@keyframes like-ping { 0% { inset: 0; opacity: .55; } 100% { inset: var(--ping-to, -80%); opacity: 0; } }
+/* song rows: a shorter reach, so the rings stay inside the row (rows clip) and don't touch the neighbours */
+.like-xs, .like-sm, .like:not(.like-md):not(.like-lg) { --ping-to: -35%; }
 
-/* fountain: x drifts out (ease-out), y shoots up then falls back (two curves), the heart itself
-   grows in, tumbles and fades. Three nested layers so the curves stay independent. */
-.like-fountain { position: fixed; z-index: 10000; width: 0; height: 0; pointer-events: none; contain: layout style; }
-.like-drop { position: absolute; left: 0; top: 0; animation: like-x var(--lk-t) var(--lk-d) cubic-bezier(.22, .68, .36, 1) both; will-change: transform; }
-.like-drop-y {
-  display: block; will-change: transform;
-  animation: like-y var(--lk-t) var(--lk-d) linear both;
-}
-.like-drop svg {
-  display: block; margin: -50% 0 0 -50%; opacity: 0; will-change: transform, opacity;
-  filter: drop-shadow(0 0 4px oklch(0.74 0.16 12 / 0.45));
-  animation: like-s var(--lk-t) var(--lk-d) var(--ease) both;
-}
-@keyframes like-x {
-  from { transform: translateX(0); }
-  to { transform: translateX(var(--lk-dx)); }
-}
-@keyframes like-y {
-  0% { transform: translateY(0); animation-timing-function: cubic-bezier(.12, .62, .32, 1); }
-  52% { transform: translateY(var(--lk-h)); animation-timing-function: cubic-bezier(.5, 0, .82, .5); }
-  100% { transform: translateY(var(--lk-fall)); }
-}
-@keyframes like-s {
-  0% { transform: scale(.2) rotate(0deg); opacity: 0; }
-  14% { transform: scale(var(--lk-s)) rotate(calc(var(--lk-r) * .2)); opacity: 1; }
-  62% { opacity: 1; }
-  100% { transform: scale(calc(var(--lk-s) * .7)) rotate(var(--lk-r)); opacity: 0; }
-}
-
-html[data-motion='reduced'] .like-ic.is-pop, html[data-motion='reduced'] .like-ic.is-pop::after { animation: none; }
+html[data-motion='reduced'] :is(.like-ic.is-pop, .like-ic.is-unpop, .like-ring) { animation: none; }
+html[data-motion='reduced'] .like-pings { display: none; }
 @media (prefers-reduced-motion: reduce) {
-  html:not([data-motion='full']) .like-ic.is-pop, html:not([data-motion='full']) .like-ic.is-pop::after { animation: none; }
+  html:not([data-motion='full']) :is(.like-ic.is-pop, .like-ic.is-unpop, .like-ring) { animation: none; }
+  html:not([data-motion='full']) .like-pings { display: none; }
 }
