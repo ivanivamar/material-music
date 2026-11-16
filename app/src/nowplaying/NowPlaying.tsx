@@ -6,7 +6,7 @@
  *   np      500px cover (phone: drag it sideways to switch songs, CoverSwipe.tsx) · badges · hero title · artist · album · waveform seek · transport ·
  *           Lyrics / Queue · volume · "NEXT —— title" bottom right
  *   lyrics  420px column (272px cover, thin seek, compact transport, buttons) + synced lyrics
- * Opened from the player bar (cover / expand / lyrics). Esc or Back closes (AppShell + history).
+ * Opened from the player bar (cover / expand / lyrics); the bar's cover flies into the player and back (coverFlight.ts). Esc or Back closes (AppShell + history).
  * The parts that follow the playback position (seek, times, lyrics) re-render on their own (parts.tsx).
  */
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
@@ -27,6 +27,7 @@ import { HeroSub, HeroTitle } from './HeroTitle'
 import { LiveLyrics } from './Lyrics'
 import { CoverSwipe } from './CoverSwipe'
 import { useSwipeDown } from './swipe'
+import { useCoverFlight } from './coverFlight'
 import { LineSeek, NpLink, TimeSeek, Transport, ViewButtons, Volume, SwellSeek } from './parts'
 import { contextLine, useCurrent, useDuration } from './player'
 import { actions } from '../actions/actions'
@@ -125,6 +126,8 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
   // phone: swipe down anywhere (outside sliders / lyrics) to close, like the queue sheet
   const rootRef = useRef<HTMLDivElement>(null)
   useSwipeDown(rootRef, phone && !closing && !startView, closeNp)
+  // the bar's cover grows into this one on open, and shrinks back into the bar on close
+  useCoverFlight(rootRef, { closing, ly, enabled: motion && !startView && !intro && !!songTrack })
   // mount the lyrics column the first time it's shown, then keep it (so it can fade out)
   const [lyMounted, setLyMounted] = useState(ly)
   if (ly && !lyMounted) setLyMounted(true)

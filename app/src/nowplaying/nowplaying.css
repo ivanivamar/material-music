@@ -9,6 +9,16 @@
 .np.is-closing { animation: np-out .38s ease both; pointer-events: none; }
 @keyframes np-in { from { opacity: 0; transform: translateY(28px); } to { opacity: 1; transform: none; } }
 @keyframes np-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(20px); } }
+/* cover flight (coverFlight.ts): the cover flies between the player bar and here, so the player
+   only fades (a rise would move the spot the cover lands on) */
+.np[data-flight] { animation: np-fade-in .45s var(--ease) both; }
+.np.is-closing[data-flight] { animation: np-fade-out .36s ease both; }
+@keyframes np-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes np-fade-out { from { opacity: 1; } to { opacity: 0; } }
+.np-flight {
+  position: fixed; z-index: 45; margin: 0; object-fit: cover; display: block;
+  transform-origin: 0 0; pointer-events: none; will-change: transform;
+}
 
 /* header: CLOSE · playing from · (empty) */
 .np-head {
@@ -151,11 +161,9 @@ a.np-from-l:hover { text-decoration: underline; text-decoration-color: rgba(255,
 .ly-list {
   position: absolute; left: 40px; right: 120px; top: 42%;
   display: flex; flex-direction: column;
-  transition: transform 1.1s var(--ease);
+  /* position: GSAP (Lyrics.tsx) */
   will-change: transform;
 }
-.ly-list.is-snap { transition: none; }
-.ly-list.is-manual { transition: transform .25s var(--ease); }
 .ly-line {
   display: block; width: 100%; text-align: left; padding: 13px 0; margin: 0;
   border: 0; background: none; cursor: pointer;

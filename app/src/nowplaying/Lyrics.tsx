@@ -5,11 +5,16 @@
  * distance; the list glides between lines (1.1s, default ease; instant with reduced motion).
  * Click a line to seek to it. Scrolling the wheel (or dragging with a finger) browses freely, and
  * the list settles back on the sung line a few seconds later.
+ * The list's position is GSAP's (lib/gsap.ts), not a CSS transition: the wheel eases towards a
+ * target that each tick moves on, a finger can grab the list mid-glide, and a flick keeps going
+ * with momentum (InertiaPlugin) and stops inside the list's bounds.
  * Plain lyrics: a static, scrollable column. None: empty state.
  * Japanese / Korean lyrics: an optional romanised line under each line (lib/romaji.ts), switched by
  * the ROMAJI chip next to the source label (handoff 08: the chip only shows with lyrics on screen).
  */
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type TouchEvent, type WheelEvent } from 'react'
+import { EASE, gsap } from '../lib/gsap'
+import { useMotion } from '../state/motion'
 import { EmptyState } from '../components/ui'
 import { lineAt, parseLyrics, type LyricLine } from '../lib/lrc'
 import { lyricsScript, useRomaji, type RomajiState } from '../lib/romaji'
@@ -77,13 +82,20 @@ function SyncedLyrics({ lines, position, playing, trackId, romaji }: { lines: Ly
   const roma = romaji.status === 'ready' ? romaji.lines : null
   const cur = useLineIndex(lines, position, playing)
   const focus = Math.max(cur, 0)
+  const motion = useMotion()
   const listRef = useRef<HTMLDivElement>(null)
   const lineRefs = useRef<(HTMLButtonElement | null)[]>([])
+  /** list position (translateY) that puts the focused line at 42% of the column */
   const [offset, setOffset] = useState(0)
-  const [manual, setManual] = useState(0)
   const [snap, setSnap] = useState(true)
+  const live = useRef({ offset, motion })
+  live.current = { offset, motion }
+  /** browsing: the list stays where the wheel / finger left it until it settles back (IDLE_MS) */
+  const browsing = useRef(false)
+  const wheelTarget = useRef(0)
+  const lastWheel = useRef(0)
   const idle = useRef(0)
-  const touch = useRef({ y0: 0, y: 0, moved: false, swallow: false })
+  const touch = useRef({ y0: 0, y: 0, from: 0, t: 0, v: 0, moved: false, swallow: false })
 
   // centre the focused line (measured: lines wrap, and romaji adds a line under each)
   useLayoutEffect(() => {
@@ -102,7 +114,6 @@ function SyncedLyrics({ lines, position, playing, trackId, romaji }: { lines: Ly
   if (shownTrack !== trackId) {
     setShownTrack(trackId)
     setSnap(true)
-    setManual(0)
   }
   useEffect(() => {
     if (!snap) return
@@ -110,61 +121,121 @@ function SyncedLyrics({ lines, position, playing, trackId, romaji }: { lines: Ly
     return () => cancelAnimationFrame(raf)
   }, [snap])
 
-  useEffect(() => () => window.clearTimeout(idle.current), [])
+  /** glide (or jump) to the sung line */
+  const follow = (jump: boolean) => {
+    const el = listRef.current
+    if (!el) return
+    if (jump || !live.current.motion) gsap.set(el, { y: live.current.offset, overwrite: true })
+    else gsap.to(el, { y: live.current.offset, duration: 1.1, ease: EASE, overwrite: true })
+  }
+
+  // the sung line moved (or the track changed): follow it, unless the list is being browsed
+  useLayoutEffect(() => {
+    if (snap) {
+      browsing.current = false
+      window.clearTimeout(idle.current)
+    }
+    if (!browsing.current) follow(snap)
+  }, [offset, snap, motion])
+
+  useEffect(() => {
+    const el = listRef.current
+    return () => {
+      window.clearTimeout(idle.current)
+      if (el) gsap.killTweensOf(el)
+    }
+  }, [])
 
   const settleLater = () => {
     window.clearTimeout(idle.current)
-    idle.current = window.setTimeout(() => setManual(0), IDLE_MS)
+    idle.current = window.setTimeout(() => {
+      browsing.current = false
+      follow(false)
+    }, IDLE_MS)
   }
-  // keep some of the list in view: total shift stays within [-list height, 0]
-  const clampManual = (m: number) => {
-    const h = listRef.current?.offsetHeight ?? 0
-    return Math.max(-h - offset, Math.min(-offset, m))
+  /** keep some of the list in view: y within [-list height, 0] */
+  const bounds = () => ({ min: -(listRef.current?.offsetHeight ?? 0), max: 0 })
+  const clamp = (y: number) => {
+    const { min, max } = bounds()
+    return Math.max(min, Math.min(max, y))
   }
+  const currentY = () => (listRef.current ? (gsap.getProperty(listRef.current, 'y') as number) : 0)
 
+  // wheel: each tick moves a target; the list eases towards it (no restart per tick)
   const onWheel = (e: WheelEvent) => {
-    setManual((m) => clampManual(m - e.deltaY))
+    const el = listRef.current
+    if (!el) return
+    const delta = e.deltaMode === 1 ? e.deltaY * 32 : e.deltaY
+    // a new burst of wheel ticks starts from wherever the list is (it may have been flung or dragged)
+    if (!browsing.current || e.timeStamp - lastWheel.current > 250) wheelTarget.current = currentY()
+    lastWheel.current = e.timeStamp
+    browsing.current = true
+    wheelTarget.current = clamp(wheelTarget.current - delta)
+    if (live.current.motion) gsap.to(el, { y: wheelTarget.current, duration: 0.45, ease: 'power3.out', overwrite: true })
+    else gsap.set(el, { y: wheelTarget.current, overwrite: true })
     settleLater()
   }
 
-  // touch: a vertical drag browses (the phone has no wheel); a tap still seeks
+  // touch: a vertical drag browses (the phone has no wheel); a tap still seeks; a flick glides on
   const onTouchStart = (e: TouchEvent) => {
     if (e.touches.length !== 1) return
     window.clearTimeout(idle.current)
+    const el = listRef.current
+    // grab the list where it is, mid-glide included
+    if (el) gsap.killTweensOf(el)
     const y = e.touches[0].clientY
-    touch.current = { y0: y, y, moved: false, swallow: false }
+    touch.current = { y0: y, y, from: currentY(), t: e.timeStamp, v: 0, moved: false, swallow: false }
+    if (browsing.current) settleLater()
   }
   const onTouchMove = (e: TouchEvent) => {
     if (e.touches.length !== 1) return
+    const t = touch.current
     const y = e.touches[0].clientY
-    const dy = y - touch.current.y
-    touch.current.y = y
-    if (!touch.current.moved) {
-      if (Math.abs(y - touch.current.y0) < 6) return
-      touch.current.moved = true
-      touch.current.swallow = true
+    if (!t.moved) {
+      if (Math.abs(y - t.y0) < 6) return
+      t.moved = true
+      t.swallow = true
+      browsing.current = true
     }
-    setManual((m) => clampManual(m + dy))
+    const dt = e.timeStamp - t.t
+    if (dt > 0) t.v = 0.8 * ((y - t.y) / dt) + 0.2 * t.v
+    t.y = y
+    t.t = e.timeStamp
+    if (listRef.current) gsap.set(listRef.current, { y: clamp(t.from + (y - t.y0)) })
   }
-  const onTouchEnd = () => {
-    if (!touch.current.moved) return
+  const onTouchEnd = (e: TouchEvent) => {
+    const t = touch.current
+    if (!t.moved) {
+      // a tap that only stopped a glide: let the list carry on to the sung line
+      if (!browsing.current) follow(false)
+      return
+    }
+    const el = listRef.current
+    // finger held still before lifting: no fling
+    const v = e.timeStamp - t.t > 80 ? 0 : t.v
+    if (el && live.current.motion && Math.abs(v) > 0.05) {
+      const { min, max } = bounds()
+      gsap.to(el, { inertia: { y: { velocity: v * 1000, min, max }, duration: { min: 0.3, max: 1.6 } }, overwrite: true })
+    }
     settleLater()
     window.setTimeout(() => {
-      touch.current.swallow = false
+      t.swallow = false
     }, 300)
   }
 
   const seekTo = (l: LyricLine) => {
     if (touch.current.swallow) return
     window.clearTimeout(idle.current)
-    setManual(0)
+    browsing.current = false
     playerStore.seek(l.time + 0.01)
+    // same line again: offset won't change, so glide back from the browsed spot here
+    follow(false)
   }
 
   return (
     <>
       <div className="ly-viewport" onWheel={onWheel} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd} onTouchCancel={onTouchEnd}>
-        <div ref={listRef} className={`ly-list pg-anim ${snap ? 'is-snap' : ''} ${manual ? 'is-manual' : ''}`} style={{ transform: `translateY(${offset + manual}px)` }}>
+        <div ref={listRef} className="ly-list">
           {lines.map((l, i) => (
             <button
               key={i}
