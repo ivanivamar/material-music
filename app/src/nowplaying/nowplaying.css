@@ -530,7 +530,6 @@ html[data-motion='reduced'] .np :is(.atm-rings, .atm-snow) { transform: none; }
 .shell.is-phone .np-meta-t { font-size: 9.5px; letter-spacing: .12em; color: var(--ink-secondary); }
 .shell.is-phone .np-text { gap: 0; }
 .shell.is-phone .np-title { margin-top: 10px; font-size: 42px; line-height: 1; letter-spacing: -0.035em; font-weight: 500; }
-.shell.is-phone .np-sub-row { margin-top: 8px; }
 .shell.is-phone .np-artist { color: var(--ink-primary); font-weight: 500; }
 .shell.is-phone .np-seek.is-bars { margin-top: 0; gap: 6px; }
 .shell.is-phone .np-bars { gap: 2px; }

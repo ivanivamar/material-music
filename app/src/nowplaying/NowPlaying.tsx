@@ -284,19 +284,6 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
                 songTrack && (
                   <>
                     <div className="np-text">
-                      {(
-                        <div className="np-meta">
-                          {songTrack.flac && (
-                            <QualityBadge kind={qualityKind('flac', songTrack.flac.bitDepth, songTrack.flac.sampleRate)}>
-                              {qualityLabel('flac', { bitDepth: songTrack.flac.bitDepth, sampleRate: songTrack.flac.sampleRate })}
-                            </QualityBadge>
-                          )}
-                          <span className="np-meta-t t-mono">
-                            {songTrack.track ? `Track ${String(songTrack.track).padStart(2, '0')}` : 'Track'}
-                            {songAlbum ? ` · ${songAlbum.title}` : ''}
-                          </span>
-                        </div>
-                      )}
                       <HeroTitle title={songTrack.title} phone={phone} />
                       <div className="np-sub-row">
                         <HeroSub
