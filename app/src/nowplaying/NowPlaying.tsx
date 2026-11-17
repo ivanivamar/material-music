@@ -11,7 +11,7 @@
  */
 import { useEffect, useId, useRef, useState, type CSSProperties } from 'react'
 import { Atmosphere } from '../components/Atmosphere'
-import { IconButton, QualityBadge, qualityKind, qualityLabel } from '../components/ui'
+import { IconButton } from '../components/ui'
 import { Icon } from '../design/icons'
 import { LikeButton } from '../components/LikeButton'
 import { rgba, sceneBackground, useArtTint } from '../design/tint'
