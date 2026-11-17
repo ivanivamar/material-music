@@ -22,8 +22,10 @@
   min-width: 0;
   border-radius: var(--card-r);
   padding: var(--card-pad);
-  background: var(--card-bg, var(--card-surface));
-  box-shadow: var(--card-shadow, inset 0 0 0 1px var(--card-edge));
+  /* lit from above (Nov 2026 redesign): a slightly lighter top, a highlight on the top edge, a dark
+     bottom edge and a short shadow that stays inside the gap between cards */
+  background: var(--card-bg, linear-gradient(180deg, color-mix(in oklab, var(--card-surface), white 4.5%), var(--card-surface) 72%));
+  box-shadow: var(--card-shadow, inset 0 1px 0 rgba(255, 255, 255, .06), inset 0 0 0 1px var(--card-edge), inset 0 -1px 0 rgba(0, 0, 0, .35), 0 2px 4px -2px rgba(0, 0, 0, .5));
   transition:
     background-color 200ms var(--ease-std),
     box-shadow 200ms var(--ease-std),

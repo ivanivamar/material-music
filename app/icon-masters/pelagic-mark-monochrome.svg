@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+<defs><radialGradient id="tile" cx="512" cy="307" r="820" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#003746"/><stop offset=".8" stop-color="#050608"/></radialGradient>
+<linearGradient id="hi" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".14"/><stop offset=".04" stop-color="#fff" stop-opacity="0"/></linearGradient>
+<linearGradient id="fill" gradientUnits="userSpaceOnUse" x1="30" y1="10" x2="70" y2="112"><stop offset="0" stop-color="#62c8df"/><stop offset=".5" stop-color="#009eb9"/><stop offset="1" stop-color="#005a72"/></linearGradient>
+<mask id="hole" maskUnits="userSpaceOnUse" x="-10" y="-10" width="140" height="140"><rect x="-10" y="-10" width="140" height="140" fill="#fff"/><circle cx="69" cy="37.5" r="9.5" fill="#000"/></mask>
+<filter id="glow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur in="SourceAlpha" stdDeviation="5" result="b"/><feFlood flood-color="#00b2d1" flood-opacity=".55"/><feComposite in2="b" operator="in"/><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+<filter id="pt" x="-200%" y="-200%" width="500%" height="500%"><feGaussianBlur in="SourceAlpha" stdDeviation="1.6" result="b"/><feFlood flood-color="#72f2ff"/><feComposite in2="b" operator="in"/><feMerge><feMergeNode/><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+</defs>
+<g transform="translate(125.16 164.98) scale(5.6889)"><path d="M40 100 V46 C40 28 52 15 70 14 C88 13 98 23 96 37 C94 51 80 60 64 61.5 C60 62 56 61.5 53 61 V95 C59 95 66 92 70.5 86 C74 81 74.5 76 72.5 71.5 A3 3 0 0 1 77.5 69.5 C82 75 83 83 80 90 C76 100 63 108 48 108.5 Q40 108.5 40 100 Z" fill="#fff" mask="url(#hole)"/><circle cx="69" cy="37.5" r="4.2" fill="#fff"/></g>
+</svg>

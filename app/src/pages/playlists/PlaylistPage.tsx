@@ -189,6 +189,7 @@ function PlaylistView({ c, p }: { c: Catalogue; p: Playlist }) {
       <div className="card card-lg card-flush dt-empty">
         <EmptyState
           icon="heart"
+          hue={290}
           title="No liked songs yet"
           body={phone ? 'Tap the heart on any song, or in the player, and it lands here.' : 'Click the heart on any song, or in the player bar, and it lands here. Newest on top.'}
           actions={

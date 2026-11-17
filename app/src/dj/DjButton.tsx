@@ -3,11 +3,10 @@
  * 40px), the player bar (40×40 icon) and the phone player (40px, Lyrics · DJ · Queue).
  *
  * A rim layer (a slowly turning gold conic gradient, clipped to the button) under a fill inset by
- * 1.5px, then the content. Off → click opens the DJ start view. On → click skips the session
- * straight to the next intro (no Undo); right-click / long-press (520 ms) opens the DJ panel.
+ * 1.5px, then the content. Click opens the DJ screen (start view when off, intro / on air when on);
+ * right-click / long-press (520 ms) opens the DJ panel while it plays.
  */
 import { useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
-import { djStore } from '../state/dj'
 import { djUi, useDjView } from '../state/djUi'
 import { isTouch } from '../state/viewport'
 import { DjIcon } from './DjMark'
@@ -25,10 +24,8 @@ export function DjButton({ variant, className }: { variant: Variant; className?:
   const fired = useRef(false)
   const touch = useRef(false)
 
-  const click = () => {
-    if (!djStore.get().run || !on) return djUi.openStart()
-    djStore.skip()
-  }
+  // design: the DJ button opens the DJ screen (Skip session / Stop DJ live there)
+  const click = () => djUi.openStart()
   const panel = () => {
     if (!on) return djUi.openStart()
     djUi.openPanel(ref.current, variant === 'phone' || isTouch())
@@ -55,14 +52,14 @@ export function DjButton({ variant, className }: { variant: Variant; className?:
   // no "3/7": how long a session is stays a surprise
   const counter = on && view.intro ? 'INTRO' : null
   const labelled = variant !== 'bar'
-  const tip = variant === 'phone' ? null : on ? ['Skip this session', 'RIGHT-CLICK · DJ PANEL'] : variant === 'bar' ? ['DJ', 'ENDLESS SESSIONS FROM YOUR LIBRARY'] : null
+  const tip = variant === 'phone' ? null : on ? ['DJ · on air', 'RIGHT-CLICK · DJ PANEL'] : variant === 'bar' ? ['DJ', 'ENDLESS SESSIONS FROM YOUR LIBRARY'] : null
 
   return (
     <button
       ref={ref}
       type="button"
       className={`djb djb-${variant} ${on ? 'is-on' : ''} ${pressed ? 'is-pressed' : ''} ${className ?? ''}`}
-      aria-label={on ? 'DJ: skip this session (right-click or hold for the DJ panel)' : 'DJ'}
+      aria-label={on ? 'DJ: on air (right-click or hold for the DJ panel)' : 'DJ'}
       aria-pressed={on}
       onClick={() => {
         if (fired.current) {

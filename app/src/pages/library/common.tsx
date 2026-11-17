@@ -51,6 +51,16 @@ export function Crumbs({ fallback, parts }: { fallback: string; parts: ReactNode
 
 /* ── Section head: LABEL ──────────── 01 ─────────── */
 
+/** Redesign section title (artist page): 22px name + a mono count. */
+export function BigHead({ label, right }: { label: ReactNode; right?: ReactNode }) {
+  return (
+    <div className="big-head">
+      <h2 className="big-head-t">{label}</h2>
+      {right != null && <span className="big-head-r">{right}</span>}
+    </div>
+  )
+}
+
 export function SectionHead({ label, right, size = 'md' }: { label: ReactNode; right?: ReactNode; size?: 'md' | 'sm' }) {
   return (
     <div className={`sect-head ${size === 'sm' ? 'sect-head-sm' : ''}`}>

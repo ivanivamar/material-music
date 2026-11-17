@@ -158,28 +158,36 @@ export function OfflineBanner({ meta }: { meta?: ReactNode }) {
   return (
     <div className="offline-banner" role="status">
       <span className="ob-ic"><Icon name="offline" /></span>
-      No signal down here. Only offline music will play.
-      {meta != null && <span className="t-mono" style={{ fontSize: 'var(--fs-mono-sm)' }}>{meta}</span>}
+      <span className="ob-text">
+        <span className="ob-t">You’re offline</span>
+        <span className="ob-b">Downloaded music still plays. Everything else comes back when you’re connected.</span>
+      </span>
+      {meta != null && <span className="ob-meta t-mono">{meta}</span>}
     </div>
   )
 }
 
-/* ── Empty state (concentric rings, one line, one action) ── */
+/* ── Empty state (redesign: a softly lit panel, two rings with an orbiting light, a glowing icon tile,
+   title, one line, one action). `hue` tints the panel, tile and light; defaults to the now-playing hue. ── */
 
 interface EmptyStateProps {
   icon: Parameters<typeof Icon>[0]['name']
   title: ReactNode
   body?: ReactNode
   actions?: ReactNode
+  hue?: number
 }
 
-export function EmptyState({ icon, title, body, actions }: EmptyStateProps) {
+export function EmptyState({ icon, title, body, actions, hue }: EmptyStateProps) {
   return (
-    <div className="empty">
+    <div className="empty" style={hue == null ? undefined : ({ '--eh': hue } as CSSProperties)}>
       <div className="empty-rings" aria-hidden>
         <span />
         <span />
-        <span>
+        <span className="empty-orbit">
+          <span className="empty-sat" />
+        </span>
+        <span className="empty-tile">
           <Icon name={icon} />
         </span>
       </div>

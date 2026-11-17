@@ -302,3 +302,6 @@ a.ln:hover { color: var(--ink-primary); text-decoration: underline; text-underli
 @media (pointer: coarse) {
   .lib-field-hint { display: none; }
 }
+
+/* desktop: pin under the sticky top bar and the Library chip bar (12 + 36 + 12) */
+.shell:not(.is-phone) .songs-head { top: calc(var(--bar-h, 0px) + 60px); }

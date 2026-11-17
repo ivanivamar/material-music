@@ -12,10 +12,11 @@
 /* ── Shelf ──────────────────────────────────────────── */
 .hs { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 .hs-jbi { gap: 16px; }
-.hs-head { display: flex; align-items: center; gap: 16px; min-width: 0; }
-.hs-title { margin: 0; font-family: var(--font-mono); font-size: var(--fs-mono); font-weight: 400; letter-spacing: .16em; text-transform: uppercase; white-space: nowrap; }
-.hs-sub { font-family: var(--font-mono); font-size: var(--fs-mono-sm); letter-spacing: .12em; color: var(--ink-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; text-transform: uppercase; }
-.hs-flex { flex: 1; min-width: 12px; height: 1px; background: var(--hairline-strong); }
+/* redesign: a real section title (22px sans) with the mono sub-label after it, no rule line */
+.hs-head { display: flex; align-items: baseline; gap: 14px; min-width: 0; }
+.hs-title { margin: 0; font-family: var(--font-sans); font-size: var(--fs-section-sm); font-weight: 500; letter-spacing: -0.015em; white-space: nowrap; }
+.hs-sub { font-family: var(--font-mono); font-size: var(--fs-mono-sm); letter-spacing: .14em; color: var(--ink-tertiary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; text-transform: uppercase; }
+.hs-flex { flex: 1; min-width: 12px; }
 .hs-more { font-family: var(--font-mono); font-size: var(--fs-mono-sm); letter-spacing: .12em; color: var(--ink-secondary); text-decoration: none; white-space: nowrap; text-transform: uppercase; }
 .hs-more:hover { color: var(--ink-primary); }
 .hs-arrow { display: inline-flex; color: var(--ink-secondary); text-decoration: none; align-self: center; }
@@ -193,7 +194,8 @@ html[data-motion='reduced'] .hcard-btns, html[data-motion='reduced'] .hartist-ar
 .shell.is-phone .h-hello { font-size: 32px; letter-spacing: -0.02em; line-height: 1.1; }
 .shell.is-phone .h-shelves { gap: 32px; }
 .shell.is-phone .hs { gap: 12px; }
-.shell.is-phone .hs-head { gap: 10px; }
+.shell.is-phone .hs-head { gap: 10px; align-items: center; }
+.shell.is-phone .hs-title { font-size: 19px; }
 .shell.is-phone .hs-sub.is-below { margin-top: -8px; }
 .shell.is-phone .hs-row { gap: 12px; padding-top: 4px; padding-bottom: 4px; }
 .shell.is-phone .hs-artists .hs-row { gap: 16px; }
@@ -228,3 +230,230 @@ html[data-motion='reduced'] .hcard-btns, html[data-motion='reduced'] .hartist-ar
 }
 .shell.is-phone .np-next.is-radio .t-mono { font-size: 9px; letter-spacing: .14em; }
 .shell.is-phone .np-next.is-radio .np-next-line { display: none; }
+
+/* ── Home redesign (Nov 17, HomeV2, measured) ───────────────────────────────────
+   greeting 34px under the bar; shelves 52px apart; title row → cards 18px; cards six across, 20px gaps */
+.shell:not(.is-phone) .home2 { gap: 0; }
+.shell:not(.is-phone) .home2 { --px: var(--page-px, 44px); }
+.shell:not(.is-phone) .h-greet { margin-top: 22px; gap: 10px; }
+.shell:not(.is-phone) .h-shelves { margin-top: 34px; gap: 52px; }
+.shell:not(.is-phone) .hs { gap: 18px; }
+.shell:not(.is-phone) .hs-jbi { gap: 14px; }
+.h-now { color: inherit; }
+.shell:not(.is-phone) .hs-row { gap: 20px; padding-top: 0; margin-top: 0; }
+.shell:not(.is-phone) .hcard { gap: 4px; }
+.shell:not(.is-phone) .hcard-art { margin-bottom: 8px; }
+/* SEE ALL: a small mono pill */
+.shell:not(.is-phone) .hs-more {
+  height: 30px; padding: 0 12px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, .12); align-self: center;
+  display: inline-flex; align-items: center; font-size: 10px; letter-spacing: .12em; color: var(--ink-secondary);
+  transition: border-color .25s, color .25s, transform .2s;
+}
+.shell:not(.is-phone) .hs-more:hover { border-color: rgba(255, 255, 255, .3); color: var(--ink-primary); }
+.shell:not(.is-phone) .hs-more:active { transform: scale(.97); }
+
+/* Jump back in: 4 across, 62px lit tiles, 48px art, mono kind line, play slides in over a fade */
+.shell:not(.is-phone) .jbi { gap: 8px 10px; }
+.shell:not(.is-phone) .jt {
+  height: 62px; padding: 7px 12px 7px 7px; gap: 12px; border-radius: 14px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .06), rgba(255, 255, 255, .025));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .07), inset 0 0 0 1px rgba(255, 255, 255, .04);
+  transition: transform .35s cubic-bezier(.22, 1, .36, 1), background .3s;
+}
+.shell:not(.is-phone) .jt:hover, .shell:not(.is-phone) .jt.is-active {
+  transform: translateY(-2px); background: linear-gradient(180deg, rgba(255, 255, 255, .09), rgba(255, 255, 255, .035));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .07), inset 0 0 0 1px rgba(255, 255, 255, .04);
+}
+.shell:not(.is-phone) .jt:active { transform: scale(.97); }
+.shell:not(.is-phone) .jt-art > * { border-radius: 10px !important; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .15), 0 8px 18px -8px rgba(0, 0, 0, .7); }
+.shell:not(.is-phone) .jt-text { gap: 5px; }
+.shell:not(.is-phone) .jt-sub { font-family: var(--font-mono); font-size: 9.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-tertiary); }
+.shell:not(.is-phone) .jt-sub .jt-ic { display: none; }
+.shell:not(.is-phone) .jt-dj {
+  background: linear-gradient(180deg, oklch(0.3 0.06 290 / .8), oklch(0.18 0.04 290 / .6));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .1), inset 0 0 0 1px oklch(0.84 0.09 290 / .2);
+}
+.shell:not(.is-phone) .jt-dj .jt-sub { color: oklch(0.84 0.09 290); }
+.shell:not(.is-phone) .jt::after {
+  content: ''; position: absolute; right: 0; top: 0; bottom: 0; width: 70px; pointer-events: none; opacity: 0; z-index: 0;
+  background: linear-gradient(90deg, transparent, rgba(30, 30, 34, .95) 55%); transition: opacity .25s;
+}
+.shell:not(.is-phone) .jt:hover::after { opacity: 1; }
+.shell:not(.is-phone) .jt .jt-play { position: absolute; right: 10px; top: 50%; margin-top: -16px; z-index: 1; transform: translateX(8px) scale(.85); transition: opacity .25s, transform .35s cubic-bezier(.34, 1.56, .64, 1); }
+.shell:not(.is-phone) .jt:hover .jt-play, .shell:not(.is-phone) .jt:focus-visible .jt-play, .shell:not(.is-phone) .jt.is-active .jt-play { transform: none; }
+
+/* Made for you: the Day mix big on the left over two rows, the rest four across */
+.hs-made-grid { display: grid; grid-auto-rows: auto; gap: 20px; align-items: start; }
+.hs-made-grid > :first-child { grid-row: span 2; }
+
+/* Concerts near you + Your artists side by side */
+.hs-pair { display: grid; gap: 20px; align-items: start; }
+.hs-pair > .hs { min-width: 0; }
+.hs-pair .hs-artists .hs-row { gap: 14px; margin: 0; padding: 0; overflow: visible; }
+.hs-pair .hs-concerts .hs-row { margin: 0; padding: 0; }
+
+/* ── Home redesign, part 2 (HomeV2): Day mix hero, coming-soon strip, release cards, concert ticket,
+   artists with play bars, cover play buttons, smart cards ───────────────────────────────────────── */
+
+/* cover play button: 44px white, springs up (design .v-cplay) */
+.shell:not(.is-phone) .hcard-btns { right: 10px; bottom: 10px; }
+.shell:not(.is-phone) .hcard-btns .hx-cplay, .shell:not(.is-phone) .rs-play { width: 44px !important; height: 44px !important; background: #fff; color: #0b0b0c; box-shadow: 0 8px 20px -6px rgba(0, 0, 0, .7); }
+.shell:not(.is-phone) .hcard-btns { transition: opacity .2s cubic-bezier(.16, 1, .3, 1), transform .35s cubic-bezier(.34, 1.56, .64, 1); }
+.shell:not(.is-phone) .hcard:hover .hcard-art { transform: translateY(-4px); }
+.shell:not(.is-phone) .hcard-art { transition: transform .5s cubic-bezier(.22, 1, .36, 1), outline-color .2s cubic-bezier(.16, 1, .3, 1), outline-offset .25s cubic-bezier(.16, 1, .3, 1), box-shadow .45s var(--ease-std); }
+
+/* Day mix, big */
+.hdm {
+  position: relative; display: block; overflow: hidden; border-radius: 18px; cursor: pointer; isolation: isolate;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .15), 0 30px 60px -30px rgba(0, 0, 0, .9);
+  transition: transform .5s cubic-bezier(.22, 1, .36, 1);
+}
+.hdm:hover { transform: translateY(-4px); }
+.hdm:focus-visible { outline: 1.5px solid rgba(255, 255, 255, .85); outline-offset: 5px; }
+.hdm-art { position: absolute; inset: 0; display: grid; place-items: center; z-index: -1; }
+.hdm-art > * { flex: none; }
+.hdm-shade { position: absolute; inset: 0; z-index: 0; background: linear-gradient(180deg, rgba(0, 0, 0, .18), transparent 30%, transparent 55%, rgba(0, 0, 0, .45)); pointer-events: none; }
+.hdm-k { position: absolute; left: 22px; top: 20px; z-index: 1; font-family: var(--font-mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: rgba(255, 255, 255, .85); }
+.hdm-foot { position: absolute; left: 22px; right: 22px; bottom: 22px; z-index: 1; display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; }
+.hdm-t { font-size: 30px; line-height: 1.05; letter-spacing: -0.025em; font-weight: 600; color: #fff; text-shadow: 0 2px 20px rgba(0, 0, 0, .5); text-wrap: balance; }
+.hdm-play {
+  flex: none; width: 54px; height: 54px; border-radius: 50%; border: 0; padding: 0; cursor: pointer; display: grid; place-items: center;
+  background: #fff; color: #0b0b0c; font-size: 26px; box-shadow: 0 0 30px -4px oklch(0.85 0.13 35 / .9);
+  transition: transform .35s cubic-bezier(.34, 1.56, .64, 1);
+}
+.hdm-play:hover { transform: scale(1.06); }
+.hdm-play:active { transform: scale(.92); }
+
+/* coming-soon strip */
+.hrs {
+  display: flex; align-items: center; gap: 16px; padding: 12px 16px; border-radius: 16px; text-decoration: none; color: var(--ink-primary);
+  background: linear-gradient(90deg, oklch(0.32 0.08 var(--rh) / .5), rgba(255, 255, 255, .03) 60%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .07);
+  transition: transform .35s cubic-bezier(.22, 1, .36, 1);
+}
+.hrs:hover { transform: translateY(-2px); }
+.hrs-cover { flex: none; width: 48px; height: 48px; border-radius: 10px; overflow: hidden; box-shadow: 0 0 22px -6px oklch(0.7 0.13 var(--rh)); }
+.hrs-cover > * { width: 100% !important; height: 100% !important; border-radius: 0 !important; }
+.hrs-text { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.hrs-k { font-family: var(--font-mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: oklch(0.85 0.1 var(--rh)); }
+.hrs-t { font-size: 15px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hrs-right { margin-left: auto; display: flex; align-items: center; gap: 22px; flex: none; }
+.hrs-cd { display: flex; flex-direction: column; align-items: center; }
+.hrs-cd-v { font-size: 26px; font-weight: 500; font-variant-numeric: tabular-nums; line-height: 1.15; }
+.hrs-cd-l { font-family: var(--font-mono); font-size: 9px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-tertiary); }
+.hrs-count { font-family: var(--font-mono); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; line-height: 1.5; color: var(--ink-secondary); border-left: 1px solid rgba(255, 255, 255, .1); padding-left: 18px; }
+.shell:not(.is-phone) .hs-releases { gap: 16px; }
+.shell:not(.is-phone) .hs-releases > .hs-row { margin-top: 2px; }
+
+/* release cards: chip top-left on the cover, the date in mono under the text */
+.shell:not(.is-phone) .rs-tag {
+  left: 10px; top: 10px; bottom: auto; padding: 4px 7px; border-radius: 6px; background: rgba(5, 5, 5, .72);
+  border: 1px solid rgba(255, 255, 255, .18); color: var(--ink-primary); font-size: 9px; letter-spacing: .12em;
+}
+.shell:not(.is-phone) .rs-when { font-size: 10px; letter-spacing: .12em; color: var(--ink-tertiary); margin-top: 0; }
+.shell:not(.is-phone) .rs-card .hcard-text, .shell:not(.is-phone) .hcard-text { gap: 4px; }
+
+/* Concerts near you: one ticket */
+.hct {
+  display: flex; height: 168px; border-radius: 18px; overflow: hidden; text-decoration: none; color: var(--ink-primary);
+  background: linear-gradient(90deg, oklch(0.3 0.08 var(--th) / .7), rgba(255, 255, 255, .03));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08);
+  transition: transform .35s cubic-bezier(.22, 1, .36, 1);
+}
+.hct:hover { transform: translateY(-2px); }
+.hct-stub { width: 108px; flex: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border-right: 1.5px dashed rgba(255, 255, 255, .16); }
+.hct-mon { font-family: var(--font-mono); font-size: 11px; letter-spacing: .14em; color: oklch(0.85 0.1 var(--th)); }
+.hct-day { font-size: 52px; font-weight: 500; line-height: 1; letter-spacing: -0.03em; }
+.hct-dow { font-family: var(--font-mono); font-size: 11px; letter-spacing: .14em; color: var(--ink-secondary); }
+.hct-body { flex: 1; min-width: 0; padding: 22px; display: flex; flex-direction: column; gap: 6px; }
+.hct-k { font-family: var(--font-mono); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hct-name { font-size: 26px; font-weight: 600; letter-spacing: -0.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hct-place { font-size: 14px; color: var(--ink-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hct-foot { margin-top: auto; display: flex; align-items: center; gap: 10px; }
+.hct-status { font-family: var(--font-mono); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; padding: 5px 9px; border-radius: 999px; color: var(--ink-secondary); border: 1px solid rgba(255, 255, 255, .2); }
+.hct-status.is-buy { color: oklch(0.88 0.12 150); background: oklch(0.5 0.12 150 / .18); border-color: oklch(0.7 0.12 150 / .4); }
+.hct-tk { margin-left: auto; height: 34px; padding: 0 14px; border-radius: 999px; border: 0; background: #fff; color: #0b0b0c; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; transition: transform .2s; }
+.hct-tk:hover { transform: translateY(-1px); }
+.hct-tk:active { transform: scale(.95); }
+.hs-pair .hs-concerts { gap: 18px; }
+.hs-pair .cx-shelf-attrib { margin-top: -8px; font-size: 11px; color: var(--ink-tertiary); }
+.shell:not(.is-phone) .hs-head .hs-flex { min-width: 0; }
+
+/* Your artists: halo on hover, name, a thin bar in the artist's colour + the play count */
+.shell:not(.is-phone) .hartist-art { margin-bottom: 10px; }
+.shell:not(.is-phone) .hartist-art::before {
+  content: ''; position: absolute; inset: -6px; border-radius: 50%; pointer-events: none; opacity: 0; transition: opacity .4s;
+  box-shadow: 0 0 0 1.5px rgba(255, 255, 255, .7), 0 0 34px -4px rgba(255, 255, 255, .35);
+}
+.shell:not(.is-phone) .hartist:hover .hartist-art::before { opacity: 1; }
+.shell:not(.is-phone) .hartist-play { right: -2px; bottom: -2px; width: 40px !important; height: 40px !important; background: #fff; color: #0b0b0c; box-shadow: 0 8px 18px -6px rgba(0, 0, 0, .8); }
+.shell:not(.is-phone) .hartist-play .ms { font-size: 22px; }
+.hartist-bar { display: flex; align-items: center; gap: 6px; width: 80%; margin-top: 10px; }
+.hartist-track { flex: 1; height: 3px; border-radius: 2px; background: rgba(255, 255, 255, .1); overflow: hidden; }
+.hartist-track > span { display: block; height: 100%; background: oklch(0.85 0.1 var(--ah)); }
+.hartist-plays { font-family: var(--font-mono); font-size: 10px; color: var(--ink-tertiary); font-variant-numeric: tabular-nums; }
+
+/* radio + smart covers: 14 / 12px corners, no smart badge (design) */
+.shell:not(.is-phone) .hcard-radio .hcard-art, .shell:not(.is-phone) .hcard-radio .hx-radio { border-radius: 14px !important; }
+.shell:not(.is-phone) .hcard-smart .hx-smart-badge { display: none; }
+/* the NEW dot gives way to the chip on desktop (phone keeps the dot) */
+.shell:not(.is-phone) .rs-card .rs-dot { display: none; }
+.shell.is-phone .rs-tag.is-new { display: none; }
+.shell:not(.is-phone) .hs-pair .hs-sub { overflow: visible; text-overflow: clip; }
+.shell.is-phone .hartist-bar { width: 86%; margin-top: 2px; }
+
+/* ── Cover glow + hover room (Nov 17) ─────────────────────────────────────────
+   design .v-glow: a blurred, saturated copy of the art sits under the cover and drops in on hover */
+.hcard-art { isolation: isolate; }
+.hcard-glow {
+  position: absolute; left: 8%; right: 8%; top: 20%; bottom: -6%; z-index: -1; border-radius: 30px; overflow: hidden; pointer-events: none;
+  filter: blur(26px) saturate(1.8); opacity: 0; transition: opacity .5s, transform .5s;
+}
+.hcard-art > .hcard-glow { overflow: hidden; }
+.hcard-glow > *, .hcard-glow > * > *, .hcard-glow img { width: 100% !important; height: 100% !important; border-radius: 0 !important; }
+.hcard:hover .hcard-glow { opacity: .8; transform: translateY(10px) scale(1.04); }
+.hcard-radio .hcard-glow, .hcard-smart .hcard-glow, .shell.is-phone .hcard-glow { display: none; }
+html:not([data-motion='full']) .hcard-glow { transition: none; }
+
+/* a scrolling row clips both ways: give the lift (4px), the hover ring (5px out) and the glow (under the
+   cover, ~40px) room inside the row, and take it back with negative margins so the layout doesn't move */
+.shell:not(.is-phone) .hs-row { padding-top: 12px; margin-top: -12px; padding-bottom: 44px; margin-bottom: -44px; }
+.shell:not(.is-phone) .hs-pair .hs-artists .hs-row { padding: 12px 0 0; margin: -12px 0 0; }
+
+/* Cover volume (design card art): a light catch on the top edge, a faint rim, and a soft shadow under the
+   cover, so covers sit on the page instead of lying flat in it */
+.shell:not(.is-phone) .hcard-art { box-shadow: 0 16px 30px -18px rgba(0, 0, 0, .9); }
+.shell:not(.is-phone) .hcard.is-active .hcard-art { box-shadow: var(--glow-ring), 0 16px 30px -18px rgba(0, 0, 0, .9); }
+.shell:not(.is-phone) .hcard-art::after, .shell:not(.is-phone) .hx-edge {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .16), inset 0 0 0 1px rgba(255, 255, 255, .06);
+}
+.shell:not(.is-phone) .hcard-art:has(.hx-edge)::after { content: none; }
+.shell:not(.is-phone) .hartist-art { box-shadow: 0 16px 30px -18px rgba(0, 0, 0, .9); }
+.shell:not(.is-phone) .hartist-art::after { content: ''; position: absolute; inset: 0; border-radius: 50%; pointer-events: none; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .15), inset 0 0 0 1px rgba(255, 255, 255, .05); }
+
+/* release cards: the cover clips itself, so the card art can let the glow out */
+.shell:not(.is-phone) .rs-art { overflow: visible; }
+
+/* ── Radio cover (HomeV2 radio card) ─────────────────── */
+.hxr {
+  position: relative; display: block; overflow: hidden; border-radius: 14px; flex: none;
+  background: radial-gradient(circle at 50% 55%, oklch(0.3 0.08 var(--rh)), oklch(0.12 0.03 var(--rh)) 70%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .1);
+}
+.hxr-rings { position: absolute; inset: 0; background: repeating-radial-gradient(circle at 50% 55%, transparent 0 17px, oklch(0.8 0.1 var(--rh) / .22) 17px 18px); }
+.hxr-ring { position: absolute; left: 15%; top: 20%; width: 70%; height: 70%; border-radius: 50%; border: 1.5px solid oklch(0.85 0.12 var(--rh)); box-sizing: border-box; }
+.hxr-ping { opacity: 0; }
+.hcard:hover .hxr-ping { animation: hxr-sonar 1.8s cubic-bezier(.15, .6, .35, 1) infinite; }
+@keyframes hxr-sonar { from { transform: scale(.6); opacity: .7; } to { transform: scale(1.25); opacity: 0; } }
+html:not([data-motion='full']) .hcard:hover .hxr-ping { animation: none; }
+.hxr-seed {
+  position: absolute; left: 28%; top: 33%; width: 44%; height: 44%; border-radius: 50%; overflow: hidden; display: grid; place-items: center;
+  background: radial-gradient(ellipse 30% 38% at 50% 40%, oklch(0.7 0.05 var(--rh)) 0 60%, transparent 62%), radial-gradient(ellipse 55% 40% at 50% 100%, oklch(0.55 0.06 var(--rh)) 0 70%, transparent 72%), linear-gradient(180deg, oklch(0.3 0.06 var(--rh)), oklch(0.18 0.04 var(--rh)));
+  box-shadow: 0 0 0 3px rgba(5, 5, 5, .6), 0 0 30px -4px oklch(0.75 0.14 var(--rh) / .8);
+}
+.hxr-seed img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.hxr-seed:has(.hxr-ini) { background: oklch(0.42 0.08 var(--rh)); }
+.hxr-ini { font-weight: 700; font-size: 1.6em; color: oklch(0.92 0.04 var(--rh)); line-height: 1; }
+.hxr-k { position: absolute; left: 10px; top: 10px; font-family: var(--font-mono); font-size: 9px; letter-spacing: .14em; text-transform: uppercase; color: oklch(0.85 0.09 var(--rh)); }
+.hxr-dot { position: absolute; right: 14px; top: 14px; width: 6px; height: 6px; border-radius: 50%; background: oklch(0.9 0.1 var(--rh)); box-shadow: 0 0 8px oklch(0.85 0.14 var(--rh)); }
+.hcard-radio .hcard-art { border-radius: 14px !important; }

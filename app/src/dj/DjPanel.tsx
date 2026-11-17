@@ -1,14 +1,14 @@
 /**
- * DJ panel (handoff_dj §7): right-click / long-press on the DJ button while the DJ plays.
- * Desktop: 400px popover 12px above the button (Esc / click outside closes). Phone: bottom sheet.
+ * DJ panel (design "DjV2" settings panel): the DJ screen's settings button slides it in from the
+ * right (phone: a card over the screen); right-click / long-press on a DJ button while the DJ plays
+ * opens it as a popover above the button (desktop) or a bottom sheet (phone).
  *
- *   header      40px mark (speaking during the intro) · DJ · ON · SESSION 2 · INTRO
- *   NOW         session title, type (no song counts, no progress segments)
- *   UP NEXT     the prepared next session (updates live when the types change)
- *   SESSION TYPES  multi-select, at least one on, from the next session
- *   Voice intros   toggle + voice volume
- *   What the DJ has learned   plays more / less, Reset
- *   Stop DJ
+ *   DJ · close
+ *   NOW (lilac tile) · UP NEXT
+ *   SESSION TYPES · FROM THE NEXT SESSION   a switch per type, at least one on (while it plays)
+ *   Voice intros + voice volume · Only downloaded songs on mobile data (Android)
+ *   What the DJ has learned   plays more / less chips, Forget it (asks once)
+ *   Stop DJ (also what playing anything else does)
  */
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
@@ -17,9 +17,7 @@ import { registerBack } from '../native/backButton'
 import { djLearned, djStore, useDj } from '../state/dj'
 import { djUi, useDjUi, useDjView } from '../state/djUi'
 import { isNative } from '../native/bridge'
-import { usePlayer } from '../state/player'
-import { DJ_TYPES, TYPE_LABEL, TYPE_UPPER, type DjType } from './engine'
-import { LiveMark } from './DjIntro'
+import { DJ_TYPES, TYPE_LABEL, type DjType } from './engine'
 
 function Toggle({ on, label, onChange }: { on: boolean; label: string; onChange: (v: boolean) => void }) {
   return (
@@ -71,134 +69,106 @@ function VolumeSlider({ value, disabled, onChange }: { value: number; disabled: 
   )
 }
 
-function PanelBody({ sheet }: { sheet: boolean }) {
+function PanelBody({ kind }: { kind: 'popover' | 'sheet' | 'side' }) {
   const { run, doc } = useDj()
   const view = useDjView()
-  const p = usePlayer()
   const [confirmReset, setConfirmReset] = useState(false)
-  if (!run || !view.session) return null
-  const s = view.session
-  const types = run.mode.types
+  const s = run ? view.session : null
+  const types = run?.mode.types ?? []
   const learned = djLearned()
   const has = learned.more.length + learned.less.length > 0
-  const item = p.queue[p.index] ?? ''
   const toggleType = (t: DjType) => {
     const next = types.includes(t) ? types.filter((x) => x !== t) : [...types, t]
     if (next.length) djStore.setTypes(next)
   }
+  const voiceHint = doc.prefs.voice ? 'Male English voice, over silence. No crossfades.' : 'Intros appear as text for 5 seconds.'
   return (
     <>
       <div className="djp-head">
-        <LiveMark item={item} size={40} active={view.intro} />
-        <div className="djp-head-t">
-          <div className="djp-name">DJ</div>
-          <div className="djp-status t-mono">
-            ON · SESSION {s.n}
-            {view.intro ? ' · INTRO' : ''}
-          </div>
-        </div>
-        {!sheet && (
+        <span className="djp-name">DJ</span>
+        {kind !== 'sheet' && (
           <button type="button" className="djp-x" aria-label="Close" onClick={() => djUi.closePanel()}>
             <Icon name="x" />
           </button>
         )}
       </div>
-      <div className="djp-sec">
-        <div className="djp-k t-mono">NOW</div>
-        <div className="djp-now">{s.title}</div>
-        <div className="djp-mono t-mono">{TYPE_UPPER[s.kind]}</div>
+      <div className="djp-tiles">
+        <div className="djp-tile is-now">
+          <div className="t-mono">NOW{s && view.intro ? ' · INTRO' : ''}</div>
+          <div className="djp-tile-t">{s ? s.title : 'Not running'}</div>
+        </div>
+        <div className="djp-tile">
+          <div className="t-mono">UP NEXT</div>
+          <div className="djp-tile-t">{s ? (view.next?.title ?? 'Being picked…') : '—'}</div>
+        </div>
       </div>
-      {view.next && (
-        <div className="djp-sec is-tight">
-          <div className="djp-k t-mono">UP NEXT</div>
-          <div className="djp-next">{view.next.title}</div>
-          <div className="djp-mono t-mono">
-            {TYPE_UPPER[view.next.kind]}
-          </div>
+      {run && (
+        <>
+          <div className="djp-k t-mono">SESSION TYPES · FROM THE NEXT SESSION</div>
+          {DJ_TYPES.map((t) => (
+            <div key={t} className="djp-toggle-row is-type">
+              <span className="djp-label">{TYPE_LABEL[t]}</span>
+              <Toggle on={types.includes(t)} label={TYPE_LABEL[t]} onChange={() => toggleType(t)} />
+            </div>
+          ))}
+        </>
+      )}
+      <div className="djp-rule" />
+      <div className="djp-toggle-row">
+        <div className="djp-toggle-text">
+          <div className="djp-label">Voice intros</div>
+          <div className="djp-note">{voiceHint}</div>
+        </div>
+        <Toggle on={doc.prefs.voice} label="Voice intros" onChange={(v) => djStore.setPref('voice', v)} />
+      </div>
+      <VolumeSlider value={doc.prefs.voiceVolume} disabled={!doc.prefs.voice} onChange={(v) => djStore.setPref('voiceVolume', v)} />
+      {isNative && (
+        <div className="djp-toggle-row">
+          <div className="djp-label">Only downloaded songs on mobile data</div>
+          <Toggle on={doc.prefs.dataSaver} label="Only downloaded songs on mobile data" onChange={(v) => djStore.setPref('dataSaver', v)} />
         </div>
       )}
       <div className="djp-rule" />
-      <div className="djp-sec">
-        {!sheet && (
-          <div className="djp-row-h">
-            <span className="djp-k t-mono">SESSION TYPES</span>
-            <span className="djp-k t-mono">FROM THE NEXT SESSION</span>
-          </div>
-        )}
-        <div className="djp-chips">
-          {DJ_TYPES.map((t) => (
-            <button key={t} type="button" className={`djp-chip ${types.includes(t) ? 'is-on' : ''}`} aria-pressed={types.includes(t)} onClick={() => toggleType(t)}>
-              {TYPE_LABEL[t]}
-            </button>
-          ))}
-        </div>
-      </div>
-      <div className="djp-rule" />
-      <div className="djp-sec">
-        <div className="djp-toggle-row">
-          <div>
-            <div className="djp-label">Voice intros</div>
-            {sheet && <div className="djp-note">{doc.prefs.voice ? 'Male English voice, over silence. No crossfades.' : 'Intros appear as text for 5 seconds.'}</div>}
-          </div>
-          <Toggle on={doc.prefs.voice} label="Voice intros" onChange={(v) => djStore.setPref('voice', v)} />
-        </div>
-        <VolumeSlider value={doc.prefs.voiceVolume} disabled={!doc.prefs.voice} onChange={(v) => djStore.setPref('voiceVolume', v)} />
-        {!sheet && <div className="djp-note">{doc.prefs.voice ? 'Male English voice, over silence. No crossfades.' : 'Intros appear as text for 5 seconds.'}</div>}
-        {isNative && (
-          <div className="djp-toggle-row">
-            <div>
-              <div className="djp-label">Only downloaded songs on mobile data</div>
-              <div className="djp-note">Offline always uses downloaded songs.</div>
-            </div>
-            <Toggle on={doc.prefs.dataSaver} label="Only downloaded songs on mobile data" onChange={(v) => djStore.setPref('dataSaver', v)} />
-          </div>
-        )}
-      </div>
-      <div className="djp-rule" />
-      <div className="djp-sec">
-        <div className="djp-row-h">
-          <span className="djp-label is-strong">What the DJ has learned</span>
-          <button type="button" className="djp-small" disabled={!has && !confirmReset} onClick={() => (confirmReset ? (djStore.resetLearned(), setConfirmReset(false)) : setConfirmReset(true))}>
-            {confirmReset ? 'Forget it' : 'Reset'}
-          </button>
-        </div>
-        {confirmReset && <div className="djp-note">Forget what the DJ has learned? Sessions go back to an even mix.</div>}
+      <div className="djp-label is-strong">What the DJ has learned</div>
+      <div className="djp-k t-mono">FROM WHAT YOU SKIP AND WHAT YOU PLAY THROUGH</div>
+      <div className="djp-learned">
         {has ? (
           <>
-            <div className="djp-learned">
-              <span className="djp-k t-mono">{sheet ? 'MORE' : 'PLAYS MORE'}</span>
-              <span className="djp-tags">
-                {learned.more.map((l) => (
-                  <span key={l} className="djp-tag">
-                    {l}
-                  </span>
-                ))}
+            {learned.more.length > 0 && <span className="djp-lk t-mono">PLAYS MORE</span>}
+            {learned.more.map((l) => (
+              <span key={'m' + l} className="djp-tag">
+                {l}
               </span>
-              <span className="djp-k t-mono">{sheet ? 'LESS' : 'PLAYS LESS'}</span>
-              <span className="djp-tags">
-                {learned.less.map((l) => (
-                  <span key={l} className="djp-tag is-less">
-                    {l}
-                  </span>
-                ))}
+            ))}
+            {learned.less.length > 0 && <span className="djp-lk t-mono">PLAYS LESS</span>}
+            {learned.less.map((l) => (
+              <span key={'l' + l} className="djp-tag is-less">
+                {l}
               </span>
-            </div>
-            {!sheet && <div className="djp-k t-mono">FROM WHAT YOU SKIP AND WHAT YOU PLAY THROUGH</div>}
+            ))}
           </>
         ) : (
-          <div className="djp-note">{sheet ? 'Nothing yet. It learns from what you skip and play through.' : 'Nothing yet. It starts again from the sessions you skip and the songs you play through.'}</div>
+          <span className="djp-note">Nothing yet. It learns from what you skip and play through.</span>
         )}
       </div>
-      <button
-        type="button"
-        className="djp-stop"
-        onClick={() => {
-          djUi.closePanel()
-          djStore.stop()
-        }}
-      >
-        Stop DJ
-      </button>
+      {confirmReset && <div className="djp-note">Forget what the DJ has learned? Sessions go back to an even mix.</div>}
+      <div className="djp-foot">
+        <button type="button" className="djp-small" disabled={!has && !confirmReset} onClick={() => (confirmReset ? (djStore.resetLearned(), setConfirmReset(false)) : setConfirmReset(true))}>
+          {confirmReset ? 'Yes, forget it' : 'Forget it'}
+        </button>
+        {run && (
+          <button
+            type="button"
+            className="djp-small"
+            onClick={() => {
+              djUi.closePanel()
+              djStore.stop()
+            }}
+          >
+            Stop DJ
+          </button>
+        )}
+      </div>
     </>
   )
 }
@@ -243,8 +213,9 @@ export function DjPanelHost() {
 
   if (!shown) return null
   const sheet = shown.kind === 'sheet'
+  const side = shown.kind === 'side'
   return createPortal(
-    <div className={`djp-layer ${sheet ? 'is-sheet' : ''} ${on ? 'is-on' : ''}`}>
+    <div className={`djp-layer ${sheet ? 'is-sheet' : ''} ${side ? 'is-side' : ''} ${side && shown.phone ? 'is-phone' : ''} ${on ? 'is-on' : ''}`}>
       <div
         className="djp-scrim pg-anim"
         onClick={() => djUi.closePanel()}
@@ -254,7 +225,7 @@ export function DjPanelHost() {
         }}
       />
       <div
-        className={`djp pg-anim ${sheet ? 'is-sheet' : 'is-pop'}`}
+        className={`djp pg-anim ${sheet ? 'is-sheet' : side ? 'is-side' : 'is-pop'}`}
         role="dialog"
         aria-label="DJ"
         style={shown.kind === 'popover' ? { left: shown.left, bottom: shown.bottom, maxHeight: `calc(100dvh - ${shown.bottom + 16}px)` } : undefined}
@@ -265,7 +236,7 @@ export function DjPanelHost() {
             <span />
           </button>
         )}
-        <PanelBody sheet={sheet} />
+        <PanelBody kind={shown.kind} />
       </div>
     </div>,
     document.body,

@@ -158,7 +158,7 @@
 .sm-x { margin-left: auto; }
 .sm-order { flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 20px; }
 .sm-sort, .sm-limit { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.sm-limit input[type='checkbox'] { width: 16px; height: 16px; margin: 0; accent-color: var(--ink-primary); cursor: pointer; }
+.sm-limit input[type='checkbox'] { cursor: pointer; }
 .sm .dlg-new-cover.is-empty { display: flex; align-items: center; justify-content: center; font-size: 30px; color: var(--ink-tertiary); }
 
 @media (max-width: 760px) {
@@ -244,4 +244,4 @@ html[data-phone] .gc-opt { height: 44px; font-size: 15px; }
 .sm-rules { gap: 8px; }
 .sm-rule { padding: 8px 8px 8px 12px; border-radius: 12px; background: var(--surface-1); border: 1.5px solid rgba(255, 255, 255, .07); gap: 8px; }
 .sm-word { font-size: 14px; }
-.sm-limit input[type='checkbox'] { accent-color: #fff; width: 18px; height: 18px; }
+

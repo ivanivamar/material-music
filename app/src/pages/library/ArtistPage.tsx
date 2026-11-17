@@ -26,7 +26,7 @@ import { libraryHref } from '../../shell/routes'
 import { RELEASE_LABEL, albumInfos, artistInfos, fmtTotal, plural, type ReleaseKind } from '../../state/views'
 import type { FeedItem } from '../../state/releaseViews'
 import { ownedAlbumHref } from '../releases/relText'
-import { ArtistAvatar, Crumbs, SectionHead } from './common'
+import { ArtistAvatar, BigHead, Crumbs, SectionHead } from './common'
 import { DownloadButton, trackDownload } from './DownloadButton'
 import { artistOffline, downloadsStore, useDownloadProgress, useDownloads } from '../../state/downloads'
 import { playList, useContextState, useNowPlaying } from './playback'
@@ -34,7 +34,7 @@ import { LibCard, albumItem } from './libgrid'
 import { useIsPhone } from '../../state/viewport'
 import { HeroTourChip, OnTour, useTourNear } from '../concerts/OnTour'
 import { useArtistLook } from '../concerts/parts'
-import { ListSection, SongRow } from '../../components/list/SongList'
+import { ListSection, RowCover, SongRow } from '../../components/list/SongList'
 import { CompactBar, useCollapsingHeader } from '../../components/list/CompactBar'
 import { playsLabel } from '../../components/list/listUtils'
 import { useLikedIndex } from '../../state/likes'
@@ -49,7 +49,8 @@ const ORDER: ReleaseKind[] = ['album', 'ep', 'single', 'live']
 const SONGS_COLLAPSED = 10
 /** "3 releases" (plural() upper-cases its suffix for the mono labels) */
 const cnt = (n: number, w: string) => `${n} ${w}${n === 1 ? '' : 's'}`
-const heroSize = (t: string) => (t.length <= 16 ? 84 : t.length <= 26 ? 64 : t.length <= 40 ? 52 : 40)
+/** desktop (ArtistV2): the name up to 128px, smaller for long names so it stays on one or two lines */
+const heroSizeBig = (t: string) => (t.length <= 10 ? 128 : t.length <= 14 ? 108 : t.length <= 20 ? 84 : t.length <= 30 ? 64 : 48)
 
 export function ArtistPage({ id }: { id: string }) {
   const { data } = useLibrary()
@@ -122,6 +123,7 @@ export function ArtistPage({ id }: { id: string }) {
   }
 
   const totalPlays = inOrder.reduce((s, t) => s + (counts.get(t.id) ?? 0), 0)
+  const topPlays = songs.length ? (counts.get(songs[0].id) ?? 0) : 0
   const radio = () => {
     if (!radioStore.start({ type: 'artist', id: artist.id })) toast.show({ icon: 'radio', mutedIcon: true, text: 'Nothing to play for this radio right now.' })
   }
@@ -153,21 +155,32 @@ export function ArtistPage({ id }: { id: string }) {
       {phone ? (
         <ListSection phone label={played ? 'Most played here' : 'Songs'} right={`${songs.length} songs`} />
       ) : (
-        <SectionHead label={played ? 'MOST PLAYED HERE' : 'SONGS'} right={plural(songs.length, 'TRACK')} />
+        <BigHead label={played ? 'Most played here' : 'Songs'} right={plural(songs.length, 'TRACK')} />
       )}
       <div className={`sl sl-artist ${dl.available && !phone ? 'has-dl' : ''}`} role="list">
         {shown.map((t, i) => {
           const album = data.albums[t.albumId]
           const c = counts.get(t.id) ?? 0
+          // desktop (ArtistV2): cover, and the plays as a bar in the artist's hue (share of the top song)
+          const playsCol = (
+            <span className="ar-plays" title={playsLabel(c)}>
+              <span className="ar-plays-bar">
+                <span style={{ width: `${topPlays ? (c / topPlays) * 100 : 0}%` }} />
+              </span>
+              <span className="ar-plays-n">{playsLabel(c)}</span>
+            </span>
+          )
           return (
             <SongRow
               key={t.id}
               phone={phone}
               n={String(i + 1)}
+              className={!phone && played && i < 3 ? 'is-top' : undefined}
+              art={phone ? undefined : <RowCover fileId={album?.cover} size={44} />}
               title={t.title}
               sub={phone ? [album?.title, played ? playsLabel(c).toLowerCase() : null].filter(Boolean).join(' · ') : album?.title}
               liked={likedIx.ids.has(t.id)}
-              colB={played ? playsLabel(c) : String(album?.year ?? '')}
+              colB={played ? (phone ? playsLabel(c) : playsCol) : String(album?.year ?? '')}
               like={<LikeButton trackId={t.id} size="xs" hover />}
               download={dl.available && !phone ? (trackDownload(dl, t, dlNow) ?? null) : undefined}
               time={t.duration ? formatTime(t.duration) : '—'}
@@ -192,7 +205,7 @@ export function ArtistPage({ id }: { id: string }) {
       <SectionHead label={RELEASE_LABEL[g.kind].many} right={String(gi + 1).padStart(2, '0')} />
       <div className="disco-grid">
         {g.albums.map((a) => (
-          <LibCard key={a.id} c={data} item={albumItem(a, [a.year, plural(infos.get(a.id)?.tracks.length ?? 0, 'TRACK')].filter(Boolean).join(' · '))} size={150} />
+          <LibCard key={a.id} c={data} item={albumItem(a, [a.year, plural(infos.get(a.id)?.tracks.length ?? 0, 'TRACK')].filter(Boolean).join(' · '))} size={phone ? 150 : 137} />
         ))}
       </div>
     </section>
@@ -254,28 +267,36 @@ export function ArtistPage({ id }: { id: string }) {
     )
 
   return (
-    <div className="artist-page">
-      {bg && <div className={`artist-banner ${blurred ? 'is-blurred' : ''}`} style={{ backgroundImage: `url(${bg})` }} aria-hidden />}
-      {crumbs}
-
+    <div className="artist-page is-desk" style={{ '--ah': tourHue } as CSSProperties}>
       <CompactBar barRef={barRef} art={<ArtistAvatar artist={artist} size={36} lazy={false} />} title={artist.name} round />
-      <header ref={heroRef} className="hero hero-artist">
-        <ArtistAvatar artist={artist} size={180} lazy={false} className="hero-avatar" />
-        <div className="hero-text">
-          <div className="hero-meta">{meta}</div>
-          <h1 className="hero-title" style={{ '--hs': `${heroSize(artist.name)}px` } as CSSProperties} title={artist.name}>
-            {artist.name}
-          </h1>
-          <div className="hero-stats">
-            {plural(info.albums.length, 'RELEASE')} · {plural(info.tracks, 'TRACK')} · {fmtTotal(info.seconds)}
-            {totalPlays ? ` · ${plural(totalPlays, 'PLAY')}` : ''}
-            {off && off.done ? ` · ${off.done} OFFLINE` : ''}
+      {/* desktop (ArtistV2): a 470px banner across the panel — the blurred photo (or a wash in the
+          artist's hue), scan lines, a fade into the page; the photo in a glowing ring, the name big */}
+      <header ref={heroRef} className="hero hero-artist ar-hero">
+        <div className="ar-bg" aria-hidden>
+          <div className={`ar-banner ${bg ? '' : 'is-wash'} ${bg && !blurred ? 'is-sharp' : ''}`} style={bg ? { backgroundImage: `url(${bg})` } : undefined} />
+          <div className="ar-scan" />
+          <div className="ar-fade" />
+        </div>
+        {crumbs}
+        <div className="ar-hero-row">
+          <div className="hero-avatar ar-ava">
+            <span className="ar-ring" aria-hidden />
+            <ArtistAvatar artist={artist} size={190} lazy={false} />
           </div>
-          {tourNear && (
-            <div className="hero-tour">
-              <HeroTourChip show={tourNear} />
+          <div className="hero-text">
+            <div className="hero-meta">{meta}</div>
+            <h1 className="hero-title" style={{ '--hs': `${heroSizeBig(artist.name)}px` } as CSSProperties} title={artist.name}>
+              {artist.name}
+            </h1>
+            <div className="ar-stats-row">
+              <div className="hero-stats">
+                {plural(info.albums.length, 'RELEASE')} · {plural(info.tracks, 'TRACK')} · {fmtTotal(info.seconds)}
+                {totalPlays ? ` · ${plural(totalPlays, 'PLAY')}` : ''}
+                {off && off.done ? ` · ${off.done} OFFLINE` : ''}
+              </div>
+              {tourNear && <HeroTourChip show={tourNear} />}
             </div>
-          )}
+          </div>
         </div>
       </header>
       <div className="lh-btns artist-btns">

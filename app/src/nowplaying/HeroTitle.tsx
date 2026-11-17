@@ -47,7 +47,8 @@ export function splitTitle(title: string): { main: string; extra?: string } {
 function scale(phone: boolean) {
   const vw = window.innerWidth
   if (phone) {
-    const max = Math.max(26, Math.min(34, vw * 0.083))
+    // phone (design): up to 42px at 412px wide
+    const max = Math.max(26, Math.min(42, vw * 0.102))
     return { max, floor: Math.min(max, 28) }
   }
   const max = Math.min(84, vw / 14.4)

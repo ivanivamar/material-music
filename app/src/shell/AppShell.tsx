@@ -516,6 +516,8 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
               </div>
               <main className="shell-main" ref={mainRef} id="main" tabIndex={-1}>
                 <div className="topbar">
+                  {/* left: the page's compact header (CompactBar) shows here once its title scrolls away */}
+                  <span className="topbar-gap" />
                   <div className="topbar-slot" ref={setSlot} hidden={key !== 'library'} />
                   {key !== 'library' && (
                     <button type="button" className="search-pill" onClick={focusLibrarySearch}>
@@ -526,7 +528,6 @@ export function AppShell({ route, children }: { route: Route; children: ReactNod
                       <kbd className="sp-kbd">Ctrl K</kbd>
                     </button>
                   )}
-                  <span className="topbar-gap" />
                   {key === 'home' && (
                     <Button variant="filled" size="xl" className="shuffle-all" onClick={shuffleAll}>
                       <Icon name="shuffle" />

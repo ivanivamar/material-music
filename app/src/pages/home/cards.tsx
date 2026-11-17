@@ -2,7 +2,8 @@
  * Home cards: album / mix / radio / smart playlist squares, artist circles, and loading placeholders.
  * The existing feature-specific artwork and play actions are shared across desktop and phone layouts.
  */
-import { useSyncExternalStore, type MouseEvent, type ReactNode } from 'react'
+import { useSyncExternalStore, type CSSProperties, type MouseEvent, type ReactNode } from 'react'
+import { nameHue } from '../../lib/mixing'
 import { Button, AlbumEq, Skeleton, IconButton } from '../../components/ui'
 import { Icon } from '../../design/icons'
 import { SHAPE_CLOVER } from '../../design/shapes'
@@ -20,7 +21,7 @@ import { albumOffline, useDownloads, useOnline } from '../../state/downloads'
 import { PHONE_QUERY } from '../../state/viewport'
 import { plural } from '../../state/views'
 import { albumTrackIds, artistTrackIds, playList } from '../library/playback'
-import { ArtistDisc, CookiePlay, MixCover, RadioArt, SmartArt, radiusFor } from './art'
+import { ArtistDisc, CookiePlay, MixCover, RadioCover, SmartArt, radiusFor } from './art'
 
 /* ── Sizes ──────────────────────────────────────────── */
 
@@ -91,6 +92,8 @@ export function CardFrame({
   extra?: Record<string, unknown>
   dim?: boolean
 }) {
+  // desktop: a blurred copy of the art glows under the card on hover (design .v-glow); not drawn on the phone
+  const glow = useHomeSize() === 'desk'
   return (
     <div
       {...extra}
@@ -104,6 +107,11 @@ export function CardFrame({
     >
       <div className="hcard-art" style={{ width: size, height: size, borderRadius: round ? '50%' : radiusFor(size), ['--pb-in' as string]: round ? `${Math.round(size * 0.06)}px` : '8px' }}>
         {art}
+        {glow && (
+          <span className="hcard-glow" aria-hidden>
+            {art}
+          </span>
+        )}
         {active && (
           <span className="hcard-badge">
             <AlbumEq color="oklch(0.93 0.04 38)" height={12} on={playing} />
@@ -201,7 +209,7 @@ export function RadioCardView({ c, radio, size }: { c: Catalogue; radio: Radio; 
   return (
     <CardFrame
       className="hcard-radio pg-fade"
-      art={<RadioArt seed={radioArtSeed(c, radio)} size={size} playing={st.playing} />}
+      art={<RadioCover seed={radioArtSeed(c, radio)} size={size} />}
       title={radio.title}
       subtitle={radio.sub}
       size={size}
@@ -215,7 +223,8 @@ export function RadioCardView({ c, radio, size }: { c: Catalogue; radio: Radio; 
 
 /* ── Artist circle ──────────────────────────────────── */
 
-export function ArtistCard({ c, artist, size, sub }: { c: Catalogue; artist: Artist; size: number; sub: string }) {
+/** `bar`: share of the top artist's plays (0–1): the redesign shows a thin bar + the count instead of the sub line. */
+export function ArtistCard({ c, artist, size, sub, bar, plays }: { c: Catalogue; artist: Artist; size: number; sub: string; bar?: number; plays?: number }) {
   const st = usePlayingContext('artist', artist.id)
   const ctx = { kind: 'artist' as const, id: artist.id, label: artist.name }
   return (
@@ -243,7 +252,16 @@ export function ArtistCard({ c, artist, size, sub }: { c: Catalogue; artist: Art
       <div className="hartist-n" title={artist.name}>
         {artist.name}
       </div>
-      <div className="hartist-s">{sub}</div>
+      {bar != null ? (
+        <div className="hartist-bar" style={{ '--ah': nameHue(artist.name) } as CSSProperties} title={sub}>
+          <span className="hartist-track">
+            <span style={{ width: `${Math.round(bar * 100)}%` }} />
+          </span>
+          <span className="hartist-plays">{plays}</span>
+        </div>
+      ) : (
+        <div className="hartist-s">{sub}</div>
+      )}
     </div>
   )
 }

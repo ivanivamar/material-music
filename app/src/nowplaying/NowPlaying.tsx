@@ -9,9 +9,9 @@
  * Opened from the player bar (cover / expand / lyrics); the bar's cover flies into the player and back (coverFlight.ts). Esc or Back closes (AppShell + history).
  * The parts that follow the playback position (seek, times, lyrics) re-render on their own (parts.tsx).
  */
-import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useId, useRef, useState, type CSSProperties } from 'react'
 import { Atmosphere } from '../components/Atmosphere'
-import { IconButton } from '../components/ui'
+import { IconButton, QualityBadge, qualityKind, qualityLabel } from '../components/ui'
 import { Icon } from '../design/icons'
 import { LikeButton } from '../components/LikeButton'
 import { rgba, sceneBackground, useArtTint } from '../design/tint'
@@ -28,7 +28,7 @@ import { LiveLyrics } from './Lyrics'
 import { CoverSwipe } from './CoverSwipe'
 import { useSwipeDown } from './swipe'
 import { useCoverFlight } from './coverFlight'
-import { LineSeek, NpLink, TimeSeek, Transport, ViewButtons, Volume, SwellSeek } from './parts'
+import { BarSeek, LineSeek, NpLink, Transport, UpNextIn, ViewButtons, Volume } from './parts'
 import { contextLine, useCurrent, useDuration } from './player'
 import { actions } from '../actions/actions'
 import { useDjUi, useDjView, djUi } from '../state/djUi'
@@ -36,7 +36,7 @@ import { isIntroId } from '../state/player'
 import { djIntroInfo } from '../state/dj'
 import { DjIcon } from '../dj/DjMark'
 import { DjIntroInfo, DjIntroLyrics, LiveMark } from '../dj/DjIntro'
-import { DjStart } from '../dj/DjStart'
+import { DjScreen } from '../dj/DjScreen'
 import { introLevel, onFrame } from '../dj/live'
 import { registerBack } from '../native/backButton'
 import { DevicesButton } from '../sync/DevicesButton'
@@ -60,6 +60,28 @@ export function NowPlaying() {
 
   if (!mounted) return null
   return <NowPlayingScreen closing={!ui.open} />
+}
+
+/**
+ * Desktop (design NowPlayingV2): a pool of the hue glowing left of centre, and water — slow caustics
+ * (animated turbulence, screen-blended at 12%) around the cover.
+ */
+function NpWater({ motion }: { motion: boolean }) {
+  const id = useId().replace(/:/g, '')
+  return (
+    <>
+      <div className="np-pool" aria-hidden />
+      <svg className="np-water" aria-hidden>
+        <filter id={`npw${id}`} x="0" y="0" width="100%" height="100%">
+          <feTurbulence type="turbulence" baseFrequency="0.009 0.014" numOctaves={2} seed={4}>
+            {motion && <animate attributeName="baseFrequency" dur="18s" values="0.009 0.014;0.011 0.012;0.008 0.016;0.009 0.014" repeatCount="indefinite" />}
+          </feTurbulence>
+          <feColorMatrix type="matrix" values="0 0 0 0 1  0 0 0 0 0.9  0 0 0 0 1  -3.2 0 0 0 1.15" />
+        </filter>
+        <rect width="100%" height="100%" filter={`url(#npw${id})`} />
+      </svg>
+    </>
+  )
 }
 
 function NowPlayingScreen({ closing }: { closing: boolean }) {
@@ -147,43 +169,65 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
   const nextTrack = radioOn && nextItem ? trackOf(data, nextItem) : undefined
   const nextLabel = radioOn ? (phone ? 'RADIO KEEPS GOING · UP NEXT' : 'RADIO · KEEPS GOING · NEXT') : 'NEXT'
   const nextText = nextTrack ? `${nextTrack.title}, ${nextTrack.artist}` : nextTitle
-  const kicker = startView
-    ? 'DJ'
-    : p.remote
+  // desktop Up next card: "Title · Artist"
+  const nextSong = !dj.on && nextItem && !isIntroId(nextItem) ? trackOf(data, nextItem) : undefined
+  const nextFull = nextSong ? `${nextSong.title} · ${nextSong.artist}` : undefined
+  // (the header is the DJ screen's own while it shows)
+  const kicker = p.remote
       ? `PLAYING ON ${p.remote.name.toUpperCase()}`
       : dj.on
         ? dj.addedByUser
           ? 'PLAYING FROM DJ · ADDED BY YOU'
           : 'PLAYING FROM DJ'
         : ctx.kicker
-  const fromLabel = startView ? 'Choose how to start' : ctx.label
-  const backToNp = startView && hasSomething
 
   return (
     <div
       ref={rootRef}
       className={`np pg-anim ${closing ? 'is-closing' : ''} ${ly ? 'is-lyrics' : ''} ${phone ? 'is-phone' : ''} ${djScene ? 'is-dj-scene' : ''} ${startView ? 'is-dj-start' : ''}`}
       style={scene}
+      onMouseMove={
+        phone
+          ? undefined
+          : (e) => {
+              // CSS vars, no re-render. --mx/--my: −1…1 from the screen's centre (the layers' drift);
+              // the cover's tilt (--tx/--ty) and shine (--cx/--cy) are measured from the cover itself, so
+              // the light sits under the pointer and the cover leans toward where the pointer really is
+              const el = e.currentTarget
+              el.style.setProperty('--mx', (e.clientX / window.innerWidth - 0.5) * 2 + '')
+              el.style.setProperty('--my', (e.clientY / window.innerHeight - 0.5) * 2 + '')
+              const cov = el.querySelector('.np-cov3d')
+              if (cov) {
+                const r = cov.getBoundingClientRect()
+                const k = (v: number) => Math.max(-1, Math.min(1, v))
+                el.style.setProperty('--tx', k((e.clientX - r.left - r.width / 2) / (window.innerWidth / 2)) + '')
+                el.style.setProperty('--ty', k((e.clientY - r.top - r.height / 2) / (window.innerHeight / 2)) + '')
+                el.style.setProperty('--cx', ((e.clientX - r.left) / r.width) * 100 + '%')
+                el.style.setProperty('--cy', ((e.clientY - r.top) / r.height) * 100 + '%')
+              }
+            }
+      }
+      onMouseLeave={phone ? undefined : (e) => ['--mx', '--my', '--tx', '--ty'].forEach((v) => e.currentTarget.style.setProperty(v, '0'))}
       role="dialog"
       aria-modal="true"
       aria-label={startView ? 'DJ' : 'Now playing'}
     >
       <Atmosphere seed={41} />
+      {!phone && <NpWater motion={motion} />}
 
+      {!startView && (
       <header className="np-head">
-        <button ref={closeRef} type="button" className={`np-close t-mono ${backToNp && phone ? 'is-hidden' : ''}`} onClick={() => (backToNp ? djUi.closeStart() : nowPlayingStore.close())}>
-          <Icon name={backToNp ? 'chevL' : 'chevD'} />
-          {backToNp ? 'NOW PLAYING' : 'CLOSE'}
+        <button ref={closeRef} type="button" className="np-close t-mono" onClick={() => nowPlayingStore.close()}>
+          <Icon name="chevD" />
+          CLOSE
         </button>
         <div className="np-from">
-          <div className={`np-from-k t-mono ${dj.on && !startView ? 'has-dj' : ''} ${radioOn && !startView ? 'has-radio' : ''}`}>
-            {dj.on && !startView && <DjIcon on />}
-            {radioOn && !startView && <Icon name="radio" />}
+          <div className={`np-from-k t-mono ${dj.on ? 'has-dj' : ''} ${radioOn ? 'has-radio' : ''}`}>
+            {dj.on && <DjIcon on />}
+            {radioOn && <Icon name="radio" />}
             {kicker}
           </div>
-          {startView ? (
-            <div className="np-from-l">{fromLabel}</div>
-          ) : ctx.href ? (
+          {ctx.href ? (
             <NpLink href={ctx.href} className="np-from-l">
               {ctx.label}
             </NpLink>
@@ -192,12 +236,13 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
           )}
         </div>
         <div className="np-head-r">
-          {!startView && <DevicesButton variant="np" />}
+          <DevicesButton variant="np" />
           {songTrack && !startView && <IconButton icon="more" label="More: add to playlist, go to album…" className="np-more" onClick={(e) => actions.menu({ kind: 'track', trackId: songTrack.id }, e)} />}
         </div>
       </header>
+      )}
 
-      {startView && <DjStart phone={phone} onBack={() => (hasSomething ? djUi.closeStart() : nowPlayingStore.close())} />}
+      {startView && <DjScreen phone={phone} onClose={() => nowPlayingStore.close()} />}
 
       {hasSomething && !startView && (
         <>
@@ -205,7 +250,11 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
           <section className="np-main pg-anim" aria-hidden={ly} inert={ly}>
             <div className="np-cover-wrap">
               {phone ? (
-                <CoverSwipe cover={cover} glow={glow} />
+                <>
+                  {/* phone (design): the cover's blurred reflection glows under it */}
+                  {cover && <img className="npp-reflect" src={cover} alt="" aria-hidden />}
+                  <CoverSwipe cover={cover} glow={glow} />
+                </>
               ) : dj.on ? (
                 <div className={`dj-stack ${intro ? 'is-intro' : ''}`}>
                   {intro && item && <IntroPool item={item} />}
@@ -214,10 +263,18 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
                   </div>
                   <div className="dj-stack-mark pg-anim">{item && <LiveMark item={item} size={500} fluid active={intro} shadow="0 0 0 1px rgba(255,255,255,0.08), 0 60px 120px -40px rgba(0,0,0,0.9)" />}</div>
                 </div>
-              ) : cover ? (
-                <img className="np-cover" src={cover} alt="" style={{ boxShadow: `0 0 0 1px rgba(255,255,255,0.08), 0 60px 120px -40px ${glow}` }} />
               ) : (
-                <span className="np-cover np-cover-empty" aria-hidden />
+                /* desktop (design): a blurred reflection of the cover glows behind it; the cover tilts a
+                   little towards the pointer and a soft light follows it */
+                <div className="np-cov3d">
+                  {cover && <img className="np-cov-reflect" src={cover} alt="" aria-hidden />}
+                  {cover ? (
+                    <img className="np-cover" src={cover} alt="" style={{ boxShadow: `0 0 0 1px rgba(255,255,255,0.08), 0 60px 120px -40px ${glow}` }} />
+                  ) : (
+                    <span className="np-cover np-cover-empty" aria-hidden />
+                  )}
+                  <span className="np-cov-shine" aria-hidden />
+                </div>
               )}
             </div>
             <div className={`np-info ${handing ? 'is-handing' : ''}`}>
@@ -227,6 +284,19 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
                 songTrack && (
                   <>
                     <div className="np-text">
+                      {(
+                        <div className="np-meta">
+                          {songTrack.flac && (
+                            <QualityBadge kind={qualityKind('flac', songTrack.flac.bitDepth, songTrack.flac.sampleRate)}>
+                              {qualityLabel('flac', { bitDepth: songTrack.flac.bitDepth, sampleRate: songTrack.flac.sampleRate })}
+                            </QualityBadge>
+                          )}
+                          <span className="np-meta-t t-mono">
+                            {songTrack.track ? `Track ${String(songTrack.track).padStart(2, '0')}` : 'Track'}
+                            {songAlbum ? ` · ${songAlbum.title}` : ''}
+                          </span>
+                        </div>
+                      )}
                       <HeroTitle title={songTrack.title} phone={phone} />
                       <div className="np-sub-row">
                         <HeroSub
@@ -247,7 +317,7 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
                         {phone && <LikeButton trackId={songTrack.id} size="md" ink className="np-like" />}
                       </div>
                     </div>
-                    <SwellSeek duration={duration} playing={p.playing} />
+                    {phone ? <BarSeek duration={duration} playing={p.playing} bars={56} height={40} /> : <BarSeek duration={duration} playing={p.playing} />}
                   </>
                 )
               )}
@@ -258,9 +328,19 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
                 <span className="np-flex" />
                 <Volume size="sm" sliderClass="np-vol" />
               </div>
+              {!phone && nextText && !intro && (
+                <button type="button" className="np-up" onClick={() => playerStore.next()} title="Skip to next" tabIndex={ly ? -1 : 0}>
+                  <NextArt item={nextItem} />
+                  <span className="np-up-text">
+                    <span className="np-up-k t-mono">{radioOn ? 'Radio keeps going · next' : <UpNextIn duration={duration} />}</span>
+                    <span className="np-up-t">{nextFull ?? nextText}</span>
+                  </span>
+                  <Icon name="next" className="np-up-ic" />
+                </button>
+              )}
             </div>
           </section>
-          {nextText && (
+          {phone && nextText && (
             <button type="button" className={`np-next pg-anim ${radioOn ? 'is-radio' : ''}`} onClick={() => playerStore.next()} title="Skip to next" tabIndex={ly ? -1 : 0}>
               <span className="t-mono">{nextLabel}</span>
               <span className="np-next-line" />
@@ -271,11 +351,19 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
           {/* ── Lyrics view ── */}
           <section className="np-ly pg-anim" aria-hidden={!ly} inert={!ly}>
             {phone ? (
-              <div className="npp-strip">
-                {intro && item ? <LiveMark item={item} size={40} active={ly} /> : cover ? <img className="npp-strip-cover" src={cover} alt="" /> : <span className="npp-strip-cover np-cover-empty" aria-hidden />}
-                <div className="npp-strip-text">
-                  <Marquee className="npp-strip-title" text={intro ? (dj.session?.title ?? 'DJ') : (songTrack?.title ?? '')} />
-                  <Marquee className="npp-strip-sub" text={intro ? 'Spoken intro' : (songTrack?.artist ?? '')} />
+              /* phone (design, PhoneLyricsV2): the lyrics come up as a sheet over the player — handle,
+                 "Lyrics" with song · artist, a white play/pause and close */
+              <div className="npp-strip npp-sheet-head">
+                <button type="button" className="npp-handle" aria-label="Close lyrics" onClick={() => nowPlayingStore.toggleLyrics()}>
+                  <span />
+                </button>
+                <div className="npp-sheet-row">
+                  <div className="npp-strip-text">
+                    <span className="npp-sheet-t">Lyrics</span>
+                    <Marquee className="npp-strip-sub" text={intro ? `${dj.session?.title ?? 'DJ'} · Spoken intro` : songTrack ? `${songTrack.title} · ${songTrack.artist}` : ''} />
+                  </div>
+                  <IconButton icon={p.playing ? 'pauseF' : 'playF'} label={p.playing ? 'Pause' : 'Play'} className="npp-sheet-play" onClick={() => playerStore.toggle()} />
+                  <IconButton icon="x" label="Close lyrics" bare className="npp-sheet-x" onClick={() => nowPlayingStore.toggleLyrics()} />
                 </div>
               </div>
             ) : (
@@ -330,20 +418,21 @@ function NowPlayingScreen({ closing }: { closing: boolean }) {
             <div className="np-ly-col">
               {lyMounted && (intro && item ? <DjIntroLyrics item={item} line={dj.session?.line ?? ''} /> : songTrack && <LiveLyrics track={songTrack} playing={p.playing && ly} />)}
             </div>
-            {phone && (
-              <div className="npp-bottom">
-                <TimeSeek duration={duration} />
-                <Transport compact />
-                <div className="np-actions">
-                  <ViewButtons size="sm" phone />
-                </div>
-              </div>
-            )}
+            {phone && <div className="npp-sheet-foot t-mono">Tap a line to jump · tap the handle to close</div>}
           </section>
         </>
       )}
     </div>
   )
+}
+
+/** Up next: the next song's cover (42px). */
+function NextArt({ item }: { item: string | null }) {
+  const { data } = useLibrary()
+  const t = item ? trackOf(data, item) : null
+  const al = t ? albumOf(data, t.albumId) : undefined
+  const url = useCover(al?.cover)
+  return url ? <img className="np-up-art" src={url} alt="" /> : <span className="np-up-art is-empty" aria-hidden />
 }
 
 /** The gold light pool behind the mark, brighter with the voice. */

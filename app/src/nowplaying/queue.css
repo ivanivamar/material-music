@@ -45,26 +45,9 @@
 .qp-title-wrap { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
 .qp-title { margin: 0; font-size: 24px; font-weight: 400; letter-spacing: -0.015em; line-height: 1.15; }
 .qp-count { font-size: 11px; color: var(--ink-tertiary); }
-.qp-tools { display: flex; align-items: center; gap: 8px; flex: none; }
-.qp-tool {
-  height: 40px; border-radius: 12px; cursor: pointer; flex: none;
-  display: inline-flex; align-items: center; justify-content: center;
-  background: none; border: 1.5px solid var(--border-strong); color: var(--ink-primary);
-  transition: background .2s, color .2s;
-}
-.qp-tool:hover:not(:disabled) { background: var(--surface-2); }
-.qp-tool:disabled { color: var(--ink-ghost); border-color: rgba(255, 255, 255, .08); cursor: default; }
-.qp-tool-sq { width: 40px; font-size: 20px; }
-.qp-tool-text { padding: 0 14px; font-size: 13px; color: var(--ink-secondary); }
-.qp-tool-text:hover:not(:disabled) { color: var(--ink-primary); }
-.qp-tool-x { width: 40px; font-size: 20px; border-color: transparent; }
 /* shuffle on: lit like the player's mode buttons */
-.qp-tool.is-on, .qp-tool.is-on:hover:not(:disabled) {
-  color: #fff; background: rgba(255, 255, 255, .14); border-color: rgba(255, 255, 255, .3);
-  box-shadow: 0 0 14px -2px rgba(255, 255, 255, .28);
-}
-.qp-tool.is-on :is(svg, .ms) { filter: drop-shadow(0 0 4px rgba(255, 255, 255, .5)); }
 
+.qp-tools { display: flex; align-items: center; gap: 4px; flex: none; }
 .qp-src { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .qp-src-cover, .qp-src .plc { width: 22px; height: 22px; border-radius: 5px; flex: none; object-fit: cover; display: block; }
 .qp-src-k { font-size: 10px; letter-spacing: .16em; color: var(--ink-secondary); flex: none; white-space: nowrap; }
@@ -115,23 +98,7 @@
 .qp-nrow:hover .qp-row-in { background: rgba(255, 255, 255, .05); }
 .qp-grip { width: 22px; flex: none; display: flex; align-items: center; justify-content: center; font-size: 16px; color: var(--ink-ghost); }
 .qp-ncover { width: 40px; height: 40px; border-radius: 8px; }
-.qp-like {
-  width: 28px; height: 28px; flex: none; padding: 0; border: 0; background: none; cursor: pointer;
-  display: flex; align-items: center; justify-content: center; font-size: 16px; color: var(--ink-secondary);
-  transition: color .3s, transform .35s var(--ease-pop);
-}
-.qp-like:hover, .qp-like.is-on { color: #fff; }
-.qp-like.is-pop { transform: scale(1.25); }
 .qp-nd { width: 40px; text-align: right; }
-.qp-acts { display: flex; align-items: center; flex: none; }
-.qp-act {
-  width: 30px; height: 30px; flex: none; padding: 0; border: 0; border-radius: 8px; background: none; cursor: pointer;
-  display: inline-flex; align-items: center; justify-content: center; font-size: 16px; color: var(--ink-tertiary);
-  transition: background .2s, color .2s;
-}
-.qp-act-x { font-size: 15px; }
-.qp-act:hover:not(:disabled) { background: rgba(255, 255, 255, .08); color: #fff; }
-.qp-act:disabled { opacity: 0; pointer-events: none; }
 
 /* dragging: the lifted row, and a glowing lilac drop line above / below the target */
 .qp-row.is-drag .qp-row-in { background: var(--surface-2); border-color: rgba(255, 255, 255, .16); opacity: .45; }
@@ -174,11 +141,6 @@
 .qp-empty-mark > span:nth-child(3) { left: -12px; right: -12px; top: 28px; height: 1px; background: rgba(255, 255, 255, .6); }
 .qp-empty-t { font-size: 16px; }
 .qp-empty-b { font-size: 13px; color: var(--ink-secondary); max-width: 260px; line-height: 1.5; }
-.qp-restore {
-  height: 38px; padding: 0 16px; margin-top: 6px; border-radius: 12px; cursor: pointer;
-  background: none; border: 1px solid var(--border-strong); color: var(--ink-primary); font-size: 14px;
-}
-.qp-restore:hover { background: rgba(255, 255, 255, .06); }
 
 .qp-foot {
   flex: none; text-align: center; font-size: 9px; letter-spacing: .14em; color: var(--ink-tertiary);
@@ -189,10 +151,6 @@
 .qp-prow .qp-grip { cursor: grab; }
 .qp-played-tag { flex: none; font-size: 9px; letter-spacing: .16em; color: var(--ink-tertiary); }
 /* the heart (components/LikeButton.tsx) at the row's size */
-.qp-like.like { width: 28px; height: 28px; border-radius: 8px; }
-.qp-like.like .ms { font-size: 18px; }
-.qp-like.like:not(.is-on) { color: var(--ink-secondary); }
-.qp-like.like:hover:not(:disabled) { background: none; }
 
 /* the Now playing card: click = play / pause (the cover shows which), drop on it = play next */
 .qp-now { cursor: pointer; outline: none; }
@@ -203,7 +161,6 @@
   background: rgba(5, 5, 5, .55); color: #fff; font-size: 22px; opacity: 0; transition: opacity .25s var(--ease);
 }
 .qp-now:hover .qp-now-play, .qp-now:focus-visible .qp-now-play { opacity: 1; }
-.qp-now-like.like.is-on { color: var(--like); }
 .qp-drop-now { left: 12px; right: 12px; bottom: 0; }
 
 /* toasts stay clear of the open popover */
@@ -241,8 +198,6 @@ html[data-qp] .toasts.toasts-shell { right: 472px; }
 .qp-grab > span { width: 36px; height: 4px; border-radius: 4px; background: rgba(255, 255, 255, .25); transition: background .2s, width .3s var(--ease); }
 .qp[data-grab] .qp-grab > span { background: rgba(255, 255, 255, .6); width: 44px; }
 .shell.is-phone .qp-head-row { gap: 10px; }
-.shell.is-phone .qp-tool { height: 44px; }
-.shell.is-phone .qp-tool-sq { width: 44px; }
 .shell.is-phone .qp-src-cover, .shell.is-phone .qp-src .plc { width: 20px; height: 20px; }
 .shell.is-phone .qp-src-k { font-size: 9px; }
 
@@ -267,8 +222,6 @@ html[data-qp] .toasts.toasts-shell { right: 472px; }
   margin-left: -6px; padding-left: 6px; box-sizing: content-box; touch-action: none; cursor: grab;
 }
 .shell.is-phone .qp-ncover { width: 42px; height: 42px; }
-.shell.is-phone .qp-like { width: 44px; height: 44px; font-size: 18px; }
-.shell.is-phone .qp-like:hover:not(.is-on) { color: var(--ink-secondary); }
 .shell.is-phone .qp-nd { width: auto; padding-right: 6px; }
 .shell.is-phone .qp-row.is-drag .qp-row-in { opacity: .45; background: var(--surface-2); }
 /* swipe left: a red strip fills the space the row leaves behind */
@@ -278,3 +231,64 @@ html[data-qp] .toasts.toasts-shell { right: 472px; }
   background: rgba(var(--warn-rgb), .16); color: var(--warn); font-size: 18px; pointer-events: none;
 }
 .qp-swipe-bg > :is(svg, .ms) { flex: none; margin-right: 18px; }
+
+/* ── Desktop queue, redesign (NowPlayingV2 queue panel) ──────────────────────────────────────────
+   padding 20, title 24/500, bare 34px tools, source line in mono, the Now playing card lit in the
+   song's hue, rows 42px art · 14/500 title · mono length; ↑ × and ♥ slide in on hover. */
+.shell:not(.is-phone) .qp-head { padding: 20px 20px 12px; gap: 14px; border-bottom: 0; }
+.shell:not(.is-phone) .qp-title { font-weight: 500; }
+.shell:not(.is-phone) .qp-count { font-size: 10px; }
+.shell:not(.is-phone) .qp-src-cover { display: none; }
+.shell:not(.is-phone) .qp-src-k { letter-spacing: .14em; color: var(--ink-tertiary); }
+.shell:not(.is-phone) .qp-src-name { font-family: var(--font-mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-tertiary); }
+.shell:not(.is-phone) .qp-list {
+  padding: 4px 10px 16px;
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 18px, #000 calc(100% - 18px), transparent);
+  mask-image: linear-gradient(180deg, transparent, #000 18px, #000 calc(100% - 18px), transparent);
+}
+.shell:not(.is-phone) .qp-rule { padding: 6px 10px 0; }
+.shell:not(.is-phone) .qp-rule-l { letter-spacing: .14em; color: var(--ink-tertiary); }
+.shell:not(.is-phone) .qp-rule-line { visibility: hidden; }
+.shell:not(.is-phone) .qp-rule-r { letter-spacing: .14em; }
+
+.shell:not(.is-phone) .qp-now {
+  padding: 10px; gap: 12px; border-radius: 14px; border: 0;
+  background: linear-gradient(90deg, oklch(0.4 calc(0.12 * var(--hc, 1)) var(--h) / .35), rgba(255, 255, 255, .03));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08), inset 0 0 0 1px oklch(0.8 calc(0.12 * var(--hc, 1)) var(--h) / .25);
+  transition: background .6s;
+}
+.shell:not(.is-phone) .qp-now-cover { box-shadow: 0 0 22px -6px oklch(0.75 calc(0.15 * var(--hc, 1)) var(--h)); }
+.shell:not(.is-phone) .qp-now-text { gap: 3px; }
+.shell:not(.is-phone) .qp-now-eye { font-size: 9.5px; letter-spacing: .14em; color: oklch(0.88 calc(0.11 * var(--hc, 1)) var(--h)); }
+.shell:not(.is-phone) .qp-now-eye .eq > span { background: oklch(0.88 calc(0.11 * var(--hc, 1)) var(--h)); box-shadow: none; }
+.shell:not(.is-phone) .qp-now-t { font-weight: 500; }
+.shell:not(.is-phone) .qp-now-bar { background: oklch(0.88 calc(0.11 * var(--hc, 1)) var(--h)); box-shadow: 0 0 10px oklch(0.85 calc(0.14 * var(--hc, 1)) var(--h) / .7); }
+.shell:not(.is-phone) .qp-now:focus-visible { box-shadow: inset 0 0 0 1px oklch(0.8 calc(0.12 * var(--hc, 1)) var(--h) / .7); }
+
+.shell:not(.is-phone) .qp-nrow .qp-row-in { padding: 0 10px; }
+.shell:not(.is-phone) .qp-nrow:hover .qp-row-in { background: rgba(255, 255, 255, .06); }
+.shell:not(.is-phone) .qp-grip { width: 16px; color: #55555a; }
+.shell:not(.is-phone) .qp-ncover { width: 42px; height: 42px; }
+.shell:not(.is-phone) .qp-t { font-weight: 500; }
+.shell:not(.is-phone) .qp-text { gap: 3px; }
+.shell:not(.is-phone) .qp-d { color: var(--ink-tertiary); transition: opacity .2s; }
+/* the row's end is one 106px slot: at rest the length (and a small filled heart when the song is
+   liked); on hover or focus the length fades and ♥ · ↑ · × take the same place. Nothing overlays the
+   text and nothing moves the row. */
+.shell:not(.is-phone) .qp-nrow .qp-row-in { display: grid; grid-template-columns: 16px 42px minmax(0, 1fr) 106px; column-gap: 12px; }
+.shell:not(.is-phone) .qp-nrow :is(.qp-like, .qp-nd, .qp-acts) { grid-column: 4; grid-row: 1; justify-self: end; }
+/* the length sits in the same cell as the buttons: it never takes the pointer (faded out, it was
+   still catching it over the ×) */
+.shell:not(.is-phone) .qp-nd { width: auto; pointer-events: none; transition: opacity .2s, transform .3s cubic-bezier(.22, 1, .36, 1); }
+.shell:not(.is-phone) .qp-nrow .qp-acts { position: relative; z-index: 1; display: flex; gap: 2px; opacity: 0; transform: translateX(8px); pointer-events: none; transition: opacity .2s, transform .3s cubic-bezier(.22, 1, .36, 1); }
+.shell:not(.is-phone) .qp-nrow .qp-like { margin-right: 68px; opacity: 0; transform: translateX(8px); transition: opacity .2s, transform .3s cubic-bezier(.22, 1, .36, 1), margin .3s cubic-bezier(.22, 1, .36, 1), color .2s, background-color .2s; }
+/* liked: the heart stays, just left of the length */
+.shell:not(.is-phone) .qp-nrow .qp-like.is-on { opacity: 1; transform: none; margin-right: 44px; }
+.shell:not(.is-phone) .qp-nrow:is(:hover, :focus-within) .qp-nd { opacity: 0; transform: translateX(-8px); }
+.shell:not(.is-phone) .qp-nrow:is(:hover, :focus-within) .qp-acts { opacity: 1; transform: none; pointer-events: auto; }
+.shell:not(.is-phone) .qp-nrow:is(:hover, :focus-within) .qp-like { opacity: 1; transform: none; margin-right: 68px; }
+/* the first row can't move up: its ↑ keeps its place, invisible */
+.shell:not(.is-phone) .qp-act:disabled { visibility: hidden; }
+/* the first row can't move up: its ↑ keeps its place, invisible */
+.shell:not(.is-phone) .qp-foot { font-size: 9.5px; border-top: 0; padding: 10px 0 16px; }
+.shell:not(.is-phone) .qp-nrow { height: 58px; }

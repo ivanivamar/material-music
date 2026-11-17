@@ -16,8 +16,8 @@
   --panel: #0e0e10;                        /* side panels */
 
   --ink-primary: #ededed;                  /* text, primary button fill */
-  --ink-secondary: #8a8a8e;                /* secondary text, inactive icons */
-  --ink-tertiary: #55555a;                 /* mono metadata only */
+  --ink-secondary: #a6a6ac;                /* secondary text, inactive icons */
+  --ink-tertiary: #80808a;                 /* mono metadata only */
   --ink-ghost: #3a3a3e;                    /* disabled, muted bars */
   --line: #ffffff;                         /* the single accent */
 
@@ -68,7 +68,7 @@
 
   --fs-hero: 84px;            /* 64–84, ls -0.035em, lh .95 */
   --fs-hero-sm: 64px;
-  --fs-page: 40px;            /* page titles desktop (-0.02em) */
+  --fs-page: 72px;            /* page titles desktop (redesign: 64, -0.04em, kicker above) */
   --fs-page-android: 30px;
   --fs-section: 26px;         /* section titles 22–32 */
   --fs-section-sm: 22px;
@@ -83,7 +83,7 @@
   --fs-counter: 34px;
 
   --ls-hero: -0.035em;
-  --ls-page: -0.02em;
+  --ls-page: -0.04em;
   --ls-mono: 0.14em;
   --ls-wordmark: 0.42em;
 
@@ -137,7 +137,7 @@
   /* ── Controls ─────────────────────────────────────────── */
   --btn-h: 46px;
   --btn-h-android: 54px;
-  --chip-h: 34px;
+  --chip-h: 38px;
 
   /* ── Motion ───────────────────────────────────────────── */
   --ease: cubic-bezier(0.31, 0.94, 0.34, 1);

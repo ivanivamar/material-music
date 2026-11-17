@@ -46,7 +46,8 @@ export function useCollapsingHeader(heroRef: RefObject<HTMLElement | null>, barR
     const ctx = gsap.context(() => {
       if (!still) {
         const tl = gsap.timeline({
-          scrollTrigger: { trigger: hero, scroller: sc, start: () => `top top+=${edge()}`, end: () => `bottom top+=${edge()}`, scrub: 0.3, invalidateOnRefresh: true },
+          // a hero that starts under the bar already (the artist page's full-height banner) starts collapsing from the top
+          scrollTrigger: { trigger: hero, scroller: sc, start: () => (hero.offsetTop < edge() ? 'top top' : `top top+=${edge()}`), end: () => `bottom top+=${edge()}`, scrub: 0.3, invalidateOnRefresh: true },
         })
         if (art) tl.to(art, { scale: 0.55, opacity: 0, transformOrigin: 'left top', ease: 'none' }, 0)
         if (text) tl.to(text, { y: -28, opacity: 0, ease: 'power1.in' }, 0)

@@ -1,7 +1,8 @@
 /* Desktop shell: full-height navigation rail beside an inset content surface. */
 .shell {
   --sidebar-w: 272px;
-  --bar-h: 92px; --bar-lift: 88px;
+  /* --bar-h: the sticky top bar's height; sticky sub-bars (Library chips, Settings…) sit flush under it */
+  --bar-h: 78px; --bar-lift: 88px;
   position: relative;
   height: 100%; min-height: 0;
   display: grid;
@@ -29,7 +30,7 @@
   scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, .12) transparent;
 }
 /* --page-px: the side padding, for full-bleed parts of a page (the collapsing header's bar) */
-.shell-page { --page-px: 56px; padding: 40px var(--page-px) 170px; min-height: 100%; }
+.shell-page { --page-px: 44px; padding: 24px var(--page-px) 170px; min-height: 100%; }
 @media (max-width: 1299px) { .shell-page { --page-px: 36px; } }
 
 /* The old shell used the configurable atmosphere instead of decorative coral geometry. */
@@ -47,40 +48,60 @@
 /* toasts: centred over the main panel, above the floating player bar */
 .toasts.toasts-shell { left: var(--sidebar-w, 272px); bottom: 120px; }
 
-/* ── Page header (shared by every page) ────────────── */
-.ph { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 44px; }
-.ph-text { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
-.ph-title { margin: 0; font-size: var(--fs-page); font-weight: 400; letter-spacing: var(--ls-page); line-height: 1.1; color: var(--ink-primary); }
-.ph-meta { font-family: var(--font-mono); font-size: var(--fs-mono-sm); letter-spacing: .16em; color: var(--ink-tertiary); text-transform: uppercase; }
+/* ── Page header (shared by every page) ──────────────
+   Redesign: the mono meta line is a kicker above a large title. */
+.ph { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin: 18px 0 40px; }
+.ph-text { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.ph-title { margin: 0; font-size: var(--fs-page); font-weight: 500; letter-spacing: -0.04em; line-height: .95; color: var(--ink-primary); }
+.ph-meta { order: -1; font-family: var(--font-mono); font-size: var(--fs-mono-sm); letter-spacing: .14em; color: var(--album-icon, var(--ink-tertiary)); text-transform: uppercase; }
 .ph-tools { display: flex; align-items: center; gap: 14px; flex: none; }
 
-/* top bar (desktop, every page): search trigger + account actions above the page */
+/* top bar (desktop, every page): sticky. Transparent at the top of the page; once content scrolls
+   under it, a frosted surface tinted with the now-playing hue. Search sits on the right, page
+   buttons after it; the left is where a page's compact header (CompactBar) appears. */
 .topbar {
-  display: flex; align-items: center; justify-content: flex-end; gap: 14px; padding: 24px 56px 0;
+  position: sticky; top: 0; z-index: 7;
+  height: 78px; box-sizing: border-box;
+  display: flex; align-items: center; justify-content: flex-end; gap: 14px; padding: 0 44px;
+  margin-bottom: 4px;
+  transition: background-color .35s ease, box-shadow .35s ease, backdrop-filter .35s ease;
+}
+.shell.is-scrolled .topbar {
+  background: linear-gradient(180deg, oklch(0.16 calc(0.025 * var(--hc, 1)) var(--h) / .82), oklch(0.12 calc(0.015 * var(--hc, 1)) var(--h) / .74));
+  -webkit-backdrop-filter: blur(18px) saturate(1.3); backdrop-filter: blur(18px) saturate(1.3);
+  box-shadow: inset 0 -1px 0 var(--hairline), 0 10px 30px -18px rgba(0, 0, 0, .8);
 }
 @media (max-width: 1299px) { .topbar { padding-left: 36px; padding-right: 36px; } }
-.topbar + .shell-page { padding-top: 16px; }
+.topbar + .shell-page { padding-top: 8px; }
 .topbar-gap { flex: 1; }
-.topbar-slot:not([hidden]) { flex: 0 1 620px; min-width: 0; display: flex; }
+.topbar-slot:not([hidden]) { flex: 0 1 400px; min-width: 0; display: flex; transition: flex-basis .45s cubic-bezier(.31, .94, .34, 1); }
+.topbar-slot:not([hidden]):focus-within, .topbar-slot:not([hidden]):has(input:not(:placeholder-shown)) { flex-basis: 560px; }
 .topbar-slot:empty { display: none; }
 .topbar-slot .lb-field-wrap { flex: 1; width: auto; }
 .search-pill {
-  flex: 0 1 300px; height: 40px; border-radius: var(--r-pill); font: inherit; text-align: left;
-  display: flex; align-items: center; gap: 10px; padding: 0 12px 0 16px;
-  border: 2px solid rgba(255, 255, 255, .12); background: rgba(255, 255, 255, .03);
-  color: var(--ink-secondary); font-size: 14px; cursor: text; text-decoration: none;
-  transition: border-color .25s ease;
+  flex: 0 1 400px; height: 50px; border-radius: var(--r-pill); font: inherit; text-align: left;
+  display: flex; align-items: center; gap: 12px; padding: 0 10px 0 16px;
+  border: 0; background: rgba(255, 255, 255, .05);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06), inset 0 0 0 1px rgba(255, 255, 255, .09);
+  color: var(--ink-tertiary); font-size: 15px; cursor: text; text-decoration: none;
+  transition: box-shadow .3s ease, background .3s ease, color .3s ease;
 }
-.search-pill:hover { color: var(--ink-secondary); border-color: rgba(255, 255, 255, .22); }
-.search-pill:focus-visible { outline: none; border-color: rgba(255, 255, 255, .4); }
-.search-pill .sp-ic { font-size: 21px; display: inline-flex; }
+.search-pill:hover {
+  color: var(--ink-primary);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .09), inset 0 0 0 1px rgba(255, 255, 255, .18), 0 0 24px -10px var(--album);
+}
+.search-pill:focus-visible { outline: none; box-shadow: inset 0 0 0 1.5px var(--album), 0 0 0 4px oklch(0.8 calc(0.1 * var(--hc, 1)) var(--h) / .16); }
+.search-pill .sp-ic { font-size: 22px; display: inline-flex; transition: transform .45s var(--ease-out, ease); }
+.search-pill:hover .sp-ic { transform: rotate(-12deg) scale(1.06); }
 .search-pill .sp-text { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .search-pill .sp-kbd {
   font-family: var(--font-mono); font-size: var(--fs-mono-xs); color: var(--ink-tertiary);
-  min-width: 22px; height: 22px; padding: 0 6px; display: inline-flex; align-items: center; justify-content: center;
-  border-radius: 6px; border: 1px solid rgba(255, 255, 255, .14); background: transparent;
+  min-width: 22px; height: 26px; padding: 0 8px; display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 999px; border: 0; background: rgba(255, 255, 255, .06);
 }
-.shuffle-all { box-shadow: none; }
+/* Redesign: Shuffle all / Shuffle library = 46px white button with its glow (was the 56px xl size, no glow) */
+.btn.shuffle-all { min-height: 46px; padding: 0 20px; font-size: 14px; gap: 10px; }
+.btn.shuffle-all .btn-ic .ms, .btn.shuffle-all > .ms { font-size: 20px; }
 
 /* avatar (photo or initial) */
 .mm-avatar {
@@ -93,14 +114,15 @@
 /* menus: components/ui Menu (overlay.css). The desktop action menu (actions.css) still uses this keyframe. */
 @keyframes mm-menu-in { from { opacity: 0; transform: translateY(6px) scale(.97); } to { opacity: 1; transform: none; } }
 
-/* ── Shelves (Home) ────────────────────────────────── */
-.shelves { display: flex; flex-direction: column; gap: 44px; }
-.shelf { display: flex; flex-direction: column; gap: 16px; }
-.shelf-head { display: flex; align-items: center; gap: 16px; }
-.shelf-label { font-family: var(--font-mono); font-size: var(--fs-mono); letter-spacing: .16em; color: var(--ink-primary); }
-.shelf-line { flex: 1; height: 1px; background: rgba(255, 255, 255, .08); }
-.shelf-sub { font-family: var(--font-mono); font-size: var(--fs-mono-sm); letter-spacing: .14em; color: var(--ink-secondary); }
-.shelf-link { text-decoration: none; }
+/* ── Shelves (Home, and any page with shelves) ───────
+   Redesign: a real section title with a mono sub-label after it (no rule line). */
+.shelves { display: flex; flex-direction: column; gap: 48px; }
+.shelf { display: flex; flex-direction: column; gap: 18px; }
+.shelf-head { display: flex; align-items: baseline; gap: 14px; }
+.shelf-label { font-family: var(--font-sans); font-size: var(--fs-section-sm); font-weight: 500; letter-spacing: -0.015em; text-transform: none; color: var(--ink-primary); }
+.shelf-line { display: none; }
+.shelf-sub { font-family: var(--font-mono); font-size: var(--fs-mono-sm); letter-spacing: .14em; color: var(--ink-tertiary); text-transform: uppercase; }
+.shelf-link { text-decoration: none; margin-left: auto; color: var(--ink-secondary); }
 .shelf-link:hover { color: var(--ink-primary); }
 .shelf-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 28px 24px; }
 .shelf-row .acard-img { border-radius: var(--r-cover); }
@@ -108,3 +130,16 @@
 .shelf-one { grid-template-rows: auto; grid-auto-rows: 0; row-gap: 0; overflow: hidden; padding: 6px 6px 0; margin: -6px -6px 0; }
 
 .placeholder { min-height: 52vh; display: flex; align-items: center; justify-content: center; }
+
+/* ── Design check (Nov 17): panel + page frame matched to the canvas ──────────────────
+   outer #050505, panel #0d0d0f with 22px corners and a lit inset edge; page padding 24 / 44 */
+.shell, .shell .sb { background: var(--bg-0); }
+.shell-panel {
+  border: 0; border-radius: 22px; background: #0d0d0f;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .07), inset 0 0 0 1px rgba(255, 255, 255, .05), 0 12px 40px -16px rgba(0, 0, 0, .65);
+}
+.search-pill:hover { background: rgba(255, 255, 255, .075); }
+/* page titles: 72 / 500 / −0.04em / .95 (Home greeting 64 / 1) */
+.shell .lb-title, .shell .rl-title, .shell .mx-title, .shell .t-page, .shell .ph-title { font-weight: 500; letter-spacing: var(--ls-page); line-height: .95; }
+.shell:not(.is-phone) .h-hello { font-size: 64px; font-weight: 500; letter-spacing: -0.035em; line-height: 1; }
+.shell:not(.is-phone) .h-date { font-size: 11px; letter-spacing: .14em; color: oklch(0.85 calc(0.08 * var(--hc, 1)) var(--h)); }

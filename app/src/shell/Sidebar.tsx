@@ -1,13 +1,13 @@
 /**
  * Desktop sidebar (Material redesign, HomeMaterial.dc.html): brand row (Ink-on-coral mark,
- * PELAGIC, library source), Browse nav (38px rows, active = coral container + filled icon,
- * coral count badge), Playlists (44px rows, 28px covers, drop targets, drag to reorder) and the
+ * PELAGIC, library source), Browse nav (46px rows; the active one sits on a raised pill that slides
+ * from row to row, with a short bar in the now-playing hue), count badge, Playlists (44px rows, 28px covers, drop targets, drag to reorder) and the
  * account chip at the bottom (avatar, name, last sync; opens the account menu).
  */
-import { useState, type DragEvent } from 'react'
+import { useLayoutEffect, useRef, useState, type DragEvent } from 'react'
 import { useToast, IconButton } from '../components/ui'
 import { Icon } from '../design/icons'
-import { PortholeMark } from '../components/Logo'
+import { PelagicMark } from '../components/Logo'
 import { AccountChip } from '../pages/AccountMenu'
 import { useLocalFolder } from '../lib/localFolder'
 import { actions, DRAG_MIME, draggedTracks } from '../actions/actions'
@@ -21,23 +21,39 @@ import { plural } from '../state/views'
 import { useMotion } from '../state/motion'
 import { NAV, href, playlistHref, type NavItem, type RouteKey } from './routes'
 
-interface NavEvent {
-  on: RouteKey
-  off: RouteKey | null
-  n: number
-}
-
 export function Sidebar({ active, activePlaylist, badges }: { active: RouteKey; activePlaylist?: string | null; badges?: Partial<Record<RouteKey, string>> }) {
   const local = useLocalFolder()
   const linked = local.status !== 'none' && local.status !== 'unsupported' && local.status !== 'loading'
   const motion = useMotion()
-  const [ev, setEv] = useState<NavEvent>({ on: active, off: null, n: 0 })
-  if (ev.on !== active) setEv({ on: active, off: ev.on, n: ev.n + 1 })
+  // one raised pill behind the active row, sliding to the next one (no per-row reveal)
+  const navRef = useRef<HTMLElement>(null)
+  const indRef = useRef<HTMLSpanElement>(null)
+  const placed = useRef(false)
+  useLayoutEffect(() => {
+    const nav = navRef.current
+    const ind = indRef.current
+    if (!nav || !ind) return
+    const row = nav.querySelector<HTMLElement>('.sb-item.is-on')
+    if (!row) {
+      ind.style.opacity = '0'
+      return
+    }
+    // the first placement (and with motion off) jumps; after that it glides, the bar stretching on the way
+    const glide = placed.current && motion
+    ind.classList.toggle('is-still', !glide)
+    const from = ind.style.transform
+    const to = `translateY(${row.offsetTop}px)`
+    if (glide && from !== to) ind.firstElementChild?.animate([{ transform: 'scaleY(1)' }, { transform: 'scaleY(2.4)', offset: 0.35 }, { transform: 'scaleY(1)' }], { duration: 600, easing: 'cubic-bezier(.22, 1, .36, 1)' })
+    ind.style.transform = to
+    ind.style.height = `${row.offsetHeight}px`
+    ind.style.opacity = '1'
+    placed.current = true
+  }, [active, motion])
 
   return (
     <aside className="sb">
       <a className="sb-brand" href={href('home')} aria-label="PELAGIC home">
-        <PortholeMark size={26} className="sb-mark" />
+        <PelagicMark size={40} tile className="sb-mark" />
         <span className="sb-brand-text">
           <span className="sb-word">PELAGIC</span>
           <span className="sb-src">{linked ? 'Local library' : 'Google Drive'}</span>
@@ -45,17 +61,12 @@ export function Sidebar({ active, activePlaylist, badges }: { active: RouteKey; 
       </a>
 
       <div className="sb-section-label sb-browse">Browse</div>
-      <nav className="sb-nav" aria-label="Main">
+      <nav ref={navRef} className="sb-nav" aria-label="Main">
+        <span ref={indRef} className="sb-ind is-still" aria-hidden>
+          <span className="sb-ind-bar" />
+        </span>
         {NAV.map((item) => (
-          <SidebarItem
-            key={item.key}
-            item={item}
-            on={item.key === active}
-            badge={badges?.[item.key]}
-            motion={motion}
-            ping={motion && ev.n > 0 ? (ev.on === item.key ? 'on' : ev.off === item.key ? 'off' : null) : null}
-            pingKey={ev.n}
-          />
+          <SidebarItem key={item.key} item={item} on={item.key === active} badge={badges?.[item.key]} />
         ))}
       </nav>
 
@@ -198,7 +209,7 @@ function SidebarPlaylist({
         addToPlaylist(toast, p.id, ids)
       }}
     >
-      <PlaylistCover playlist={p} size={28} lazy className={`sb-pl-cover ${p.smart ? 'is-smart' : ''} ${pinned ? 'is-liked' : ''}`} />
+      <PlaylistCover playlist={p} size={40} lazy className={`sb-pl-cover ${p.smart ? 'is-smart' : ''} ${pinned ? 'is-liked' : ''}`} />
       <span className="sb-pl-text">
         <span className="sb-pl-name">{p.name}</span>
         <span className="sb-pl-meta">{p.smart ? `${plural(count, 'song', 'songs')} · smart` : plural(count, 'track', 'tracks')}</span>
@@ -212,30 +223,11 @@ interface SidebarItemProps {
   item: NavItem
   on: boolean
   badge?: string
-  motion: boolean
-  ping: 'on' | 'off' | null
-  pingKey: number
 }
 
-function SidebarItem({ item, on, badge, motion, ping, pingKey }: SidebarItemProps) {
+function SidebarItem({ item, on, badge }: SidebarItemProps) {
   return (
-    <a
-      href={href(item.key)}
-      className={`sb-item ${on ? 'is-on' : ''} ${motion ? '' : 'no-motion'}`}
-      aria-current={on ? 'page' : undefined}
-    >
-      <span className="sb-fill" aria-hidden />
-      {ping === 'on' && (
-        <span className="sb-pings" key={`on${pingKey}`} aria-hidden>
-          <span className="sb-ring sb-ring-on pg-anim" />
-          <span className="sb-ring sb-ring-on2 pg-anim" />
-        </span>
-      )}
-      {ping === 'off' && (
-        <span className="sb-pings" key={`off${pingKey}`} aria-hidden>
-          <span className="sb-ring sb-ring-off pg-anim" />
-        </span>
-      )}
+    <a href={href(item.key)} className={`sb-item ${on ? 'is-on' : ''}`} aria-current={on ? 'page' : undefined}>
       <span className="sb-ic">
         <Icon name={item.icon} filled={on} />
       </span>

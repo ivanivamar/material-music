@@ -24,7 +24,7 @@ import { PlaylistCover } from '../playlists/PlaylistCover'
 import type { Playlist } from '../../state/playlists'
 
 /** Card radius: 10px at 168, scaled to match the original album-card shape. */
-export const radiusFor = (size: number) => Math.max(6, Math.round((10 * size) / 168))
+export const radiusFor = (size: number) => Math.max(6, Math.round((12 * size) / 168))
 const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v))
 
 function Tex({ size, stone, contour, grain }: { size: number; stone?: number; contour?: number; grain?: number }) {
@@ -202,6 +202,29 @@ export function useRadioHue(seed: RadioArtSeed): number {
   const url = useCover(imgId, isArtist ? seed.artist?.image?.v : undefined)
   const stats = useArtStats(imgId, url)
   return stats?.hue ?? nameHue(seed.name)
+}
+
+/**
+ * Radio card cover (HomeV2): a dark disc of light in the station's hue, faint rings every 18px, one bright
+ * ring, the seed (artist photo / album cover / initials) as a glowing circle, RADIO in the hue and a point
+ * of light top right. On hover the bright ring pings outward (CSS, .hcard:hover .hxr-ping).
+ */
+export function RadioCover({ seed, size }: { seed: RadioArtSeed; size: number }) {
+  const isArtist = seed.type === 'artist'
+  const imgId = isArtist ? seed.artist?.image?.id : seed.cover
+  const url = useCover(imgId, isArtist ? seed.artist?.image?.v : undefined)
+  const stats = useArtStats(imgId, url)
+  const H = stats?.hue ?? nameHue(seed.name)
+  return (
+    <div className="hxr" style={{ width: size, height: size, ['--rh' as string]: H } as CSSProperties} aria-hidden>
+      <span className="hxr-rings" />
+      <span className="hxr-ring" />
+      <span className="hxr-ring hxr-ping" />
+      <span className="hxr-seed">{url ? <img src={url} alt="" draggable={false} /> : <span className="hxr-ini">{initials(seed.name)}</span>}</span>
+      <span className="hxr-k">Radio</span>
+      <span className="hxr-dot" />
+    </div>
+  )
 }
 
 export function RadioArt({ seed, size, radius, round }: { seed: RadioArtSeed; size: number; radius?: number; round?: boolean; playing?: boolean }) {

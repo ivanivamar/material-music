@@ -1,9 +1,11 @@
 /**
- * Atmosphere — the layers behind every screen (pointer-events: none).
- *   1. Stone fractal-noise texture, 900px tile, .09
- *   2. Contour rings, .075 — breathe in place on a 26s loop (static with reduced motion)
- *   3. Grain, 220px, .07, mix-blend-mode: screen
- *   4. Light pools (two slow radial drifts) + marine snow particles (Off / 6 / 15 / 32)
+ * Atmosphere — the layers behind every screen (pointer-events: none). Nov 2026 redesign:
+ *   1. Wash: a soft glow in the now-playing album's hue (--h) from the top of the screen
+ *   2. Contour rings — 13 organic rings around a point at the top right, tinted with --h; each slowly
+ *      morphs on a 26s loop (SMIL; static with reduced motion, on the phone and while paused)
+ *   3. Marine snow particles (Off / 6 / 15 / 32)
+ * The stone texture, grain and drifting light pools are gone (they read as fog). `pools` can still
+ * bring the pools back for a single screen.
  *
  * Positioned absolute/inset 0: place inside a `position: relative` container
  * (or use `fixed` for a full-viewport background).
@@ -13,7 +15,6 @@
  * `paused` freezes everything (the shell's layer while the full-screen player covers it).
  */
 import { memo, useMemo } from 'react'
-import { CONTOUR_LIVE, CONTOUR_SMOOTH, CONTOUR_SMOOTH_B, GRAIN, STONE } from '../design/textures'
 import { particleCounts, type ParticleSetting } from '../design/tokens'
 import { useSettings } from '../state/settings'
 import { useMotion } from '../state/motion'
@@ -24,7 +25,7 @@ interface AtmosphereProps {
   particles?: ParticleSetting
   /** override the user's texture setting */
   texture?: boolean
-  /** show the two drifting light pools (default true) */
+  /** show the two drifting light pools (default false since the redesign) */
   pools?: boolean
   /** seed so different screens don't share the exact same flake layout */
   seed?: number
@@ -50,23 +51,55 @@ function makeFlakes(n: number, seed: number): Flake[] {
   const rnd = () => (s = (s * 9301 + 49297) % 233280) / 233280
   const out: Flake[] = []
   for (let i = 0; i < n; i++) {
-    const bokeh = rnd() < 0.25
-    const size = bokeh ? 4 + rnd() * 5 : 1.4 + rnd() * 2.2
+    rnd()
+    const bokeh = false
+    const size = 1 + rnd() * 2
     const duration = 16 + rnd() * 22
     const left = rnd() * 100
     const top = rnd() * 85
     const delay = -rnd() * duration
-    const opacity = bokeh ? 0.08 + rnd() * 0.12 : 0.25 + rnd() * 0.4
+    const opacity = 0.12 + rnd() * 0.35
     out.push({ left, top, size, bokeh, opacity, duration, delay })
   }
   return out
+}
+
+/** One organic ring (65 points) around (cx, cy): a wobble of three sine terms; `ph` shifts the wobble. */
+function ring(cx: number, cy: number, rad: number, seed: number, ph: number) {
+  const pts: string[] = []
+  for (let i = 0; i < 65; i++) {
+    const a = (i / 64) * Math.PI * 2
+    const rr = rad * (1 + 0.075 * Math.sin(3 * a + seed + ph) + 0.045 * Math.sin(5 * a - seed - ph * 1.4) + 0.02 * Math.sin(8 * a + ph * 2))
+    pts.push(`${i ? 'L' : 'M'}${(cx + Math.cos(a) * rr * 1.3).toFixed(1)} ${(cy + Math.sin(a) * rr).toFixed(1)}`)
+  }
+  return pts.join(' ') + 'Z'
+}
+
+/** 13 rings around a point at the top right of a 1200×900 field (cover-scaled), drawn once. */
+const RINGS = Array.from({ length: 13 }, (_, k) => {
+  const rad = 55 + k * 60
+  const sd = k * 1.37
+  return { a: ring(960, 120, rad, sd, 0), b: ring(960, 120, rad * 1.04, sd, 1.3), op: Math.max(0.035, 0.13 - k * 0.007) }
+})
+
+/** Contour lines in the now-playing hue; `live` morphs each ring slowly (26 s). */
+function Contours({ live }: { live: boolean }) {
+  return (
+    <svg className="atm-rings" viewBox="0 0 1200 900" preserveAspectRatio="xMidYMid slice" aria-hidden>
+      {RINGS.map((r, i) => (
+        <path key={i} d={r.a} fill="none" stroke="currentColor" strokeOpacity={r.op} strokeWidth="1" vectorEffect="non-scaling-stroke">
+          {live && <animate attributeName="d" dur="26s" repeatCount="indefinite" values={`${r.a};${r.b};${r.a}`} />}
+        </path>
+      ))}
+    </svg>
+  )
 }
 
 /** Pelagic textures and particles, controlled by the user's Atmosphere settings. */
 export const AtmosphereLegacy = memo(function AtmosphereLegacy({
   particles,
   texture,
-  pools = true,
+  pools = false,
   seed = 17,
   fixed = false,
   paused = false,
@@ -82,20 +115,8 @@ export const AtmosphereLegacy = memo(function AtmosphereLegacy({
 
   return (
     <div className={`atm ${fixed ? 'atm-fixed' : ''} ${lite ? 'atm-lite' : ''} ${paused ? 'atm-paused' : ''} ${className ?? ''}`} aria-hidden>
-      {showTexture && (
-        <>
-          <div className="atm-stone" style={{ backgroundImage: STONE }} />
-          {lite ? (
-            <>
-              <div className={`atm-contour ${motion ? 'atm-contour-a pg-anim' : ''}`} style={{ backgroundImage: CONTOUR_SMOOTH }} />
-              {motion && <div className="atm-contour atm-contour-b pg-anim pg-snow" style={{ backgroundImage: CONTOUR_SMOOTH_B }} />}
-            </>
-          ) : (
-            <div className="atm-contour" style={{ backgroundImage: motion && !paused ? CONTOUR_LIVE : CONTOUR_SMOOTH }} />
-          )}
-          <div className="atm-grain" style={{ backgroundImage: GRAIN }} />
-        </>
-      )}
+      <div className="atm-wash" />
+      {showTexture && <Contours live={motion && !paused && !lite} />}
       {motion && pools && (
         <>
           <div className="atm-pool atm-pool-a pg-anim pg-snow" />

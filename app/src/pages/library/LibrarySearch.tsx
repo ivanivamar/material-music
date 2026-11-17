@@ -6,10 +6,12 @@
  * Esc clears."). Phone: a 48px field in the search bar (back arrow on its left), Recent searches as a list.
  * Keys: Enter opens the top result · Esc clears (then blurs) · ↓ moves into the results.
  */
-import { forwardRef, type KeyboardEvent, type ReactNode } from 'react'
+import { forwardRef, type CSSProperties, type KeyboardEvent, type ReactNode } from 'react'
 import { IconButton, Button } from '../../components/ui'
 import { Icon } from '../../design/icons'
 import { searchStore } from '../../state/search'
+import { djStore } from '../../state/dj'
+import { href } from '../../shell/routes'
 
 /** Clicks on these keep the field focused (the Recent panel would otherwise hide before the click lands). */
 const keepFocus = (e: React.MouseEvent) => e.preventDefault()
@@ -75,8 +77,61 @@ export const LibrarySearchField = forwardRef<HTMLInputElement, FieldProps>(funct
   )
 })
 
-/** Recent searches: a panel under the desktop field, a list on the phone. */
+/** Desktop dropdown (redesign, SearchBar): RECENT as chips, then JUMP TO rows (Liked songs, New releases, Start DJ). */
+const JUMPS: { label: string; icon: Parameters<typeof Icon>[0]['name']; hue: number; go: () => void }[] = [
+  { label: 'Liked songs', icon: 'heart', hue: 290, go: () => (location.hash = '#/playlist/liked') },
+  { label: 'New releases', icon: 'newr', hue: 200, go: () => (location.hash = href('new')) },
+  { label: 'Start DJ', icon: 'dj', hue: 290, go: () => void djStore.start() },
+]
+
+function SearchDropdown({ recent, onPick }: { recent: string[]; onPick: (q: string) => void }) {
+  return (
+    <div className="lb-recent sdd" role="group" aria-label="Search suggestions" onMouseDown={keepFocus}>
+      <div className="sdd-k">
+        Recent
+        {recent.length > 0 && (
+          <button type="button" className="sdd-clear" onClick={() => searchStore.clearRecent()}>
+            Clear
+          </button>
+        )}
+      </div>
+      {recent.length ? (
+        <div className="sdd-chips">
+          {recent.map((q, i) => (
+            <span key={q} className="sdd-chip" style={{ animationDelay: `${i * 35}ms` } as CSSProperties}>
+              <button type="button" className="sdd-chip-pick" onClick={() => onPick(q)}>
+                <Icon name="history" />
+                {q}
+              </button>
+              <button type="button" className="sdd-chip-x" aria-label={`Remove ${q}`} onClick={() => searchStore.forget(q)}>
+                <Icon name="x" />
+              </button>
+            </span>
+          ))}
+        </div>
+      ) : (
+        <div className="sdd-none">Your searches will show up here.</div>
+      )}
+      <div className="sdd-k sdd-k2">Jump to</div>
+      {JUMPS.map((j, i) => (
+        <button key={j.label} type="button" className="sdd-row" style={{ '--jh': j.hue, animationDelay: `${(recent.length + i) * 35}ms` } as CSSProperties} onClick={() => {
+            j.go()
+            ;(document.activeElement as HTMLElement | null)?.blur()
+          }}>
+          <span className="sdd-ic">
+            <Icon name={j.icon} />
+          </span>
+          <span className="sdd-t">{j.label}</span>
+          <Icon name="arrowR" className="sdd-go" />
+        </button>
+      ))}
+    </div>
+  )
+}
+
+/** Recent searches: the dropdown under the desktop field, a list on the phone. */
 export function RecentSearches({ recent, onPick, phone }: { recent: string[]; onPick: (q: string) => void; phone?: boolean }) {
+  if (!phone) return <SearchDropdown recent={recent} onPick={onPick} />
   return (
     <div className={phone ? 'lb-recent is-phone' : 'lb-recent'} role="group" aria-label="Recent searches" onMouseDown={phone ? undefined : keepFocus}>
       <div className="lb-recent-head">

@@ -51,15 +51,18 @@ const openRelease = (it: FeedItem) => go(ownedAlbumHref(it) ?? `${href('new')}?r
 export function ReleaseCard({ item, size }: { item: FeedItem; size: number }) {
   const online = useOnline()
   const owned = isOwned(item.status)
-  const tag = item.status === 'lib' ? 'IN LIBRARY' : item.status === 'pre' || item.status === 'part' ? `${ownedCount(item, true)} IN LIBRARY` : item.status === 'acq' ? 'MATCHING' : null
+  const tag = item.status === 'lib' ? 'IN LIBRARY' : item.status === 'pre' || item.status === 'part' ? `${ownedCount(item, true)} IN LIBRARY` : item.status === 'acq' ? 'MATCHING' : item.status === 'new' ? 'NEW' : null
   return (
     <div className={`hcard rs-card ${item.status === 'seen' ? 'is-seen' : ''}`} style={{ width: size }} role="link" tabIndex={0} onClick={() => openRelease(item)} onKeyDown={(e) => e.key === 'Enter' && openRelease(item)}>
       <div className="hcard-art rs-art" style={{ width: size, height: size }}>
         <span className="hcard-cover">
           <ReleaseCover item={item} size="sm" />
         </span>
+        <span className="hcard-glow" aria-hidden>
+          <ReleaseCover item={item} size="sm" />
+        </span>
         {item.status === 'new' && <span className="ax-dot rs-dot" aria-label="New" role="img" />}
-        {tag && <span className={`rs-tag ${item.status === 'lib' ? 'is-on' : ''}`}>{tag}</span>}
+        {tag && <span className={`rs-tag ${item.status === 'lib' ? 'is-on' : ''} ${item.status === 'new' ? 'is-new' : ''}`}>{tag}</span>}
         <span className="rs-btn" onClick={(e) => e.stopPropagation()}>
           {owned ? (
             <button type="button" className="hx-cplay rs-play" aria-label={`Play ${item.rel.t}`} onClick={() => playRelease(item)}>

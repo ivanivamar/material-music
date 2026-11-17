@@ -3,7 +3,7 @@
   grid-area: side;
   position: relative; z-index: 2;
   width: var(--sidebar-w); min-height: 0;
-  padding: 30px 14px;
+  padding: 24px 18px 16px;
   display: flex; flex-direction: column; gap: 10px;
   background: var(--bg-1);
   /* the sidebar itself doesn't scroll: only the playlist list does (.sb-pl-list) */
@@ -14,9 +14,9 @@
 /* ── Brand ────────────────────────────────────────── */
 .sb-brand { display: flex; align-items: center; gap: 12px; padding: 0 14px; color: var(--ink-primary); text-decoration: none; border-radius: 0; }
 .sb-brand:hover { color: var(--ink-primary); }
-.sb-mark { flex: none; display: block; }
+.sb-mark { flex: none; display: flex; align-items: center; justify-content: center; }
 .sb-brand-text { display: flex; flex-direction: column; min-width: 0; }
-.sb-word { font-size: 14px; font-weight: 500; letter-spacing: var(--ls-wordmark); text-transform: uppercase; white-space: nowrap; }
+.sb-word { font-size: 13px; font-weight: 500; letter-spacing: var(--ls-wordmark); text-transform: uppercase; white-space: nowrap; }
 .sb-src { font-size: 12px; color: var(--ink-secondary); }
 
 .sb-section-label { font-family: var(--font-mono); font-size: var(--fs-mono-sm); letter-spacing: .16em; color: var(--ink-tertiary); }
@@ -27,55 +27,49 @@
 .sb-item {
   position: relative;
   display: flex; align-items: center; gap: 12px;
-  height: 44px; padding: 4px 12px 4px 4px; border-radius: 12px;
-  color: var(--ink-secondary); font-size: 14px; font-weight: 500;
+  height: 46px; padding: 4px 12px 4px 4px; border-radius: 13px;
+  color: var(--ink-secondary); font-size: 15px; font-weight: 500;
   text-decoration: none; cursor: pointer;
   transition: color .5s ease, background-color .2s ease;
 }
-.sb-item:hover { color: var(--ink-primary); background: rgba(255, 255, 255, .04); }
+.sb-item:hover { color: var(--ink-primary); background: rgba(255, 255, 255, .05); }
 .sb-item:focus-visible { outline: 1.5px solid rgba(255, 255, 255, .7); outline-offset: 2px; }
-.sb-item.is-on, .sb-item.is-on:hover { color: var(--bg-1); font-weight: 500; transition: color .6s ease .3s, background-color .2s ease; }
-.sb-fill {
-  position: absolute; inset: 0; border-radius: 12px;
-  background: var(--ink-primary);
-  clip-path: circle(0 at 22px 50%);
-  opacity: 0;
-  pointer-events: none;
-  transition: clip-path 1s var(--ease-nav-out), opacity .8s ease .2s;
+/* active: one raised pill behind the row (Sidebar.tsx moves it), a neutral surface with volume —
+   a top light, a dark lower edge and a soft shadow — and a short bar in the now-playing hue. It
+   glides between rows with a little overshoot; the bar stretches as it travels. */
+.sb-nav { position: relative; }
+.sb-item.is-on, .sb-item.is-on:hover { color: #fff; background: none; }
+.sb-ind {
+  position: absolute; left: 0; right: 0; top: 0; height: 46px; border-radius: 13px; pointer-events: none; opacity: 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .085), rgba(255, 255, 255, .035));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .11), inset 0 -1px 0 rgba(0, 0, 0, .45), 0 0 0 1px rgba(255, 255, 255, .035), 0 12px 24px -14px rgba(0, 0, 0, .95);
+  transition: transform .55s cubic-bezier(.34, 1.25, .64, 1), height .3s ease, opacity .3s ease;
 }
-.sb-item.is-on .sb-fill {
-  clip-path: circle(160% at 22px 50%);
-  opacity: 1;
-  transition: clip-path 1.5s var(--ease-nav-in), opacity .4s ease;
+.sb-ind.is-still { transition: none; }
+.sb-ind-bar {
+  position: absolute; left: 0; top: 50%; width: 3px; height: 18px; margin-top: -9px; border-radius: 0 3px 3px 0;
+  background: oklch(0.88 calc(0.12 * var(--hc, 1)) var(--h));
+  box-shadow: 0 0 12px 1px oklch(0.8 calc(0.14 * var(--hc, 1)) var(--h) / .7);
+  transition: background 1s, box-shadow 1s;
 }
 .sb-ic {
   position: relative; width: 36px; height: 36px; flex: none;
   border-radius: 9px;
   display: flex; align-items: center; justify-content: center;
-  font-size: 20px; color: var(--ink-secondary); background: transparent;
+  font-size: 22px; color: var(--ink-secondary); background: transparent;
   transition: color .5s ease, background-color .5s ease;
 }
 .sb-item:hover .sb-ic { color: var(--ink-primary); }
-.sb-item.is-on .sb-ic { background: var(--bg-1); color: #fff; transition: background-color .6s ease .3s, color .6s ease .3s; }
+.sb-item.is-on .sb-ic { color: #fff; }
 .sb-label { position: relative; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sb-badge {
   position: relative;
   min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px;
-  background: transparent; color: var(--ink-secondary);
-  font-family: var(--font-mono); font-size: var(--fs-mono-sm); font-weight: 400; font-variant-numeric: tabular-nums;
+  background: var(--ink-primary); color: var(--bg-1);
+  font-size: 11.5px; font-weight: 700; font-variant-numeric: tabular-nums;
   display: inline-flex; align-items: center; justify-content: center;
 }
-.sb-item.is-on .sb-badge { color: var(--ink-tertiary); }
-.sb-pings { position: absolute; inset: 0; pointer-events: none; }
-.sb-ring {
-  position: absolute; left: 4px; top: 4px; width: 36px; height: 36px;
-  border-radius: 50%; border: 1px solid; opacity: 0;
-  animation: pg-navping .8s var(--ease-sonar) forwards;
-}
-.sb-ring-on { border-color: rgba(255, 255, 255, .8); }
-.sb-ring-on2 { border-color: rgba(255, 255, 255, .5); animation-delay: .18s; }
-.sb-ring-off { border-color: rgba(255, 255, 255, .5); animation-name: pg-navecho; }
-.sb-item.no-motion, .sb-item.no-motion .sb-fill, .sb-item.no-motion .sb-ic, .sb-item.no-motion .sb-badge { transition: none; }
+.sb-item.is-on .sb-badge { color: var(--bg-1); }
 
 /* ── Playlists ─────────────────────────────────────── */
 .sb-playlists { display: flex; flex-direction: column; min-height: 0; flex: 1 1 auto !important; }
@@ -90,19 +84,21 @@
   margin: -4px; padding: 4px;
   overflow-y: auto; overscroll-behavior: contain;
   scrollbar-width: none;
+  -webkit-mask-image: linear-gradient(180deg, #000 88%, transparent); mask-image: linear-gradient(180deg, #000 88%, transparent);
 }
 .sb-pl-list::-webkit-scrollbar { display: none; }
 
 .sb-pl {
   position: relative;
   display: flex; align-items: center; gap: 12px; flex: none;
-  height: 44px; padding: 0 10px; border-radius: 12px;
+  height: 52px; padding: 0 10px; border-radius: 12px;
   color: var(--ink-primary); text-decoration: none;
   transition: background-color 200ms var(--ease-std), box-shadow 200ms var(--ease-std);
 }
-.sb-pl:hover { color: var(--ink-primary); background: var(--surface-1); }
-.sb-pl.is-active, .sb-pl.is-active:hover { background: var(--ink-primary); color: var(--bg-1); }
-.sb-pl.is-active .sb-pl-name { color: var(--bg-1); }
+.sb-pl:hover { color: var(--ink-primary); background: rgba(255, 255, 255, .05); }
+.sb-pl-cover { transition: transform .35s cubic-bezier(.22, 1, .36, 1); }
+.sb-pl:hover .sb-pl-cover { transform: scale(1.06); }
+.sb-pl.is-active, .sb-pl.is-active:hover { background: linear-gradient(180deg, rgba(255, 255, 255, .14), rgba(255, 255, 255, .06)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .13); color: #fff; }
 /* songs dragged over it */
 .sb-pl.is-drop { background: var(--surface-2); box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, .55), 0 0 22px -6px rgba(255, 255, 255, .4); }
 /* reordering: the dragged row dims, a coral line shows where it lands */
@@ -114,16 +110,16 @@
 .sb-pl.is-mark-before::before { top: -1px; }
 .sb-pl.is-mark-after::after { bottom: -1px; }
 html[data-dragging-tracks] .sb-pl:not(.is-drop):not(.is-active) { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .08); }
-.sb-pl-cover { width: 30px; height: 30px; border-radius: 6px !important; overflow: hidden; flex: none; }
+.sb-pl-cover { width: 40px !important; height: 40px !important; border-radius: 9px !important; overflow: hidden; flex: none; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12); }
 .sb-pl-cover.is-smart { border-radius: 999px !important; }
 .sb-pl-none { padding: 4px 10px; font-size: 13px; color: var(--ink-tertiary); }
 .sb-pl-text { display: flex; flex-direction: column; min-width: 0; flex: 1; }
 .sb-pl-name { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.sb-pl-meta { font-size: 11px; color: var(--ink-tertiary); }
+.sb-pl-meta { font-size: 12px; color: var(--ink-secondary); }
 .sb-pl-dot { width: 6px; height: 6px; border-radius: 50%; flex: none; background: var(--album); }
 
 /* ── Account chip (bottom) ─────────────────────────── */
-.sb-acct { position: relative; margin-top: 8px; }
+.sb-acct { position: relative; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--hairline); }
 .sb-acct-btn {
   width: 100%; display: flex; align-items: center; gap: 12px; padding: 10px 8px; border: 0; border-radius: 16px;
   background: none; color: var(--ink-primary); font: inherit; text-align: left; cursor: pointer;
@@ -135,3 +131,6 @@ html[data-dragging-tracks] .sb-pl:not(.is-drop):not(.is-active) { box-shadow: in
 .sb-acct-sub { font-size: 12px; color: var(--ink-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sb-acct-btn > .ms { font-size: 16px; color: var(--ink-tertiary); }
 /* portalled to <body> (the sidebar clips overflow); left/bottom set inline from the chip's position */
+
+/* Design check (Nov 17): BROWSE / PLAYLISTS labels in caps, .14em */
+.sb-section-label { text-transform: uppercase; letter-spacing: .14em; }

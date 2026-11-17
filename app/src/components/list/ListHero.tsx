@@ -12,9 +12,10 @@ import { useRef, type CSSProperties, type ReactNode } from 'react'
 import { CompactBar, useCollapsingHeader } from './CompactBar'
 
 /** Title size steps down for long titles so they stay on ≤ 2 lines. */
-function titleSize(t: string, phone: boolean): number {
+function titleSize(t: string, phone: boolean, max = 72): number {
   if (phone) return t.length <= 16 ? 30 : t.length <= 30 ? 26 : 22
-  return t.length <= 16 ? 72 : t.length <= 28 ? 56 : t.length <= 44 ? 44 : 36
+  const k = max / 72
+  return Math.round((t.length <= 16 ? 72 : t.length <= 28 ? 56 : t.length <= 44 ? 44 : 36) * k)
 }
 
 export function ListHero({
@@ -30,6 +31,8 @@ export function ListHero({
   aside,
   phone,
   layout = 'side',
+  titleMax,
+  className,
 }: {
   art: ReactNode
   kicker?: ReactNode
@@ -44,6 +47,9 @@ export function ListHero({
   aside?: ReactNode
   phone: boolean
   layout?: 'stack' | 'side'
+  /** desktop title size for short titles (design: album 104, playlist 92); longer titles step down in proportion */
+  titleMax?: number
+  className?: string
 }) {
   const heroRef = useRef<HTMLElement>(null)
   const barRef = useRef<HTMLDivElement>(null)
@@ -51,11 +57,11 @@ export function ListHero({
   return (
     <>
       <CompactBar barRef={barRef} art={art} title={titleText} />
-      <header ref={heroRef} className={`lh ${phone ? `is-phone is-${layout}` : ''}`}>
+      <header ref={heroRef} className={`lh ${phone ? `is-phone is-${layout}` : ''} ${className ?? ''}`}>
         <div className="lh-art">{art}</div>
         <div className="lh-text">
           {kicker != null && <div className="lh-kicker">{kicker}</div>}
-          <h1 className="lh-title" style={{ '--ts': `${titleSize(titleText, phone)}px` } as CSSProperties} title={titleText} onDoubleClick={onTitleDoubleClick}>
+          <h1 className="lh-title" style={{ '--ts': `${titleSize(titleText, phone, titleMax)}px` } as CSSProperties} title={titleText} onDoubleClick={onTitleDoubleClick}>
             {title}
           </h1>
           {line != null && <div className="lh-line">{line}</div>}

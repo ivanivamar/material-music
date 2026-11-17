@@ -9,10 +9,10 @@ import { onAccountReset } from './session'
 import { usePlayer } from './player'
 
 export interface DjUi {
-  /** the full-screen player shows the DJ start view */
+  /** the full-screen player shows the DJ screen (start / intro / on air) */
   start: boolean
-  /** DJ panel: popover position (desktop) or the phone sheet */
-  panel: { kind: 'popover'; left: number; bottom: number } | { kind: 'sheet' } | null
+  /** DJ panel: popover position (desktop), the phone sheet, or the DJ screen's side panel */
+  panel: { kind: 'popover'; left: number; bottom: number } | { kind: 'sheet' } | { kind: 'side'; phone: boolean } | null
 }
 
 let state: DjUi = { start: false, panel: null }
@@ -28,7 +28,7 @@ export const djUi = {
     listeners.add(l)
     return () => listeners.delete(l)
   },
-  /** DJ off → the DJ button opens the full-screen player in its start view. */
+  /** The DJ button opens the full-screen player on the DJ screen (start view when the DJ is off). */
   openStart() {
     nowPlayingStore.closeQueue()
     nowPlayingStore.open('np')
@@ -46,20 +46,30 @@ export const djUi = {
     const left = Math.max(16, Math.min(r.left, window.innerWidth - W - 16))
     set({ panel: { kind: 'popover', left, bottom: window.innerHeight - r.top + 12 } })
   },
+  /** the DJ screen's settings button: the panel slides in from the right (phone: a card over the screen) */
+  openSide(phone: boolean) {
+    set({ panel: { kind: 'side', phone } })
+  },
   closePanel() {
     if (state.panel) set({ panel: null })
   },
 }
 
-// the player closing takes the start view with it; the DJ starting leaves it
+// the player closing takes the DJ screen (and its side panel) with it. While the DJ plays, the player's
+// Now playing view IS the DJ screen: opening the player, or leaving the lyrics, lands there.
+let was = { open: nowPlayingStore.get().open, view: nowPlayingStore.get().view }
 nowPlayingStore.subscribe(() => {
-  if (!nowPlayingStore.get().open && state.start) set({ start: false })
+  const np = nowPlayingStore.get()
+  const changed = np.open !== was.open || np.view !== was.view
+  was = { open: np.open, view: np.view }
+  if (!np.open && state.start) set({ start: false, panel: state.panel?.kind === 'side' ? null : state.panel })
+  else if (changed && np.open && np.view === 'np' && !state.start && djStore.get().run) set({ start: true })
 })
 djStore.subscribe(() => {
   // the queue panel isn't available while the DJ plays
   if (djStore.get().run && nowPlayingStore.get().queue) nowPlayingStore.closeQueue()
-  if (djStore.get().run && state.start) set({ start: false })
-  if (!djStore.get().run && state.panel) set({ panel: null })
+  // the DJ screen stays open when the DJ starts (start → intro → on air); the popover / sheet go when it stops
+  if (!djStore.get().run && state.panel && state.panel.kind !== 'side') set({ panel: null })
 })
 onAccountReset(() => set({ start: false, panel: null }))
 

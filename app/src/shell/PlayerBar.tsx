@@ -10,7 +10,7 @@ import { playerStore, usePlayer } from '../state/player'
 import { LikeButton } from '../components/LikeButton'
 import { DevicesButton } from '../sync/DevicesButton'
 import { trackOf, albumOf } from '../state/previews'
-import { TimeSeek, Volume, useFixedOrder, usePlayPause } from '../nowplaying/parts'
+import { TideSeek, Volume, useFixedOrder, usePlayPause } from '../nowplaying/parts'
 import { Icon } from '../design/icons'
 import { Marquee } from '../components/Marquee'
 import { isNative } from '../native/bridge'
@@ -96,6 +96,7 @@ export function PlayerBar() {
         ) : (
           track && <>
             <button type="button" className="pb-expand" onClick={() => nowPlayingStore.open('np')} aria-label="Open Now Playing" title="Now Playing">
+              {cover && <img className="pb-cover-glow" src={cover} alt="" aria-hidden />}
               {cover ? <img className="pb-cover" src={cover} alt="" /> : <span className="pb-cover pb-cover-empty" aria-hidden />}
               <span className="pb-expand-ic" aria-hidden>
                 <Icon name="chevU" />
@@ -108,9 +109,17 @@ export function PlayerBar() {
                 </a>
                 {djChip}
               </div>
-              <ArtistLink track={track} className="pb-sub pb-link" placement="top-start">
-                <Marquee text={track.artist} />
-              </ArtistLink>
+              {/* design: "Artist · Album" */}
+              <div className="pb-subrow">
+                <ArtistLink track={track} className="pb-sub pb-link" placement="top-start">
+                  <Marquee text={track.artist} />
+                </ArtistLink>
+                {album && (
+                  <a className="pb-sub pb-link pb-sub-al" href={albumHref(track.albumId)}>
+                    · {album.title}
+                  </a>
+                )}
+              </div>
             </div>
             <LikeButton trackId={track.id} size="sm" className="pb-like" />
           </>
@@ -128,9 +137,9 @@ export function PlayerBar() {
             className={`pb-mode ${!fixed && p.shuffle ? 'is-on' : ''} ${fixed ? 'is-dj-off' : ''}`}
             onClick={() => !fixed && playerStore.toggleShuffle()}
           />
-          <IconButton icon="prev" label="Previous" bare filled size="sm" className="pb-skip" disabled={empty} onClick={() => playerStore.prev()} />
-          <PlayButton size={38} state={p.buffering ? 'buffering' : p.playing ? 'playing' : 'paused'} onClick={empty ? undefined : onPlay} />
-          <IconButton icon="next" label="Next" bare filled size="sm" className="pb-skip" disabled={empty} onClick={() => playerStore.next()} />
+          <IconButton icon="prev" label="Previous" bare filled size="sm" className="pb-skip pb-prev" disabled={empty} onClick={() => playerStore.prev()} />
+          <PlayButton size={48} state={p.buffering ? 'buffering' : p.playing ? 'playing' : 'paused'} onClick={empty ? undefined : onPlay} />
+          <IconButton icon="next" label="Next" bare filled size="sm" className="pb-skip pb-next" disabled={empty} onClick={() => playerStore.next()} />
           <span className="pb-repeat-wrap">
             <IconButton
               icon="repeat"
@@ -144,7 +153,7 @@ export function PlayerBar() {
             {!fixed && p.repeat === 'one' && <span className="pb-repeat-one" aria-hidden>1</span>}
           </span>
         </div>
-        <TimeSeek compact idle={empty} duration={duration} />
+        <TideSeek idle={empty} duration={duration} playing={p.playing} />
       </div>
 
       <div className="pb-right">

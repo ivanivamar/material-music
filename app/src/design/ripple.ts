@@ -31,6 +31,36 @@ function shapeSource(el: HTMLElement, r: DOMRect): HTMLElement {
   return el
 }
 
+/**
+ * Cards (cover + text under it): the ripple belongs to the cover, not the whole card. A card is a box
+ * with a shaped child (rounded / clipped) at least 80% as wide as the box but shorter than it, or an
+ * element marked `data-ripple-art`.
+ */
+function coverOf(el: HTMLElement, r: DOMRect): HTMLElement | null {
+  const marked = el.querySelector<HTMLElement>('[data-ripple-art]')
+  if (marked) return marked
+  let q = Array.from(el.children) as HTMLElement[]
+  for (let depth = 0; q.length && depth < 3; depth++) {
+    const next: HTMLElement[] = []
+    for (const c of q) {
+      const cr = c.getBoundingClientRect()
+      if (cr.width >= r.width * 0.8 && cr.height < r.height - 8 && cr.height > 40 && shaped(getComputedStyle(c))) {
+        // replaced elements can't hold the ripple: use their wrapper when it has the same box
+        if (!/^(IMG|VIDEO|CANVAS|SVG)$/i.test(c.tagName)) return c
+        const p = c.parentElement
+        if (p && p !== el) {
+          const pr = p.getBoundingClientRect()
+          if (Math.abs(pr.width - cr.width) < 3 && Math.abs(pr.height - cr.height) < 3) return p
+        }
+        continue
+      }
+      next.push(...(Array.from(c.children) as HTMLElement[]))
+    }
+    q = next
+  }
+  return null
+}
+
 function reduced() {
   const m = document.documentElement.dataset.motion
   if (m === 'reduced') return true
@@ -55,8 +85,19 @@ export function installRipple() {
         el = el.parentElement
       }
       if (!el || el === document.body) return
+      const box = el.getBoundingClientRect()
+      if (box.width * box.height > 150000 || box.width < 8) return
+      // a card: the ripple (and the press) go to its cover, clipped to the cover's shape
+      const cover = coverOf(el, box)
+      if (cover) {
+        el = cover
+        el.classList.remove('mm-press')
+        void el.offsetWidth
+        el.classList.add('mm-press')
+        const done = el
+        setTimeout(() => done.classList.remove('mm-press'), 460)
+      }
       const r = el.getBoundingClientRect()
-      if (r.width * r.height > 150000 || r.width < 8) return
       if (getComputedStyle(el).position === 'static') el.style.position = 'relative'
       const src = shapeSource(el, r)
       const sc = getComputedStyle(src)

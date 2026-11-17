@@ -15,6 +15,11 @@
 
 .like-ic { position: relative; display: inline-flex; align-items: center; justify-content: center; }
 .like .ms { font-size: 20px; transition: font-variation-settings .25s var(--ease); }
+/* small hearts sit among icon buttons (rows, the queue): same shape, hover and glyph size as
+   IconButton sm (ui.css .ibtn-sm); the md / lg hearts stay round */
+.like-xs, .like-sm { border-radius: 10px; }
+.like-xs:hover:not(:disabled), .like-sm:hover:not(:disabled) { background: rgba(255, 255, 255, .06); }
+.like-sm .ms { font-size: 18px; }
 .like-xs { width: 28px; height: 28px; }
 .like-xs .ms { font-size: 18px; }
 .like-md { width: 40px; height: 40px; }

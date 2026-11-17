@@ -22,7 +22,7 @@ import { useHistory } from '../../state/history'
 import type { Artist, Catalogue } from '../../state/library'
 import { releasesStore, useReleases } from '../../state/releases'
 import { buildFeed, isOwned, type FeedItem } from '../../state/releaseViews'
-import { SectionHead } from './common'
+import { BigHead, SectionHead } from './common'
 import { ReleaseCover, canPreview as canPreviewItem, openExternal, playRelease, useReleaseActions } from '../releases/parts'
 import { agoLabel, dayLabel, firstClip, relFacts, typeWord } from '../releases/relText'
 import { ReleaseDetail, ReleasePanel } from '../releases/ReleasePanel'
@@ -38,8 +38,10 @@ const shortMonth = (date: string) => {
 }
 const DZ_TYPE: Record<string, string> = { album: 'Album', ep: 'EP', single: 'Single', compile: 'Compilation' }
 
-function Head({ phone, label, right }: { phone: boolean; label: string; right?: string }) {
-  return phone ? <ListSection phone label={label} right={right} /> : <SectionHead label={label.toUpperCase()} right={right?.toUpperCase()} />
+function Head({ phone, label, right, big }: { phone: boolean; label: string; right?: string; big?: boolean }) {
+  if (phone) return <ListSection phone label={label} right={right} />
+  // desktop (ArtistV2): the left column's sections get a 22px title, the side column a mono label
+  return big ? <BigHead label={label} right={right?.toUpperCase()} /> : <SectionHead label={label.toUpperCase()} right={right?.toUpperCase()} />
 }
 
 /* ── Latest release ──────────────────────────────────── */
@@ -148,7 +150,7 @@ export function ArtistGaps({ c, artist, phone }: { c: Catalogue; artist: Artist;
   const shown = all ? list : list.slice(0, GAPS_SHOWN)
   return (
     <section ref={ref} className="lp-sec ax-gaps">
-      <Head phone={phone} label="Not in your library" right={`${list.length} ${list.length === 1 ? 'song' : 'songs'} · 30 s previews`} />
+      <Head big phone={phone} label="Not in your library" right={`${list.length} ${list.length === 1 ? 'song' : 'songs'} · 30 s previews`} />
       <div className="ax-rows">
         {shown.map((t) => (
           <SongPreviewRow key={t.id} t={t} phone={phone} sub={t.al.t} />
@@ -216,7 +218,7 @@ export function FansAlsoLike({ c, artist, phone, onOpen }: { c: Catalogue; artis
   if (!online || !cands || !cands.length) return <div ref={ref} className="ax-probe" aria-hidden />
   return (
     <section ref={ref} className="lp-sec ax-fans">
-      <Head phone={phone} label="Fans also like" right={phone ? 'Not in library' : 'Not in your library · from Deezer'} />
+      <Head big phone={phone} label="Fans also like" right={phone ? 'Not in library' : 'Not in your library · from Deezer'} />
       <div className="ax-fans-row">
         {cands.map((x) => (
           <RelCard key={x.id} cand={x} why={whyLine(c, x, artist)} phone={phone} onOpen={() => onOpen(x)} />

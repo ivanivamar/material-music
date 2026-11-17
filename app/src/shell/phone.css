@@ -141,7 +141,7 @@ html[data-phone]:not([data-np]) .toasts.toasts-shell { left: 0; right: 0; bottom
 /* ── Home shelves: two columns ── */
 .shell.is-phone .shelves { gap: 30px; }
 .shell.is-phone .shelf-head { flex-wrap: wrap; row-gap: 6px; gap: 12px; }
-.shell.is-phone .shelf-label { font-size: var(--fs-mono-sm); }
+.shell.is-phone .shelf-label { font-size: 19px; }
 .shell.is-phone .shelf-sub { flex-basis: 100%; order: 3; font-size: var(--fs-mono-xs); }
 .shell.is-phone .shelf-row { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px 14px; }
 /* one row that scrolls sideways, bleeding off the right edge (handoff 05: 140px cards, 14px gap) */
@@ -373,3 +373,31 @@ html[data-phone] .toast-meta { display: none; }
   font-family: var(--font-mono); font-size: 9px; letter-spacing: .12em; color: var(--ink-primary);
   max-width: 120px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
+
+/* ── Design check (Nov 17, PhoneChrome): mini player lit in the song's hue, round 44px buttons,
+   46px white play, 2px glowing progress; tabs on #070708 with a top highlight, items from the top */
+.mini {
+  border: 0; border-radius: 18px; gap: 6px;
+  background: linear-gradient(180deg, oklch(0.28 calc(0.06 * var(--hc, 1)) var(--h)), oklch(0.2 calc(0.04 * var(--hc, 1)) var(--h)));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .1), 0 14px 30px -12px rgba(0, 0, 0, .9), 0 0 40px -16px oklch(0.6 calc(0.15 * var(--hc, 1)) var(--h));
+}
+.mini-cover-wrap { margin-right: 6px; }
+.mini-cover { border-radius: 10px; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12); }
+.mini-text { gap: 3px; }
+.mini-sub { font-size: 13px; color: #c9c9cf; }
+.mini-btn, .mini-like.like { width: 44px; height: 44px; border-radius: 50%; color: #c9c9cf; }
+.mini-play { width: 46px; height: 46px; background: #fff; color: #0b0b0c; transition: transform .35s cubic-bezier(.34, 1.56, .64, 1), box-shadow .5s var(--ease); }
+.mini-play.is-playing { box-shadow: 0 0 22px -6px oklch(0.85 calc(0.13 * var(--hc, 1)) var(--h)); }
+.mini-play:active { transform: scale(.9); }
+.mini-progress { height: 2px; background: transparent; }
+.mini-progress > span { height: 2px; background: oklch(0.88 calc(0.12 * var(--hc, 1)) var(--h)); box-shadow: 0 0 10px oklch(0.85 calc(0.14 * var(--hc, 1)) var(--h)); }
+.mini-remote { padding: 2px 6px; border-radius: 5px; border-color: rgba(255, 255, 255, .25); }
+
+.tabs { align-items: start; padding-top: 12px; box-sizing: border-box; background: #070708; border-top: 0; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06); }
+.tab { justify-content: flex-start; gap: 6px; color: var(--ink-tertiary); transition: color .4s; }
+.tab-label { font-size: 9.5px; }
+.tab.is-on .tab-ic {
+  background: linear-gradient(180deg, rgba(255, 255, 255, .17), rgba(255, 255, 255, .07));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .14), 0 0 20px -6px rgba(255, 255, 255, .4);
+}
+.tab.is-on .tab-label { text-shadow: none; }

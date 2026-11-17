@@ -33,6 +33,7 @@ import { useHistory } from '../../state/history'
 import { useLikedIndex } from '../../state/likes'
 import { LIKED_NAME, playlistsStore } from '../../state/playlists'
 import { fmtAgo } from '../../state/playlistViews'
+import { ArtistDisc } from '../home/art'
 
 function released(date?: string, year?: number): string | null {
   if (date && /^\d{4}-\d{2}-\d{2}/.test(date)) {
@@ -104,7 +105,6 @@ export function AlbumPage({ id }: { id: string }) {
   const quality = info.tracks.length > 0 ? qualityLabel('flac', { bitDepth: info.bitDepth, sampleRate: info.sampleRate }) : null
   const songs: ListSong[] = info.tracks.map((t) => ({ id: t.id, len: t.duration || 0 }))
   const totalPlays = info.tracks.reduce((s, t) => s + (counts.get(t.id) ?? 0), 0)
-  const playedHours = Math.round(info.tracks.reduce((s, t) => s + (counts.get(t.id) ?? 0) * (t.duration ?? 0), 0) / 3600)
   const allLiked = ids.length > 0 && ids.every((id) => liked.ids.has(id))
   const likeAlbum = (on: boolean) => {
     let n = 0
@@ -119,17 +119,56 @@ export function AlbumPage({ id }: { id: string }) {
   const lastText = lastHeard ? fmtAgo(new Date(lastHeard.at * 1000).toISOString()) : null
 
   const art = cover ? (
-    <img src={cover} alt="" style={tint ? { boxShadow: `0 0 0 1px rgba(255,255,255,0.08), 0 30px 60px -24px ${rgba(tint.glow, 0.9)}` } : undefined} />
+    <img src={cover} alt="" style={tint && phone ? { boxShadow: `0 0 0 1px rgba(255,255,255,0.08), 0 30px 60px -24px ${rgba(tint.glow, 0.9)}` } : undefined} />
   ) : (
     <div className="hero-cover-empty" />
   )
-  const kicker = [kind, album.year, quality, phone ? null : genres.slice(0, 2).join(' / ') || null].filter(Boolean).join(' · ')
+  // desktop (design): the cover glows from under itself (a blurred copy)
+  const heroArt =
+    !phone && cover ? (
+      <span className="al-hero-art">
+        <img className="al-hero-glow" src={cover} alt="" aria-hidden />
+        {art}
+      </span>
+    ) : (
+      art
+    )
+  const kicker = phone ? [kind, album.year, quality].filter(Boolean).join(' · ') : [kind, album.year, genres.slice(0, 2).join(' / ') || null].filter(Boolean).join(' · ')
+  const artistRec = data.artists[album.artistId]
   const stats =
     current >= 0 ? (
       <HeardLine songs={songs} current={current} count={info.tracks.length} />
     ) : (
       `${info.tracks.length} ${info.tracks.length === 1 ? 'track' : 'tracks'} · ${fmtTotal(info.seconds)}`
     )
+  // desktop line (design): avatar · artist · 12 TRACKS · 47:38 · quality badge
+  const heroLine = phone ? (
+    <a href={artistHref(album.artistId)} className="ln">
+      {album.artist}
+    </a>
+  ) : (
+    <span className="al-line">
+      {artistRec && <ArtistDisc artist={artistRec} size={28} className="al-line-av" />}
+      <a href={artistHref(album.artistId)} className="ln al-line-a">
+        {album.artist}
+      </a>
+      <span className="al-line-dot">·</span>
+      <span className="al-line-stats">{stats}</span>
+      {quality && <span className="al-line-q">{quality}</span>}
+    </span>
+  )
+  // ABOUT card: plays per day from the first play (or the add date) to today, 24 bars
+  const tidSet = new Set(ids)
+  const albumPlays = history.plays.filter((pl) => tidSet.has(pl.trackId))
+  const nowS = Math.floor(Date.now() / 1000)
+  const fromS = albumPlays.length ? albumPlays[0].at : album.addedAt ? Math.floor(new Date(album.addedAt).getTime() / 1000) : nowS - 86400 * 24
+  const span = Math.max(86400, nowS - fromS)
+  const spark = new Array(24).fill(0) as number[]
+  for (const pl of albumPlays) spark[Math.min(23, Math.floor(((pl.at - fromS) / span) * 24))]++
+  const sparkMax = Math.max(1, ...spark)
+  const most = info.tracks.reduce<Track | null>((m, t) => ((counts.get(t.id) ?? 0) > (m ? (counts.get(m.id) ?? 0) : 0) ? t : m), null)
+  const dayLabel = (s: number) => new Date(s * 1000).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }).toUpperCase()
+  const maxPlays = Math.max(1, ...info.tracks.map((t) => counts.get(t.id) ?? 0))
   const buttons = (
     <>
       <Button icon={ctx.playing ? 'pauseF' : 'playF'} onClick={onPlay} disabled={!ids.length}>
@@ -149,7 +188,20 @@ export function AlbumPage({ id }: { id: string }) {
 
   const tracklist = (
     <section className="lp-main" aria-label="Tracklist">
-      {phone ? <ListSection phone label="Tracklist" right={current >= 0 ? <LeftText songs={songs} current={current} /> : `${info.tracks.length} songs`} /> : <SectionHead label="TRACKLIST" right={discs.length > 1 ? `${discs.length} DISCS` : `${info.tracks.length} SONGS`} />}
+      {phone ? (
+        <ListSection phone label="Tracklist" right={current >= 0 ? <LeftText songs={songs} current={current} /> : `${info.tracks.length} songs`} />
+      ) : (
+        /* design: a column header over the rows */
+        <div className={`al-thead ${dl.available ? 'has-dl' : ''}`} aria-hidden>
+          <span>#</span>
+          <span>Tracklist{discs.length > 1 ? ` · ${discs.length} discs` : ''}</span>
+          <span>Your plays</span>
+          <span />
+          {dl.available && <span />}
+          <span className="is-r">Time</span>
+          <span />
+        </div>
+      )}
       {info.tracks.length === 0 ? (
         <EmptyState icon="album" title="No tracks found." body={`Drive has no files for ${album.title} right now. Run the importer again, or upload the tracks.`} />
       ) : (
@@ -169,7 +221,18 @@ export function AlbumPage({ id }: { id: string }) {
                     title={t.title}
                     sub={phone ? [sub, plays ? playsLabel(plays).toLowerCase() : null].filter(Boolean).join(' · ') || undefined : sub}
                     liked={liked.ids.has(t.id)}
-                    colB={playsLabel(plays)}
+                    colB={
+                      phone ? (
+                        playsLabel(plays)
+                      ) : (
+                        <span className="al-plays" title={playsLabel(plays)}>
+                          <span className="al-plays-bar">
+                            <span style={{ width: `${(plays / maxPlays) * 100}%` }} />
+                          </span>
+                          <span className="al-plays-n">{plays}</span>
+                        </span>
+                      )
+                    }
                     like={<LikeButton trackId={t.id} size="xs" hover />}
                     download={dl.available && !phone ? (trackDownload(dl, t, dlNow) ?? null) : undefined}
                     time={t.duration ? formatTime(t.duration) : '—'}
@@ -193,21 +256,20 @@ export function AlbumPage({ id }: { id: string }) {
   const moreBy = (size: number) =>
     others.length > 0 && (
       <section className="lp-sec">
-        <SectionHead label={`MORE BY ${album.artist.toUpperCase()}`} right={<a className="sect-link" href={artistHref(album.artistId)}>VIEW ARTIST</a>} />
+        {phone ? (
+          <SectionHead label={`MORE BY ${album.artist.toUpperCase()}`} right={<a className="sect-link" href={artistHref(album.artistId)}>VIEW ARTIST</a>} />
+        ) : (
+          <div className="al-side-k">
+            <span>More by {album.artist}</span>
+            <a href={artistHref(album.artistId)}>View artist</a>
+          </div>
+        )}
         <div className="disco-grid more-by-grid">
-          {others.slice(0, phone ? 12 : 6).map((a) => (
+          {others.slice(0, phone ? 12 : 4).map((a) => (
             <LibCard key={a.id} c={data} item={albumItem(a, a.year ? String(a.year) : a.artist)} size={size} />
           ))}
         </div>
       </section>
-    )
-
-  const fact = (k: string, v: string | null, on = false) =>
-    v && (
-      <div className="al2-fact">
-        <span className="al2-k">{k}</span>
-        <span className={`al2-v ${on ? 'is-on' : ''}`}>{v}</span>
-      </div>
     )
 
   return (
@@ -225,16 +287,14 @@ export function AlbumPage({ id }: { id: string }) {
       <ListHero
         phone={phone}
         layout="stack"
-        art={art}
+        art={heroArt}
         kicker={kicker}
         title={album.title}
         titleText={album.title}
-        line={
-          <a href={artistHref(album.artistId)} className="ln">
-            {album.artist}
-          </a>
-        }
-        stats={stats}
+        titleMax={104}
+        className="lh-album"
+        line={heroLine}
+        stats={phone ? stats : undefined}
         buttons={buttons}
         aside={dl.available && !phone ? <AlbumOfflineToggle c={data} albumId={album.id} name={album.title} /> : undefined}
       />
@@ -252,18 +312,45 @@ export function AlbumPage({ id }: { id: string }) {
         <div className="lp-cols">
           {tracklist}
           <aside className="lp-side">
-            <section className="lp-sec">
-              <SectionHead label="ABOUT THIS ALBUM" />
-              <div className="al2-facts">
-                {fact('Released', released(album.date, album.year))}
-                {fact('Quality', quality)}
-                {fact('Added', `${fmtAdded(album.addedAt)} · ${fmtBytes(info.bytes)}`)}
-                {fact('Your plays', totalPlays ? `${totalPlays} · ${playedHours} h` : 'Not played yet', totalPlays > 0)}
-                {current < 0 && fact('Last played', lastText)}
-                {fact('Offline', offlineText)}
+            <section className="al-about">
+              <div className="al-side-k">
+                <span>About this album</span>
               </div>
+              <div className="al-about-big">
+                <span className="al-about-n">{totalPlays}</span>
+                <span className="al-about-s">
+                  {totalPlays === 1 ? 'play' : 'plays'}
+                  {most && totalPlays > 0 ? ` · most: ${most.title}` : totalPlays ? '' : ' · not played yet'}
+                </span>
+              </div>
+              <div className="al-spark" aria-hidden>
+                {spark.map((v, i) => (
+                  <span key={i} className={v ? 'is-on' : ''} style={{ height: v ? `${Math.max(12, (v / sparkMax) * 100)}%` : 3 }} />
+                ))}
+              </div>
+              <div className="al-spark-k">
+                <span>{dayLabel(fromS)}</span>
+                <span>Plays per day</span>
+                <span>Today</span>
+              </div>
+              <dl className="al-facts">
+                {[
+                  ['Released', released(album.date, album.year)],
+                  ['Quality', quality],
+                  ['Added', `${fmtAdded(album.addedAt)} · ${fmtBytes(info.bytes)}`],
+                  ['Last played', current < 0 ? lastText : null],
+                  ['On this phone', offlineText],
+                ]
+                  .filter(([, v]) => v)
+                  .map(([k, v]) => (
+                    <div key={k} className="al-fact">
+                      <dt>{k}</dt>
+                      <dd>{v}</dd>
+                    </div>
+                  ))}
+              </dl>
             </section>
-            {moreBy(112)}
+            {moreBy(Math.floor((320 - 14) / 2))}
           </aside>
         </div>
       )}

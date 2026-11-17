@@ -9,7 +9,7 @@
  */
 import { LikeButton } from '../../components/LikeButton'
 import { useMemo, useRef, type CSSProperties, type KeyboardEvent, type ReactNode } from 'react'
-import { Badge, Button, CookieButton } from '../../components/ui'
+import { Badge, Button, CookieButton, EmptyState } from '../../components/ui'
 import { useCover } from '../../lib/covers'
 import { useArtTint } from '../../design/tint'
 import { nameHue } from '../../lib/mixing'
@@ -25,7 +25,7 @@ import { useIsPhone } from '../../state/viewport'
 import { albumTrackIds, artistTrackIds, playList, useContextState, useNowPlaying } from '../library/playback'
 import { actions, type ActionTarget } from '../../actions/actions'
 import { ArtistDisc } from '../home/art'
-import { CardGroups, Hl, LibCard, NoResultsMark, SongCard, albumItem, artistItem, playlistItem, type LibItem } from '../library/libgrid'
+import { CardGroups, Hl, LibCard, SongCard, albumItem, artistItem, playlistItem, type LibItem } from '../library/libgrid'
 import { NAV, playTracks } from './results'
 
 const H = (text: string, tokens: string[]) => <Hl parts={highlight(text, tokens)} />
@@ -70,35 +70,32 @@ export function SearchResultsView({ c, r, filter, suggestion, query, onBackToFie
 
 function NoMatch({ query, suggestion, scoped, onClear }: { query: string; suggestion: string | null; scoped: boolean; onClear: () => void }) {
   return (
-    <div className="sr-none">
-      <NoResultsMark />
-      <div className="sr-none-t">{scoped ? `No ${searchStore.get().filter} match ‘${query}’` : `Nothing in your library matches ‘${query}’`}</div>
-      <div className="sr-none-b">
-        {suggestion ? (
-          <>
-            Did you mean <mark className="lb-hl">{suggestion}</mark>?
-          </>
-        ) : (
-          'Check the spelling, or try an artist or album name.'
-        )}
-      </div>
-      <div className="sr-none-btns">
-        {suggestion && (
-          <Button variant="tonal" onClick={() => searchStore.setQuery(suggestion)}>
-            Search {suggestion}
-          </Button>
-        )}
-        {scoped ? (
-          <Button variant="tonal" onClick={() => searchStore.setFilter('all')}>
+    <EmptyState
+      icon="search"
+      hue={235}
+      title={scoped ? `No ${searchStore.get().filter} match ‘${query}’` : `Nothing in your library matches ‘${query}’`}
+      body={
+        <>
+          Check the spelling, or try an artist or album name.
+          {suggestion && (
+            <span className="sr-none-dym">
+              Did you mean <button type="button" onClick={() => searchStore.setQuery(suggestion)}>{suggestion}</button>?
+            </span>
+          )}
+        </>
+      }
+      actions={
+        scoped ? (
+          <Button variant="secondary" onClick={() => searchStore.setFilter('all')}>
             Show all results
           </Button>
         ) : (
-          <Button variant={suggestion ? 'outlined-ink' : 'tonal'} onClick={onClear}>
+          <Button variant="secondary" onClick={onClear}>
             Clear search
           </Button>
-        )}
-      </div>
-    </div>
+        )
+      }
+    />
   )
 }
 

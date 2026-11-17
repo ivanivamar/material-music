@@ -33,6 +33,7 @@
 @import '../dj/dj.css';
 @import '../nowplaying/nowplaying.css';
 @import '../nowplaying/queue.css';
+@import '../dj/djscreen.css';
 @import '../shell/playerbar.css';
 @import '../shell/sidebar.css';
 @import '../actions/actions.css';
@@ -40,6 +41,7 @@
 @import '../shell/phone.css';
 @import '../pages/library/detail.css';
 @import '../pages/library/album.css';
+@import '../pages/library/artist.css';
 @import '../pages/library/lib2.css';
 @import '../pages/downloads/downloads.css';
 @import '../pages/upload/upload.css';

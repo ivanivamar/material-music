@@ -17,7 +17,7 @@
  * Everything but Made for you / Radio for you paints at once from the local catalogue; those two keep
  * their place with placeholder cards and fade in.
  */
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { Icon } from '../design/icons'
 import { useRelatedVersion } from '../lib/deezer'
 import { mixDay } from '../lib/mixing'
@@ -34,11 +34,13 @@ import { useDj } from '../state/dj'
 import { fmtN, plural } from '../state/views'
 import { href, libraryHref } from '../shell/routes'
 import { usePlayingAlbumId } from './library/playback'
+import { useCurrent } from '../nowplaying/player'
 import { RecapShelf } from './stats/RecapShelf'
 import { AlbumCardHome, ArtistCard, avatarSize, cardSize, MixCard, NewSmartCard, RadioCardView, SkelCard, SmartCard, SmartInvite, useHomeSize } from './home/cards'
 import { JumpBackIn, jumpTiles } from './home/JumpBackIn'
 import { ShelfCard, useConcertShelf } from './concerts/cards'
 import { ReleaseCard, SoonCard, useHomeReleases } from './home/ReleasesShelf'
+import { ConcertTicket, DayMixHero, ReleasesSoon } from './home/HomeHero'
 
 function useMinuteClock() {
   const [now, setNow] = useState(() => new Date())
@@ -78,6 +80,21 @@ function Shelf({ label, sub, subHref, moreLabel = 'See all', phone, className, c
   )
 }
 
+/** Desktop: the shelves' content width, so six cards fill a row exactly (design: 6 columns, 20px gaps). */
+function useShelfWidth(on: boolean) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [w, setW] = useState(0)
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!on || !el) return
+    const ro = new ResizeObserver(() => setW(el.clientWidth))
+    ro.observe(el)
+    setW(el.clientWidth)
+    return () => ro.disconnect()
+  }, [on])
+  return { ref, w }
+}
+
 const HAD_SMART = 'pelagic.home.hadSmart'
 function hadSmart(now: boolean): boolean {
   try {
@@ -109,6 +126,8 @@ export function Home() {
   const radios = today ? radioSet(relVersion, now.getTime()) : null
   const concerts = useConcertShelf()
   const rels = useHomeReleases(data)
+  const cur = useCurrent()
+  const { ref: shelfRef, w: shelfW } = useShelfWidth(!phone)
 
   // pick up plays / recents from the other device (throttled; the stores also sync on focus / reconnect)
   useEffect(() => {
@@ -128,7 +147,20 @@ export function Home() {
   const first = account?.name?.split(/\s+/)[0]
   const date = now.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }).replace(',', '')
 
-  const cs = cardSize(size)
+  // desktop: six cards per row (design grid); phone keeps its fixed sizes
+  const GAP = 20
+  /** card text under a cover: 8px gap + title 20 + 4 + sub 19 */
+  const CARD_TEXT = 51
+  const fit = !phone && shelfW > 0
+  const cs = fit ? Math.floor((shelfW - GAP * 5) / 6) : cardSize(size)
+  // Concerts + Your artists share a row (1 : 1.4); artists five across their column
+  const pair = !phone && !!concerts && artists.items.length > 0
+  const colA = fit ? Math.floor(((shelfW - GAP) * 1.4) / 2.4) : 0
+  const colC = fit ? shelfW - GAP - colA : 248
+  const av = pair && fit ? Math.floor((colA - 14 * 4) / 5) : fit ? cs : avatarSize(size)
+  // the big Day mix + 4-across grid only reads right with enough mixes to fill its first row
+  const madeGrid = fit && !!mixes && mixes.items.length >= 5
+  const nowTitle = cur.track && cur.p.playing ? cur.track.title : null
   const tiles = jumpTiles(data, recent.items, lists.byId, mixes, history.plays, phone ? 5 : 7)
   const smart = lists.list.filter((p) => p.smart)
   const showSmart = smart.length > 0 || !hadSmart(false) ? true : false
@@ -141,20 +173,39 @@ export function Home() {
   return (
     <div className="home2">
       <header className="h-greet">
-        <div className="h-date">{date}</div>
+        <div className="h-date">
+          {date}
+          {nowTitle && <span className="h-now"> · Now playing {nowTitle}</span>}
+        </div>
         <h1 className="h-hello">{first ? `${greeting(now.getHours())}, ${first}` : greeting(now.getHours())}</h1>
       </header>
-      <div className="h-shelves">
+      <div className="h-shelves" ref={shelfRef}>
         <Shelf label="Jump back in" sub={phone ? (tiles.length + 1 < 6 ? 'Your last plays' : 'Synced with PC') : tiles.length + 1 < 8 ? 'Your last plays · PC and phone' : 'Synced · PC and phone'} phone={phone} row="none" inline className="hs-jbi">
-          <JumpBackIn tiles={tiles} phone={phone} size={size === 'desk' ? 56 : 48} />
+          <JumpBackIn tiles={tiles} phone={phone} size={48} />
         </Shelf>
 
         {(rels.items.length > 0 || rels.upcoming.length > 0) && (
-          <Shelf label="New releases" sub={`From your artists${rels.fresh ? ` · ${rels.fresh} new` : ''}`} subHref={href('new')} phone={phone} className="hs-releases">
-            {rels.items.map((it) => (
-              <ReleaseCard key={it.rel.id} item={it} size={cs} />
-            ))}
-            {rels.upcoming.length > 0 && <SoonCard upcoming={rels.upcoming} size={cs} />}
+          <Shelf label="New releases" sub={`From your artists${rels.fresh ? ` · ${rels.fresh} new` : ''}`} subHref={href('new')} phone={phone} className="hs-releases" row={fit ? 'none' : 'scroll'}>
+            {fit ? (
+              <>
+                {/* design: the next release counts down in a strip over the row */}
+                {rels.upcoming.length > 0 && <ReleasesSoon upcoming={rels.upcoming} />}
+                {rels.items.length > 0 && (
+                  <div className="hs-row">
+                    {rels.items.map((it) => (
+                      <ReleaseCard key={it.rel.id} item={it} size={cs} />
+                    ))}
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                {rels.items.map((it) => (
+                  <ReleaseCard key={it.rel.id} item={it} size={cs} />
+                ))}
+                {rels.upcoming.length > 0 && <SoonCard upcoming={rels.upcoming} size={cs} />}
+              </>
+            )}
           </Shelf>
         )}
 
@@ -162,8 +213,21 @@ export function Home() {
         <RecapShelf c={data} plays={history.plays} now={now} playing={playing} />
 
         {(!mixes || mixes.items.length > 0) && (
-          <Shelf label="Made for you" sub={mixSub} phone={phone}>
-            {mixes
+          <Shelf label="Made for you" sub={mixSub} phone={phone} row={madeGrid ? 'none' : 'scroll'} className={madeGrid ? 'hs-made' : undefined}>
+            {madeGrid ? (
+              /* design: the Day mix big on the left (two rows tall), the rest four across */
+              <div className="hs-made-grid" style={{ gridTemplateColumns: `${cs * 2 + GAP}px repeat(4, ${cs}px)` }}>
+                {mixes!.items.flatMap((m, i) => {
+                  const card =
+                    i === 0 && m.kind === 'day' ? (
+                      <DayMixHero key={m.id} c={data} mix={m} width={cs * 2 + GAP} height={(cs + CARD_TEXT) * 2 + GAP} />
+                    ) : (
+                      <MixCard key={m.id} c={data} mix={m} size={i === 0 ? cs * 2 + GAP : cs} />
+                    )
+                  return i === 0 && made.discoveryBuilding ? [card, <SkelCard key="disc-skel" size={cs} />] : [card]
+                })}
+              </div>
+            ) : mixes
               ? mixes.items.flatMap((m, i) => {
                   const card = <MixCard key={m.id} c={data} mix={m} size={cs} />
                   // Discovery is being put together for the week: keep its place (second)
@@ -179,7 +243,40 @@ export function Home() {
           </Shelf>
         )}
 
-        {concerts && (
+        {concerts &&
+          (pair ? (
+            <div className="hs-pair" style={{ gridTemplateColumns: `${colC}px ${colA}px` }}>
+            <Shelf
+              label="Concerts near you"
+              sub={
+                <>
+                  {concerts.city} · <span className="cx-mono">{concerts.radius} km</span>
+                </>
+              }
+              subHref={href('concerts')}
+              moreLabel={`See all ${concerts.total}`}
+              phone={phone}
+              row="none"
+              className="hs-concerts"
+            >
+              <ConcertTicket c={data} show={concerts.shows[0]} now={now.getTime()} />
+              <div className="cx-shelf-attrib">Ticket info from Ticketmaster</div>
+            </Shelf>
+            <Shelf label="Your artists" sub={artists.byPlays ? 'Most played · last 90 days' : 'Most albums in your library'} subHref={libraryHref('artists')} phone={phone} className="hs-artists">
+              {artists.items.slice(0, 5).map(({ artistId, n }) => (
+                <ArtistCard
+                  key={artistId}
+                  c={data}
+                  artist={data.artists[artistId]}
+                  size={av}
+                  sub={artists.byPlays ? `${plural(n, 'play', 'plays')} · 90 days` : plural(n, 'album', 'albums')}
+                  bar={artists.byPlays ? n / Math.max(1, artists.items[0].n) : undefined}
+                  plays={n}
+                />
+              ))}
+            </Shelf>
+            </div>
+          ) : (
           <Shelf
             label="Concerts near you"
             sub={
@@ -195,12 +292,12 @@ export function Home() {
           >
             <div className="hs-row cx-shelf-row">
               {concerts.shows.map((s) => (
-                <ShelfCard key={s.key} c={data} show={s} width={phone ? 216 : 248} />
+                <ShelfCard key={s.key} c={data} show={s} width={phone ? 216 : pair ? colC : 248} />
               ))}
             </div>
             <div className="cx-shelf-attrib">Ticket info from Ticketmaster</div>
           </Shelf>
-        )}
+          ))}
 
         <Shelf
           label="Recently added"
@@ -213,12 +310,20 @@ export function Home() {
           ))}
         </Shelf>
 
-        {artists.items.length > 0 && (
-          <Shelf label="Your artists" sub={artists.byPlays ? 'Most played · last 90 days' : 'Most albums in your library'} subHref={libraryHref('artists')} phone={phone} className="hs-artists">
-            {artists.items.map(({ artistId, n }) => (
-              <ArtistCard key={artistId} c={data} artist={data.artists[artistId]} size={avatarSize(size)} sub={artists.byPlays ? `${plural(n, 'play', 'plays')} · 90 days` : plural(n, 'album', 'albums')} />
-            ))}
-          </Shelf>
+        {!pair && artists.items.length > 0 && (
+        <Shelf label="Your artists" sub={artists.byPlays ? 'Most played · last 90 days' : 'Most albums in your library'} subHref={libraryHref('artists')} phone={phone} className="hs-artists">
+          {artists.items.map(({ artistId, n }) => (
+            <ArtistCard
+              key={artistId}
+              c={data}
+              artist={data.artists[artistId]}
+              size={av}
+              sub={artists.byPlays ? `${plural(n, 'play', 'plays')} · 90 days` : plural(n, 'album', 'albums')}
+              bar={artists.byPlays ? n / Math.max(1, artists.items[0].n) : undefined}
+              plays={n}
+            />
+          ))}
+        </Shelf>
         )}
 
         {showSmart && (

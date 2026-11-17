@@ -204,7 +204,51 @@
 .ch-art > img { object-fit: cover; display: block; }
 .ch-art.is-round { border-radius: 50%; }
 .ch-title { flex: 1; min-width: 0; font-size: 16px; font-weight: 500; color: var(--ink-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* desktop: the compact header shares the sticky top bar's band (68px, left side, the bar's frosted
+   surface behind it); it stops short of the search field on the right */
+.shell:not(.is-phone) .ch.ch { z-index: 8; }
+.shell:not(.is-phone) .ch-in { height: 68px; background: none; border-bottom: 0; padding-right: calc(var(--page-px, 56px) + 420px); }
+.shell:not(.is-phone) .ch-art { width: 40px; height: 40px; border-radius: 9px; box-shadow: 0 6px 16px -8px rgba(0, 0, 0, .8); }
+.shell:not(.is-phone) .ch-title { font-size: 17px; font-weight: 600; }
 .shell.is-phone .ch.ch { top: var(--bar-h); }
 .shell.is-phone .ch-in { height: 52px; gap: 12px; }
 .shell.is-phone .ch-art { width: 32px; height: 32px; }
 .shell.is-phone .ch-title { font-size: 15px; }
+
+/* ── Redesign (Nov 2026): song rows ─────────────────────────────────────────
+   rounder hover surface, the playing row lit in the album colour, hearts fade in on hover
+   (a liked heart stays), the ··· and play buttons get 36px hit areas */
+.slr { border-radius: 12px; transition: background-color .25s var(--ease), box-shadow .25s var(--ease); }
+.slr:not(.slr-head):not(.is-phone):hover { background: rgba(255, 255, 255, .045); }
+.slr.is-current, .slr.is-current:not(.slr-head):hover {
+  background: linear-gradient(90deg, oklch(0.42 calc(0.1 * var(--hc, 1)) var(--h) / .3), oklch(0.3 calc(0.06 * var(--hc, 1)) var(--h) / .06) 70%, transparent);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .05);
+}
+.slr.is-current .slr-n .eq { color: var(--album); }
+.slr.is-current .slr-tt { color: #fff; text-shadow: none; }
+.slr-t { font-size: 14.5px; }
+.slr-cover { border-radius: 8px; }
+.slr-play {
+  width: 32px; height: 32px; border-radius: 50%;
+  transition: transform .3s cubic-bezier(.34, 1.56, .64, 1), background-color .2s var(--ease);
+}
+/* keep the centring translate from the base rule, or the button drops by half its height */
+.slr-play:hover { transform: translateY(-50%) scale(1.1); background: rgba(255, 255, 255, .08); }
+.slr:not(.is-phone) .slr-like > :not(.is-on) { opacity: 0; transition: opacity .15s var(--ease); }
+.slr:not(.is-phone):hover .slr-like > *, .slr-like > :focus-visible { opacity: 1; }
+.slr-more { width: 36px; height: 36px; }
+.slr-more:hover { background: rgba(255, 255, 255, .08); }
+.shell.is-phone .slr.is-current { background: linear-gradient(90deg, oklch(0.42 calc(0.1 * var(--hc, 1)) var(--h) / .26), transparent 80%); }
+
+/* Redesign: the square heart / ··· next to Play wear the same glass as the Shuffle button */
+.lh-sq.ibtn.ibtn, .lh-btns .al2-like.al2-like, .al2-btns .al2-like.al2-like, .alp-btns .al2-like.al2-like {
+  border: 1px solid rgba(255, 255, 255, .14); border-radius: 14px; background: rgba(255, 255, 255, .04); color: var(--ink-primary);
+  transition: background-color .2s var(--ease), border-color .2s var(--ease), transform .2s var(--ease);
+}
+.lh-sq.ibtn.ibtn:hover:not(:disabled), .lh-btns .al2-like.al2-like:hover, .al2-btns .al2-like.al2-like:hover, .alp-btns .al2-like.al2-like:hover {
+  border-color: rgba(255, 255, 255, .3); background: rgba(255, 255, 255, .08); transform: translateY(-1px);
+}
+.lh-sq.ibtn.ibtn:active:not(:disabled), .lh-btns .al2-like.al2-like:active { transform: scale(.95); }
+
+/* Design check (Nov 17): rows 54px with 14px side padding */
+.slr:not(.is-phone):not(.slr-head) { height: 54px; padding-left: 14px; padding-right: 14px; }

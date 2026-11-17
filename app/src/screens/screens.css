@@ -5,6 +5,9 @@
 }
 
 .scr {
+  /* the welcome / library-status screens wear the brand's ocean blue (the mark's hue), not the
+     now-playing default amber */
+  --h: 215;
   position: relative;
   isolation: isolate;
   display: flex;

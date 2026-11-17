@@ -2,7 +2,7 @@
  * Sign-in and its "Session expired" variant.
  */
 import { useEffect } from 'react'
-import { PortholeMark } from '../components/Logo'
+import { PelagicMark } from '../components/Logo'
 import { Atmosphere } from '../components/Atmosphere'
 import { Icon } from '../design/icons'
 import { preloadGoogle, sessionStore, useSession } from '../state/session'
@@ -40,7 +40,7 @@ export function SignIn({ expired = false }: { expired?: boolean }) {
             </>
           ) : (
             <div className="signin-lockup">
-              <PortholeMark size={132} />
+              <PelagicMark size={156} />
               <div className="signin-titles">
                 <h1 className="signin-word">PELAGIC</h1>
                 <p className="signin-tagline">Your own library, from far below the surface.</p>

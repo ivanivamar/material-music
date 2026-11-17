@@ -82,5 +82,8 @@ export default defineConfig({
     strictPort: true,
     // dev gallery pages import sample covers from ../design_handoff_pelagic/art
     fs: { allow: ['..'] },
+    // the site's helpers (/api/deezer, /api/concerts, /api/voice, /api/romaji) are Firebase functions:
+    // in dev, hand them to the live site so previews, Fans also like, tour dates and the DJ voice work
+    proxy: { '/api': { target: 'https://material-music-app.web.app', changeOrigin: true, secure: true } },
   },
 })

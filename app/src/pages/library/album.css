@@ -244,7 +244,7 @@ a.ln:hover { color: var(--ink-primary); text-decoration: underline; text-underli
 
 /* ── Album, ring view on a wide screen: two columns (Nov 2026 sonar mockup) ── */
 .al2 { display: grid; grid-template-columns: 300px minmax(0, 1fr); column-gap: 48px; align-items: start; }
-.al2-side { display: flex; flex-direction: column; gap: 24px; min-width: 0; position: sticky; top: 24px; }
+.al2-side { display: flex; flex-direction: column; gap: 24px; min-width: 0; position: sticky; top: calc(var(--bar-h, 0px) + 20px); }
 .al2-side .crumbs { margin: -4px 0 0; }
 .al2-cover { width: 220px; height: 220px; border-radius: var(--r-cover); object-fit: cover; display: block; box-shadow: 0 0 0 1px rgba(255, 255, 255, .08), 0 30px 60px -24px rgba(0, 0, 0, .8); transition: box-shadow 1.2s var(--ease); }
 .al2-head { display: flex; flex-direction: column; gap: 12px; }
@@ -291,3 +291,70 @@ a.ln:hover { color: var(--ink-primary); text-decoration: underline; text-underli
 .al2 { grid-template-columns: 320px minmax(0, 1fr); }
 .al2-k { white-space: nowrap; flex: none; }
 .al2-v { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+
+/* ── Album page, redesign (AlbumV2, desktop, measured) ─────────────────────────────────────────
+   crumb 26px under the bar; 260px cover glowing from under itself, 40px to the text; kicker in the
+   album's hue; title 104 / 600 / −0.045em / .9; avatar · artist · stats · quality line; buttons 28px
+   lower; tracklist + 320px About column 36px apart. */
+.album-page:not(.is-phone) { gap: 0; }
+.album-page:not(.is-phone) > .crumbs { margin: 8px 0 0; font-size: 10px; letter-spacing: .14em; color: var(--ink-tertiary); }
+.album-page:not(.is-phone) .lh-album { margin-top: 14px; gap: 40px; align-items: flex-end; }
+.album-page:not(.is-phone) .lh-album .lh-art { width: 260px; height: 260px; border-radius: 14px; }
+.al-hero-art { position: relative; display: block; width: 100%; height: 100%; }
+.al-hero-art > img:not(.al-hero-glow) { position: relative; z-index: 1; width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 14px; box-shadow: 0 34px 70px -26px rgba(0, 0, 0, .95); }
+.al-hero-art::after { content: ''; position: absolute; inset: 0; z-index: 2; border-radius: 14px; pointer-events: none; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .2), inset 0 0 0 1px rgba(255, 255, 255, .06); }
+.al-hero-glow { position: absolute; inset: 40px 10px -26px; width: auto !important; height: auto !important; border-radius: 44px !important; object-fit: cover; filter: blur(44px) saturate(1.8); opacity: .75; z-index: 0; pointer-events: none; }
+.ch .al-hero-glow, .ch .al-hero-art::after { display: none; }
+.album-page:not(.is-phone) .lh-album .lh-text { gap: 0; padding-bottom: 4px; }
+.album-page:not(.is-phone) .lh-album .lh-kicker { font-size: 11px; letter-spacing: .14em; color: oklch(0.86 calc(0.09 * var(--hc, 1)) var(--h)); }
+.album-page:not(.is-phone) .lh-album .lh-title { margin-top: 12px; font-weight: 600; line-height: .9; letter-spacing: -0.045em; }
+.album-page:not(.is-phone) .lh-album .lh-line { margin-top: 16px; }
+.al-line { display: flex; align-items: center; gap: 12px; font-size: 18px; min-width: 0; flex-wrap: wrap; }
+.al-line-av { flex: none; border-radius: 50%; }
+.al-line-a { font-weight: 500; }
+.al-line-dot { color: var(--ink-tertiary); }
+.al-line-stats { font-family: var(--font-mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-secondary); }
+.al-line-stats .is-on { color: var(--ink-primary); }
+.al-line-q { font-family: var(--font-mono); font-size: 10px; letter-spacing: .12em; color: rgb(198, 180, 242); border: 1px solid rgba(198, 180, 242, .5); background: rgba(198, 180, 242, .08); padding: 4px 8px; border-radius: 6px; }
+.album-page:not(.is-phone) .lh-btns { margin-top: 28px; gap: 10px; }
+.album-page:not(.is-phone) .lh-btns .btn { height: 46px; padding: 0 20px; font-size: 14px; }
+
+.album-page:not(.is-phone) .lp-cols { margin-top: 40px; gap: 36px; flex-wrap: nowrap; }
+.album-page:not(.is-phone) .lp-side { flex: 0 0 320px; max-width: 320px; gap: 22px; }
+
+/* tracklist: header row + rows on the design's columns */
+.album-page:not(.is-phone) .sl-album { --slc: 26px minmax(0, 1fr) 150px 32px 64px 36px; }
+.album-page:not(.is-phone) .sl-album.has-dl { --slc: 26px minmax(0, 1fr) 150px 32px 24px 64px 36px; }
+.al-thead {
+  display: grid; grid-template-columns: 26px minmax(0, 1fr) 150px 32px 64px 36px; column-gap: 14px; padding: 0 14px 10px;
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-tertiary);
+  border-bottom: 1px solid rgba(255, 255, 255, .07); margin-bottom: 4px;
+}
+.al-thead.has-dl { grid-template-columns: 26px minmax(0, 1fr) 150px 32px 24px 64px 36px; }
+.al-thead .is-r { text-align: right; }
+.album-page:not(.is-phone) .sl-album .slr-time { text-align: right; font-size: 12px; color: var(--ink-secondary); }
+.al-plays { display: flex; align-items: center; gap: 8px; }
+.al-plays-bar { width: 64px; height: 3px; border-radius: 2px; background: rgba(255, 255, 255, .08); overflow: hidden; flex: none; }
+.al-plays-bar > span { display: block; height: 100%; border-radius: 2px; background: oklch(0.85 calc(0.09 * var(--hc, 1)) var(--h)); }
+.al-plays-n { font-family: var(--font-mono); font-size: 10px; letter-spacing: .08em; color: var(--ink-tertiary); }
+
+/* About card */
+.al-side-k { display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-tertiary); }
+.al-side-k a { color: inherit; text-decoration: none; }
+.al-side-k a:hover { color: var(--ink-primary); }
+.al-about { border-radius: 18px; padding: 18px 20px; background: linear-gradient(180deg, rgba(255, 255, 255, .06), rgba(255, 255, 255, .02)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .07); }
+.al-about-big { margin-top: 14px; display: flex; align-items: flex-end; gap: 10px; min-width: 0; }
+.al-about-n { font-size: 44px; font-weight: 500; letter-spacing: -0.03em; line-height: 1; }
+.al-about-s { font-size: 13px; color: var(--ink-secondary); padding-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.al-spark { margin-top: 14px; display: flex; align-items: flex-end; gap: 3px; height: 34px; }
+.al-spark > span { flex: 1; border-radius: 2px; background: rgba(255, 255, 255, .08); }
+.al-spark > span.is-on { background: oklch(0.85 calc(0.09 * var(--hc, 1)) var(--h)); }
+.al-spark-k { margin-top: 6px; display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 9px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-tertiary); }
+.al-facts { margin: 18px 0 0; display: grid; gap: 10px; font-size: 13px; }
+.al-fact { display: flex; justify-content: space-between; gap: 16px; }
+.al-fact dt { font-family: var(--font-mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-tertiary); white-space: nowrap; }
+.al-fact dd { margin: 0; text-align: right; }
+
+/* More by: two across */
+.album-page:not(.is-phone) .lp-side .lp-sec { gap: 14px; }
+.album-page:not(.is-phone) .lp-side .more-by-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
