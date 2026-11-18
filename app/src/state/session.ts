@@ -194,6 +194,9 @@ function popupError(err: google.accounts.oauth2.ClientConfigError): string {
       : err.message || 'Sign-in failed.'
 }
 
+/** Popup code flow through the token helper (stay signed in). Off: see signIn(). */
+const USE_CODE_FLOW: boolean = false
+
 let client: google.accounts.oauth2.TokenClient | null = null
 let pendingResolve: ((r: google.accounts.oauth2.TokenResponse) => void) | null = null
 let pendingReject: ((e: Error) => void) | null = null
@@ -202,7 +205,6 @@ function tokenClient() {
   client ??= google.accounts.oauth2.initTokenClient({
     client_id: GOOGLE_CLIENT_ID,
     scope: DRIVE_SCOPE,
-    include_granted_scopes: false, // only DRIVE_SCOPE: an older, wider grant must not ride along
     callback: (resp) => {
       if (resp.error) pendingReject?.(new Error(resp.error_description || resp.error))
       else pendingResolve?.(resp)
@@ -355,7 +357,12 @@ export const sessionStore = {
     }
     try {
       // GIS needs the popup opened inside the click, so both of these were warmed up by preloadGoogle()
-      const [, viaHelper] = await Promise.all([loadGis(), helperAvailable()])
+      const [, helperUp] = await Promise.all([loadGis(), helperAvailable()])
+      // The popup code flow (stay-signed-in helper) stopped handing its result back to the page on the
+      // live site in normal browsers (Nov 18, 2026), while the token popup still works. Off until a
+      // redirect-based code flow replaces it: hourly sign-in meanwhile.
+      // See claude/material-music-signin-revoke-incident.md in the project.
+      const viaHelper = USE_CODE_FLOW && helperUp
       if (viaHelper) {
         const code = await new Promise<string>((resolve, reject) => {
           const hint = opts.switchAccount ? undefined : state.account?.email
@@ -383,11 +390,9 @@ export const sessionStore = {
       const resp = await new Promise<google.accounts.oauth2.TokenResponse>((resolve, reject) => {
         pendingResolve = resolve
         pendingReject = reject
-        const hint = opts.switchAccount ? undefined : state.account?.email
-        tokenClient().requestAccessToken({
-          prompt: opts.switchAccount ? 'select_account' : '',
-          ...(hint ? { login_hint: hint } : {}),
-        })
+        // Default prompt (no '' and no login_hint): Google then shows the Drive consent again when
+        // the grant was revoked (e.g. by Sign out), instead of closing the popup with nothing.
+        tokenClient().requestAccessToken(opts.switchAccount ? { prompt: 'select_account' } : {})
       })
       if (!google.accounts.oauth2.hasGrantedAllScopes(resp, DRIVE_SCOPE)) {
         throw new Error('PELAGIC needs access to Google Drive to read your library. Tick the Drive box when Google asks.')
